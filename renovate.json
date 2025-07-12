@@ -184,13 +184,19 @@
       "assignees": []
     },
     {
-      "description": "Node.js engine compatibility",
-      "matchPackageNames": ["node"],
-      "matchManagers": ["dockerfile", "github-actions"],
+      "description": "Node.js setup action in GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["actions/setup-node"],
       "automerge": false,
-      "labels": ["node-version"],
-      "reviewers": [],
-      "assignees": []
+      "labels": ["node-version"]
+    },
+    {
+      "description": "Node.js base image in Dockerfiles",
+      "matchManagers": ["dockerfile"],
+      "matchDatasources": ["docker"],
+      "matchPackagePrefixes": ["node"],
+      "automerge": false,
+      "labels": ["node-version"]
     },
     {
       "description": "Vite major updates need review for breaking changes",

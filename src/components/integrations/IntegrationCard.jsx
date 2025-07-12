@@ -37,6 +37,10 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
         }
     };
 
+    const handleOpenProjectWebsite = (url) => {
+        window.open(url, '_blank'); // Open in new tab
+    };
+
     const instanceCount = Object.keys(instances).length;
     // Fixed: Use capital S for Status to match backend structure
     const runningCount = Object.values(instances).filter(instance => instance.status === 'running').length;
@@ -61,7 +65,16 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
                 </div>
             </div>
             
-            <p className="text-neutral-300 text-sm mb-4">{integration.description}</p>
+            <p className="text-neutral-300 text-sm mb-2">{integration.description}</p>
+
+            <div className="integration-actions flex flex-wrap gap-2 mb-6">
+                <button
+                    onClick={() => handleOpenProjectWebsite(integration.projectWebsite)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs"
+                >
+                    Open Project Website
+                </button>
+            </div>
 
             <div className="integration-actions flex flex-wrap gap-2 mb-4">
                 <button 

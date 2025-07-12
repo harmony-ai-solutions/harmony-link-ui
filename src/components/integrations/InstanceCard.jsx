@@ -106,7 +106,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                     Config Files
                 </button>
 
-                {instance.status === 'running' && webURLs.length > 0 && (
+                {instance.status === 'running' && webURLs && webURLs.length > 0 && (
                     webURLs.map((url, index) => (
                         <button
                             key={`web-ui-${index}`}

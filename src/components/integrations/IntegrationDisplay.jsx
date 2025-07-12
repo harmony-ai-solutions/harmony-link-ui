@@ -71,7 +71,7 @@ const IntegrationDisplay = ({ availableIntegrations, useIntegration }) => {
                                         </button>
                                     ))
                                 )}
-                                {integrationOption.webURLs && integrationOption.webURLs.length > 0 && !integrationOption.isContainerMode && ( // Use WebURLs and IsContainerMode
+                                {integrationOption.webURLs && integrationOption.webURLs.length > 0 && ( // Use WebURLs
                                     integrationOption.webURLs.map((url, index) => (
                                         <button
                                             key={`web-${index}`}

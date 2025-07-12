@@ -194,7 +194,7 @@
       "description": "Node.js base image in Dockerfiles",
       "matchManagers": ["dockerfile"],
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["node", "node:*", "nodejs", "nodejs:*"],
+      "matchPackageNames": ["node", "nodejs", "node:*", "nodejs:*"],
       "automerge": false,
       "labels": ["node-version"]
     },

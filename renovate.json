@@ -184,13 +184,6 @@
       "assignees": []
     },
     {
-      "description": "Node.js setup action in GitHub Actions",
-      "matchManagers": ["github-actions"],
-      "matchPackageNames": ["actions/setup-node"],
-      "automerge": false,
-      "labels": ["node-version"]
-    },
-    {
       "description": "Vite major updates need review for breaking changes",
       "matchPackageNames": ["vite"],
       "matchUpdateTypes": ["major"],
@@ -229,34 +222,5 @@
     "**/.vite/**",
     "**/wailsjs/**"
   ],
-  "ignoreDeps": [],
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "regexManagers": [
-    {
-      "fileMatch": [
-        "^Dockerfile$",
-        "^\\.github/workflows/.*\\.ya?ml$"
-      ],
-      "matchStrings": [
-        "FROM node:(?<currentValue>.*?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
-      ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "node"
-    }
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "^package\\.json$"
-      ],
-      "matchStrings": [
-        "\"engines\":\\s*{[^}]*\"node\":\\s*\"(?<currentValue>[^\"]+)\""
-      ],
-      "datasourceTemplate": "node",
-      "depNameTemplate": "node"
-    }
-  ]
+  "ignoreDeps": []
 }

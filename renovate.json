@@ -191,13 +191,6 @@
       "labels": ["node-version"]
     },
     {
-      "description": "Node.js base image in Dockerfiles",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["node"],
-      "automerge": false,
-      "labels": ["node-version"]
-    },
-    {
       "description": "Vite major updates need review for breaking changes",
       "matchPackageNames": ["vite"],
       "matchUpdateTypes": ["major"],

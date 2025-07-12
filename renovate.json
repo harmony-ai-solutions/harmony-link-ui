@@ -4,8 +4,7 @@
     "config:recommended",
     ":dependencyDashboard",
     ":semanticCommits",
-    ":separatePatchReleases",
-    ":pinDigests"
+    ":separatePatchReleases"
   ],
   "timezone": "Europe/Berlin",
   "schedule": [

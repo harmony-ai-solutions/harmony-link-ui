@@ -1,6 +1,264 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases",
+    ":pinDigests"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "after 6am and before 6pm every weekday",
+    "after 6am and before 12pm on Saturday"
+  ],
+  "prConcurrentLimit": 8,
+  "prHourlyLimit": 3,
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "branchPrefix": "renovate/",
+  "labels": ["dependencies"],
+  "reviewers": [],
+  "assignees": [],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "assignees": [],
+    "reviewers": []
+  },
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates for stable React ecosystem",
+      "matchUpdateTypes": ["patch"],
+      "matchPackagePatterns": [
+        "^react$",
+        "^react-dom$",
+        "^@types/react$",
+        "^@types/react-dom$",
+        "^@vitejs/plugin-react$",
+        "^vite$",
+        "^lodash$",
+        "^@types/lodash$"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto-merge patch updates for development dependencies",
+      "matchUpdateTypes": ["patch"],
+      "matchDepTypes": ["devDependencies"],
+      "matchPackagePatterns": [
+        "^autoprefixer$",
+        "^postcss$",
+        "^tailwindcss$",
+        "^@types/",
+        "^typescript$",
+        "^eslint",
+        "^prettier"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Group React ecosystem updates",
+      "matchPackagePatterns": [
+        "^react$",
+        "^react-dom$",
+        "^@types/react$",
+        "^@types/react-dom$",
+        "^react-"
+      ],
+      "groupName": "React ecosystem",
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Group Vite and build tools",
+      "matchPackagePatterns": [
+        "^vite$",
+        "^@vitejs/",
+        "^rollup",
+        "^esbuild"
+      ],
+      "groupName": "Build tools",
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Group TailwindCSS and PostCSS",
+      "matchPackagePatterns": [
+        "^tailwindcss$",
+        "^postcss$",
+        "^autoprefixer$",
+        "^@tailwindcss/"
+      ],
+      "groupName": "TailwindCSS ecosystem",
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Group UI and component libraries",
+      "matchPackagePatterns": [
+        "^@headlessui/",
+        "^@heroicons/",
+        "^@monaco-editor/",
+        "^react-audio-player$",
+        "^react-h5-audio-player$"
+      ],
+      "groupName": "UI components",
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Group data visualization libraries",
+      "matchPackagePatterns": [
+        "^plotly.js$",
+        "^react-plotly.js$",
+        "^d3",
+        "^chart.js",
+        "^recharts"
+      ],
+      "groupName": "Data visualization",
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Group TypeScript and type definitions",
+      "matchPackagePatterns": [
+        "^typescript$",
+        "^@types/"
+      ],
+      "groupName": "TypeScript",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Group Harmony AI specific packages",
+      "matchPackagePatterns": [
+        "^@harmony-ai/"
+      ],
+      "groupName": "Harmony AI packages",
+      "reviewers": [],
+      "assignees": [],
+      "schedule": ["after 6am and before 6pm every weekday"]
+    },
+    {
+      "description": "More frequent updates for development dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "schedule": [
+        "after 6am and before 6pm every weekday",
+        "after 6am and before 2pm on Saturday"
+      ],
+      "prPriority": 1
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchUpdateTypes": ["patch", "minor"],
+      "matchPackagePatterns": [".*"],
+      "vulnerabilityAlerts": {
+        "labels": ["security", "high-priority"],
+        "assignees": [],
+        "reviewers": []
+      }
+    },
+    {
+      "description": "Major version updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major-update"],
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "React 18 compatibility - be careful with major updates",
+      "matchPackageNames": ["react", "react-dom"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["react-major"],
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Node.js engine compatibility",
+      "matchPackageNames": ["node"],
+      "matchManagers": ["dockerfile", "github-actions"],
+      "automerge": false,
+      "labels": ["node-version"],
+      "reviewers": [],
+      "assignees": []
+    },
+    {
+      "description": "Vite major updates need review for breaking changes",
+      "matchPackageNames": ["vite"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["vite-major"],
+      "reviewers": [],
+      "assignees": []
+    }
+  ],
+  "npm": {
+    "minimumReleaseAge": "2 days"
+  },
+  "docker": {
+    "enabled": true,
+    "minimumReleaseAge": "3 days"
+  },
+  "github-actions": {
+    "enabled": true,
+    "minimumReleaseAge": "3 days"
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on Monday"],
+    "commitMessageAction": "update",
+    "branchTopic": "lock-file-maintenance"
+  },
+  "rangeStrategy": "bump",
+  "postUpdateOptions": [
+    "npmDedupe"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.vite/**",
+    "**/wailsjs/**"
+  ],
+  "ignoreDeps": [],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^Dockerfile$",
+        "^\\.github/workflows/.*\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "FROM node:(?<currentValue>.*?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "node"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "^package\\.json$"
+      ],
+      "matchStrings": [
+        "\"engines\":\\s*{[^}]*\"node\":\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "node",
+      "depNameTemplate": "node"
+    }
   ]
 }

@@ -1,3 +1,5 @@
+@reference "../../style.css";
+
 .rhap_container {
     @apply bg-neutral-700 text-orange-400 p-2;
 }

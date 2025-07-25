@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { listIntegrations, getQuickstartRepoPath } from '../services/managementApiService'; // Removed refreshIntegrationStatuses
+import { listIntegrations, getQuickstartRepoPath, getDockerStatus } from '../services/managementApiService'; // Added getDockerStatus
 import IntegrationCard from './integrations/IntegrationCard';
 import QuickstartRepoSettings from './integrations/QuickstartRepoSettings';
+import DockerStatusIndicator from './integrations/DockerStatusIndicator';
 import YAMLConfigEditor from './integrations/YAMLConfigEditor';
 import ConfigFilesModal from './integrations/ConfigFilesModal';
 import CreateInstanceModal from './integrations/CreateInstanceModal';
@@ -16,6 +17,19 @@ const IntegrationsView = () => {
   const [selectedInstanceName, setSelectedInstanceName] = useState(null);
   const [quickstartRepoPath, setQuickstartRepoPath] = useState('');
   const [quickstartPathConfigured, setQuickstartPathConfigured] = useState(false);
+  const [dockerStatus, setDockerStatus] = useState({ available: false, lastCheck: null, hasClient: false });
+
+  const fetchDockerStatus = useCallback(async () => {
+    try {
+      const status = await getDockerStatus();
+      setDockerStatus(status);
+      return status;
+    } catch (error) {
+      console.error('Failed to fetch Docker status:', error);
+      setDockerStatus({ available: false, lastCheck: null, hasClient: false });
+      return { available: false, lastCheck: null, hasClient: false };
+    }
+  }, []);
 
   const fetchIntegrationsAndStatuses = useCallback(async () => {
     if (!quickstartPathConfigured) return;
@@ -38,6 +52,10 @@ const IntegrationsView = () => {
         const path = repoPathResponse.path;
         setQuickstartRepoPath(path);
         setQuickstartPathConfigured(!!path);
+        
+        // Always fetch Docker status
+        await fetchDockerStatus();
+        
         if (path) {
           fetchIntegrationsAndStatuses();
         }
@@ -47,9 +65,25 @@ const IntegrationsView = () => {
     };
 
     loadInitialData();
-    const interval = setInterval(fetchIntegrationsAndStatuses, 10000); // Refresh every 10 seconds
-    return () => clearInterval(interval);
-  }, [fetchIntegrationsAndStatuses]);
+    
+    // Set up intervals for periodic updates
+    const integrationsInterval = setInterval(fetchIntegrationsAndStatuses, 10000); // Refresh every 10 seconds
+    const dockerInterval = setInterval(async () => {
+      const previousStatus = dockerStatus.available;
+      const newStatus = await fetchDockerStatus();
+      
+      // If Docker became available, refresh integrations
+      if (!previousStatus && newStatus.available && quickstartPathConfigured) {
+        console.log('Docker became available, refreshing integrations...');
+        fetchIntegrationsAndStatuses();
+      }
+    }, 5000); // Check Docker status every 5 seconds
+    
+    return () => {
+      clearInterval(integrationsInterval);
+      clearInterval(dockerInterval);
+    };
+  }, [fetchIntegrationsAndStatuses, fetchDockerStatus, dockerStatus.available, quickstartPathConfigured]);
 
   const handleConfigureClick = (integrationName, instanceName) => {
     setSelectedIntegrationName(integrationName);
@@ -110,9 +144,12 @@ const IntegrationsView = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4 text-orange-400">Integrations</h2>
+
       <div className="flex justify-between items-center mb-4">
         <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
-        {/* DeviceTypeSelector is now handled per instance in CreateInstanceModal */}
+
+        <DockerStatusIndicator dockerStatus={dockerStatus} />
+
         <button 
           onClick={fetchIntegrationsAndStatuses}
           disabled={refreshing}

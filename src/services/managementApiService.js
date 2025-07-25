@@ -110,6 +110,14 @@ export async function sendTestActionGraph(entityId, actionGraph) {
 }
 
 /* Integrations endpoints */
+export async function getDockerStatus() {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/docker-status`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error("Failed to fetch Docker status");
+    return await resp.json();
+}
+
 export async function listIntegrations() {
     const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/show`, {
         headers: {"X-Admin-API-Key": mgmtApiKey}
@@ -234,25 +242,26 @@ export async function getIntegrationTemplate(name, deviceType = 'cpu') {
     return await resp.text();
 }
 
-// Shared Config Files (these are not instance-specific, but apply to the integration as a whole)
-export async function getIntegrationConfigFiles(integrationName, deviceType = 'cpu') {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/config-files?device=${encodeURIComponent(deviceType)}`, {
+
+// Instance-specific Config Files
+export async function getIntegrationInstanceConfigFiles(integrationName, instanceName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files`, {
         headers: {"X-Admin-API-Key": mgmtApiKey}
     });
-    if (!resp.ok) throw new Error(`Failed to fetch config files for ${integrationName}`);
+    if (!resp.ok) throw new Error(`Failed to fetch config files for instance ${instanceName} of ${integrationName}`);
     return await resp.json();
 }
 
-export async function readIntegrationConfigFile(integrationName, deviceType, filename) {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}?device=${encodeURIComponent(deviceType)}`, {
+export async function readIntegrationInstanceConfigFile(integrationName, instanceName, filename) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}`, {
         headers: {"X-Admin-API-Key": mgmtApiKey}
     });
-    if (!resp.ok) throw new Error(`Failed to read config file ${filename} for ${integrationName}`);
+    if (!resp.ok) throw new Error(`Failed to read config file ${filename} for instance ${instanceName} of ${integrationName}`);
     return await resp.text();
 }
 
-export async function saveIntegrationConfigFile(integrationName, deviceType, filename, content) {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}?device=${encodeURIComponent(deviceType)}`, {
+export async function saveIntegrationInstanceConfigFile(integrationName, instanceName, filename, content) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -260,18 +269,18 @@ export async function saveIntegrationConfigFile(integrationName, deviceType, fil
         },
         body: JSON.stringify({content})
     });
-    if (!resp.ok) throw new Error(`Failed to save config file ${filename} for ${integrationName}`);
+    if (!resp.ok) throw new Error(`Failed to save config file ${filename} for instance ${instanceName} of ${integrationName}`);
 }
 
-export async function revertIntegrationConfigFile(integrationName, deviceType, filename) {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}/revert?device=${encodeURIComponent(deviceType)}`, {
+export async function revertIntegrationInstanceConfigFile(integrationName, instanceName, filename) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}/revert`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "X-Admin-API-Key": mgmtApiKey
         }
     });
-    if (!resp.ok) throw new Error(`Failed to revert config file ${filename} for ${integrationName}`);
+    if (!resp.ok) throw new Error(`Failed to revert config file ${filename} for instance ${instanceName} of ${integrationName}`);
 }
 
 export async function getAvailableIntegrationsForProvider(moduleName, providerName) {

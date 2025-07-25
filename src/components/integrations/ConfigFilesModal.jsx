@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { getIntegrationConfigFiles, readIntegrationConfigFile, saveIntegrationConfigFile, revertIntegrationConfigFile, getIntegrationInstances, controlIntegrationInstance } from '../../services/managementApiService'; // Updated imports
+import { getIntegrationInstanceConfigFiles, readIntegrationInstanceConfigFile, saveIntegrationInstanceConfigFile, revertIntegrationInstanceConfigFile, getIntegrationInstances, controlIntegrationInstance } from '../../services/managementApiService'; // Updated imports
 import { Editor } from '@monaco-editor/react';
 
 function classNames(...classes) {
@@ -48,8 +48,8 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
         setLoading(true);
         setError('');
         try {
-            // Use the fetched instanceDeviceType to get config files
-            const files = await getIntegrationConfigFiles(integrationName, instanceDeviceType);
+            // Use instance-specific config files
+            const files = await getIntegrationInstanceConfigFiles(integrationName, instanceName);
             setConfigFiles(files);
             if (files.length > 0) {
                 const fileToLoad = files[0];
@@ -68,8 +68,8 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
         setLoading(true);
         setError('');
         try {
-            // Use the fetched instanceDeviceType to read file content
-            const content = await readIntegrationConfigFile(integrationName, instanceDeviceType, file.name);
+            // Use instance-specific config file reading
+            const content = await readIntegrationInstanceConfigFile(integrationName, instanceName, file.name);
             setFileContents(prev => ({ ...prev, [file.name]: content }));
         } catch (err) {
             console.error(`Failed to read file ${file.name}:`, err);
@@ -88,8 +88,8 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
         setLoading(true);
         setError('');
         try {
-            // Use the fetched instanceDeviceType to save file content
-            await saveIntegrationConfigFile(integrationName, instanceDeviceType, selectedFile.name, fileContents[selectedFile.name]);
+            // Use instance-specific config file saving
+            await saveIntegrationInstanceConfigFile(integrationName, instanceName, selectedFile.name, fileContents[selectedFile.name]);
             onSave();
         } catch (err) {
             console.error(`Failed to save file ${selectedFile.name}:`, err);
@@ -106,15 +106,15 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
         }
         if (!selectedFile) return;
 
-        if (!window.confirm(`Are you sure you want to revert "${selectedFile.name}" to its last committed state? This action cannot be undone.`)) {
+        if (!window.confirm(`Are you sure you want to revert "${selectedFile.name}" to its default state? This action cannot be undone.`)) {
             return;
         }
 
         setLoading(true);
         setError('');
         try {
-            // Use the fetched instanceDeviceType to revert file content
-            await revertIntegrationConfigFile(integrationName, instanceDeviceType, selectedFile.name);
+            // Use instance-specific config file revert
+            await revertIntegrationInstanceConfigFile(integrationName, instanceName, selectedFile.name);
             await loadFileContent(selectedFile);
             alert(`File "${selectedFile.name}" reverted successfully.`);
         } catch (err) {
@@ -145,7 +145,7 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
                         <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
                             <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-gray-900 p-6 text-left align-middle shadow-xl transition-all">
                                 <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-white">
-                                    Configure {integrationName} - Config Files ({instanceName})
+                                    Configure {integrationName} - Config Files ({instanceName}) [{instanceDeviceType}]
                                 </Dialog.Title>
                                 <div className="mt-2">
                                     {error && <p className="text-red-400 text-sm mb-2">{error}</p>}

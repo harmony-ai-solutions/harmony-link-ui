@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getInstanceWebURLs } from '../../services/managementApiService';
+import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/managementApiService';
 
-const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles }) => {
+const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
 
     useEffect(() => {
@@ -49,6 +49,58 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
         window.open(url, '_blank'); // Open in new tab
     };
 
+    const formatProgressLine = (line) => {
+        // Check if this is a Docker progress line with progress bar
+        const progressMatch = line.match(/^(.+?)\s+(\[=*>?\s*\])\s+(.+)$/);
+        if (!progressMatch) {
+            return line; // Return original line if no progress bar found
+        }
+
+        const [, prefix, progressBar, suffix] = progressMatch;
+        
+        // Calculate available space (rough estimate based on container width)
+        const containerWidth = 300; // Approximate width in pixels
+        const charWidth = 7; // Approximate character width
+        const availableChars = Math.floor(containerWidth / charWidth);
+        
+        // Reserve space for prefix and suffix
+        const prefixLength = prefix.length;
+        const suffixLength = suffix.length;
+        const reservedSpace = prefixLength + suffixLength + 4; // +4 for spacing
+        
+        // Calculate max progress bar width
+        const maxProgressWidth = Math.max(10, availableChars - reservedSpace);
+        
+        // Extract progress percentage if available
+        let progressPercent = 0;
+        const percentMatch = suffix.match(/(\d+(?:\.\d+)?)%/);
+        if (percentMatch) {
+            progressPercent = parseFloat(percentMatch[1]);
+        } else {
+            // Try to extract from size info like "45.2MB/89.3MB"
+            const sizeMatch = suffix.match(/(\d+(?:\.\d+)?[KMGT]?B)\/(\d+(?:\.\d+)?[KMGT]?B)/);
+            if (sizeMatch) {
+                const current = parseFloat(sizeMatch[1]);
+                const total = parseFloat(sizeMatch[2]);
+                if (total > 0) {
+                    progressPercent = (current / total) * 100;
+                }
+            }
+        }
+        
+        // Create responsive progress bar
+        const filledWidth = Math.floor((progressPercent / 100) * maxProgressWidth);
+        const emptyWidth = maxProgressWidth - filledWidth - 1; // -1 for the arrow
+        
+        const responsiveProgressBar = '[' + 
+            '='.repeat(Math.max(0, filledWidth)) + 
+            (filledWidth > 0 ? '>' : '') + 
+            ' '.repeat(Math.max(0, emptyWidth)) + 
+            ']';
+        
+        return `${prefix} ${responsiveProgressBar} ${suffix}`;
+    };
+
     return (
         <div className="instance-card bg-neutral-700 p-3 rounded-md shadow-sm border border-neutral-600">
             <div className="instance-header flex justify-between items-center mb-2">
@@ -67,11 +119,111 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             
             {instance.description && <p className="text-neutral-300 text-sm mb-3">{instance.description}</p>}
             {instance.error && <p className="text-red-400 text-xs mb-3">Error: {instance.error}</p>}
+            
+            {/* Show operation status if there's an active operation */}
+            {currentOperation && currentOperation.inProgress && (
+                <div className="operation-status bg-blue-900 border border-blue-600 rounded p-3 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
+                            <span className="text-blue-300 text-sm font-medium">
+                                {currentOperation.message || `${currentOperation.type}...`}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-blue-400 text-xs">
+                                {Math.floor((Date.now() - new Date(currentOperation.startTime).getTime()) / 1000)}s
+                            </span>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        await cancelIntegrationInstanceOperation(integrationName, instanceName);
+                                        // The operation status will be updated through the normal polling mechanism
+                                    } catch (error) {
+                                        console.error('Failed to cancel operation:', error);
+                                    }
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+                                title="Cancel Operation"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    {currentOperation.progress && (
+                        <div className="mb-2">
+                            <div className="flex justify-between text-xs text-blue-300 mb-1">
+                                <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
+                                <span>{currentOperation.progress.overallPercent}%</span>
+                            </div>
+                            <div className="w-full bg-blue-800 rounded-full h-2">
+                                <div 
+                                    className="bg-blue-400 h-2 rounded-full transition-all duration-300" 
+                                    style={{ width: `${currentOperation.progress.overallPercent}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Phase information */}
+                    {currentOperation.phase && (
+                        <div className="text-xs text-blue-200 mb-2">
+                            <span className="font-medium">Phase:</span> {currentOperation.phase.replace(/_/g, ' ')}
+                        </div>
+                    )}
+                    
+                    {/* Image pull progress */}
+                    {currentOperation.progress && currentOperation.progress.imagePulls && Object.keys(currentOperation.progress.imagePulls).length > 0 && (
+                        <div className="text-xs text-blue-200 mb-2">
+                            <div className="font-medium mb-1">Image Progress:</div>
+                            {Object.entries(currentOperation.progress.imagePulls).map(([imageName, pull]) => (
+                                <div key={imageName} className="flex justify-between items-center mb-1">
+                                    <span className="truncate max-w-32" title={imageName}>
+                                        {imageName.split(':')[0]}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-1 py-0.5 rounded text-xs ${
+                                            pull.status === 'complete' ? 'bg-green-600' :
+                                            pull.status === 'extracting' ? 'bg-yellow-600' :
+                                            'bg-blue-600'
+                                        }`}>
+                                            {pull.status}
+                                        </span>
+                                        {pull.percent > 0 && <span>{pull.percent}%</span>}
+                                        {pull.size && <span className="text-xs opacity-75">{pull.size}</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* Recent output */}
+                    {currentOperation.output && currentOperation.output.length > 0 && (
+                        <div className="text-xs text-blue-200">
+                            <div className="font-medium mb-1">Recent Output:</div>
+                            <div className="bg-blue-950 rounded p-2 max-h-20 overflow-y-auto">
+                                {currentOperation.output.slice(-3).map((line, index) => (
+                                    <div key={index} className="font-mono text-xs opacity-75 truncate" title={line}>
+                                        {formatProgressLine(line)}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="instance-actions flex flex-wrap gap-2 mb-3">
                 <button 
                     onClick={() => onConfigure(integrationName, instanceName)}
-                    className="bg-neutral-600 hover:bg-neutral-500 text-white font-bold py-1 px-2 rounded text-xs"
+                    disabled={!!currentOperation}
+                    className={`font-bold py-1 px-2 rounded text-xs ${
+                        currentOperation 
+                            ? 'bg-neutral-500 text-neutral-400 cursor-not-allowed' 
+                            : 'bg-neutral-600 hover:bg-neutral-500 text-white'
+                    }`}
                 >
                     Configure
                 </button>
@@ -79,34 +231,54 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                 {instance.status === 'running' || instance.status === 'partially_running' ? (
                     <button 
                         onClick={() => onControl(integrationName, instanceName, 'stop')}
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs"
+                        disabled={!!currentOperation}
+                        className={`font-bold py-1 px-2 rounded text-xs ${
+                            currentOperation 
+                                ? 'bg-red-400 text-red-200 cursor-not-allowed' 
+                                : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
                     >
-                        Stop
+                        {currentOperation?.type === 'stop' ? 'Stopping...' : 'Stop'}
                     </button>
                 ) : (
                     <button 
                         onClick={() => onControl(integrationName, instanceName, 'start')}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-xs"
+                        disabled={!!currentOperation}
+                        className={`font-bold py-1 px-2 rounded text-xs ${
+                            currentOperation 
+                                ? 'bg-green-400 text-green-200 cursor-not-allowed' 
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
                     >
-                        Start
+                        {currentOperation?.type === 'start' ? 'Starting...' : 'Start'}
                     </button>
                 )}
                 
                 <button 
                     onClick={() => onControl(integrationName, instanceName, 'restart')}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded text-xs"
+                    disabled={!!currentOperation}
+                    className={`font-bold py-1 px-2 rounded text-xs ${
+                        currentOperation 
+                            ? 'bg-yellow-400 text-yellow-200 cursor-not-allowed' 
+                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                    }`}
                 >
-                    Restart
+                    {currentOperation?.type === 'restart' ? 'Restarting...' : 'Restart'}
                 </button>
 
                 <button 
                     onClick={() => onConfigFiles(integrationName, instanceName)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs"
+                    disabled={!!currentOperation}
+                    className={`font-bold py-1 px-2 rounded text-xs ${
+                        currentOperation 
+                            ? 'bg-blue-400 text-blue-200 cursor-not-allowed' 
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
                 >
                     Config Files
                 </button>
 
-                {instance.status === 'running' && webURLs && webURLs.length > 0 && (
+                {instance.status === 'running' && webURLs && webURLs.length > 0 && !currentOperation && (
                     webURLs.map((url, index) => (
                         <button
                             key={`web-ui-${index}`}

@@ -1,6 +1,12 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { getIntegrationTemplate, getIntegrationInstanceConfig, saveIntegrationInstanceConfig, deleteIntegrationInstance, getIntegrationInstanceStatus, getIntegrationInstances } from '../../services/managementApiService'; // Added missing import
+import {
+    getIntegrationTemplate,
+    getIntegrationInstanceConfig,
+    saveIntegrationInstanceConfig,
+    deleteIntegrationInstance,
+    getIntegrationInstanceStatus
+} from '../../services/managementApiService'; // Added missing import
 import { Editor } from '@monaco-editor/react';
 
 const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSave }) => {
@@ -8,25 +14,37 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showEditor, setShowEditor] = useState(false);
+    const [instanceDeviceType, setInstanceDeviceType] = useState('cpu');
     const [instanceStatus, setInstanceStatus] = useState(null);
 
     const isRunning = instanceStatus && (instanceStatus.status === 'running' || instanceStatus.status === 'partially_running');
 
-    const fetchInstanceStatus = async () => {
+    const getDeviceIcon = (deviceType) => {
+        switch (deviceType) {
+            case 'nvidia': return '🟢'; // Green circle for NVIDIA
+            case 'amd': return '🔴'; // Red circle for AMD
+            case 'intel': return '🔵'; // Blue circle for Intel
+            case 'cpu': return '💻'; // Laptop for CPU
+            default: return '⚙️'; // Gear for unknown
+        }
+    };
+
+    const fetchInstanceData = async () => {
         try {
-            const response = await getIntegrationInstanceStatus(integrationName, instanceName);
-            setInstanceStatus(response);
+            const currentInstance = await getIntegrationInstanceStatus(integrationName, instanceName);
+            setInstanceDeviceType(currentInstance.deviceType || 'cpu');
+            setInstanceStatus(currentInstance);
         } catch (err) {
-            console.error('Failed to fetch instance status:', err);
-            setInstanceStatus({ status: 'error', error: 'Failed to fetch status' });
+            console.error('Failed to fetch instance data:', err);
+            setInstanceStatus({ status: 'error', error: 'Failed to fetch data' });
         }
     };
 
     useEffect(() => {
         if (isOpen) {
+            fetchInstanceData();
             loadConfig();
-            fetchInstanceStatus();
-            const interval = setInterval(fetchInstanceStatus, 5000);
+            const interval = setInterval(fetchInstanceData, 5000);
             return () => clearInterval(interval);
         }
     }, [isOpen, integrationName, instanceName]);
@@ -39,16 +57,14 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
             if (exists) {
                 setConfig(content);
             } else {
-                // Get device type from instance metadata to fetch correct template
+                // Fetch Template for device type
                 try {
-                    const instances = await getIntegrationInstances(integrationName);
-                    const currentInstance = instances[instanceName];
-                    const deviceType = currentInstance ? currentInstance.deviceType : 'cpu';
-                    const template = await getIntegrationTemplate(integrationName, deviceType);
+                    const template = await getIntegrationTemplate(integrationName, instanceDeviceType);
                     setConfig(template);
                 } catch (instanceErr) {
                     console.warn('Failed to get instance device type, using CPU template:', instanceErr);
-                    // Fallback to CPU template if instance lookup fails
+                    // Fallback to CPU template if lookup fails
+                    setInstanceDeviceType('cpu');
                     const template = await getIntegrationTemplate(integrationName, 'cpu');
                     setConfig(template);
                 }
@@ -136,7 +152,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                     as="h3"
                                     className="text-lg font-medium leading-6 text-white"
                                 >
-                                    Configure {integrationName} ({instanceName})
+                                    Configure {integrationName} ({instanceName}) {getDeviceIcon(instanceDeviceType)} [{instanceDeviceType.toUpperCase()}]
                                 </Dialog.Title>
                                 <div className="mt-2">
                                     {error && <p className="text-red-400 text-sm">{error}</p>}

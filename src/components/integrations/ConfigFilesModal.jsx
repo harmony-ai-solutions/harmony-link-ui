@@ -1,6 +1,12 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
-import { getIntegrationInstanceConfigFiles, readIntegrationInstanceConfigFile, saveIntegrationInstanceConfigFile, revertIntegrationInstanceConfigFile, getIntegrationInstances, controlIntegrationInstance } from '../../services/managementApiService'; // Updated imports
+import {
+    getIntegrationInstanceConfigFiles,
+    readIntegrationInstanceConfigFile,
+    saveIntegrationInstanceConfigFile,
+    revertIntegrationInstanceConfigFile,
+    getIntegrationInstanceStatus
+} from '../../services/managementApiService'; // Updated imports
 import { Editor } from '@monaco-editor/react';
 
 function classNames(...classes) {
@@ -14,30 +20,35 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
     const [error, setError] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [showEditor, setShowEditor] = useState(false);
-    const [instanceDeviceType, setInstanceDeviceType] = useState('cpu'); // To store the device type of the instance
-    const [instanceStatus, setInstanceStatus] = useState(null); // To fetch and display current instance status
+    const [instanceDeviceType, setInstanceDeviceType] = useState('cpu');
+    const [instanceStatus, setInstanceStatus] = useState(null);
 
-    const isRunning = instanceStatus && (instanceStatus.Status === 'running' || instanceStatus.Status === 'partially_running');
+    const isRunning = instanceStatus && (instanceStatus.status === 'running' || instanceStatus.status === 'partially_running');
+
+    const getDeviceIcon = (deviceType) => {
+        switch (deviceType) {
+            case 'nvidia': return '🟢'; // Green circle for NVIDIA
+            case 'amd': return '🔴'; // Red circle for AMD
+            case 'intel': return '🔵'; // Blue circle for Intel
+            case 'cpu': return '💻'; // Laptop for CPU
+            default: return '⚙️'; // Gear for unknown
+        }
+    };
 
     const fetchInstanceData = async () => {
         try {
-            const instances = await getIntegrationInstances(integrationName);
-            const currentInstance = instances[instanceName];
-            if (currentInstance) {
-                setInstanceDeviceType(currentInstance.DeviceType || 'cpu');
-                setInstanceStatus(currentInstance);
-            } else {
-                setError(`Instance ${instanceName} not found.`);
-            }
+            const currentInstance = await getIntegrationInstanceStatus(integrationName, instanceName);
+            setInstanceDeviceType(currentInstance.deviceType || 'cpu');
+            setInstanceStatus(currentInstance);
         } catch (err) {
             console.error('Failed to fetch instance data:', err);
-            setError(err.message || 'Failed to fetch instance data.');
+            setInstanceStatus({ status: 'error', error: 'Failed to fetch data' });
         }
     };
 
     useEffect(() => {
         if (isOpen) {
-            fetchInstanceData(); // Fetch instance data first to get device type
+            fetchInstanceData();
             loadConfigFiles();
             const interval = setInterval(fetchInstanceData, 5000); // Refresh instance data every 5 seconds
             return () => clearInterval(interval);
@@ -145,7 +156,7 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
                         <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
                             <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-gray-900 p-6 text-left align-middle shadow-xl transition-all">
                                 <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-white">
-                                    Configure {integrationName} - Config Files ({instanceName}) [{instanceDeviceType}]
+                                    Configure {integrationName} - Config Files ({instanceName}) {getDeviceIcon(instanceDeviceType)} [{instanceDeviceType.toUpperCase()}]
                                 </Dialog.Title>
                                 <div className="mt-2">
                                     {error && <p className="text-red-400 text-sm mb-2">{error}</p>}

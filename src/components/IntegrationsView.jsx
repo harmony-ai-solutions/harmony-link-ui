@@ -37,13 +37,15 @@ const IntegrationsView = () => {
     try {
       const integrationsResponse = await listIntegrations();
       setIntegrations(integrationsResponse);
+      // Also refresh Docker status when refreshing integrations
+      await fetchDockerStatus();
       // The IntegrationCard will now fetch its own instance statuses
     } catch (error) {
       console.error('Failed to load integrations or refresh statuses:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [quickstartPathConfigured]);
+  }, [quickstartPathConfigured, fetchDockerStatus]);
 
   useEffect(() => {
     const loadInitialData = async () => {

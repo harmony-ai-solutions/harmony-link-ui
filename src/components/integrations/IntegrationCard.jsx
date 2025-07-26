@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getIntegrationInstances, controlIntegrationInstance } from '../../services/managementApiService';
+import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus } from '../../services/managementApiService';
 import InstanceList from './InstanceList';
 
 const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInstance }) => {
@@ -29,12 +29,61 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
     const handleControlClick = async (integrationName, instanceName, action) => {
         try {
             await controlIntegrationInstance(integrationName, instanceName, action);
-            // Give backend time to process, then refresh instances
-            setTimeout(fetchInstances, 2000); 
+            // Immediately refresh instances to get updated operation status from backend
+            fetchInstances();
         } catch (error) {
             console.error(`Failed to perform ${action} on ${integrationName}/${instanceName}:`, error);
-            alert(`Error: ${error.message}`);
+            
+            // Check if this is a Docker-related error and trigger Docker status check
+            const errorMessage = error.message || error.toString();
+            if (isDockerRelatedError(errorMessage)) {
+                console.log('Docker-related error detected, checking Docker status...');
+                try {
+                    await getDockerStatus(); // This will trigger a Docker status update
+                } catch (dockerError) {
+                    console.error('Failed to check Docker status:', dockerError);
+                }
+            }
+            
+            // Show user-friendly error message
+            const friendlyMessage = getFriendlyErrorMessage(errorMessage);
+            alert(`Error: ${friendlyMessage}`);
+            
+            // Refresh instances even on error to clear any stale operation state
+            fetchInstances();
         }
+    };
+
+    // Helper function to detect Docker-related errors
+    const isDockerRelatedError = (errorMessage) => {
+        const dockerKeywords = [
+            'docker',
+            'daemon',
+            'connection refused',
+            'network is unreachable',
+            'cannot connect to the docker daemon',
+            'docker endpoint'
+        ];
+        
+        const lowerError = errorMessage.toLowerCase();
+        return dockerKeywords.some(keyword => lowerError.includes(keyword));
+    };
+
+    // Helper function to provide user-friendly error messages
+    const getFriendlyErrorMessage = (errorMessage) => {
+        if (isDockerRelatedError(errorMessage)) {
+            return 'Docker is not available. Please ensure Docker is running and try again.';
+        }
+        
+        if (errorMessage.includes('pulling')) {
+            return 'Failed to pull Docker images. Please check your internet connection and try again.';
+        }
+        
+        if (errorMessage.includes('network')) {
+            return 'Network error occurred. Please check your connection and try again.';
+        }
+        
+        return errorMessage; // Return original message if no specific handling
     };
 
     const handleOpenProjectWebsite = (url) => {

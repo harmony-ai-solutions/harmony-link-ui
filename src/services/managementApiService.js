@@ -218,6 +218,17 @@ export async function controlIntegrationInstance(integrationName, instanceName, 
     if (!resp.ok) throw new Error(`Failed to perform ${action} on instance ${instanceName} of ${integrationName}`);
 }
 
+export async function cancelIntegrationInstanceOperation(integrationName, instanceName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/cancel`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-API-Key": mgmtApiKey
+        }
+    });
+    if (!resp.ok) throw new Error(`Failed to cancel operation for instance ${instanceName} of ${integrationName}`);
+}
+
 export async function getIntegrationInstanceStatus(integrationName, instanceName) {
     const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/status`, {
         headers: {"X-Admin-API-Key": mgmtApiKey}

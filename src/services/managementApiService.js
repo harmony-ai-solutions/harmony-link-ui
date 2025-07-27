@@ -126,15 +126,6 @@ export async function listIntegrations() {
     return await resp.json();
 }
 
-export async function refreshIntegrationStatuses() {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/refresh`, {
-        method: "POST",
-        headers: {"X-Admin-API-Key": mgmtApiKey}
-    });
-    if (!resp.ok) throw new Error("Failed to refresh integration statuses");
-    return await resp.json();
-}
-
 export async function getQuickstartRepoPath() {
     const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/integrations/repo-path`, {
         headers: {"X-Admin-API-Key": mgmtApiKey}

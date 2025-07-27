@@ -104,7 +104,7 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
                     ) : (
                         instanceCount > 0 ? (
                             <span>
-                                {instanceCount} instance{instanceCount !== 1 ? 's' : ''} 
+                                {instanceCount} instance{instanceCount !== 1 ? 's ' : ' '}
                                 ({runningCount} running)
                             </span>
                         ) : (

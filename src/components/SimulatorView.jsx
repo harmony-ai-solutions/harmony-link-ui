@@ -5,9 +5,11 @@ import {
     disconnectSimulator, 
     sendSimulatorEvent,
     getSimulatorEventHistory,
+    getSimulatorGroupedEventHistory,
     getSimulatorStatus 
 } from '../services/managementApiService';
 import { LogDebug, LogError } from '../../utils/logger';
+import ConfigurableJsonViewer from './widgets/ConfigurableJsonViewer';
 
 function SimulatorView() {
     const [activeTab, setActiveTab] = useState('connection');
@@ -17,6 +19,8 @@ function SimulatorView() {
     const [feedback, setFeedback] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [eventHistory, setEventHistory] = useState([]);
+    const [groupedEventHistory, setGroupedEventHistory] = useState([]);
+    const [useGroupedView, setUseGroupedView] = useState(true);
     
     // Enhanced feedback states for each form
     const [formResponses, setFormResponses] = useState({
@@ -141,8 +145,13 @@ function SimulatorView() {
     const loadEventHistory = async () => {
         if (!selectedEntity || connectionStatus !== 'connected') return;
         try {
-            const history = await getSimulatorEventHistory(selectedEntity, 50);
+            // Load both regular and grouped event history
+            const [history, groupedHistory] = await Promise.all([
+                getSimulatorEventHistory(selectedEntity, 50),
+                getSimulatorGroupedEventHistory(selectedEntity, 50)
+            ]);
             setEventHistory(history.events || []);
+            setGroupedEventHistory(groupedHistory.groups || []);
         } catch (error) {
             LogError("Failed to load event history:", error);
         }
@@ -563,7 +572,20 @@ function SimulatorView() {
             ) : (
                 <div>
                     <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-lg font-medium text-gray-300">Event History</h4>
+                        <div className="flex items-center gap-4">
+                            <h4 className="text-lg font-medium text-gray-300">Event History</h4>
+                            <div className="flex items-center gap-2">
+                                <label className="text-sm text-gray-300">View:</label>
+                                <select
+                                    value={useGroupedView ? 'grouped' : 'individual'}
+                                    onChange={(e) => setUseGroupedView(e.target.value === 'grouped')}
+                                    className="p-1 bg-neutral-600 border border-neutral-500 rounded text-neutral-100 text-sm"
+                                >
+                                    <option value="grouped">Grouped</option>
+                                    <option value="individual">Individual</option>
+                                </select>
+                            </div>
+                        </div>
                         <button
                             onClick={loadEventHistory}
                             className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 text-orange-400 rounded"
@@ -571,7 +593,11 @@ function SimulatorView() {
                             Refresh
                         </button>
                     </div>
-                    <EventHistoryDisplay events={eventHistory} />
+                    {useGroupedView ? (
+                        <GroupedEventHistoryDisplay groups={groupedEventHistory} />
+                    ) : (
+                        <EventHistoryDisplay events={eventHistory} />
+                    )}
                 </div>
             )}
         </div>
@@ -1092,10 +1118,119 @@ function EventHistoryDisplay({ events }) {
                     {event.event.payload && (
                         <details className="mt-2">
                             <summary className="cursor-pointer text-orange-400">Payload</summary>
-                            <pre className="mt-1 text-xs text-gray-300 whitespace-pre-wrap overflow-auto max-h-32">
-                                {JSON.stringify(event.event.payload, null, 2)}
-                            </pre>
+                            <div className="mt-1">
+                                <ConfigurableJsonViewer data={event.event.payload} defaultDepth={2} />
+                            </div>
                         </details>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function GroupedEventHistoryDisplay({ groups }) {
+    if (!groups || groups.length === 0) {
+        return <p className="text-gray-400">No event groups recorded yet.</p>;
+    }
+
+    const formatPayload = (payload) => {
+        if (payload === null || payload === undefined) {
+            return 'null';
+        }
+        
+        if (typeof payload === 'string') {
+            return payload;
+        }
+        
+        try {
+            return JSON.stringify(payload, null, 2);
+        } catch (error) {
+            return '[Unable to serialize payload]';
+        }
+    };
+
+    return (
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+            {groups.slice().reverse().map((group, groupIndex) => (
+                <div key={groupIndex} className="bg-neutral-600 rounded text-sm">
+                    {/* Primary Event */}
+                    <div className="p-3 border-b border-neutral-500">
+                        <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className={`font-medium ${
+                                    group.primary_event.direction === 'incoming' ? 'text-blue-400' : 'text-green-400'
+                                }`}>
+                                    {group.primary_event.direction === 'incoming' ? '→' : '←'} {group.primary_event.event.event_type}
+                                </span>
+                                {group.group_type === 'grouped' && (
+                                    <span className="text-xs bg-orange-600 text-white px-2 py-1 rounded">
+                                        {group.event_count} events
+                                    </span>
+                                )}
+                            </div>
+                            <div className="text-right">
+                                <div className="text-gray-400 text-xs">
+                                    {new Date(group.primary_event.timestamp).toLocaleTimeString()}
+                                </div>
+                                <div className={`text-xs font-medium ${
+                                    group.status === 'SUCCESS' ? 'text-green-400' : 
+                                    group.status === 'ERROR' ? 'text-red-400' : 
+                                    'text-yellow-400'
+                                }`}>
+                                    {group.status}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-gray-300 mb-2">
+                            <strong>Status:</strong> {group.primary_event.event.status}
+                        </div>
+                        {group.primary_event.event.payload && (
+                            <details className="mt-2">
+                                <summary className="cursor-pointer text-orange-400">Primary Event Payload</summary>
+                                <div className="mt-1">
+                                    <ConfigurableJsonViewer data={group.primary_event.event.payload} defaultDepth={2} />
+                                </div>
+                            </details>
+                        )}
+                    </div>
+
+                    {/* Related Events */}
+                    {group.related_events && group.related_events.length > 0 && (
+                        <div className="p-3">
+                            <details className="group">
+                                <summary className="cursor-pointer text-orange-400 text-sm font-medium mb-2">
+                                    Related Events ({group.related_events.length})
+                                </summary>
+                                <div className="space-y-2 ml-4">
+                                    {group.related_events.map((relatedEvent, eventIndex) => (
+                                        <div key={eventIndex} className="p-2 bg-neutral-700 rounded text-xs">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className={`font-medium ${
+                                                    relatedEvent.direction === 'incoming' ? 'text-blue-400' : 'text-green-400'
+                                                }`}>
+                                                    {relatedEvent.direction === 'incoming' ? '→' : '←'} {relatedEvent.event.event_type}
+                                                </span>
+                                                <span className="text-gray-400 text-xs">
+                                                    {new Date(relatedEvent.timestamp).toLocaleTimeString()}
+                                                </span>
+                                            </div>
+                                            <div className="text-gray-300 mb-1">
+                                                <strong>Status:</strong> {relatedEvent.event.status}
+                                            </div>
+                                            {relatedEvent.event.payload && (
+                                                <details className="mt-1">
+                                                    <summary className="cursor-pointer text-orange-400">Payload</summary>
+                                                    <div className="mt-1">
+                                                        <ConfigurableJsonViewer data={relatedEvent.event.payload} defaultDepth={1} />
+                                                    </div>
+                                                </details>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </details>
+                        </div>
                     )}
                 </div>
             ))}

@@ -358,6 +358,16 @@ export async function getSimulatorEventHistory(entityId, limit = 100) {
     return await resp.json();
 }
 
+export async function getSimulatorGroupedEventHistory(entityId, limit = 100) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/simulator/event-history-grouped/${encodeURIComponent(entityId)}?limit=${limit}`, {
+        headers: {
+            "X-Admin-API-Key": mgmtApiKey
+        }
+    });
+    if (!resp.ok) throw new Error("Failed to fetch simulator grouped event history");
+    return await resp.json();
+}
+
 export async function getSimulatorStatus(entityId) {
     const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/simulator/status/${encodeURIComponent(entityId)}`, {
         headers: {

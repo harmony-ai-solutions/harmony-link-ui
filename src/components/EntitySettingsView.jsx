@@ -627,7 +627,7 @@ const EntitySettingsView = ({appName, entitySettings, saveEntitySettings}) => {
                         }
                         {entityMap[selectedEntity] && selectedModule === "rag" && selectedProvider !== "disabled" &&
                             <div className="flex items-center w-full border-t border-neutral-500">
-                                <RAGGeneralSettingsView initialSettings={entityMap[selectedEntity][selectedModule]} saveSettingsFunc={saveModuleGeneralSettings}></RAGGeneralSettingsView>
+                                <RAGGeneralSettingsView initialSettings={entityMap[selectedEntity][selectedModule]} saveSettingsFunc={saveModuleGeneralSettings} entityId={entityName}></RAGGeneralSettingsView>
                             </div>
                         }
 

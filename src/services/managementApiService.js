@@ -412,3 +412,124 @@ export async function getAppVersion() {
     const data = await resp.json();
     return data.appVersion;
 }
+
+/* RAG Collections endpoints */
+export async function getEntityRAGCollections(entityId) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch RAG collections for entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function getEntityRAGCollectionDetails(entityId, collectionName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch collection details for ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function getEntityRAGCollectionDocuments(entityId, collectionName, archetype = '', category = '') {
+    let url = `${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/documents`;
+    const params = new URLSearchParams();
+    if (archetype) params.append('archetype', archetype);
+    if (category) params.append('category', category);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    const resp = await fetch(url, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch documents for collection ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function getEntityRAGDocumentDetails(entityId, collectionName, documentId) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/documents/${encodeURIComponent(documentId)}`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch document details for ${documentId} in collection ${collectionName} of entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function deleteEntityRAGDocument(entityId, collectionName, documentId) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/documents/${encodeURIComponent(documentId)}`, {
+        method: "DELETE",
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to delete document ${documentId} from collection ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function testEntityRAGSimilarityQuery(entityId, collectionName, query, limit = 10, archetype = '', category = '') {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/test-query`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-API-Key": mgmtApiKey
+        },
+        body: JSON.stringify({
+            query,
+            limit,
+            archetype,
+            category
+        })
+    });
+    if (!resp.ok) throw new Error(`Failed to test similarity query for collection ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function getEntityRAGCollectionGroups(entityId, collectionName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/groups`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch grouped view for collection ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function getEntityRAGGroupDocuments(entityId, collectionName, archetype, groupName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/groups/${encodeURIComponent(archetype)}/${encodeURIComponent(groupName)}`, {
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to fetch group documents for ${archetype}/${groupName} in collection ${collectionName} of entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function updateEntityRAGDocument(entityId, collectionName, documentId, newContent) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/documents/${encodeURIComponent(documentId)}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-API-Key": mgmtApiKey
+        },
+        body: JSON.stringify({
+            content: newContent
+        })
+    });
+    if (!resp.ok) throw new Error(`Failed to update document ${documentId} in collection ${collectionName} of entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function addEntityRAGDocumentToGroup(entityId, collectionName, archetype, groupName, category, content) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/groups/${encodeURIComponent(archetype)}/${encodeURIComponent(groupName)}/${encodeURIComponent(category)}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-API-Key": mgmtApiKey
+        },
+        body: JSON.stringify({
+            content
+        })
+    });
+    if (!resp.ok) throw new Error(`Failed to add document to group ${archetype}/${groupName}/${category} in collection ${collectionName} of entity ${entityId}`);
+    return await resp.json();
+}
+
+export async function deleteEntityRAGGroup(entityId, collectionName, archetype, groupName) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/entities/${encodeURIComponent(entityId)}/rag/collections/${encodeURIComponent(collectionName)}/groups/${encodeURIComponent(archetype)}/${encodeURIComponent(groupName)}`, {
+        method: "DELETE",
+        headers: {"X-Admin-API-Key": mgmtApiKey}
+    });
+    if (!resp.ok) throw new Error(`Failed to delete group ${archetype}/${groupName} from collection ${collectionName} in entity ${entityId}`);
+    return await resp.json();
+}

@@ -4,3 +4,32 @@ html {
     background-color: rgb(40, 40, 40);
 }
 
+/* Custom scrollbar styles for dark theme */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #404040;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #666666;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #888888;
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+    background: #404040;
+}
+
+/* Firefox scrollbar styling */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #666666 #404040;
+}

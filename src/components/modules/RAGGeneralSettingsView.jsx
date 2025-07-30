@@ -1,14 +1,17 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
+import RAGCollectionManager from "./RAGCollectionManager.jsx";
 
-
-const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
+const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
     const [modalMessage, setModalMessage] = useState('');
     const [isModalVisible, setIsModalVisible] = useState(false);
+
+    // Collections management state
+    const [showCollectionsModal, setShowCollectionsModal] = useState(false);
 
     // Show Modal Functions
     const showModal = (message) => {
@@ -45,6 +48,14 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setEmbeddingConcurrency(initialSettings.chromem?.embeddingconcurrency || 0);
     };
 
+    const openCollectionsModal = () => {
+        setShowCollectionsModal(true);
+    };
+
+    const closeCollectionsModal = () => {
+        setShowCollectionsModal(false);
+    };
+
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
@@ -74,8 +85,28 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                  onBlur={(e) => validateEmbeddingConcurrencyAndUpdate(e.target.value)}/>
                       </div>
                   </div>
+                  {entityId && (
+                      <div className="flex items-center w-1/2">
+                          <div className="flex items-center justify-center">
+                              <button
+                                  onClick={openCollectionsModal}
+                                  className="bg-neutral-700 hover:bg-neutral-500 font-bold text-sm py-1 px-2 mx-1 text-orange-400">
+                                  Manage Vector Collections
+                              </button>
+                          </div>
+                      </div>
+                  )}
               </div>
           </div>
+
+          {/* Collections Management Modal */}
+          <RAGCollectionManager
+              entityId={entityId}
+              isOpen={showCollectionsModal}
+              onClose={closeCollectionsModal}
+              onError={showModal}
+          />
+
           {isModalVisible && (
               <div className="fixed inset-0 bg-gray-600/50">
                   <div

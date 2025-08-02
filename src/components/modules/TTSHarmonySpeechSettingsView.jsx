@@ -138,8 +138,8 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            endpoint: endpoint,
-            voiceconfigfile: voiceConfigFile
+            endpoint: moduleSettings.endpoint,
+            voiceconfigfile: moduleSettings.voiceconfigfile
         };
         
         try {

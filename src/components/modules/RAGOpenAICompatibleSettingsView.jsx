@@ -89,9 +89,9 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
         const currentConfig = {
             provider: 'openaicompatible',
             provideropenaicompatible: {
-                baseurl: baseURL,
-                apikey: apiKey,
-                embeddingmodel: embeddingModel,
+                baseurl: moduleSettings.baseurl,
+                apikey: moduleSettings.apikey,
+                embeddingmodel: moduleSettings.embeddingmodel,
             },
         };
 

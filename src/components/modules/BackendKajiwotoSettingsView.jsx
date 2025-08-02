@@ -72,9 +72,9 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({status: 'loading', message: 'Validating configuration...'});
 
         const currentConfig = {
-            username: username,
-            password: password,
-            kajiroomurl: kajiRoomURL
+            username: moduleSettings.username,
+            password: moduleSettings.password,
+            kajiroomurl: moduleSettings.kajiroomurl
         };
 
         try {

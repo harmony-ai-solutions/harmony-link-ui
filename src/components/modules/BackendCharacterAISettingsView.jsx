@@ -58,8 +58,8 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            apitoken: apiToken,
-            chatroomurl: chatRoomURL
+            apitoken: moduleSettings.apitoken,
+            chatroomurl: moduleSettings.chatroomurl
         };
         
         try {

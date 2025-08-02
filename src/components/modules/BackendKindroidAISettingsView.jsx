@@ -57,8 +57,8 @@ const BackendKindroidAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            apikey: apiKey,
-            kindroidid: kindroidID
+            apikey: moduleSettings.apikey,
+            kindroidid: moduleSettings.kindroidid
         };
         
         try {

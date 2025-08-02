@@ -30,7 +30,7 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
 
     // Validation Functions
     const validateApiKeyAndUpdate = (value) => {
-        if (value.trim() === "") {
+        if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
             showModal("OpenAI API Key cannot be empty.");
             setApiKey(moduleSettings.openaiapikey);
             return false;
@@ -62,8 +62,8 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         const currentConfig = {
             provider: 'openai',
             provideropenai: {
-                openaiapikey: apiKey,
-                embeddingmodel: embeddingModel,
+                openaiapikey: moduleSettings.openaiapikey,
+                embeddingmodel: moduleSettings.embeddingmodel,
             },            
         };
 

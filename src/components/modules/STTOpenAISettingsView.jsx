@@ -44,7 +44,7 @@ const STTOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            openaiapikey: openAIAPIKey
+            openaiapikey: moduleSettings.openaiapikey
         };
         
         try {

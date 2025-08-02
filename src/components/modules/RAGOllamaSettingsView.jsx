@@ -63,8 +63,8 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const currentConfig = {
             provider: 'ollama',
             providerollama: {
-                baseurl: baseURL,
-                embeddingmodel: embeddingModel,
+                baseurl: moduleSettings.baseurl,
+                embeddingmodel: moduleSettings.embeddingmodel,
             },
         };
 

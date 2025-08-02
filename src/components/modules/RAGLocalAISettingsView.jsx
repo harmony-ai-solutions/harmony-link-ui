@@ -50,7 +50,7 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         const currentConfig = {
             provider: 'localai',
             providerlocalai: {
-                embeddingmodel: embeddingModel,
+                embeddingmodel: moduleSettings.embeddingmodel,
             },
         };
 

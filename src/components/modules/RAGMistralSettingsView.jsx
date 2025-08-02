@@ -50,7 +50,7 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const currentConfig = {
             provider: 'mistral',
             providermistral: {
-                mistralapikey: apiKey,
+                mistralapikey: moduleSettings.mistralapikey,
             },
         };
 

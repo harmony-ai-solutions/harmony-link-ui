@@ -113,13 +113,13 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            elevenlabsapikey: elevenlabsApiKey,
-            modelid: modelId,
-            voiceid: voiceId,
-            stability: stability,
-            similarityboost: similarityBoost,
-            style: style,
-            speakerboost: speakerBoost
+            elevenlabsapikey: moduleSettings.elevenlabsapikey,
+            modelid: moduleSettings.modelid,
+            voiceid: moduleSettings.voiceid,
+            stability: moduleSettings.stability,
+            similarityboost: moduleSettings.similarityboost,
+            style: moduleSettings.style,
+            speakerboost: moduleSettings.speakerboost
         };
         
         try {
@@ -240,7 +240,7 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
                   <div className="w-2/3 px-3">
                       <input type="number" name="voicesimilarityboost" step=".01"
                              className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                             placeholder="Similarity Boost" value={similarityBoost}
+                                 placeholder="Similarity Boost" value={similarityBoost}
                              onChange={(e) => setSimilarityBoost(e.target.value)}
                              onBlur={(e) => validateSimilarityBoostAndUpdate(e.target.value)}/>
                   </div>

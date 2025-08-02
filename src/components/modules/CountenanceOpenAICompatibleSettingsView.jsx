@@ -123,14 +123,14 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            baseurl: baseURL,
-            apikey: apiKey,
-            model: model,
-            maxtokens: maxTokens,
-            temperature: temperature,
-            topp: topP,
-            n: n,
-            stoptokens: stopTokens
+            baseurl: moduleSettings.baseurl,
+            apikey: moduleSettings.apikey,
+            model: moduleSettings.model,
+            maxtokens: moduleSettings.maxtokens,
+            temperature: moduleSettings.temperature,
+            topp: moduleSettings.topp,
+            n: moduleSettings.n,
+            stoptokens: moduleSettings.stoptokens
         };
         
         try {

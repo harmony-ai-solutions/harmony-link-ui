@@ -93,11 +93,11 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            openaiapikey: openAIAPIKey,
-            model: model,
-            voice: voice,
-            speed: speed,
-            format: format
+            openaiapikey: moduleSettings.openaiapikey,
+            model: moduleSettings.model,
+            voice: moduleSettings.voice,
+            speed: moduleSettings.speed,
+            format: moduleSettings.format
         };
         
         try {

@@ -74,9 +74,9 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            endpoint: endpoint,
-            model: model,
-            vadmodel: vadModel
+            endpoint: moduleSettings.endpoint,
+            model: moduleSettings.model,
+            vadmodel: moduleSettings.vadmodel
         };
         
         try {

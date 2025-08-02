@@ -3,6 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {validateProviderConfig} from "../../services/managementApiService.js";
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
 const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -68,7 +69,7 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         };
 
         try {
-            const result = await validateProviderConfig('rag', 'provideropenai', currentConfig); // Changed to lowercase 'v'
+            const result = await validateProviderConfig(MODULES.RAG, PROVIDERS.OPENAI, currentConfig); // Changed to lowercase 'v'
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'

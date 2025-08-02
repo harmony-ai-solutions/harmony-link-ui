@@ -2,9 +2,10 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug, LogError} from "../../../utils/logger.js";
 import {HarmonySpeechEnginePlugin} from "@harmony-ai/harmonyspeech";
-import {getConfig, getAvailableIntegrationsForProvider, validateProviderConfig} from "../../services/managementApiService";
+import {getConfig, validateProviderConfig} from "../../services/managementApiService";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
+import { MODULES, PROVIDERS } from '../../constants/modules.js';
 
 
 const knownModelNames = {
@@ -80,7 +81,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         };
         
         try {
-            const result = await validateProviderConfig('stt', 'harmonyspeech', currentConfig);
+            const result = await validateProviderConfig(MODULES.STT, PROVIDERS.HARMONYSPEECH, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -176,15 +177,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setupHarmonySpeechTooling();
     };
 
-    const fetchIntegrations = async () => {
-        try {
-            const integrations = await getAvailableIntegrationsForProvider('stt', 'harmonyspeech');
-            setAvailableIntegrations(integrations);
-        } catch (error) {
-            console.error("Failed to fetch available integrations:", error);
-        }
-    };
-
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setEndpoint(selectedURL);
@@ -209,7 +201,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-        fetchIntegrations();
     }, [initialSettings]);
 
     return (
@@ -219,7 +210,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay availableIntegrations={availableIntegrations} useIntegration={useIntegration} />
+                <IntegrationDisplay moduleName={MODULES.STT} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">

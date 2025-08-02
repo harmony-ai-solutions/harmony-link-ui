@@ -3,6 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {validateProviderConfig} from "../../services/managementApiService.js";
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
 const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -48,14 +49,11 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
 
         const currentConfig = {
-            provider: 'mistral',
-            providermistral: {
-                mistralapikey: moduleSettings.mistralapikey,
-            },
+            mistralapikey: moduleSettings.mistralapikey,
         };
 
         try {
-            const result = await validateProviderConfig('rag', 'providermistral', currentConfig);
+            const result = await validateProviderConfig(MODULES.RAG, PROVIDERS.MISTRAL, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'

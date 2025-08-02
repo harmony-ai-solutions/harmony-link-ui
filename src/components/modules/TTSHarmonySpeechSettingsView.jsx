@@ -2,11 +2,12 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug, LogError} from "../../../utils/logger.js";
 import {HarmonySpeechEnginePlugin} from "@harmony-ai/harmonyspeech";
-import {getConfig, listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, deleteVoiceConfig, renameVoiceConfig, getAvailableIntegrationsForProvider, validateProviderConfig} from "../../services/managementApiService.js";
+import {getConfig, listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, deleteVoiceConfig, renameVoiceConfig, validateProviderConfig} from "../../services/managementApiService.js";
 import HarmonyAudioPlayer from "../widgets/HarmonyAudioPlayer.jsx";
 import Heatmap from "../widgets/Heatmap.jsx";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
+import { MODULES, PROVIDERS } from '../../constants/modules.js';
 
 const knownModelNames = {
     "harmonyspeech": "HarmonySpeech V1",
@@ -143,7 +144,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         };
         
         try {
-            const result = await validateProviderConfig('tts', 'harmonyspeech', currentConfig);
+            const result = await validateProviderConfig(MODULES.TTS, PROVIDERS.HARMONYSPEECH, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -259,15 +260,6 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         refreshVoiceConfigs();
     };
 
-    const fetchIntegrations = async () => {
-        try {
-            const integrations = await getAvailableIntegrationsForProvider('tts', 'harmonyspeech');
-            setAvailableIntegrations(integrations);
-        } catch (error) {
-            console.error("Failed to fetch available integrations:", error);
-        }
-    };
-
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setEndpoint(selectedURL);
@@ -278,7 +270,6 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-        fetchIntegrations();
     }, [initialSettings]);
 
     // Config Management Handlers
@@ -590,7 +581,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay availableIntegrations={availableIntegrations} useIntegration={useIntegration} />
+                <IntegrationDisplay moduleName={MODULES.TTS} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <div className="flex items-center mt-2 w-full">

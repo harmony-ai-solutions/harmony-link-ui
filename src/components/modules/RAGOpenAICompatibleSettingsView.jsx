@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
-import {getAvailableIntegrationsForProvider, validateProviderConfig} from "../../services/managementApiService.js";
+import {validateProviderConfig} from "../../services/managementApiService.js";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
+import {MODULES, PROVIDERS} from '../../constants/modules.js';
 
 
 const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -22,11 +23,8 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
     // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
-    // Integration State
-    const [availableIntegrations, setAvailableIntegrations] = useState([]);
-
     // Validation State
-    const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
+    const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
     const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
@@ -67,15 +65,6 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
         setModuleSettings(initialSettings);
     };
 
-    const fetchIntegrations = async () => {
-        try {
-            const integrations = await getAvailableIntegrationsForProvider('rag', 'openaicompatible');
-            setAvailableIntegrations(integrations);
-        } catch (error) {
-            console.error("Failed to fetch available integrations:", error);
-        }
-    };
-
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setBaseURL(selectedURL);
@@ -84,19 +73,16 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
     };
 
     const handleValidateConfig = async () => {
-        setValidationState({ status: 'loading', message: 'Validating configuration...' });
+        setValidationState({status: 'loading', message: 'Validating configuration...'});
 
         const currentConfig = {
-            provider: 'openaicompatible',
-            provideropenaicompatible: {
-                baseurl: moduleSettings.baseurl,
-                apikey: moduleSettings.apikey,
-                embeddingmodel: moduleSettings.embeddingmodel,
-            },
+            baseurl: moduleSettings.baseurl,
+            apikey: moduleSettings.apikey,
+            embeddingmodel: moduleSettings.embeddingmodel,
         };
 
         try {
-            const result = await validateProviderConfig('rag', 'openaicompatibe', currentConfig);
+            const result = await validateProviderConfig(MODULES.RAG, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -112,17 +98,17 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-        fetchIntegrations();
     }, [initialSettings]);
 
-    return(
+    return (
         <>
             <div className="flex flex-wrap w-full pt-2">
                 <ConfigVerificationSection
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay availableIntegrations={availableIntegrations} useIntegration={useIntegration} />
+                <IntegrationDisplay moduleName={MODULES.RAG} providerName={PROVIDERS.OPENAI_COMPATIBLE}
+                                    useIntegration={useIntegration}/>
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
@@ -130,7 +116,8 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 The base URL for the OpenAI compatible API endpoint that provides embedding services.
-                                <br/>This should be the root URL of your embedding service (e.g., http://localhost:11434 for Ollama).
+                                <br/>This should be the root URL of your embedding service (e.g., http://localhost:11434
+                                for Ollama).
                             </SettingsTooltip>
                         </label>
                         <div className="w-5/6 px-3">

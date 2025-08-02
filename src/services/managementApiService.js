@@ -533,3 +533,16 @@ export async function deleteEntityRAGGroup(entityId, collectionName, archetype, 
     if (!resp.ok) throw new Error(`Failed to delete group ${archetype}/${groupName} from collection ${collectionName} in entity ${entityId}`);
     return await resp.json();
 }
+
+export async function openSystemUrl(url) {
+    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/system/open-url`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-API-Key": mgmtApiKey
+        },
+        body: JSON.stringify({url})
+    });
+    if (!resp.ok) throw new Error(`Failed to open URL in system browser: ${url}`);
+    return await resp.json();
+}

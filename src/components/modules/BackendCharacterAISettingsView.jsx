@@ -3,6 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
 import {validateProviderConfig} from "../../services/managementApiService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
 const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -63,7 +64,7 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
         };
         
         try {
-            const result = await validateProviderConfig('backend', 'characterai', currentConfig);
+            const result = await validateProviderConfig(MODULES.BACKEND, PROVIDERS.CHARACTERAI, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'

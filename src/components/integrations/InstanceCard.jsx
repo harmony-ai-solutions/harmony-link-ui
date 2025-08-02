@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/managementApiService';
+import { getInstanceWebURLs, cancelIntegrationInstanceOperation, openSystemUrl } from '../../services/managementApiService';
 
 const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
 
     useEffect(() => {
+        let interval;
+        
         const fetchWebURLs = async () => {
             if (instance.status === 'running') {
                 try {
@@ -19,7 +21,16 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             }
         };
 
-        fetchWebURLs();
+        fetchWebURLs(); // Initial fetch
+        
+        // Set up continuous polling when instance is running
+        if (instance.status === 'running') {
+            interval = setInterval(fetchWebURLs, 5000); // Poll every 5 seconds
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [integrationName, instanceName, instance.status]);
 
     const getStatusColor = (status) => {
@@ -45,8 +56,15 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
         }
     };
 
-    const handleOpenWebInterface = (url) => {
-        window.open(url, '_blank'); // Open in new tab
+    const handleOpenWebInterface = async (url) => {
+        try {
+            // Try to open in system browser first (works in standalone mode)
+            await openSystemUrl(url);
+        } catch (error) {
+            // Fallback to opening in new tab (container mode or error)
+            console.log('System browser opening failed, falling back to window.open:', error.message);
+            window.open(url, '_blank');
+        }
     };
 
     const formatProgressLine = (line) => {

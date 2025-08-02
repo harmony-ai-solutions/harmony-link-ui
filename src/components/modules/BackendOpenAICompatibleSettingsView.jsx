@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
-import {getAvailableIntegrationsForProvider, validateProviderConfig} from "../../services/managementApiService.js";
+import {validateProviderConfig} from "../../services/managementApiService.js";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
+import { MODULES, PROVIDERS } from '../../constants/modules.js';
 
 
 const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -21,9 +22,6 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
 
     // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
-
-    // Integration State
-    const [availableIntegrations, setAvailableIntegrations] = useState([]);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
@@ -177,7 +175,7 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
         };
         
         try {
-            const result = await validateProviderConfig('backend', 'openaicompatible', currentConfig);
+            const result = await validateProviderConfig(MODULES.BACKEND, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -195,15 +193,6 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
         setModuleSettings(initialSettings);
     };
 
-    const fetchIntegrations = async () => {
-        try {
-            const integrations = await getAvailableIntegrationsForProvider('backend', 'openaicompatible');
-            setAvailableIntegrations(integrations);
-        } catch (error) {
-            console.error("Failed to fetch available integrations:", error);
-        }
-    };
-
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setBaseURL(selectedURL);
@@ -214,7 +203,6 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-        fetchIntegrations();
     }, [initialSettings]);
 
     return(
@@ -224,7 +212,7 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay availableIntegrations={availableIntegrations} useIntegration={useIntegration} />
+                <IntegrationDisplay moduleName={MODULES.BACKEND} providerName={PROVIDERS.OPENAI_COMPATIBLE} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">

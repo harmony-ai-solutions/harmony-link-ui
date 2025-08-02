@@ -1,8 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
+import { openSystemUrl, getAvailableIntegrationsForProvider } from "../../services/managementApiService.js";
 
-const IntegrationDisplay = ({ availableIntegrations, useIntegration }) => {
+const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
+    const [availableIntegrations, setAvailableIntegrations] = useState([]);
+
+    useEffect(() => {
+        let interval;
+
+        const fetchIntegrations = async () => {
+            try {
+                const integrations = await getAvailableIntegrationsForProvider(moduleName, providerName);
+                setAvailableIntegrations(integrations);
+            } catch (error) {
+                console.error(`Failed to fetch available integrations for ${moduleName}/${providerName}:`, error);
+                setAvailableIntegrations([]);
+            }
+        };
+
+        fetchIntegrations(); // Initial fetch
+        interval = setInterval(fetchIntegrations, 5000); // Poll every 5 seconds
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [moduleName, providerName]);
 
     if (!availableIntegrations || availableIntegrations.length === 0) {
         return null;
@@ -12,10 +35,17 @@ const IntegrationDisplay = ({ availableIntegrations, useIntegration }) => {
         useIntegration(integrationOption, urlIndex);
     };
 
-    const handleOpenWebInterface = (integrationOption, urlIndex) => {
+    const handleOpenWebInterface = async (integrationOption, urlIndex) => {
         const webURL = integrationOption.webURLs[urlIndex]; // Use WebURLs from IntegrationOption
         if (webURL) {
-            window.open(webURL, '_blank'); // Open in new tab
+            try {
+                // Try to open in system browser first (works in standalone mode)
+                await openSystemUrl(webURL);
+            } catch (error) {
+                // Fallback to opening in new tab (container mode or error)
+                console.log('System browser opening failed, falling back to window.open:', error.message);
+                window.open(webURL, '_blank'); // Open in new tab
+            }
         }
     };
 

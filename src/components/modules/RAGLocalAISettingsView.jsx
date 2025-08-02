@@ -3,6 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {validateProviderConfig} from "../../services/managementApiService.js";
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
 const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -48,14 +49,11 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
 
         const currentConfig = {
-            provider: 'localai',
-            providerlocalai: {
-                embeddingmodel: moduleSettings.embeddingmodel,
-            },
+            embeddingmodel: moduleSettings.embeddingmodel,
         };
 
         try {
-            const result = await validateProviderConfig('rag', 'providerlocalai', currentConfig);
+            const result = await validateProviderConfig(MODULES.RAG, PROVIDERS.LOCALAI, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'

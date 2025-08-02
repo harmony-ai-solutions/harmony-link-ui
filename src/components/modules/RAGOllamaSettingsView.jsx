@@ -3,6 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {validateProviderConfig} from "../../services/managementApiService.js";
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
 const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -22,7 +23,7 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
     // Validation State
-    const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
+    const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
     const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
@@ -58,18 +59,15 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const handleValidateConfig = async () => {
-        setValidationState({ status: 'loading', message: 'Validating configuration...' });
+        setValidationState({status: 'loading', message: 'Validating configuration...'});
 
         const currentConfig = {
-            provider: 'ollama',
-            providerollama: {
-                baseurl: moduleSettings.baseurl,
-                embeddingmodel: moduleSettings.embeddingmodel,
-            },
+            baseurl: moduleSettings.baseurl,
+            embeddingmodel: moduleSettings.embeddingmodel,
         };
 
         try {
-            const result = await validateProviderConfig('rag', 'providerollama', currentConfig);
+            const result = await validateProviderConfig(MODULES.RAG, PROVIDERS.OLLAMA, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -87,7 +85,7 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setInitialValues();
     }, [initialSettings]);
 
-    return(
+    return (
         <>
             <div className="flex flex-wrap w-full pt-2">
                 <ConfigVerificationSection

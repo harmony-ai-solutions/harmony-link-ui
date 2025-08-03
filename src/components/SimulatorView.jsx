@@ -530,7 +530,7 @@ function SimulatorView() {
     };
 
     return (
-        <div className="min-h-screen bg-neutral-900 text-neutral-100">
+        <div className="bg-neutral-900 text-neutral-100">
             {/* Header */}
             <div className="bg-neutral-800 border-b border-neutral-700 px-6 py-4">
                 <div className="flex items-center justify-between">

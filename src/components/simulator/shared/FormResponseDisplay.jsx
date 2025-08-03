@@ -8,12 +8,12 @@ function FormResponseDisplay({ formState, onClear }) {
     }
 
     return (
-        <div className="mt-4 p-3 bg-neutral-600 rounded">
-            <div className="flex justify-between items-center mb-2">
+        <div className="mt-2 p-2 bg-neutral-600 rounded">
+            <div className="flex justify-between items-center mb-1">
                 <h5 className="text-sm font-medium text-orange-400">Response</h5>
                 <button
                     onClick={onClear}
-                    className="text-xs text-gray-400 hover:text-gray-200"
+                    className="text-sm text-gray-400 hover:text-gray-200"
                 >
                     Clear
                 </button>
@@ -43,10 +43,10 @@ function FormResponseDisplay({ formState, onClear }) {
             )}
             
             {formState.response && (
-                <div className="space-y-2">
-                    <div className="text-sm">
-                        <strong>Status:</strong> 
-                        <span className={`ml-2 ${
+                <div className="space-y-1">
+                    <div className="flex items-center justify-start text-sm">
+                        <span className="text-gray-400 px-2">Status:</span>
+                        <span className={`font-medium ${
                             formState.response.event?.status === 'SUCCESS' ? 'text-green-400' : 
                             formState.response.event?.status === 'ERROR' ? 'text-red-400' : 
                             'text-yellow-400'
@@ -54,19 +54,21 @@ function FormResponseDisplay({ formState, onClear }) {
                             {formState.response.event?.status || 'Unknown'}
                         </span>
                     </div>
-                    <div className="text-sm">
-                        <strong>Event Type:</strong> {formState.response.event?.event_type}
+                    <div className="flex items-center justify-start text-sm">
+                        <span className="text-gray-400 px-2">Event:</span>
+                        <span className="text-white font-mono">{formState.response.event?.event_type}</span>
                     </div>
-                    <div className="text-sm">
-                        <strong>Timestamp:</strong> {new Date(formState.response.timestamp).toLocaleString()}
+                    <div className="flex items-center justify-start text-sm">
+                        <span className="text-gray-400 px-2">Time:</span>
+                        <span className="text-gray-300">{new Date(formState.response.timestamp).toLocaleTimeString()}</span>
                     </div>
                     {formState.response.event?.payload && (
-                        <details className="mt-2">
-                            <summary className="cursor-pointer text-orange-400 text-sm">Response Data</summary>
-                            <div className="mt-2">
+                        <details className="mt-1">
+                            <summary className="cursor-pointer text-orange-400 text-sm hover:text-orange-300">Response Data</summary>
+                            <div className="mt-1 max-h-32 overflow-y-auto">
                                 <ConfigurableJsonViewer 
                                     data={formState.response.event.payload} 
-                                    defaultDepth={2} 
+                                    defaultDepth={1} 
                                 />
                             </div>
                         </details>

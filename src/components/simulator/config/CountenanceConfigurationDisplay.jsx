@@ -1,12 +1,13 @@
 import React from 'react';
 
-function RAGConfigurationDisplay({ config, loading, error }) {
+// Countenance Configuration Display Component
+function CountenanceConfigurationDisplay({ config, loading, error }) {
     if (loading) {
         return (
             <div className="bg-neutral-700 rounded p-2">
                 <div className="flex items-center text-yellow-400 text-sm">
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400 mr-2"></div>
-                    Loading RAG configuration...
+                    Loading countenance configuration...
                 </div>
             </div>
         );
@@ -25,34 +26,22 @@ function RAGConfigurationDisplay({ config, loading, error }) {
     if (!config) {
         return (
             <div className="bg-neutral-700 rounded p-2">
-                <div className="text-gray-400 text-sm">No RAG configuration available</div>
+                <div className="text-gray-400 text-sm">No countenance configuration available</div>
             </div>
         );
     }
 
     const getProviderDisplayName = (provider) => {
         const providerNames = {
-            'localai': 'LocalAI',
-            'openai': 'OpenAI',
-            'openaicompatible': 'OpenAI Compatible',
-            'mistral': 'Mistral',
-            'ollama': 'Ollama'
+            'openaicompatible': 'OpenAI Compatible'
         };
         return providerNames[provider] || provider;
     };
 
     const getProviderConfig = (config) => {
         switch (config.provider) {
-            case 'localai':
-                return config.providerlocalai;
-            case 'openai':
-                return config.provideropenai;
             case 'openaicompatible':
-                return config.provideropenaicompatible;
-            case 'mistral':
-                return config.providermistral;
-            case 'ollama':
-                return config.providerollama;
+                return config.openaicompatible;
             default:
                 return null;
         }
@@ -63,8 +52,9 @@ function RAGConfigurationDisplay({ config, loading, error }) {
     return (
         <div className="bg-neutral-700 rounded p-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Provider Information */}
                 <div>
-                    <h5 className="font-medium text-orange-400 mb-1 text-sm">Provider Configuration</h5>
+                    <h5 className="font-medium text-pink-400 mb-1 text-sm">Provider Configuration</h5>
                     <div className="space-y-1 text-xs">
                         <div>
                             <span className="text-gray-400">Provider:</span>
@@ -84,11 +74,11 @@ function RAGConfigurationDisplay({ config, loading, error }) {
                                     </div>
                                 )}
                                 
-                                {providerConfig.embeddingmodel && (
+                                {providerConfig.model && (
                                     <div>
-                                        <span className="text-gray-400">Embedding Model:</span>
+                                        <span className="text-gray-400">Model:</span>
                                         <span className="ml-2 text-gray-300">
-                                            {providerConfig.embeddingmodel}
+                                            {providerConfig.model}
                                         </span>
                                     </div>
                                 )}
@@ -101,25 +91,58 @@ function RAGConfigurationDisplay({ config, loading, error }) {
                                         </span>
                                     </div>
                                 )}
-                                
-                                {providerConfig.openaiapikey && (
-                                    <div>
-                                        <span className="text-gray-400">OpenAI API Key:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.openaiapikey.slice(-4)}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.mistralapikey && (
-                                    <div>
-                                        <span className="text-gray-400">Mistral API Key:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.mistralapikey.slice(-4)}
-                                        </span>
-                                    </div>
-                                )}
                             </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Expression Settings */}
+                <div>
+                    <h5 className="font-medium text-pink-400 mb-1 text-sm">Expression Settings</h5>
+                    <div className="space-y-1 text-xs">
+                        {providerConfig?.temperature !== undefined && (
+                            <div>
+                                <span className="text-gray-400">Temperature:</span>
+                                <span className="ml-2 text-gray-300">
+                                    {providerConfig.temperature}
+                                </span>
+                            </div>
+                        )}
+                        
+                        {providerConfig?.maxtokens && (
+                            <div>
+                                <span className="text-gray-400">Max Tokens:</span>
+                                <span className="ml-2 text-gray-300">
+                                    {providerConfig.maxtokens}
+                                </span>
+                            </div>
+                        )}
+                        
+                        {providerConfig?.topp !== undefined && (
+                            <div>
+                                <span className="text-gray-400">Top P:</span>
+                                <span className="ml-2 text-gray-300">
+                                    {providerConfig.topp}
+                                </span>
+                            </div>
+                        )}
+                        
+                        {providerConfig?.systemprompts && providerConfig.systemprompts.length > 0 && (
+                            <div>
+                                <span className="text-gray-400">System Prompts:</span>
+                                <div className="ml-2 text-gray-300 text-xs bg-neutral-600 p-2 rounded mt-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                    {providerConfig.systemprompts.join('\n')}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
+                            <div>
+                                <span className="text-gray-400">Stop Tokens:</span>
+                                <div className="ml-2 text-gray-300 text-xs">
+                                    {providerConfig.stoptokens.join(', ')}
+                                </div>
+                            </div>
                         )}
                         
                         <div className="mt-3 p-2 bg-neutral-600 rounded">
@@ -131,25 +154,9 @@ function RAGConfigurationDisplay({ config, loading, error }) {
                         </div>
                     </div>
                 </div>
-
-                <div>
-                    <h5 className="font-medium text-orange-400 mb-1 text-sm">Vector Database Settings</h5>
-                    <div className="space-y-1 text-xs">
-                        <div>
-                            <span className="text-gray-400">Database:</span>
-                            <span className="ml-2 text-gray-300">Chromem (Local)</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-400">Embedding Concurrency:</span>
-                            <span className="ml-2 text-gray-300">
-                                {config.chromem?.embeddingconcurrency || 1} threads
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );
 }
 
-export default RAGConfigurationDisplay;
+export default CountenanceConfigurationDisplay;

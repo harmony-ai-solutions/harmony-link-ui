@@ -39,7 +39,8 @@ function SimulatorView() {
         movement: null,
         tts: null,
         stt: null,
-        rag: null
+        rag: null,
+        countenance: null
     });
     const [moduleConfigsLoading, setModuleConfigsLoading] = useState(false);
     const [moduleConfigErrors, setModuleConfigErrors] = useState({});
@@ -152,7 +153,8 @@ function SimulatorView() {
                 movement: null,
                 tts: null,
                 stt: null,
-                rag: null
+                rag: null,
+                countenance: null
             });
             setRagCollections([]);
             return;
@@ -186,7 +188,8 @@ function SimulatorView() {
                 movement: null,
                 tts: null,
                 stt: null,
-                rag: null
+                rag: null,
+                countenance: null
             });
             setRagCollections([]);
         }
@@ -288,7 +291,8 @@ function SimulatorView() {
                     movement: entityConfig.movement || null,
                     tts: entityConfig.tts || null,
                     stt: entityConfig.stt || null,
-                    rag: entityConfig.rag || null
+                    rag: entityConfig.rag || null,
+                    countenance: entityConfig.countenance || null
                 };
                 
                 setModuleConfigs(newModuleConfigs);
@@ -309,7 +313,8 @@ function SimulatorView() {
                     movement: 'Entity configuration not found',
                     tts: 'Entity configuration not found',
                     stt: 'Entity configuration not found',
-                    rag: 'Entity configuration not found'
+                    rag: 'Entity configuration not found',
+                    countenance: 'Entity configuration not found'
                 });
             }
         } catch (error) {
@@ -320,7 +325,8 @@ function SimulatorView() {
                 movement: errorMessage,
                 tts: errorMessage,
                 stt: errorMessage,
-                rag: errorMessage
+                rag: errorMessage,
+                countenance: errorMessage
             });
         } finally {
             setModuleConfigsLoading(false);
@@ -517,14 +523,7 @@ function SimulatorView() {
                     />
                 );
             case 'countenance':
-                return (
-                    <CountenanceTab
-                        connectionStatus={connectionStatus}
-                        formResponses={formResponses}
-                        onSendEvent={handleSendEvent}
-                        onClearFormResponse={handleClearFormResponse}
-                    />
-                );
+                return <CountenanceTab {...commonProps} />;
             default:
                 return <div>Tab not found</div>;
         }

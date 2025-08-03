@@ -18,20 +18,20 @@ function STTForm({ onSendEvent, formState, onClearResponse }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2">
             <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Audio Data (Base64):</label>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Audio Data (Base64):</label>
                 <textarea
                     value={audioData}
                     onChange={(e) => setAudioData(e.target.value)}
                     placeholder="Enter base64 encoded audio data..."
-                    className="w-full h-24 p-2 bg-neutral-600 border border-neutral-500 rounded text-neutral-100 font-mono text-sm custom-scrollbar"
+                    className="w-full h-20 p-1.5 bg-neutral-600 border border-neutral-500 rounded text-neutral-100 font-mono text-xs custom-scrollbar"
                 />
             </div>
             <button
                 type="submit"
                 disabled={!audioData.trim()}
-                className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded disabled:opacity-50"
+                className="w-full bg-neutral-700 hover:bg-neutral-500 font-bold py-1.5 px-3 text-orange-400 rounded text-sm disabled:opacity-50"
             >
                 Send Audio Data
             </button>

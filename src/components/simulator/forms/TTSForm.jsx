@@ -19,21 +19,21 @@ function TTSForm({ onSendEvent, formState, onClearResponse }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2">
             <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Text to Synthesize:</label>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Text to Synthesize:</label>
                 <input
                     type="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Enter text for TTS..."
-                    className="w-full p-2 bg-neutral-600 border border-neutral-500 rounded text-neutral-100"
+                    className="w-full p-1.5 bg-neutral-600 border border-neutral-500 rounded text-neutral-100 text-sm"
                 />
             </div>
             <button
                 type="submit"
                 disabled={!text.trim() || formState.loading}
-                className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded disabled:opacity-50"
+                className="w-full bg-neutral-700 hover:bg-neutral-500 font-bold py-1.5 px-3 text-orange-400 rounded text-sm disabled:opacity-50"
             >
                 {formState.loading ? 'Generating...' : 'Generate Speech'}
             </button>

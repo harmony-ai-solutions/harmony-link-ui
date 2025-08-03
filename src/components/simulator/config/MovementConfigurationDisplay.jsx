@@ -4,9 +4,9 @@ import React from 'react';
 function MovementConfigurationDisplay({ config, loading, error }) {
     if (loading) {
         return (
-            <div className="bg-neutral-700 rounded p-4">
-                <div className="flex items-center text-yellow-400">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400 mr-2"></div>
+            <div className="bg-neutral-700 rounded p-2">
+                <div className="flex items-center text-yellow-400 text-sm">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400 mr-2"></div>
                     Loading movement configuration...
                 </div>
             </div>
@@ -15,8 +15,8 @@ function MovementConfigurationDisplay({ config, loading, error }) {
 
     if (error) {
         return (
-            <div className="bg-neutral-700 rounded p-4">
-                <div className="text-red-400">
+            <div className="bg-neutral-700 rounded p-2">
+                <div className="text-red-400 text-sm">
                     <strong>Error:</strong> {error}
                 </div>
             </div>
@@ -25,8 +25,8 @@ function MovementConfigurationDisplay({ config, loading, error }) {
 
     if (!config) {
         return (
-            <div className="bg-neutral-700 rounded p-4">
-                <div className="text-gray-400">No movement configuration available</div>
+            <div className="bg-neutral-700 rounded p-2">
+                <div className="text-gray-400 text-sm">No movement configuration available</div>
             </div>
         );
     }
@@ -50,12 +50,12 @@ function MovementConfigurationDisplay({ config, loading, error }) {
     const providerConfig = getProviderConfig(config);
 
     return (
-        <div className="bg-neutral-700 rounded p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-neutral-700 rounded p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Provider Information */}
                 <div>
-                    <h5 className="font-medium text-cyan-400 mb-2">Provider Configuration</h5>
-                    <div className="space-y-2 text-sm">
+                    <h5 className="font-medium text-cyan-400 mb-1 text-sm">Provider Configuration</h5>
+                    <div className="space-y-1 text-xs">
                         <div>
                             <span className="text-gray-400">Provider:</span>
                             <span className="ml-2 text-green-400 font-medium">
@@ -98,8 +98,8 @@ function MovementConfigurationDisplay({ config, loading, error }) {
 
                 {/* Movement Settings */}
                 <div>
-                    <h5 className="font-medium text-cyan-400 mb-2">Movement Settings</h5>
-                    <div className="space-y-2 text-sm">
+                    <h5 className="font-medium text-cyan-400 mb-1 text-sm">Movement Settings</h5>
+                    <div className="space-y-1 text-xs">
                         {config.startupsynctimeout !== undefined && (
                             <div>
                                 <span className="text-gray-400">Startup Sync Timeout:</span>

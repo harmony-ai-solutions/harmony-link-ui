@@ -41,130 +41,127 @@ function GroupedEventHistoryDisplay({ groups }) {
     };
 
     return (
-        <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
+        <div className="space-y-1 max-h-96 overflow-y-auto custom-scrollbar">
             {groups.slice().reverse().map((group, groupIndex) => (
-                <div key={groupIndex} className="bg-neutral-800/50 backdrop-blur-sm rounded-xl border border-neutral-700/50 overflow-hidden">
-                    {/* Primary Event Header */}
-                    <div className="p-4 border-b border-neutral-700/50">
-                        <div className="flex justify-between items-start mb-3">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${getDirectionColor(group.primary_event.direction)}`}>
-                                    <span className="text-sm">{getEventIcon(group.primary_event.event.event_type)}</span>
+                <div key={groupIndex} className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700/50 overflow-hidden">
+                    {/* Compact Primary Event Header */}
+                    <div className="p-2">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className={`w-6 h-6 rounded flex items-center justify-center border ${getDirectionColor(group.primary_event.direction)}`}>
+                                    <span className="text-xs">{getEventIcon(group.primary_event.event.event_type)}</span>
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className={`font-medium ${
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                        <span className={`text-sm font-medium truncate ${
                                             group.primary_event.direction === 'incoming' ? 'text-blue-400' : 'text-green-400'
                                         }`}>
                                             {group.primary_event.direction === 'incoming' ? '→' : '←'} {group.primary_event.event.event_type}
                                         </span>
-                                        <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(group.primary_event.event.status)}`}>
+                                        <div className={`px-1.5 py-0.5 rounded text-xs font-medium border ${getStatusColor(group.primary_event.event.status)}`}>
                                             {group.primary_event.event.status}
                                         </div>
                                         {group.group_type === 'grouped' && (
-                                            <div className="px-2 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                                {group.event_count} events
+                                            <div className="px-1.5 py-0.5 rounded text-xs font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                                {group.event_count}
                                             </div>
                                         )}
+                                        <div className={`px-1.5 py-0.5 rounded text-xs font-medium border ${getGroupStatusColor(group.status)}`}>
+                                            {group.status}
+                                        </div>
                                     </div>
                                     <div className="text-xs text-gray-400">
                                         {new Date(group.primary_event.timestamp).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getGroupStatusColor(group.status)}`}>
-                                    Group: {group.status}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${
-                                        group.primary_event.direction === 'incoming' ? 'bg-blue-400' : 'bg-green-400'
-                                    }`}></div>
-                                    <span className="text-xs text-gray-400 capitalize">{group.primary_event.direction}</span>
-                                </div>
+                            <div className="flex items-center gap-1 ml-2">
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                    group.primary_event.direction === 'incoming' ? 'bg-blue-400' : 'bg-green-400'
+                                }`}></div>
+                                <span className="text-xs text-gray-400">{group.primary_event.direction}</span>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Primary Event Payload */}
-                    {group.primary_event.event.payload && (
-                        <div className="px-4 py-3 border-b border-neutral-700/50 bg-neutral-700/20">
-                            <details className="group">
-                                <summary className="cursor-pointer text-orange-400 text-sm font-medium flex items-center gap-2 hover:text-orange-300 transition-colors">
-                                    <svg className="w-4 h-4 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    Primary Event Payload
-                                </summary>
-                                <div className="mt-3 bg-neutral-700/30 rounded-lg p-3">
-                                    <ConfigurableJsonViewer data={group.primary_event.event.payload} defaultDepth={2} />
-                                </div>
-                            </details>
-                        </div>
-                    )}
+                        {/* Primary Event Payload */}
+                        {group.primary_event.event.payload && (
+                            <div className="mt-1 pt-1 border-t border-neutral-700/50">
+                                <details className="group">
+                                    <summary className="cursor-pointer text-orange-400 text-xs font-medium flex items-center gap-1 hover:text-orange-300">
+                                        <svg className="w-3 h-3 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        Primary Payload
+                                    </summary>
+                                    <div className="mt-1 bg-neutral-700/30 rounded p-2">
+                                        <ConfigurableJsonViewer data={group.primary_event.event.payload} defaultDepth={2} />
+                                    </div>
+                                </details>
+                            </div>
+                        )}
 
-                    {/* Related Events */}
-                    {group.related_events && group.related_events.length > 0 && (
-                        <div className="p-4">
-                            <details className="group">
-                                <summary className="cursor-pointer text-cyan-400 text-sm font-medium flex items-center gap-2 hover:text-cyan-300 transition-colors mb-3">
-                                    <svg className="w-4 h-4 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    Related Events ({group.related_events.length})
-                                </summary>
-                                <div className="space-y-3">
-                                    {group.related_events.map((relatedEvent, eventIndex) => (
-                                        <div key={eventIndex} className="bg-neutral-700/30 backdrop-blur-sm rounded-lg border border-neutral-600/50 overflow-hidden">
-                                            <div className="p-3">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-6 h-6 rounded-md flex items-center justify-center border text-xs ${getDirectionColor(relatedEvent.direction)}`}>
-                                                            <span>{getEventIcon(relatedEvent.event.event_type)}</span>
+                        {/* Related Events */}
+                        {group.related_events && group.related_events.length > 0 && (
+                            <div className="mt-1 pt-1 border-t border-neutral-700/50">
+                                <details className="group">
+                                    <summary className="cursor-pointer text-cyan-400 text-xs font-medium flex items-center gap-1 hover:text-cyan-300">
+                                        <svg className="w-3 h-3 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        Related ({group.related_events.length})
+                                    </summary>
+                                    <div className="mt-1 space-y-1">
+                                        {group.related_events.map((relatedEvent, eventIndex) => (
+                                            <div key={eventIndex} className="bg-neutral-700/30 rounded border border-neutral-600/50 p-1.5">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                                        <div className={`w-4 h-4 rounded flex items-center justify-center border text-xs ${getDirectionColor(relatedEvent.direction)}`}>
+                                                            <span className="text-xs">{getEventIcon(relatedEvent.event.event_type)}</span>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-sm font-medium ${
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className={`text-xs font-medium truncate ${
                                                                     relatedEvent.direction === 'incoming' ? 'text-blue-400' : 'text-green-400'
                                                                 }`}>
                                                                     {relatedEvent.direction === 'incoming' ? '→' : '←'} {relatedEvent.event.event_type}
                                                                 </span>
-                                                                <div className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(relatedEvent.event.status)}`}>
+                                                                <div className={`px-1 py-0.5 rounded text-xs font-medium border ${getStatusColor(relatedEvent.event.status)}`}>
                                                                     {relatedEvent.event.status}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-xs text-gray-400 mt-0.5">
+                                                            <div className="text-xs text-gray-400">
                                                                 {new Date(relatedEvent.timestamp).toLocaleString()}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <div className={`w-1.5 h-1.5 rounded-full ${
+                                                    <div className="flex items-center gap-1 ml-1">
+                                                        <div className={`w-1 h-1 rounded-full ${
                                                             relatedEvent.direction === 'incoming' ? 'bg-blue-400' : 'bg-green-400'
                                                         }`}></div>
-                                                        <span className="text-xs text-gray-400 capitalize">{relatedEvent.direction}</span>
                                                     </div>
                                                 </div>
                                                 {relatedEvent.event.payload && (
-                                                    <details className="mt-2">
-                                                        <summary className="cursor-pointer text-orange-400 text-xs font-medium flex items-center gap-1 hover:text-orange-300 transition-colors">
-                                                            <svg className="w-3 h-3 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                                            </svg>
-                                                            Payload
-                                                        </summary>
-                                                        <div className="mt-2 bg-neutral-800/50 rounded-md p-2">
-                                                            <ConfigurableJsonViewer data={relatedEvent.event.payload} defaultDepth={1} />
-                                                        </div>
-                                                    </details>
+                                                    <div className="mt-1 pt-1 border-t border-neutral-600/50">
+                                                        <details>
+                                                            <summary className="cursor-pointer text-orange-400 text-xs font-medium flex items-center gap-1 hover:text-orange-300">
+                                                                <svg className="w-2.5 h-2.5 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                                                </svg>
+                                                                Payload
+                                                            </summary>
+                                                            <div className="mt-1 bg-neutral-800/50 rounded p-1.5">
+                                                                <ConfigurableJsonViewer data={relatedEvent.event.payload} defaultDepth={1} />
+                                                            </div>
+                                                        </details>
+                                                    </div>
                                                 )}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </details>
-                        </div>
-                    )}
+                                        ))}
+                                    </div>
+                                </details>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

@@ -32,7 +32,7 @@ function JsonViewer({ data, maxDepth = 3, className = '' }) {
 
     return (
         <div className={`font-mono text-sm ${className}`}>
-            <div className="bg-neutral-800 rounded border border-gray-600 overflow-auto max-h-96">
+            <div className="bg-neutral-800 rounded border border-gray-600 overflow-auto max-h-96 custom-scrollbar">
                 <JsonView
                     value={parsedData}
                     collapsed={maxDepth}

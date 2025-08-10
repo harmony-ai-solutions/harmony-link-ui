@@ -16,7 +16,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "@uiw/react-json-view": "^2.0.0-alpha.33",
     "lodash": "^4.17.21",
-    "plotly.js": "^3.0.1",
+    "plotly.js": "^3.0.3",
     "react": "^19.1.0",
     "react-audio-player": "^0.17.0",
     "react-dom": "^19.1.0",

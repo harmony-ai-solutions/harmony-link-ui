@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getInstanceWebURLs, cancelIntegrationInstanceOperation, openSystemUrl } from '../../services/managementApiService';
+import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/management/integrationsService.js';
+import { openSystemUrl } from '../../services/management/systemService.js';
 
 const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);

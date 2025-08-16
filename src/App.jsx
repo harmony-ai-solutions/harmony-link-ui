@@ -1,13 +1,13 @@
 import {useState, useEffect} from 'react';
 import logo from './assets/images/harmony-link-icon-256.png';
-import {getConfig, updateConfig, getAppName, getAppVersion} from "./services/managementApiService";
+import {getConfig, updateConfig, getAppName, getAppVersion} from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
 import DevelopmentView from "./components/DevelopmentView.jsx";
-import IntegrationsView from "./components/IntegrationsView.jsx"; // Import IntegrationsView
-import SimulatorView from "./components/SimulatorView.jsx"; // Import SimulatorView
+import IntegrationsView from "./components/IntegrationsView.jsx";
+import SimulatorView from "./components/SimulatorView.jsx";
 import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
-import {LogDebug, LogError, LogPrint} from "../utils/logger.js";
+import {LogDebug, LogError, LogPrint} from "./utils/logger.js";
 
 function App() {
     const [appName, setAppName] = useState('Harmony Link');

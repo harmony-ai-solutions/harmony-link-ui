@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DeviceTypeSelector from './DeviceTypeSelector';
-import { createIntegrationInstance } from '../../services/managementApiService';
+import { createIntegrationInstance } from '../../services/management/integrationsService.js';
 
 const CreateInstanceModal = ({ integrationName, isOpen, onClose, onCreate }) => {
     // Generate hash once per modal open

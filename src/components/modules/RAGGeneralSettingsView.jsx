@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import {LogDebug} from "../../../utils/logger.js";
+import {LogDebug} from "../../utils/logger.js";
 import RAGCollectionManager from "./RAGCollectionManager.jsx";
 
 const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) => {
@@ -43,8 +43,8 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
     };
 
     const setInitialValues = () => {
-        // Reset Entity map
-        setModuleSettings(initialSettings);
+        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
+        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
         setEmbeddingConcurrency(initialSettings.chromem?.embeddingconcurrency || 0);
     };
 

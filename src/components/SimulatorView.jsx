@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
+import {
     getSimulatorEntities,
     connectSimulator,
     disconnectSimulator,
     sendSimulatorEvent,
     getSimulatorEventHistory,
-    getSimulatorGroupedEventHistory,
-    getConfig,
-    getEntityRAGCollections
-} from '../services/managementApiService';
+    getSimulatorGroupedEventHistory
+} from '../services/management/simulatorService.js';
+import {getConfig} from '../services/management/configService.js';
+import {getEntityRAGCollections} from '../services/management/ragService.js';
 
 // Import all the new tab components
 import ConnectionTab from './simulator/tabs/ConnectionTab';
@@ -217,7 +217,7 @@ function SimulatorView() {
             setFeedback('Connecting...');
 
             const response = await connectSimulator(selectedEntity);
-            
+
             setConnectionStatus('connected');
             setFeedback(`✅ Successfully connected to simulated entity: ${selectedEntity}`);
             console.log("Simulator connected:", response);
@@ -247,7 +247,7 @@ function SimulatorView() {
             setFeedback('Disconnecting...');
 
             await disconnectSimulator(selectedEntity);
-            
+
             setConnectionStatus('disconnected');
             setFeedback('✅ Successfully disconnected from simulated entity');
             setEventHistory([]);
@@ -272,7 +272,7 @@ function SimulatorView() {
     // Load module configurations
     const loadModuleConfigurations = async () => {
         if (!selectedEntity) return;
-        
+
         setModuleConfigsLoading(true);
         setModuleConfigErrors({});
 
@@ -284,7 +284,7 @@ function SimulatorView() {
 
             const entityConfig = config.entities?.[selectedEntity];
             console.log("Entity config:", entityConfig);
-            
+
             if (entityConfig) {
                 const newModuleConfigs = {
                     backend: entityConfig.backend || null,
@@ -294,10 +294,10 @@ function SimulatorView() {
                     rag: entityConfig.rag || null,
                     countenance: entityConfig.countenance || null
                 };
-                
+
                 setModuleConfigs(newModuleConfigs);
                 console.log("Module configurations loaded:", newModuleConfigs);
-                
+
                 // Set individual errors for missing configurations
                 const errors = {};
                 Object.entries(newModuleConfigs).forEach(([module, config]) => {

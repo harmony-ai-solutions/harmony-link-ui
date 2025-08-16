@@ -11,7 +11,7 @@ import {
     updateEntityRAGDocument,
     addEntityRAGDocumentToGroup,
     deleteEntityRAGGroup
-} from "../../services/managementApiService.js";
+} from "../../services/management/ragService.js";
 import ConfigurableJsonViewer from "../widgets/ConfigurableJsonViewer.jsx";
 
 const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {

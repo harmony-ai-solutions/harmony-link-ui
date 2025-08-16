@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import { openSystemUrl, getAvailableIntegrationsForProvider } from "../../services/managementApiService.js";
+import { getAvailableIntegrationsForProvider } from "../../services/management/integrationsService.js";
+import { openSystemUrl } from "../../services/management/systemService.js";
 
 const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);

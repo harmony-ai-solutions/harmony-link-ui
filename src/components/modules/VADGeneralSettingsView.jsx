@@ -1,12 +1,9 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
-import {validateProviderConfig} from "../../services/management/integrationsService.js";
-import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
-import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { MODULES, PROVIDERS } from '../../constants/modules.js';
 
-
-const STTOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+const VADGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -22,44 +19,22 @@ const STTOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
-    // Validation State
-    const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
-
     // Fields
-    const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
+    const [provider, setProvider] = useState(initialSettings.provider);
+
+    // Available providers for VAD
+    const availableProviders = [
+        { value: 'disabled', label: 'Disabled' },
+        { value: PROVIDERS.HARMONYSPEECH, label: 'Harmony Speech' },
+        { value: PROVIDERS.OPENAI, label: 'OpenAI' }
+    ];
 
     // Validation Functions
-    const validateApikeyAndUpdate = (value) => {
-        if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
-            showModal("API Key cannot be empty.");
-            setOpenAIAPIKey(moduleSettings.openaiapikey);
-            return false;
-        }
+    const validateProviderAndUpdate = (value) => {
         // Update if validation successful
-        moduleSettings.openaiapikey = value;
+        moduleSettings.provider = value;
         saveSettingsFunc(moduleSettings);
         return true;
-    };
-
-    const handleValidateConfig = async () => {
-        setValidationState({ status: 'loading', message: 'Validating configuration...' });
-        
-        const currentConfig = {
-            openaiapikey: moduleSettings.openaiapikey
-        };
-        
-        try {
-            const result = await validateProviderConfig(MODULES.STT, PROVIDERS.OPENAI, currentConfig);
-            setValidationState({
-                status: result.valid ? 'success' : 'error',
-                message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
-            });
-        } catch (error) {
-            setValidationState({ 
-                status: 'error', 
-                message: 'Validation failed: ' + error.message 
-            });
-        }
     };
 
     const setInitialValues = () => {
@@ -75,25 +50,33 @@ const STTOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     return(
       <>
           <div className="flex flex-wrap w-full pt-2">
-                <ConfigVerificationSection
-                    onValidate={handleValidateConfig}
-                    validationState={validationState}
-                />
-              <div className="flex flex-wrap items-center -px-10 w-full">
-                  <div className="flex items-center mb-6 w-full">
-                      <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
-                          API Key
+              <div className="flex flex-wrap items-center -px-10 mb-3 w-full">
+                  <div className="flex items-center w-full">
+                      <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                          VAD Provider
                           <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                            setTooltipVisible={setTooltipVisible}>
-                              Your OpenAI API Key
+                              Select the Voice Activity Detection (VAD) provider to use for detecting speech in audio.
+                              <br/>
+                              <br/>VAD is used to determine when someone is speaking, which helps optimize transcription
+                              by only processing audio segments that contain speech.
                           </SettingsTooltip>
                       </label>
-                      <div className="w-5/6 px-3">
-                          <input type="password" name="apikey"
-                                 className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                 placeholder="OpenAI API Key" value={openAIAPIKey}
-                                 onChange={(e) => setOpenAIAPIKey(e.target.value)}
-                                 onBlur={(e) => validateApikeyAndUpdate(e.target.value)}/>
+                      <div className="w-2/3 px-3">
+                          <select
+                              value={provider}
+                              onChange={(e) => {
+                                  setProvider(e.target.value);
+                                  validateProviderAndUpdate(e.target.value);
+                              }}
+                              className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                          >
+                              {availableProviders.map((providerOption) => (
+                                  <option key={providerOption.value} value={providerOption.value}>
+                                      {providerOption.label}
+                                  </option>
+                              ))}
+                          </select>
                       </div>
                   </div>
               </div>
@@ -128,4 +111,4 @@ const STTOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     );
 }
 
-export default STTOpenAISettingsView;
+export default VADGeneralSettingsView;

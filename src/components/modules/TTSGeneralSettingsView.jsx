@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import {LogDebug} from "../../../utils/logger.js";
+import {LogDebug} from "../../utils/logger.js";
 import {cloneDeep} from "lodash";
 
 
@@ -63,8 +63,8 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
-        // Reset Entity map
-        setModuleSettings(initialSettings);
+        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
+        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
     };
 
     useEffect(() => {

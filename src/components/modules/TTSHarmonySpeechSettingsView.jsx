@@ -1,8 +1,9 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import {LogDebug, LogError} from "../../../utils/logger.js";
+import {LogDebug, LogError} from "../../utils/logger.js";
 import {HarmonySpeechEnginePlugin} from "@harmony-ai/harmonyspeech";
-import {getConfig, listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, deleteVoiceConfig, renameVoiceConfig, validateProviderConfig} from "../../services/managementApiService.js";
+import {getConfig, listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, deleteVoiceConfig, renameVoiceConfig} from "../../services/management/configService.js";
+import {validateProviderConfig} from "../../services/management/integrationsService.js";
 import HarmonyAudioPlayer from "../widgets/HarmonyAudioPlayer.jsx";
 import Heatmap from "../widgets/Heatmap.jsx";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";

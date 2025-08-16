@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import {getConnectedEntities, getEntityDetails, sendTestActionGraph} from "../services/managementApiService";
-import {LogDebug, LogError} from "../../utils/logger";
+import {LogDebug, LogError} from "../utils/logger.js";
 
 function DevelopmentView() {
     const [entities, setEntities] = useState(null);

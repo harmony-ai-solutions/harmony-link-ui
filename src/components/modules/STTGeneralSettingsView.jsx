@@ -1,7 +1,6 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import {LogDebug} from "../../../utils/logger.js";
-import {cloneDeep} from "lodash";
+import {LogDebug} from "../../utils/logger.js";
 
 
 const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -21,32 +20,33 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
     // Fields
-    const [transcriptionMainStreamTimeMillis, setTranscriptionMainStreamTimeMillis] = useState(initialSettings.transcription.mainstreamtimemillis);
-    const [transcriptionTransitionStreamTimeMillis, setTranscriptionTransitionStreamTimeMillis] = useState(initialSettings.transcription.transitionstreamtimemillis);
-    const [transcriptionMaxBufferCount, setTranscriptionMaxBufferCount] = useState(initialSettings.transcription.maxbuffercount);
+    const [mainStreamTimeMillis, setMainStreamTimeMillis] = useState(initialSettings.streamrecording.mainstreamtimemillis);
+    const [transitionStreamTimeMillis, setTransitionStreamTimeMillis] = useState(initialSettings.streamrecording.transitionstreamtimemillis);
+    const [maxBufferCount, setMaxBufferCount] = useState(initialSettings.streamrecording.maxbuffercount);
 
     // Validation Functions
     const validateTranscriptionMainStreamTimeMillisAndUpdate = (value) => {
         const numValue = parseInt(value, 10);
         if (isNaN(numValue) || numValue < 500) {
             showModal("Duration of main transcription stream chunks must be at least 500 milliseconds.");
-            setTranscriptionMainStreamTimeMillis(moduleSettings.transcription.mainstreamtimemillis);
+            setMainStreamTimeMillis(moduleSettings.streamrecording.mainstreamtimemillis);
             return false;
         }
         // Update if validation successful
-        moduleSettings.transcription.mainstreamtimemillis = numValue;
+        moduleSettings.streamrecording.mainstreamtimemillis = numValue;
         saveSettingsFunc(moduleSettings);
         return true;
     };
     const validateTranscriptionTransitionStreamTimeMillisAndUpdate = (value) => {
         const numValue = parseInt(value, 10);
-        if (isNaN(numValue) || numValue < 500 || numValue < moduleSettings.transcription.mainstreamtimemillis || numValue % moduleSettings.transcription.mainstreamtimemillis !== 0) {
+        const mainStreamTime = moduleSettings.streamrecording.mainstreamtimemillis;
+        if (isNaN(numValue) || numValue < 500 || numValue < mainStreamTime || numValue % mainStreamTime !== 0) {
             showModal("Duration of the transition stream chunks must be a multiple of the main stream chunks.");
-            setTranscriptionTransitionStreamTimeMillis(moduleSettings.transcription.transitionstreamtimemillis);
+            setTransitionStreamTimeMillis(moduleSettings.streamrecording.transitionstreamtimemillis);
             return false;
         }
         // Update if validation successful
-        moduleSettings.transcription.transitionstreamtimemillis = numValue;
+        moduleSettings.streamrecording.transitionstreamtimemillis = numValue;
         saveSettingsFunc(moduleSettings);
         return true;
     };
@@ -54,24 +54,24 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const numValue = parseInt(value, 10);
         if (isNaN(numValue) || numValue < 1) {
             showModal("Transcription chunk buffer must be at least 1");
-            setTranscriptionMaxBufferCount(moduleSettings.transcription.maxbuffercount);
+            setMaxBufferCount(moduleSettings.streamrecording.maxbuffercount);
             return false;
         }
         // Update if validation successful
-        moduleSettings.transcription.maxbuffercount = numValue;
+        moduleSettings.streamrecording.maxbuffercount = numValue;
         saveSettingsFunc(moduleSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        // Reset Entity map
-        setModuleSettings(initialSettings);
+        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
+        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>
@@ -90,8 +90,8 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                       <div className="w-2/3 px-3">
                           <input type="number" name="mainstreamtimemillis"
                                  className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                 placeholder="Main Stream Milliseconds" value={transcriptionMainStreamTimeMillis}
-                                 onChange={(e) => setTranscriptionMainStreamTimeMillis(e.target.value)}
+                                 placeholder="Main Stream Milliseconds" value={mainStreamTimeMillis}
+                                 onChange={(e) => setMainStreamTimeMillis(e.target.value)}
                                  onBlur={(e) => validateTranscriptionMainStreamTimeMillisAndUpdate(e.target.value)}/>
                       </div>
                   </div>
@@ -112,8 +112,8 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                           <input type="number" name="transitionstreamtimemillis"
                                  className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
                                  placeholder="Transition Stream Milliseconds"
-                                 value={transcriptionTransitionStreamTimeMillis}
-                                 onChange={(e) => setTranscriptionTransitionStreamTimeMillis(e.target.value)}
+                                 value={transitionStreamTimeMillis}
+                                 onChange={(e) => setTransitionStreamTimeMillis(e.target.value)}
                                  onBlur={(e) => validateTranscriptionTransitionStreamTimeMillisAndUpdate(e.target.value)}/>
                       </div>
                   </div>
@@ -131,11 +131,11 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                           </SettingsTooltip>
                       </label>
                       <div className="w-2/3 px-3">
-                          <input type="number" name="audiostreamsplitrate"
+                          <input type="number" name="maxbuffercount"
                                  className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                 placeholder="Audio Stream Split Rate"
-                                 value={transcriptionMaxBufferCount}
-                                 onChange={(e) => setTranscriptionMaxBufferCount(e.target.value)}
+                                 placeholder="Max Buffer Count"
+                                 value={maxBufferCount}
+                                 onChange={(e) => setMaxBufferCount(e.target.value)}
                                  onBlur={(e) => validateTranscriptionMaxBufferCountAndUpdate(e.target.value)}/>
                       </div>
                   </div>

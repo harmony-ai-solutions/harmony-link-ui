@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
-import {LogDebug} from "../../../utils/logger.js";
+import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/managementApiService.js";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";

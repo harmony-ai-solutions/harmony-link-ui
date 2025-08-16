@@ -6,8 +6,6 @@ import {getConfig, validateProviderConfig} from "../../services/managementApiSer
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
-import { useSelectedEntity } from '../../hooks/useEntitySettings.js';
-
 
 const knownModelNames = {
     "faster-whisper-large-v3-turbo": "FasterWhisper Large v3 Turbo",
@@ -16,9 +14,7 @@ const knownModelNames = {
     "faster-whisper-tiny": "FasterWhisper Tiny",
 }
 
-const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
-    // Use store for state management
-    const { selectedEntityId } = useSelectedEntity();
+const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -31,7 +27,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setIsModalVisible(true);
     };
 
-    // Base Settings reference - now managed by store
+    // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
     // Integration State
@@ -43,10 +39,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Harmonyspeech Plugin
     const [harmonySpeechPlugin, setHarmonySpeechPlugin] = useState(null);
 
-    // model, language and voice options dynamically fetched from HSE
-    const [modelOptions, setModelOptions] = useState([
-        {name: "Error: no models available", value: null}
-    ]);
+    // model options dynamically fetched from HSE
     const [vadModelOptions, setVadModelOptions] = useState([
         {name: "Error: no VAD models available", value: null}
     ]);
@@ -54,7 +47,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Fields
     const [endpoint, setEndpoint] = useState(initialSettings.endpoint);
     const [model, setModel] = useState(initialSettings.model);
-    const [vadModel, setVadModel] = useState(initialSettings.vadmodel);
 
     // Validation Functions
     const validateEndpointAndUpdate = (value) => {
@@ -69,10 +61,8 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(moduleSettings);
 
         // Refresh Speech Tooling
-        if (harmonySpeechPlugin) {
-            harmonySpeechPlugin.setBaseURL(value);
-            refreshAvailableSTToolchains(harmonySpeechPlugin);
-        }
+        harmonySpeechPlugin.setBaseURL(value);
+        refreshAvailableVADToolchains(harmonySpeechPlugin);
         return true;
     };
 
@@ -81,12 +71,11 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         
         const currentConfig = {
             endpoint: moduleSettings.endpoint,
-            model: moduleSettings.model,
-            vadmodel: moduleSettings.vadmodel
+            model: moduleSettings.model
         };
         
         try {
-            const result = await validateProviderConfig(MODULES.STT, PROVIDERS.HARMONYSPEECH, currentConfig);
+            const result = await validateProviderConfig(MODULES.VAD, PROVIDERS.HARMONYSPEECH, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -108,7 +97,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 setHarmonySpeechPlugin(plugin);
 
                 // Fetch available toolchains from Endpoint (if available)
-                refreshAvailableSTToolchains(plugin);
+                refreshAvailableVADToolchains(plugin);
             });
 
         } catch (error) {
@@ -118,36 +107,11 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         }
     }
 
-    const refreshAvailableSTToolchains = (harmonySpeechClient) => {
+    const refreshAvailableVADToolchains = (harmonySpeechClient) => {
         if (!harmonySpeechClient) {
             LogError("Harmony Speech Client not initialized");
             return;
         }
-        harmonySpeechClient.showAvailableTranscriptionModels().then((result) => {
-            //LogDebug(JSON.stringify(result.data));
-
-            // Search for Toolchains and add them to the list
-            const newModelOptions = [];
-            result.data.forEach((model) => {
-                if (model.object === "model") {
-                    if (model.id in knownModelNames) {
-                        newModelOptions.push({name: knownModelNames[model.id], value: model.id});
-                    } else {
-                        newModelOptions.push({name: model.id, value: model.id});
-                    }
-                }
-            });
-            if (newModelOptions.length === 0) {
-                newModelOptions.push({name: "Error: no models available", value: null});
-            }
-            setModelOptions(newModelOptions);
-
-            // Refresh UI
-            if (!newModelOptions.some((modelOption) => modelOption.value === model)) {
-                handleModelSelectionChange(newModelOptions[0].value);
-            }
-        });
-
         harmonySpeechClient.showAvailableVoiceActivityDetectionModels().then((result) => {
             //LogDebug(JSON.stringify(result.data));
 
@@ -168,8 +132,8 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             setVadModelOptions(newVadModelOptions);
 
             // Refresh UI
-            if (!newVadModelOptions.some((modelOption) => modelOption.value === vadModel)) {
-                handleVadModelSelectionChange(newVadModelOptions[0].value);
+            if (!newVadModelOptions.some((modelOption) => modelOption.value === model)) {
+                handleModelSelectionChange(newVadModelOptions[0].value);
             }
         });
     }
@@ -196,13 +160,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         return true;
     }
 
-    const handleVadModelSelectionChange = (selectedModelId) => {
-        setVadModel(selectedModelId);
-        moduleSettings.vadmodel = selectedModelId;
-        saveSettingsFunc(moduleSettings);
-        return true;
-    }
-
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
@@ -215,14 +172,14 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay moduleName={MODULES.STT} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
+                <IntegrationDisplay moduleName={MODULES.VAD} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
                             Endpoint
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                The endpoint URL for the Harmony Speech-To-Text Backend.
+                                The endpoint URL for the Harmony Speech VAD Backend.
                             </SettingsTooltip>
                         </label>
                         <div className="w-5/6 px-3">
@@ -236,30 +193,8 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 </div>
                 <div className="flex items-center mb-6 w-full">
                     <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                        Transcription Model
-                        <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
-                                         setTooltipVisible={setTooltipVisible}>
-                            Select the AI model to use for speech transcription. <br/>
-                            This model should be selected with a focus on quality over performance, since
-                            it will be influencing how well the AI will understand you or other speakers.
-                        </SettingsTooltip>
-                    </label>
-                    <select
-                        value={model}
-                        onChange={(e) => handleModelSelectionChange(e.target.value)}
-                        className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 mx-3"
-                    >
-                        {modelOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="flex items-center mb-6 w-full">
-                    <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
                         VAD Model
-                        <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
+                        <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                          setTooltipVisible={setTooltipVisible}>
                             Select the AI model to use for voice activity detection (VAD). <br/>
                             This model should be selected with a focus on performance, since it is only being used to
@@ -269,8 +204,8 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </SettingsTooltip>
                     </label>
                     <select
-                        value={vadModel}
-                        onChange={(e) => handleVadModelSelectionChange(e.target.value)}
+                        value={model}
+                        onChange={(e) => handleModelSelectionChange(e.target.value)}
                         className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 mx-3"
                     >
                         {vadModelOptions.map((option) => (
@@ -312,4 +247,4 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     );
 }
 
-export default STTHarmonySpeechSettingsView;
+export default VADHarmonySpeechSettingsView;

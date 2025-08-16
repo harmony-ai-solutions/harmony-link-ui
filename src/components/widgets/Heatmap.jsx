@@ -1,6 +1,5 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
-import {LogDebug} from "../../../utils/logger.js";
 
 // Function to decode base64-encoded binary data to a Float32Array
 function base64ToFloat32Array(base64) {

@@ -7,7 +7,7 @@ import DevelopmentView from "./components/DevelopmentView.jsx";
 import IntegrationsView from "./components/IntegrationsView.jsx"; // Import IntegrationsView
 import SimulatorView from "./components/SimulatorView.jsx"; // Import SimulatorView
 import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
-import {LogDebug, LogError, LogPrint} from "../utils/logger.js";
+import {LogDebug, LogError, LogPrint} from "./utils/logger.js";
 
 function App() {
     const [appName, setAppName] = useState('Harmony Link');

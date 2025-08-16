@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
-import {LogDebug, LogPrint} from "../../utils/logger.js";
+import {LogDebug, LogPrint} from "../utils/logger.js";
 
 const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);

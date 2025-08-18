@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus } from '../../services/managementApiService';
+import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus } from '../../services/management/integrationsService.js';
 import InstanceList from './InstanceList';
 
 const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInstance }) => {

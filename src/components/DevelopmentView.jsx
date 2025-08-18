@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import {getConnectedEntities, getEntityDetails, sendTestActionGraph} from "../services/managementApiService";
+import {getConnectedEntities, getEntityDetails, sendTestActionGraph} from "../services/management/developmentService.js";
 import {LogDebug, LogError} from "../utils/logger.js";
 
 function DevelopmentView() {

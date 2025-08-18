@@ -1,12 +1,6 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import {
-    getIntegrationTemplate,
-    getIntegrationInstanceConfig,
-    saveIntegrationInstanceConfig,
-    deleteIntegrationInstance,
-    getIntegrationInstanceStatus
-} from '../../services/managementApiService'; // Added missing import
+import { getIntegrationTemplate, getIntegrationInstanceConfig, saveIntegrationInstanceConfig, deleteIntegrationInstance, getIntegrationInstanceStatus } from '../../services/management/integrationsService.js';
 import { Editor } from '@monaco-editor/react';
 
 const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSave }) => {

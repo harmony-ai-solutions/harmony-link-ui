@@ -2,8 +2,8 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
-import {validateProviderConfig} from "../../services/managementApiService.js";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import {validateProviderConfig} from "../../services/management/integrationsService.js";
 
 
 const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {

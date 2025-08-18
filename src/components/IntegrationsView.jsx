@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { listIntegrations, getQuickstartRepoPath, getDockerStatus } from '../services/managementApiService'; // Added getDockerStatus
+import { listIntegrations, getQuickstartRepoPath, getDockerStatus } from '../services/management/integrationsService.js';
 import IntegrationCard from './integrations/IntegrationCard';
 import QuickstartRepoSettings from './integrations/QuickstartRepoSettings';
 import DockerStatusIndicator from './integrations/DockerStatusIndicator';

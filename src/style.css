@@ -33,3 +33,44 @@ html {
     scrollbar-width: thin;
     scrollbar-color: #666666 #404040;
 }
+
+/* Directory Tree Styles */
+.directory-tree .rc-tree {
+    background: transparent;
+    color: #f5f5f5;
+}
+
+.directory-tree .rc-tree-node-content-wrapper {
+    color: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.directory-tree .rc-tree-node-content-wrapper:hover {
+    background-color: #404040;
+}
+
+.directory-tree .rc-tree-node-content-wrapper.rc-tree-node-selected {
+    background-color: #ea580c;
+    color: #fff;
+}
+
+.directory-tree .rc-tree-switcher {
+    color: #f5f5f5;
+}
+
+.directory-tree .rc-tree-indent-unit {
+    width: 16px;
+}
+
+.directory-tree .rc-tree-treenode {
+    padding: 2px 0;
+}
+
+.directory-tree .rc-tree-child-tree {
+    display: block;
+}
+
+.directory-tree .rc-tree-treenode-disabled {
+    color: #666;
+}

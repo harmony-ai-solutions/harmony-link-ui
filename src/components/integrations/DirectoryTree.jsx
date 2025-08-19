@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tree from 'rc-tree';
 import 'rc-tree/assets/index.css';
 
 const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) => {
   const [expandedKeys, setExpandedKeys] = useState([]);
+
+  // Auto-expand first level when at top level (drive roots, etc.)
+  useEffect(() => {
+    if (treeData && treeData.children) {
+      const isTopLevel = treeData.path && (
+        // Windows drive root (e.g., "C:\")
+        /^[A-Z]:\\?$/.test(treeData.path) ||
+        // Unix root
+        treeData.path === '/' ||
+        // Working directory (empty path or just a name without separators)
+        !treeData.path.includes('/') && !treeData.path.includes('\\')
+      );
+      
+      if (isTopLevel) {
+        // Auto-expand the root node to show first level
+        setExpandedKeys([treeData.path]);
+      }
+    }
+  }, [treeData]);
 
   // Convert our directory structure to rc-tree format
   const convertToTreeData = (node) => {
@@ -56,7 +75,7 @@ const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) =>
   const treeNodes = [convertToTreeData(treeData)];
 
   return (
-    <div className="directory-tree bg-neutral-800 p-4 rounded border border-neutral-600 max-h-96 overflow-auto">
+    <div className="directory-tree custom-scrollbar bg-neutral-800 p-4 rounded border border-neutral-600 max-h-80 overflow-auto">
       <Tree
         treeData={treeNodes}
         expandedKeys={expandedKeys}
@@ -67,47 +86,6 @@ const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) =>
         showIcon={false}
         className="custom-tree"
       />
-      <style jsx>{`
-        .directory-tree :global(.rc-tree) {
-          background: transparent;
-          color: #f5f5f5;
-        }
-        
-        .directory-tree :global(.rc-tree-node-content-wrapper) {
-          color: #f5f5f5;
-          padding: 2px 4px;
-          border-radius: 4px;
-        }
-        
-        .directory-tree :global(.rc-tree-node-content-wrapper:hover) {
-          background-color: #404040;
-        }
-        
-        .directory-tree :global(.rc-tree-node-content-wrapper.rc-tree-node-selected) {
-          background-color: #fb923c;
-          color: #000;
-        }
-        
-        .directory-tree :global(.rc-tree-switcher) {
-          color: #f5f5f5;
-        }
-        
-        .directory-tree :global(.rc-tree-indent-unit) {
-          width: 16px;
-        }
-        
-        .directory-tree :global(.rc-tree-treenode) {
-          padding: 2px 0;
-        }
-        
-        .directory-tree :global(.rc-tree-child-tree) {
-          display: block;
-        }
-        
-        .directory-tree :global(.rc-tree-treenode-disabled) {
-          color: #666;
-        }
-      `}</style>
     </div>
   );
 };

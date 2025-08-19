@@ -10,6 +10,8 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pathInput, setPathInput] = useState(initialPath || '');
+  const [availableDrives, setAvailableDrives] = useState([]);
+  const [selectedDrive, setSelectedDrive] = useState('');
 
   // Load directory data when modal opens or path changes
   useEffect(() => {
@@ -35,6 +37,24 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
       
       if (response.success) {
         setTreeData(response.root);
+        
+        // Handle available drives (Windows only)
+        if (response.availableDrives && response.availableDrives.length > 0) {
+          setAvailableDrives(response.availableDrives);
+          // Set selected drive based on current path
+          if (response.root && response.root.path) {
+            const currentDrive = response.availableDrives.find(drive => 
+              response.root.path.toLowerCase().startsWith(drive.toLowerCase())
+            );
+            if (currentDrive) {
+              setSelectedDrive(currentDrive);
+            }
+          }
+        } else {
+          setAvailableDrives([]);
+          setSelectedDrive('');
+        }
+        
         if (!selectedPath && response.root) {
           setSelectedPath(response.root.path);
           setPathInput(response.root.path);
@@ -42,11 +62,15 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
       } else {
         setError(response.error || 'Failed to load directory');
         setTreeData(null);
+        setAvailableDrives([]);
+        setSelectedDrive('');
       }
     } catch (err) {
       console.error('Failed to load directory:', err);
       setError(err.message || 'Failed to load directory');
       setTreeData(null);
+      setAvailableDrives([]);
+      setSelectedDrive('');
     } finally {
       setLoading(false);
     }
@@ -87,7 +111,28 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
 
   const handleGoUp = () => {
     if (treeData && treeData.path) {
-      const parentPath = treeData.path.split(/[/\\]/).slice(0, -1).join('/') || '/';
+      const path = treeData.path;
+      let parentPath;
+      
+      // Handle Windows paths properly
+      if (path.includes('\\')) {
+        const parts = path.split('\\').filter(part => part !== '');
+        if (parts.length > 1) {
+          // If we have more than just the drive letter, go up one level
+          parentPath = parts.slice(0, -1).join('\\') + '\\';
+        } else if (parts.length === 1) {
+          // If we're at drive root (e.g., "C:"), go to drive root with backslash
+          parentPath = parts[0] + '\\';
+        } else {
+          // Fallback to current working directory
+          parentPath = '';
+        }
+      } else {
+        // Handle Unix-style paths
+        const parts = path.split('/').filter(part => part !== '');
+        parentPath = parts.length > 1 ? '/' + parts.slice(0, -1).join('/') : '/';
+      }
+      
       setCurrentPath(parentPath);
       setPathInput(parentPath);
     }
@@ -98,14 +143,27 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
     setPathInput('');
   };
 
+  const handleGoWorkingDir = () => {
+    // Go to current working directory (empty path)
+    setCurrentPath('');
+    setPathInput('');
+  };
+
+  const handleDriveSelect = (drive) => {
+    setSelectedDrive(drive);
+    setCurrentPath(drive);
+    setPathInput(drive);
+    setSelectedPath(drive);
+  };
+
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-      {/* Full-screen container */}
+      {/* Full-screen container with responsive sizing */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-4xl w-full bg-neutral-900 rounded-lg shadow-xl border border-neutral-700">
+        <Dialog.Panel className="mx-auto w-full max-w-4xl max-h-[90vh] bg-neutral-900 rounded-lg shadow-xl border border-neutral-700 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-neutral-700">
             <Dialog.Title className="text-lg font-semibold text-orange-400">
@@ -119,8 +177,8 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
             {/* Path Navigation */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-neutral-300 mb-2">
@@ -150,6 +208,13 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
                   Up
                 </button>
                 <button
+                  onClick={handleGoWorkingDir}
+                  disabled={loading}
+                  className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
+                >
+                  Working Dir
+                </button>
+                <button
                   onClick={handleGoHome}
                   disabled={loading}
                   className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
@@ -158,6 +223,31 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
                 </button>
               </div>
             </div>
+
+            {/* Drive Selection (Windows only) */}
+            {availableDrives.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
+                  Available Drives:
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableDrives.map((drive) => (
+                    <button
+                      key={drive}
+                      onClick={() => handleDriveSelect(drive)}
+                      disabled={loading}
+                      className={`px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 ${
+                        selectedDrive === drive
+                          ? 'bg-orange-600 text-white'
+                          : 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'
+                      }`}
+                    >
+                      {drive}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Error Display */}
             {error && (

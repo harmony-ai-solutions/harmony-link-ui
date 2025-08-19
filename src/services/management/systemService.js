@@ -1,4 +1,4 @@
-import { getApiKey, getManagementApiUrl } from './baseService.js';
+import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handleResponse } from './baseService.js';
 
 /**
  * Directory Service API wrapper for directory browsing functionality
@@ -12,12 +12,9 @@ import { getApiKey, getManagementApiUrl } from './baseService.js';
  * @returns {Promise<Object>} Directory tree response
  */
 export const listDirectories = async (path = '', recursive = false, maxDepth = 3) => {
-  const response = await fetch(`${getManagementApiUrl()}/api/system/list-directories`, {
+  const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/list-directories`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Admin-API-Key': getApiKey(),
-    },
+    headers: getJsonHeaders(),
     body: JSON.stringify({
       path,
       recursive,
@@ -25,23 +22,16 @@ export const listDirectories = async (path = '', recursive = false, maxDepth = 3
     }),
   });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-  }
-
+  await handleResponse(response, 'Failed to list directories');
   return await response.json();
 };
 
 export async function openSystemUrl(url) {
-    const resp = await fetch(`${mgmtApiURL}:${mgmtApiPort}${mgmtApiPath}/system/open-url`, {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/open-url`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-Admin-API-Key": getApiKey
-        },
+        headers: getJsonHeaders(),
         body: JSON.stringify({url})
     });
-    if (!resp.ok) throw new Error(`Failed to open URL in system browser: ${url}`);
+    await handleResponse(resp, `Failed to open URL in system browser: ${url}`);
     return await resp.json();
 }

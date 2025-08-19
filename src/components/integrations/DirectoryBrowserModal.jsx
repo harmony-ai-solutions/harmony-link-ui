@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import DirectoryTree from './DirectoryTree';
-import { listDirectories } from '../../services/management/systemService.js';
+import { listDirectories, getWorkingDirectory, getHomeDirectory } from '../../services/management/systemService.js';
 
 const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = '' }) => {
   const [currentPath, setCurrentPath] = useState(initialPath || '');
@@ -138,15 +138,46 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
     }
   };
 
-  const handleGoHome = () => {
-    setCurrentPath('');
-    setPathInput('');
+  const handleGoHome = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await getHomeDirectory();
+      if (response.path) {
+        setCurrentPath(response.path);
+        setPathInput(response.path);
+        setSelectedPath(response.path);
+      } else {
+        setError('Failed to get home directory path');
+      }
+    } catch (err) {
+      console.error('Failed to get home directory:', err);
+      setError(err.message || 'Failed to get home directory');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoWorkingDir = () => {
-    // Go to current working directory (empty path)
-    setCurrentPath('');
-    setPathInput('');
+  const handleGoWorkingDir = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await getWorkingDirectory();
+      if (response.path) {
+        setCurrentPath(response.path);
+        setPathInput(response.path);
+        setSelectedPath(response.path);
+      } else {
+        setError('Failed to get working directory path');
+      }
+    } catch (err) {
+      console.error('Failed to get working directory:', err);
+      setError(err.message || 'Failed to get working directory');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDriveSelect = (drive) => {

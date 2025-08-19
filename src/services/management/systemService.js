@@ -26,6 +26,34 @@ export const listDirectories = async (path = '', recursive = false, maxDepth = 3
   return await response.json();
 };
 
+/**
+ * Get the current working directory path
+ * @returns {Promise<Object>} Response containing the working directory path
+ */
+export const getWorkingDirectory = async () => {
+  const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/working-directory`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  await handleResponse(response, 'Failed to get working directory');
+  return await response.json();
+};
+
+/**
+ * Get the user's home directory path
+ * @returns {Promise<Object>} Response containing the home directory path
+ */
+export const getHomeDirectory = async () => {
+  const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/home-directory`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  await handleResponse(response, 'Failed to get home directory');
+  return await response.json();
+};
+
 export async function openSystemUrl(url) {
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/open-url`, {
         method: "POST",

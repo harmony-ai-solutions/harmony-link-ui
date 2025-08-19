@@ -5,24 +5,77 @@ import 'rc-tree/assets/index.css';
 const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) => {
   const [expandedKeys, setExpandedKeys] = useState([]);
 
-  // Auto-expand first level when at top level (drive roots, etc.)
+  // Auto-expand logic when treeData changes
   useEffect(() => {
     if (treeData && treeData.children) {
-      const isTopLevel = treeData.path && (
+      const shouldAutoExpand = (
         // Windows drive root (e.g., "C:\")
         /^[A-Z]:\\?$/.test(treeData.path) ||
         // Unix root
         treeData.path === '/' ||
         // Working directory (empty path or just a name without separators)
-        !treeData.path.includes('/') && !treeData.path.includes('\\')
+        (!treeData.path.includes('/') && !treeData.path.includes('\\')) ||
+        // Home directory patterns (common home directory paths)
+        isHomeDirectoryPath(treeData.path) ||
+        // Any directory that should be immediately accessible
+        shouldExpandDirectory(treeData.path)
       );
       
-      if (isTopLevel) {
+      if (shouldAutoExpand) {
         // Auto-expand the root node to show first level
         setExpandedKeys([treeData.path]);
+      } else {
+        // For other directories, don't auto-expand but keep existing expansions
+        setExpandedKeys(prevKeys => {
+          // Only keep keys that still exist in the new tree
+          return prevKeys.filter(key => findNodeByKey(treeData, key));
+        });
       }
     }
   }, [treeData]);
+
+  // Helper function to detect home directory paths
+  const isHomeDirectoryPath = (path) => {
+    if (!path) return false;
+    
+    // Common home directory patterns
+    const homePatterns = [
+      /^\/home\/[^/]+\/?$/,           // Linux: /home/username
+      /^\/Users\/[^/]+\/?$/,          // macOS: /Users/username  
+      /^C:\\Users\\[^\\]+\\?$/i,      // Windows: C:\Users\username
+      /^\/root\/?$/,                  // Linux root user
+    ];
+    
+    return homePatterns.some(pattern => pattern.test(path));
+  };
+
+  // Helper function to determine if a directory should be expanded
+  const shouldExpandDirectory = (path) => {
+    if (!path) return false;
+    
+    // Expand commonly accessed directories
+    const expandPatterns = [
+      /^\/usr\/?$/,                   // Unix /usr
+      /^\/var\/?$/,                   // Unix /var
+      /^\/opt\/?$/,                   // Unix /opt
+      /^C:\\Program Files\\?$/i,      // Windows Program Files
+      /^C:\\Windows\\?$/i,            // Windows system directory
+    ];
+    
+    return expandPatterns.some(pattern => pattern.test(path));
+  };
+
+  // Helper function to find a node by key in the tree
+  const findNodeByKey = (node, key) => {
+    if (node.path === key) return node;
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findNodeByKey(child, key);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
 
   // Convert our directory structure to rc-tree format
   const convertToTreeData = (node) => {

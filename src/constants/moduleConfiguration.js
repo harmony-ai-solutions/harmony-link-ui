@@ -5,6 +5,7 @@ import logo_kajiwoto from '../assets/images/Kajiwoto_106px.png';
 import logo_kindroid from '../assets/images/Kindroid_50px.png';
 import logo_blank from '../assets/images/blank_50px.png';
 import logo_elevenlabs from '../assets/images/elevenlabs_50px.png';
+import logo_openrouter from '../assets/images/or_50px.png';
 
 export const MODULE_CONFIGS = {
     backend: {
@@ -16,6 +17,7 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
+                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'kajiwoto', name: 'Kajiwoto AI', logo: logo_kajiwoto },
                     { id: 'characterai', name: 'Character AI', logo: logo_cai },
@@ -27,7 +29,8 @@ export const MODULE_CONFIGS = {
                     openaicompatible: 'BackendOpenAICompatibleSettingsView',
                     characterai: 'BackendCharacterAISettingsView',
                     kindroid: 'BackendKindroidSettingsView',
-                    openai: 'BackendOpenAISettingsView'
+                    openai: 'BackendOpenAISettingsView',
+                    openrouter: 'BackendOpenRouterSettingsView'
                 }
             }
         ]
@@ -41,10 +44,14 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
+                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
+                    { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'CountenanceOpenAICompatibleSettingsView'
+                    openaicompatible: 'CountenanceOpenAICompatibleSettingsView',
+                    openai: 'CountenanceOpenAISettingsView',
+                    openrouter: 'CountenanceOpenRouterCompatibleSettingsView'
                 }
             }
         ]
@@ -58,10 +65,14 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
+                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
+                    { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'MovementOpenAICompatibleSettingsView'
+                    openaicompatible: 'MovementOpenAICompatibleSettingsView',
+                    openai: 'MovementOpenAISettingsView',
+                    openrouter: 'MovementOpenRouterCompatibleSettingsView'
                 }
             }
         ]

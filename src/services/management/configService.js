@@ -75,3 +75,32 @@ export async function getAppVersion() {
     const data = await resp.json();
     return data.appVersion;
 }
+
+/* Provider configuration endpoints */
+export async function validateProviderConfig(module, provider, config) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/validate-provider`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({
+            module: module,
+            provider: provider,
+            config: config
+        })
+    });
+    await handleResponse(resp, `Failed to validate provider configuration for ${module}/${provider}`);
+    return await resp.json();
+}
+
+export async function listProviderModels(module, provider, config) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/models`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({
+            module: module,
+            provider: provider,
+            config: config
+        })
+    });
+    await handleResponse(resp, `Failed to fetch models for ${module}/${provider}`);
+    return await resp.json();
+}

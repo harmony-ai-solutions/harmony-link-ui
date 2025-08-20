@@ -3,7 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
-import {validateProviderConfig} from "../../services/management/integrationsService.js";
+import {validateProviderConfig} from "../../services/management/configService.js";
 
 
 const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {

@@ -9,8 +9,10 @@ import BackendCharacterAISettingsView from './BackendCharacterAISettingsView.jsx
 import BackendKindroidSettingsView from './BackendKindroidAISettingsView.jsx';
 import BackendOpenAISettingsView from './BackendOpenAISettingsView.jsx';
 
+import CountenanceOpenAISettingsView from "./CountenanceOpenAISettingsView.jsx";
 import CountenanceOpenAICompatibleSettingsView from './CountenanceOpenAICompatibleSettingsView.jsx';
 
+import MovementOpenAISettingsView from "./MovementOpenAISettingsView.jsx";
 import MovementOpenAICompatibleSettingsView from './MovementOpenAICompatibleSettingsView.jsx';
 
 import STTHarmonySpeechSettingsView from './STTHarmonySpeechSettingsView.jsx';
@@ -37,7 +39,9 @@ const COMPONENT_MAP = {
     BackendCharacterAISettingsView,
     BackendKindroidSettingsView,
     BackendOpenAISettingsView,
+    CountenanceOpenAISettingsView,
     CountenanceOpenAICompatibleSettingsView,
+    MovementOpenAISettingsView,
     MovementOpenAICompatibleSettingsView,
     STTHarmonySpeechSettingsView,
     STTOpenAISettingsView,

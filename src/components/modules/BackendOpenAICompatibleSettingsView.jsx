@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
-import {validateProviderConfig} from "../../services/management/integrationsService.js";
+import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
@@ -37,6 +37,11 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
     const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
     const [systemPrompts, setSystemPrompts] = useState(initialSettings.systemprompts ? initialSettings.systemprompts.join(" ") : "");
     const [userPrompts, setUserPrompts] = useState(initialSettings.userprompts ? initialSettings.userprompts.join(" ") : "");
+
+    // Model dropdown state
+    const [availableModels, setAvailableModels] = useState([]);
+    const [modelsLoading, setModelsLoading] = useState(false);
+    const [modelsError, setModelsError] = useState('');
 
     // Validation Functions
     const validateBaseURLAndUpdate = (value) => {
@@ -188,6 +193,45 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
         }
     };
 
+    const handleFetchModels = async () => {
+        if (!moduleSettings.baseurl || !moduleSettings.apikey) {
+            setModelsError('Base URL and API Key are required to fetch models');
+            return;
+        }
+
+        setModelsLoading(true);
+        setModelsError('');
+        
+        const currentConfig = {
+            baseurl: moduleSettings.baseurl,
+            apikey: moduleSettings.apikey,
+            model: moduleSettings.model,
+            maxtokens: moduleSettings.maxtokens,
+            temperature: moduleSettings.temperature,
+            topp: moduleSettings.topp,
+            n: moduleSettings.n,
+            stoptokens: moduleSettings.stoptokens,
+            systemprompts: moduleSettings.systemprompts,
+            userprompts: moduleSettings.userprompts
+        };
+        
+        try {
+            const result = await listProviderModels(MODULES.BACKEND, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
+            if (result.error) {
+                setModelsError(result.error);
+                setAvailableModels([]);
+            } else {
+                setAvailableModels(result.models || []);
+                setModelsError('');
+            }
+        } catch (error) {
+            setModelsError('Failed to fetch models: ' + error.message);
+            setAvailableModels([]);
+        } finally {
+            setModelsLoading(false);
+        }
+    };
+
     const setInitialValues = () => {
         // Reset Entity map
         setModuleSettings(initialSettings);
@@ -251,15 +295,39 @@ const BackendOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}
                             Model
                             <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                The model name to use.
+                                The model name to use. Click "Fetch Models" to load available models from the provider.
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
-                            <input type="text" name="model"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="Model Name" value={model}
-                                   onChange={(e) => setModel(e.target.value)}
-                                   onBlur={(e) => setModelAndUpdate(e.target.value)}/>
+                            <div className="flex gap-2">
+                                <select name="model"
+                                        className="mt-1 block flex-1 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                        value={model}
+                                        onChange={(e) => setModelAndUpdate(e.target.value)}>
+                                    <option value="">Select a model...</option>
+                                    {availableModels.map((modelInfo) => (
+                                        <option key={modelInfo.id} value={modelInfo.id}>
+                                            {modelInfo.name || modelInfo.id}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={handleFetchModels}
+                                    disabled={modelsLoading || !moduleSettings.baseurl || !moduleSettings.apikey}
+                                    className="mt-1 px-3 py-2 bg-orange-600 text-white text-sm font-medium rounded hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                                >
+                                    {modelsLoading ? 'Loading...' : 'Fetch Models'}
+                                </button>
+                            </div>
+                            {modelsError && (
+                                <p className="mt-1 text-sm text-red-400">{modelsError}</p>
+                            )}
+                            {availableModels.length > 0 && (
+                                <p className="mt-1 text-sm text-green-400">
+                                    Found {availableModels.length} model(s)
+                                </p>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">

@@ -2,12 +2,11 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
-import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
-import { MODULES, PROVIDERS } from '../../constants/modules.js';
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
 
-const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
+const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -26,9 +25,14 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
+    // Model dropdown state - initialize with error message like TTS component
+    const [availableModels, setAvailableModels] = useState([
+        {name: "Error: no models available", value: null}
+    ]);
+    const [modelsLoading, setModelsLoading] = useState(false);
+
     // Fields
-    const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
-    const [apiKey, setApiKey] = useState(initialSettings.apikey);
+    const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
     const [model, setModel] = useState(initialSettings.model);
     const [maxTokens, setMaxTokens] = useState(initialSettings.maxtokens);
     const [temperature, setTemperature] = useState(initialSettings.temperature);
@@ -36,32 +40,80 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
     const [n, setN] = useState(initialSettings.n);
     const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
 
-    // Model dropdown state
-    const [availableModels, setAvailableModels] = useState([]);
-    const [modelsLoading, setModelsLoading] = useState(false);
-    const [modelsError, setModelsError] = useState('');
+    // Auto-refresh models when API key changes or component loads
+    const refreshAvailableModels = async () => {
+        // Smart refresh: avoid unnecessary calls if we already have valid models
+        if (availableModels.length > 0 && !availableModels[0].name.startsWith("Error") && !availableModels[0].name.startsWith("Updating models")) {
+            return;
+        }
+        
+        if (!moduleSettings.openaiapikey) {
+            setAvailableModels([{name: "Error: API Key not set", value: null}]);
+            return;
+        }
+
+        setModelsLoading(true);
+        setAvailableModels([{name: 'Updating models...', value: null }]);
+        
+        const currentConfig = {
+            openaiapikey: moduleSettings.openaiapikey,
+            model: moduleSettings.model,
+            maxtokens: moduleSettings.maxtokens,
+            temperature: moduleSettings.temperature,
+            topp: moduleSettings.topp,
+            n: moduleSettings.n,
+            stoptokens: moduleSettings.stoptokens
+        };
+        
+        try {
+            const result = await listProviderModels(MODULES.COUNTENANCE, PROVIDERS.OPENAI, currentConfig);
+            if (result.error) {
+                setAvailableModels([{name: "Error: please check API Key", value: null}]);
+            } else if (result.error || !result.models || result.models.length === 0) {
+                setAvailableModels([{name: "Error: no models available", value: null}]);
+            } else {
+                const newModels = result.models || [];
+                setAvailableModels(newModels);
+
+                // Ensure current model selection is valid
+                if (!newModels.some((modelInfo) => (modelInfo.id || modelInfo.value) === model)) {
+                    // If current model is not in the list, select the first available model
+                    if (newModels.length > 0 && newModels[0].id) {
+                        setModelAndUpdate(newModels[0].id);
+                    }
+                }
+            }
+        } catch (error) {
+            setAvailableModels([{name: "Error: internal error - please check console logs", value: null}]);
+        } finally {
+            setModelsLoading(false);
+        }
+    };
 
     // Validation Functions
-    const validateBaseURLAndUpdate = (value) => {
-        const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}|localhost|\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(:[0-9]{1,5})?(\/.*)?$/;
-        if ((moduleSettings.baseurl.length > 0 && value.length === 0) || (value.length > 0 && urlRegex.test(value) === false)) {
-            showModal("Base URL must be a valid URL.");
-            setBaseURL(moduleSettings.baseurl);
-            return false;
-        }
-        moduleSettings.baseurl = value;
-        saveSettingsFunc(moduleSettings);
-        return true;
-    };
     const validateApikeyAndUpdate = (value) => {
-        moduleSettings.apikey = value;
-        saveSettingsFunc(moduleSettings);
+        if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
+            showModal("API Key cannot be empty.");
+            setOpenAIAPIKey(moduleSettings.openaiapikey);
+            return false;
+        } else if (value === moduleSettings.openaiapikey) {
+            return true; // Skip if no change
+        }
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
+
+        // Auto-refresh models after API key update (like TTS does with endpoint)
+        setAvailableModels([{name: "Updating models...", value: null}]);
+        refreshAvailableModels();
         return true;
     };
     const setModelAndUpdate = (value) => {
         setModel(value);
-        moduleSettings.model = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, model: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     }
     const validateMaxTokensAndUpdate = (value) => {
@@ -71,8 +123,10 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
             setMaxTokens(moduleSettings.maxtokens);
             return false;
         }
-        moduleSettings.maxtokens = numValue;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, maxtokens: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTemperatureAndUpdate = (value) => {
@@ -82,8 +136,10 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
             setTemperature(moduleSettings.temperature);
             return false;
         }
-        moduleSettings.temperature = numValue;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, temperature: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTopPAndUpdate = (value) => {
@@ -93,8 +149,10 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
             setTopP(moduleSettings.topp);
             return false;
         }
-        moduleSettings.topp = numValue;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, topp: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateNAndUpdate = (value) => {
@@ -104,8 +162,10 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
             setN(moduleSettings.n);
             return false;
         }
-        moduleSettings.n = numValue;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, n: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateStopTokensAndUpdate = (value) => {
@@ -118,8 +178,9 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
         // Update if validation successful
         // Split by comma
         setStopTokens(value);
-        moduleSettings.stoptokens = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, stoptokens: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -127,8 +188,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            baseurl: moduleSettings.baseurl,
-            apikey: moduleSettings.apikey,
+            openaiapikey: moduleSettings.openaiapikey,
             model: moduleSettings.model,
             maxtokens: moduleSettings.maxtokens,
             temperature: moduleSettings.temperature,
@@ -138,7 +198,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
         };
         
         try {
-            const result = await validateProviderConfig(MODULES.MOVEMENT, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
+            const result = await validateProviderConfig(MODULES.COUNTENANCE, PROVIDERS.OPENAI, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -151,52 +211,13 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
         }
     };
 
-    const handleFetchModels = async () => {
-        if (!moduleSettings.baseurl || !moduleSettings.apikey) {
-            setModelsError('Base URL and API Key are required to fetch models');
-            return;
-        }
-
-        setModelsLoading(true);
-        setModelsError('');
-        
-        const currentConfig = {
-            baseurl: moduleSettings.baseurl,
-            apikey: moduleSettings.apikey,
-            model: moduleSettings.model,
-            maxtokens: moduleSettings.maxtokens,
-            temperature: moduleSettings.temperature,
-            topp: moduleSettings.topp,
-            n: moduleSettings.n,
-            stoptokens: moduleSettings.stoptokens
-        };
-        
-        try {
-            const result = await listProviderModels(MODULES.MOVEMENT, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
-            if (result.error) {
-                setModelsError(result.error);
-                setAvailableModels([]);
-            } else {
-                setAvailableModels(result.models || []);
-                setModelsError('');
-            }
-        } catch (error) {
-            setModelsError('Failed to fetch models: ' + error.message);
-            setAvailableModels([]);
-        } finally {
-            setModelsLoading(false);
-        }
-    };
-
     const setInitialValues = () => {
+        // Reset Entity map
         setModuleSettings(initialSettings);
-    };
-
-    const useIntegration = (integration, urlIndex = 0) => {
-        const selectedURL = integration.apiURLs[urlIndex];
-        setBaseURL(selectedURL);
-        moduleSettings.baseurl = selectedURL;
-        saveSettingsFunc(moduleSettings);
+        // Auto-fetch models if API key is available (like TTS does with endpoint)
+        if (initialSettings.openaiapikey) {
+            refreshAvailableModels();
+        }
     };
 
     useEffect(() => {
@@ -206,89 +227,63 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
 
     return(
         <>
-            <div className="flex flex-wrap w-full pt-2">                
+            <div className="flex flex-wrap w-full pt-2">
                 <ConfigVerificationSection
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay moduleName={MODULES.MOVEMENT} providerName={PROVIDERS.OPENAI_COMPATIBLE} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
-                    <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
-                            Base URL
-                            <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
-                                             setTooltipVisible={setTooltipVisible}>
-                                The base URL for the OpenAI compatible API endpoint.
-                            </SettingsTooltip>
-                        </label>
-                        <div className="w-5/6 px-3">
-                            <input type="text" name="baseurl"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="Base URL" value={baseURL}
-                                   onChange={(e) => setBaseURL(e.target.value)}
-                                   onBlur={(e) => validateBaseURLAndUpdate(e.target.value)}/>
-                        </div>
-                    </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             API Key
-                            <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                Your API Key for the OpenAI compatible service (if required).
+                                Your OpenAI API Key
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="apikey"
                                    className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="API Key" value={apiKey}
-                                   onChange={(e) => setApiKey(e.target.value)}
+                                   placeholder="OpenAI API Key" value={openAIAPIKey}
+                                   onChange={(e) => setOpenAIAPIKey(e.target.value)}
                                    onBlur={(e) => validateApikeyAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Model
-                            <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                The model name to use. Click "Fetch Models" to load available models from the provider.
+                                OpenAI Model you want to use. Models are automatically loaded when you provide a valid API key.
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
-                            <div className="flex gap-2">
+                            <div className="relative">
                                 <select name="model"
-                                        className="mt-1 block flex-1 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                        className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 custom-scrollbar"
                                         value={model}
                                         onChange={(e) => setModelAndUpdate(e.target.value)}>
-                                    <option value="">Select a model...</option>
                                     {availableModels.map((modelInfo) => (
                                         <option key={modelInfo.id} value={modelInfo.id}>
                                             {modelInfo.name || modelInfo.id}
                                         </option>
                                     ))}
                                 </select>
-                                <button
-                                    type="button"
-                                    onClick={handleFetchModels}
-                                    disabled={modelsLoading || !moduleSettings.baseurl || !moduleSettings.apikey}
-                                    className="mt-1 px-3 py-2 bg-orange-600 text-white text-sm font-medium rounded hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                                >
-                                    {modelsLoading ? 'Loading...' : 'Fetch Models'}
-                                </button>
+                                {modelsLoading && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <svg className="animate-spin h-4 w-4 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
-                            {modelsError && (
-                                <p className="mt-1 text-sm text-red-400">{modelsError}</p>
-                            )}
-                            {availableModels.length > 0 && (
-                                <p className="mt-1 text-sm text-green-400">
-                                    Found {availableModels.length} model(s)
-                                </p>
-                            )}
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Max Tokens
-                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Maximum new tokens to generate per request.
                             </SettingsTooltip>
@@ -304,7 +299,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Temperature
-                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Temperature defines the likelihood of the model choosing tokens that are outside the
                                 context.
@@ -324,7 +319,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Top P
-                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Top P defines the probability of the model choosing the most likely next word.
                                 <br/>A higher value means the model is more deterministic, but it also can lead to
@@ -343,7 +338,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Number of Results
-                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 How many chat completion choices / results to generate per request.
                                 <br/>Set to -1 to disable.
@@ -360,7 +355,7 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
                             Stop Tokens
-                            <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 List of Stop tokens, comma separated.
                                 <br/>If the model encounters a stop token during generation, it will end the current
@@ -407,4 +402,4 @@ const MovementOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc
     );
 }
 
-export default MovementOpenAICompatibleSettingsView;
+export default CountenanceOpenAISettingsView;

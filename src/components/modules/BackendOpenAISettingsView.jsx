@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
-import {validateProviderConfig} from "../../services/management/integrationsService.js";
+import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 
@@ -25,25 +25,11 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
-    const modelOptions = [
-        { name: 'GPT-4 32k 0613', value: 'gpt-4-32k-0613' },
-        { name: 'GPT-4 32k 0314', value: 'gpt-4-32k-0314' },
-        { name: 'GPT-4 32k', value: 'gpt-4-32k' },
-        { name: 'GPT-4 0613', value: 'gpt-4-0613' },
-        { name: 'GPT-4 0314', value: 'gpt-4-0314' },
-        { name: 'GPT-4o', value: 'gpt-4o' },
-        { name: 'GPT-4o 2024-05-13', value: 'gpt-4o-2024-05-13' },
-        { name: 'GPT-4 Turbo', value: 'gpt-4-turbo' },
-        { name: 'GPT-4 Turbo 2024-04-09', value: 'gpt-4-turbo-2024-04-09' },
-        { name: 'GPT-4', value: 'gpt-4' },
-        { name: 'GPT-3.5 Turbo 0125', value: 'gpt-3.5-turbo-0125' },
-        { name: 'GPT-3.5 Turbo 1106', value: 'gpt-3.5-turbo-1106' },
-        { name: 'GPT-3.5 Turbo 0613', value: 'gpt-3.5-turbo-0613' },
-        { name: 'GPT-3.5 Turbo 0301', value: 'gpt-3.5-turbo-0301' },
-        { name: 'GPT-3.5 Turbo 16k', value: 'gpt-3.5-turbo-16k' },
-        { name: 'GPT-3.5 Turbo 16k 0613', value: 'gpt-3.5-turbo-16k-0613' },
-        { name: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' }
-    ];
+    // Model dropdown state - initialize with error message like TTS component
+    const [availableModels, setAvailableModels] = useState([
+        {name: "Error: no models available", value: null}
+    ]);
+    const [modelsLoading, setModelsLoading] = useState(false);
 
     // Fields
     const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
@@ -56,22 +42,82 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [systemPrompts, setSystemPrompts] = useState(initialSettings.systemprompts ? initialSettings.systemprompts.join(" ") : "");
     const [userPrompts, setUserPrompts] = useState(initialSettings.userprompts ? initialSettings.userprompts.join(" ") : "");
 
+    // Auto-refresh models when API key changes or component loads
+    const refreshAvailableModels = async () => {
+        // Smart refresh: avoid unnecessary calls if we already have valid models
+        if (availableModels.length > 0 && !availableModels[0].name.startsWith("Error") && !availableModels[0].name.startsWith("Updating models")) {
+            return;
+        }
+        
+        if (!moduleSettings.openaiapikey) {
+            setAvailableModels([{name: "Error: API Key not set", value: null}]);
+            return;
+        }
+
+        setModelsLoading(true);
+        setAvailableModels([{name: 'Updating models...', value: null }]);
+
+        const currentConfig = {
+            openaiapikey: moduleSettings.openaiapikey,
+            model: moduleSettings.model,
+            maxtokens: moduleSettings.maxtokens,
+            temperature: moduleSettings.temperature,
+            topp: moduleSettings.topp,
+            n: moduleSettings.n,
+            stoptokens: moduleSettings.stoptokens,
+            systemprompts: moduleSettings.systemprompts,
+            userprompts: moduleSettings.userprompts
+        };
+
+        try {
+            const result = await listProviderModels(MODULES.BACKEND, PROVIDERS.OPENAI, currentConfig);
+            if (result.error) {
+                setAvailableModels([{name: "Error: please check API Key", value: null}]);
+            } else if (result.error || !result.models || result.models.length === 0) {
+                setAvailableModels([{name: "Error: no models available", value: null}]);
+            } else {
+                const newModels = result.models || [];
+                setAvailableModels(newModels);
+
+                // Ensure current model selection is valid
+                if (!newModels.some((modelInfo) => (modelInfo.id || modelInfo.value) === model)) {
+                    // If current model is not in the list, select the first available model
+                    if (newModels.length > 0 && newModels[0].id) {
+                        setModelAndUpdate(newModels[0].id);
+                    }
+                }
+            }
+        } catch (error) {
+            setAvailableModels([{name: "Error: internal error - please check console logs", value: null}]);
+        } finally {
+            setModelsLoading(false);
+        }
+    };
+
     // Validation Functions
     const validateApikeyAndUpdate = (value) => {
         if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
             showModal("API Key cannot be empty.");
             setOpenAIAPIKey(moduleSettings.openaiapikey);
             return false;
+        } else if (value === moduleSettings.openaiapikey) {
+            return true; // Skip if no change
         }
         // Update if validation successful
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
+
+        // Auto-refresh models after API key update (like TTS does with endpoint)
+        setAvailableModels([{name: "Updating models...", value: null}]);
+        refreshAvailableModels();
         return true;
     };
     const setModelAndUpdate = (value) => {
         setModel(value);
-        moduleSettings.model = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, model: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     }
     const validateMaxTokensAndUpdate = (value) => {
@@ -82,8 +128,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.maxtokens = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, maxtokens: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTemperatureAndUpdate = (value) => {
@@ -94,8 +141,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.temperature = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, temperature: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTopPAndUpdate = (value) => {
@@ -106,8 +154,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.topp = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, topp: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateNAndUpdate = (value) => {
@@ -118,8 +167,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.n = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, n: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateStopTokensAndUpdate = (value) => {
@@ -132,8 +182,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         // Update if validation successful
         // Split by comma
         setStopTokens(value);
-        moduleSettings.stoptokens = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, stoptokens: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateSystemPromptsAndUpdate = (value) => {
@@ -151,8 +202,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             }
         });
         setSystemPrompts(values.filter(item => item !== "").join(" "));
-        moduleSettings.systemprompts = values;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, systemprompts: values };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateUserPromptsAndUpdate = (value) => {
@@ -170,14 +222,15 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             }
         });
         setUserPrompts(values.filter(item => item !== "").join(" "));
-        moduleSettings.userprompts = values;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, userprompts: values };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const handleValidateConfig = async () => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
-        
+
         const currentConfig = {
             openaiapikey: moduleSettings.openaiapikey,
             model: moduleSettings.model,
@@ -189,7 +242,7 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             systemprompts: moduleSettings.systemprompts,
             userprompts: moduleSettings.userprompts
         };
-        
+
         try {
             const result = await validateProviderConfig(MODULES.BACKEND, PROVIDERS.OPENAI, currentConfig);
             setValidationState({
@@ -197,9 +250,9 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
             });
         } catch (error) {
-            setValidationState({ 
-                status: 'error', 
-                message: 'Validation failed: ' + error.message 
+            setValidationState({
+                status: 'error',
+                message: 'Validation failed: ' + error.message
             });
         }
     };
@@ -207,6 +260,10 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     const setInitialValues = () => {
         // Reset Entity map
         setModuleSettings(initialSettings);
+        // Auto-fetch models if API key is available (like TTS does with endpoint)
+        if (initialSettings.openaiapikey) {
+            refreshAvailableModels();
+        }
     };
 
     useEffect(() => {
@@ -243,20 +300,30 @@ const BackendOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                             Model
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                OpenAI Model you want to use.
+                                OpenAI Model you want to use. Models are automatically loaded when you provide a valid API key.
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
-                            <select
-                                value={model}
-                                onChange={(e) => setModelAndUpdate(e.target.value)}
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100">
-                                {modelOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select name="model"
+                                        className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 custom-scrollbar"
+                                        value={model}
+                                        onChange={(e) => setModelAndUpdate(e.target.value)}>
+                                    {availableModels.map((modelInfo) => (
+                                        <option key={modelInfo.id} value={modelInfo.id}>
+                                            {modelInfo.name || modelInfo.id}
+                                        </option>
+                                    ))}
+                                </select>
+                                {modelsLoading && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <svg className="animate-spin h-4 w-4 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">

@@ -168,17 +168,3 @@ export async function getAvailableIntegrationsForProvider(moduleName, providerNa
     await handleResponse(resp, `Failed to fetch available integrations for ${moduleName}/${providerName}`);
     return await resp.json();
 }
-
-export async function validateProviderConfig(module, provider, config) {
-    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/validate-provider`, {
-        method: "POST",
-        headers: getJsonHeaders(),
-        body: JSON.stringify({
-            module: module,
-            provider: provider,
-            config: config
-        })
-    });
-    await handleResponse(resp, `Failed to validate provider configuration for ${module}/${provider}`);
-    return await resp.json();
-}

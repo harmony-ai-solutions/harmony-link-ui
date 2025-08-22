@@ -29,7 +29,8 @@ export const MODULE_CONFIGS = {
                     openaicompatible: 'BackendOpenAICompatibleSettingsView',
                     characterai: 'BackendCharacterAISettingsView',
                     kindroid: 'BackendKindroidSettingsView',
-                    openai: 'BackendOpenAISettingsView'
+                    openai: 'BackendOpenAISettingsView',
+                    openrouter: 'BackendOpenRouterSettingsView'
                 }
             }
         ]
@@ -49,7 +50,8 @@ export const MODULE_CONFIGS = {
                 ],
                 components: {
                     openaicompatible: 'CountenanceOpenAICompatibleSettingsView',
-                    openai: 'CountenanceOpenAISettingsView'
+                    openai: 'CountenanceOpenAISettingsView',
+                    openrouter: 'CountenanceOpenRouterSettingsView'
                 }
             }
         ]
@@ -69,7 +71,8 @@ export const MODULE_CONFIGS = {
                 ],
                 components: {
                     openaicompatible: 'MovementOpenAICompatibleSettingsView',
-                    openai: 'MovementOpenAISettingsView'
+                    openai: 'MovementOpenAISettingsView',
+                    openrouter: 'MovementOpenRouterSettingsView'
                 }
             }
         ]

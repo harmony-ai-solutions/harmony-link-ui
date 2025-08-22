@@ -8,12 +8,15 @@ import BackendOpenAICompatibleSettingsView from './BackendOpenAICompatibleSettin
 import BackendCharacterAISettingsView from './BackendCharacterAISettingsView.jsx';
 import BackendKindroidSettingsView from './BackendKindroidAISettingsView.jsx';
 import BackendOpenAISettingsView from './BackendOpenAISettingsView.jsx';
+import BackendOpenRouterSettingsView from "./BackendOpenRouterSettingsView.jsx";
 
 import CountenanceOpenAISettingsView from "./CountenanceOpenAISettingsView.jsx";
 import CountenanceOpenAICompatibleSettingsView from './CountenanceOpenAICompatibleSettingsView.jsx';
+import CountenanceOpenRouterSettingsView from "./CountenanceOpenRouterSettingsView.jsx";
 
 import MovementOpenAISettingsView from "./MovementOpenAISettingsView.jsx";
 import MovementOpenAICompatibleSettingsView from './MovementOpenAICompatibleSettingsView.jsx';
+import MovementOpenRouterSettingsView from "./MovementOpenRouterSettingsView.jsx";
 
 import STTHarmonySpeechSettingsView from './STTHarmonySpeechSettingsView.jsx';
 import STTOpenAISettingsView from './STTOpenAISettingsView.jsx';
@@ -39,10 +42,13 @@ const COMPONENT_MAP = {
     BackendCharacterAISettingsView,
     BackendKindroidSettingsView,
     BackendOpenAISettingsView,
+    BackendOpenRouterSettingsView,
     CountenanceOpenAISettingsView,
     CountenanceOpenAICompatibleSettingsView,
+    CountenanceOpenRouterSettingsView,
     MovementOpenAISettingsView,
     MovementOpenAICompatibleSettingsView,
+    MovementOpenRouterSettingsView,
     STTHarmonySpeechSettingsView,
     STTOpenAISettingsView,
     VADHarmonySpeechSettingsView,

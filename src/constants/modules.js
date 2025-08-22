@@ -3,6 +3,7 @@ export const MODULES = {
     BACKEND: 'backend',
     TTS: 'tts',
     STT: 'stt',
+    VAD: 'vad',
     RAG: 'rag',
     COUNTENANCE: 'countenance',
     MOVEMENT: 'movement'
@@ -19,5 +20,6 @@ export const PROVIDERS = {
     MISTRAL: 'mistral',
     LOCALAI: 'localai',
     KAJIWOTO: 'kajiwoto',
-    CHARACTERAI: 'characterai'
+    CHARACTERAI: 'characterai',
+    OPENROUTER: 'openrouter'
 };

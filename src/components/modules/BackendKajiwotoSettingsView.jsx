@@ -39,8 +39,9 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.username = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, username: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -51,8 +52,9 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.password = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, password: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -64,8 +66,9 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.kajiroomurl = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, kajiroomurl: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

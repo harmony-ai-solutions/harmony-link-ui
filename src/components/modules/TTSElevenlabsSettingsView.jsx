@@ -42,8 +42,9 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.elevenlabsapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, elevenlabsapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateModelIdAndUpdate = (value) => {
@@ -53,8 +54,9 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.modelid = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, modelid: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateVoiceIdAndUpdate = (value) => {
@@ -64,8 +66,9 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.voiceid = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, voiceid: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateStabilityAndUpdate = (value) => {
@@ -76,8 +79,9 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.stability = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, stability: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateSimilarityBoostAndUpdate = (value) => {
@@ -88,8 +92,9 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.similarityboost = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, similarityboost: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateStyleAndUpdate = (value) => {
@@ -100,14 +105,15 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.style = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, style: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const setSpeakerBoostAndUpdate = (value) => {
-        setSpeakerBoost(value);
-        moduleSettings.speakerboost = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, speakerboost: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
     }
 
     const handleValidateConfig = async () => {

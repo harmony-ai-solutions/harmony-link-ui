@@ -35,8 +35,9 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
         }
-        moduleSettings.embeddingmodel = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, embeddingmodel: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

@@ -37,8 +37,9 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             setBaseURL(moduleSettings.baseurl);
             return false;
         }
-        moduleSettings.baseurl = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, baseurl: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -48,8 +49,9 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
         }
-        moduleSettings.embeddingmodel = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, embeddingmodel: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

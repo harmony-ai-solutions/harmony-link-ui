@@ -126,8 +126,9 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.endpoint = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, endpoint: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
 
         // Refresh Speech Tooling
         harmonySpeechPlugin.setBaseURL(value);
@@ -263,8 +264,9 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setEndpoint(selectedURL);
-        moduleSettings.endpoint = selectedURL;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
     };
 
     useEffect(() => {
@@ -285,8 +287,9 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             setCurrentVoiceConfig(parsedConfig);
             // Update Harmony Link Settings
             setVoiceConfigFile(selectedConfig);
-            moduleSettings.voiceconfigfile = selectedConfig;
-            saveSettingsFunc(moduleSettings);
+            const updatedSettings = { ...moduleSettings, voiceconfigfile: selectedConfig };
+            setModuleSettings(updatedSettings);
+            saveSettingsFunc(updatedSettings);
             return true;
         } catch (error) {
             LogError("Failed to load voice configuration.");

@@ -37,14 +37,16 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
         if (!moduleSettings.chromem) {
             moduleSettings.chromem = {};
         }
-        moduleSettings.chromem.embeddingconcurrency = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedChromem = { ...moduleSettings.chromem, embeddingconcurrency: numValue };
+        const updatedSettings = { ...moduleSettings, chromem: updatedChromem };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
-        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
+        // Reset Entity map
+        setModuleSettings(initialSettings);
         setEmbeddingConcurrency(initialSettings.chromem?.embeddingconcurrency || 0);
     };
 

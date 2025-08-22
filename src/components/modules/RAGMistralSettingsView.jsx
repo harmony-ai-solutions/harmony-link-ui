@@ -35,8 +35,9 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             setApiKey(moduleSettings.mistralapikey);
             return false;
         }
-        moduleSettings.mistralapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, mistralapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

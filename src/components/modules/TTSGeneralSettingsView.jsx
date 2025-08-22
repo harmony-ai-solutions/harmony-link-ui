@@ -33,13 +33,15 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Validation Functions
     const setTTSOutputTypeAndUpdate = (value) => {
         setTtsOutputType(value);
-        moduleSettings.outputtype = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, outputtype: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
     }
     const setVocalizeNonverbalAndUpdate = (value) => {
         setVocalizeNonverbal(value);
-        moduleSettings.vocalizenonverbal = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, vocalizenonverbal: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
     }
     const validateWordsToReplaceAndUpdate = (value) => {
         if (value.trim() === "") {
@@ -51,20 +53,21 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const newWordsToReplace = {};
         const lines = value.split('\n');
         lines.forEach((line, index) => {
-            const [key, value] = line.split(':').map(part => part.trim());
-            if(key.length !== 0 && value.length !== 0) {
-                newWordsToReplace[key] = value;
+            const [key, val] = line.split(':').map(part => part.trim());
+            if(key.length !== 0 && val.length !== 0) {
+                newWordsToReplace[key] = val;
             }
         });
-        setWordsToReplace(Object.entries(newWordsToReplace).map(([key, value]) => `${key}: ${value}`).join('\n'));
-        moduleSettings.wordstoreplace = newWordsToReplace;
-        saveSettingsFunc(moduleSettings);
+        setWordsToReplace(Object.entries(newWordsToReplace).map(([key, val]) => `${key}: ${val}`).join('\n'));
+        const updatedSettings = { ...moduleSettings, wordstoreplace: newWordsToReplace };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
-        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
+        // Reset Entity map
+        setModuleSettings(initialSettings);
     };
 
     useEffect(() => {

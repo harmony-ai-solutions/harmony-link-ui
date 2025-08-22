@@ -32,8 +32,9 @@ const VADGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Validation Functions
     const validateProviderAndUpdate = (value) => {
         // Update if validation successful
-        moduleSettings.provider = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, provider: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

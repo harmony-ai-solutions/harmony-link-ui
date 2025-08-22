@@ -38,8 +38,9 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
             return false;
         }
         // Update if validation successful
-        moduleSettings.apitoken = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, apitoken: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateChatRoomAndUpdate = (value) => {
@@ -50,8 +51,9 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
             return false;
         }
         // Update if validation successful
-        moduleSettings.chatroomurl = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, chatroomurl: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

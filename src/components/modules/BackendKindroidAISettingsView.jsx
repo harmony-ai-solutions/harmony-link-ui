@@ -38,8 +38,9 @@ const BackendKindroidAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.apikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, apikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateKindroidIDAndUpdate = (value) => {
@@ -49,8 +50,9 @@ const BackendKindroidAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.kindroidid = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, kindroidid: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 

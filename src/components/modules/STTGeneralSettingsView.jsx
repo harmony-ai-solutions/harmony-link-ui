@@ -33,8 +33,10 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.streamrecording.mainstreamtimemillis = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedStreamRecording = { ...moduleSettings.streamrecording, mainstreamtimemillis: numValue };
+        const updatedSettings = { ...moduleSettings, streamrecording: updatedStreamRecording };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTranscriptionTransitionStreamTimeMillisAndUpdate = (value) => {
@@ -46,8 +48,10 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.streamrecording.transitionstreamtimemillis = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedStreamRecording = { ...moduleSettings.streamrecording, transitionstreamtimemillis: numValue };
+        const updatedSettings = { ...moduleSettings, streamrecording: updatedStreamRecording };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateTranscriptionMaxBufferCountAndUpdate = (value) => {
@@ -58,14 +62,16 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.streamrecording.maxbuffercount = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedStreamRecording = { ...moduleSettings.streamrecording, maxbuffercount: numValue };
+        const updatedSettings = { ...moduleSettings, streamrecording: updatedStreamRecording };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
-        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
+        // Reset Entity map
+        setModuleSettings(initialSettings);
     };
 
     useEffect(() => {

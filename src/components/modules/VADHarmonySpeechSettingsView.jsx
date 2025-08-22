@@ -57,8 +57,9 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.endpoint = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, endpoint: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
 
         // Refresh Speech Tooling
         harmonySpeechPlugin.setBaseURL(value);
@@ -149,14 +150,16 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const useIntegration = (integration, urlIndex = 0) => {
         const selectedURL = integration.apiURLs[urlIndex];
         setEndpoint(selectedURL);
-        moduleSettings.endpoint = selectedURL;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
     };
 
     const handleModelSelectionChange = (selectedModelId) => {
         setModel(selectedModelId);
-        moduleSettings.model = selectedModelId;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, model: selectedModelId };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     }
 

@@ -33,8 +33,9 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.startupsynctimeout = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, startupsynctimeout: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateExecutionThresholdAndUpdate = (value) => {
@@ -45,14 +46,15 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.executionthreshold = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, executionthreshold: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        // Reset Entity map - create a mutable copy to avoid Immer immutability issues
-        setModuleSettings(JSON.parse(JSON.stringify(initialSettings)));
+        // Reset Entity map
+        setModuleSettings(initialSettings);
     };
 
     useEffect(() => {

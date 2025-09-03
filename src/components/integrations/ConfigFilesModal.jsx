@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
 import { Editor } from '@monaco-editor/react';
-import { getIntegrationConfigFiles, readIntegrationConfigFile, saveIntegrationConfigFile, revertIntegrationConfigFile, getIntegrationInstances } from '../../services/management/integrationsService.js';
+import { getIntegrationInstanceStatus, getIntegrationInstanceConfigFiles, readIntegrationInstanceConfigFile, saveIntegrationInstanceConfigFile, revertIntegrationInstanceConfigFile } from '../../services/management/integrationsService.js';
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ');

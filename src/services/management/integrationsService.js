@@ -127,38 +127,38 @@ export async function getIntegrationTemplate(name, deviceType = 'cpu') {
     return await resp.text();
 }
 
-// Shared Config Files (these are not instance-specific, but apply to the integration as a whole)
-export async function getIntegrationConfigFiles(integrationName, deviceType = 'cpu') {
-    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/config-files?device=${encodeURIComponent(deviceType)}`, {
+// Instance-specific Config Files
+export async function getIntegrationInstanceConfigFiles(integrationName, instanceName) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files`, {
         headers: getAuthHeaders()
     });
-    await handleResponse(resp, `Failed to fetch config files for ${integrationName}`);
+    await handleResponse(resp,`Failed to fetch config files for instance ${instanceName} of ${integrationName}`);
     return await resp.json();
 }
 
-export async function readIntegrationConfigFile(integrationName, deviceType, filename) {
-    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}?device=${encodeURIComponent(deviceType)}`, {
+export async function readIntegrationInstanceConfigFile(integrationName, instanceName, filename) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}`, {
         headers: getAuthHeaders()
     });
-    await handleResponse(resp, `Failed to read config file ${filename} for ${integrationName}`);
+    await handleResponse(resp,`Failed to read config file ${filename} for instance ${instanceName} of ${integrationName}`);
     return await resp.text();
 }
 
-export async function saveIntegrationConfigFile(integrationName, deviceType, filename, content) {
-    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}?device=${encodeURIComponent(deviceType)}`, {
+export async function saveIntegrationInstanceConfigFile(integrationName, instanceName, filename, content) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}`, {
         method: "POST",
         headers: getJsonHeaders(),
         body: JSON.stringify({content})
     });
-    await handleResponse(resp, `Failed to save config file ${filename} for ${integrationName}`);
+    await handleResponse(resp, `Failed to save config file ${filename} for instance ${instanceName} of ${integrationName}`);
 }
 
-export async function revertIntegrationConfigFile(integrationName, deviceType, filename) {
-    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/config-files/${encodeURIComponent(filename)}/revert?device=${encodeURIComponent(deviceType)}`, {
+export async function revertIntegrationInstanceConfigFile(integrationName, instanceName, filename) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config-files/${encodeURIComponent(filename)}/revert`, {
         method: "POST",
-        headers: getJsonHeaders()
+        headers: getJsonHeaders(),
     });
-    await handleResponse(resp, `Failed to revert config file ${filename} for ${integrationName}`);
+    await handleResponse(resp,`Failed to revert config file ${filename} for instance ${instanceName} of ${integrationName}`);
 }
 
 export async function getAvailableIntegrationsForProvider(moduleName, providerName) {

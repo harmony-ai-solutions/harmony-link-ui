@@ -2,8 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Tree from 'rc-tree';
 import 'rc-tree/assets/index.css';
 
-const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) => {
+const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loading = false, loadedKeysRef = new Set() }) => {
   const [expandedKeys, setExpandedKeys] = useState([]);
+  const [loadedKeys, setLoadedKeys] = useState(new Set());
+  const [preserveExpansions, setPreserveExpansions] = useState(new Set());
+
+  // Reset loaded keys when loadedKeysRef changes
+  useEffect(() => {
+    setLoadedKeys(new Set());
+  }, [loadedKeysRef]);
 
   // Auto-expand logic when treeData changes
   useEffect(() => {
@@ -20,17 +27,19 @@ const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) =>
         // Any directory that should be immediately accessible
         shouldExpandDirectory(treeData.path)
       );
-      
-      if (shouldAutoExpand) {
-        // Auto-expand the root node to show first level
-        setExpandedKeys([treeData.path]);
-      } else {
-        // For other directories, don't auto-expand but keep existing expansions
-        setExpandedKeys(prevKeys => {
-          // Only keep keys that still exist in the new tree
-          return prevKeys.filter(key => findNodeByKey(treeData, key));
-        });
-      }
+
+      setExpandedKeys(prevKeys => {
+        const newKeys = new Set(prevKeys);
+
+        if (shouldAutoExpand) {
+          // Auto-expand the root node to show first level
+          newKeys.add(treeData.path);
+        }
+
+        // Keep any previously expanded nodes that still exist in the new tree
+        const filteredKeys = [...newKeys].filter(key => findNodeByKey(treeData, key));
+        return filteredKeys;
+      });
     }
   }, [treeData]);
 
@@ -81,6 +90,9 @@ const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) =>
   const convertToTreeData = (node) => {
     if (!node) return [];
 
+    const isLoaded = loadedKeys.has(node.path);
+    const hasChildren = node.isDir && (!node.children || node.children.length === 0) && !isLoaded;
+
     const treeNode = {
       key: node.path,
       title: (
@@ -92,20 +104,62 @@ const DirectoryTree = ({ treeData, onSelect, selectedPath, loading = false }) =>
         </span>
       ),
       isLeaf: !node.isDir,
-      children: node.children ? node.children.map(convertToTreeData) : undefined,
+      children: node.children && node.children.length > 0 ? node.children.map(convertToTreeData) : (hasChildren ? [] : undefined),
     };
 
     return treeNode;
   };
 
-  const handleExpand = (expandedKeys) => {
+  const handleExpand = async (expandedKeys, info) => {
     setExpandedKeys(expandedKeys);
+
+    // Check if we need to load children for this node
+    const { node } = info;
+    if (node.isLeaf) return;
+
+    const nodePath = node.key;
+
+    // If this node doesn't have children loaded yet and we need to expand it
+    if (expandedKeys.includes(nodePath) && onLoadChildren &&
+        (!node.children || node.children.length === 0) && !loadedKeys.has(nodePath)) {
+      try {
+        await onLoadChildren(nodePath);
+        setLoadedKeys(prev => new Set(prev).add(nodePath));
+      } catch (error) {
+        console.error('Failed to load children for', nodePath, error);
+        // Remove from expanded keys if loading failed
+        setExpandedKeys(prevKeys => prevKeys.filter(key => key !== nodePath));
+      }
+    }
   };
 
-  const handleSelect = (selectedKeys, info) => {
+  const handleSelect = async (selectedKeys, info) => {
     if (selectedKeys.length > 0 && info.node.isLeaf === false) {
       // Only allow selection of directories
-      onSelect(selectedKeys[0]);
+      const selectedPath = selectedKeys[0];
+
+      // Auto-expand selected directory
+      setExpandedKeys(prevKeys => {
+        const newKeys = new Set(prevKeys);
+        // Add the selected path if it's not already expanded
+        newKeys.add(selectedPath);
+        return [...newKeys];
+      });
+
+      // Load children if not already loaded
+      if (onLoadChildren && !loadedKeys.has(selectedPath)) {
+        try {
+          await onLoadChildren(selectedPath);
+          setLoadedKeys(prev => new Set(prev).add(selectedPath));
+        } catch (error) {
+          console.error('Failed to load children for selected path', selectedPath, error);
+          // Remove from expanded keys if loading failed
+          setExpandedKeys(prevKeys => prevKeys.filter(key => key !== selectedPath));
+        }
+      }
+
+      // Notify parent of selection
+      onSelect(selectedPath);
     }
   };
 

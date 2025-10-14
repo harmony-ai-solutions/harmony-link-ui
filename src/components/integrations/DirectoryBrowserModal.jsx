@@ -10,8 +10,10 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pathInput, setPathInput] = useState(initialPath || '');
+  const [nodeLoadingStates, setNodeLoadingStates] = useState(new Set());
   const [availableDrives, setAvailableDrives] = useState([]);
   const [selectedDrive, setSelectedDrive] = useState('');
+  const [loadedKeysRef, setLoadedKeysRef] = useState(() => new Set()); // Track loaded keys to reset when changing directories
 
   // Load directory data when modal opens or path changes
   useEffect(() => {
@@ -31,19 +33,24 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
   const loadDirectory = async (path) => {
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await listDirectories(path, true, 2); // Recursive with depth 2
-      
+
       if (response.success) {
         setTreeData(response.root);
-        
+
+        // Reset loaded keys when changing root directory
+        // This ensures we start fresh for new directory structures
+        // but keep expansion state for the new tree
+        setLoadedKeysRef(new Set());
+
         // Handle available drives (Windows only)
         if (response.availableDrives && response.availableDrives.length > 0) {
           setAvailableDrives(response.availableDrives);
           // Set selected drive based on current path
           if (response.root && response.root.path) {
-            const currentDrive = response.availableDrives.find(drive => 
+            const currentDrive = response.availableDrives.find(drive =>
               response.root.path.toLowerCase().startsWith(drive.toLowerCase())
             );
             if (currentDrive) {
@@ -54,7 +61,7 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
           setAvailableDrives([]);
           setSelectedDrive('');
         }
-        
+
         if (!selectedPath && response.root) {
           setSelectedPath(response.root.path);
           setPathInput(response.root.path);
@@ -73,6 +80,57 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
       setSelectedDrive('');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Find and update a node in the tree recursively
+  const findAndUpdateNode = (node, path, newChildren) => {
+    if (node.path === path) {
+      // Replace children completely instead of appending to avoid duplicates
+      node.children = newChildren;
+      return true;
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        if (findAndUpdateNode(child, path, newChildren)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Load children for a specific path (prefetch logic)
+  const handleLoadChildren = async (path) => {
+    if (nodeLoadingStates.has(path)) {
+      return; // Already loading
+    }
+
+    setNodeLoadingStates(prev => new Set(prev).add(path));
+
+    try {
+      // Load directory contents for this specific path (only immediate children)
+      const response = await listDirectories(path, false, 1); // non-recursive, only 1 level
+
+      if (response.success && response.root && response.root.children) {
+        // Update the tree data by adding the loaded children
+        setTreeData(prevTreeData => {
+          if (!prevTreeData) return prevTreeData;
+
+          const newTreeData = JSON.parse(JSON.stringify(prevTreeData)); // Deep copy
+          findAndUpdateNode(newTreeData, path, response.root.children);
+          return newTreeData;
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to load children for ${path}:`, error);
+      throw error;
+    } finally {
+      setNodeLoadingStates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(path);
+        return newSet;
+      });
     }
   };
 
@@ -289,11 +347,13 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
 
             {/* Directory Tree */}
             <div className="mb-6">
-              <DirectoryTree
+            <DirectoryTree
                 treeData={treeData}
                 onSelect={handleTreeSelect}
+                onLoadChildren={handleLoadChildren}
                 selectedPath={selectedPath}
                 loading={loading}
+                loadedKeysRef={loadedKeysRef}
               />
             </div>
 

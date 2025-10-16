@@ -47,14 +47,10 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [modelOptions, setModelOptions] = useState([
         {name: "Error: no models available", value: null}
     ]);
-    const [vadModelOptions, setVadModelOptions] = useState([
-        {name: "Error: no VAD models available", value: null}
-    ]);
 
     // Fields
     const [endpoint, setEndpoint] = useState(initialSettings.endpoint);
     const [model, setModel] = useState(initialSettings.model);
-    const [vadModel, setVadModel] = useState(initialSettings.vadmodel);
 
     // Validation Functions
     const validateEndpointAndUpdate = (value) => {
@@ -83,7 +79,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const currentConfig = {
             endpoint: moduleSettings.endpoint,
             model: moduleSettings.model,
-            vadmodel: moduleSettings.vadmodel
         };
         
         try {
@@ -148,31 +143,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 handleModelSelectionChange(newModelOptions[0].value);
             }
         });
-
-        harmonySpeechClient.showAvailableVoiceActivityDetectionModels().then((result) => {
-            //LogDebug(JSON.stringify(result.data));
-
-            // Search for Toolchains and add them to the list
-            const newVadModelOptions = [];
-            result.data.forEach((model) => {
-                if (model.object === "model") {
-                    if (model.id in knownModelNames) {
-                        newVadModelOptions.push({name: knownModelNames[model.id], value: model.id});
-                    } else {
-                        newVadModelOptions.push({name: model.id, value: model.id});
-                    }
-                }
-            });
-            if (newVadModelOptions.length === 0) {
-                newVadModelOptions.push({name: "Error: no models available", value: null});
-            }
-            setVadModelOptions(newVadModelOptions);
-
-            // Refresh UI
-            if (!newVadModelOptions.some((modelOption) => modelOption.value === vadModel)) {
-                handleVadModelSelectionChange(newVadModelOptions[0].value);
-            }
-        });
     }
 
     const setInitialValues = () => {
@@ -194,14 +164,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const handleModelSelectionChange = (selectedModelId) => {
         setModel(selectedModelId);
         const updatedSettings = { ...moduleSettings, model: selectedModelId };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-        return true;
-    }
-
-    const handleVadModelSelectionChange = (selectedModelId) => {
-        setVadModel(selectedModelId);
-        const updatedSettings = { ...moduleSettings, vadmodel: selectedModelId };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
         return true;
@@ -254,30 +216,6 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 mx-3"
                     >
                         {modelOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="flex items-center mb-6 w-full">
-                    <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                        VAD Model
-                        <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
-                                         setTooltipVisible={setTooltipVisible}>
-                            Select the AI model to use for voice activity detection (VAD). <br/>
-                            This model should be selected with a focus on performance, since it is only being used to
-                            determine whether an audio snippet (e.g. from the user's microphone) contains speech or not.<br/>
-                            It is recommended to use a model specifically trained for VAD tasks, however, Speech-to-Text models with good
-                            inference performance will do the job just as good.
-                        </SettingsTooltip>
-                    </label>
-                    <select
-                        value={vadModel}
-                        onChange={(e) => handleVadModelSelectionChange(e.target.value)}
-                        className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 mx-3"
-                    >
-                        {vadModelOptions.map((option) => (
                             <option key={option.value} value={option.value}>
                                 {option.name}
                             </option>

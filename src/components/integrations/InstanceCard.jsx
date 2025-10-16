@@ -70,7 +70,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
 
     const formatProgressLine = (line) => {
         // Check if this is a Docker progress line with progress bar
-        const progressMatch = line.match(/^(.+?)\s+(\[=*>?\s*\])\s+(.+)$/);
+        const progressMatch = line.match(/^(.+?)\s+(\[=*>?\s*\])\s*(.+)$/);
         if (!progressMatch) {
             return line; // Return original line if no progress bar found
         }

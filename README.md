@@ -1,12 +1,33 @@
-# Harmony Link UI
+# Harmony AI Apps Frontend
 ![Harmony Link](src/assets/images/harmony-link-icon-256.png)
+
 ---
 
-Harmony Link UI is the React-based web interface for Harmony Link, providing an intuitive and comprehensive dashboard for managing AI characters, integrations, and system configurations.
+**Unified Frontend for Harmony AI Applications (Harmony Link and Harmony Speech Engine)**
 
-***Built with modern web technologies, Harmony Link UI delivers a responsive and user-friendly experience for configuring and monitoring your AI orchestration system.***
+This React-based web interface serves as the unified UI for both **Harmony Link** and **Harmony Speech Engine**. It provides an intuitive and comprehensive dashboard for managing AI characters, integrations, system configurations, and voice management.
 
-The interface is optimized for real-time interaction and provides seamless access to all Harmony Link features including AI module configuration, integration management, development tools, and system monitoring.
+The interface is optimized for real-time interaction and provides seamless access to all Harmony Link and Harmony Speech Engine features.
+
+## Multi-Mode Architecture
+
+This frontend can operate in two distinct modes:
+
+### Harmony Link Mode (Default)
+- AI orchestration dashboard for managing Harmony Link AI Orchestrator
+- Multi-tab interface (General Settings, Entity Settings, Integrations, Simulator, Development tools)
+- Comprehensive AI entity & module configuration
+- Integration management and Docker control
+- Real-time monitoring and event tracking
+- Entity Simulator & Development Tools
+
+### Harmony Speech Engine Mode
+- Simplified 3-tab interface focused on speech processing
+- Text-to-Speech (TTS) configuration and testing
+- Speech-to-Text (STT) configuration
+- Voice Activity Detection (VAD) configuration
+- localStorage-based configuration storage
+- Lightweight footprint optimized for speech engine operations
 
 ## Features
 
@@ -32,7 +53,8 @@ The interface is optimized for real-time interaction and provides seamless acces
 ### Prerequisites
 
 - Node.js 16+ and npm
-- Harmony Link backend running (for API connectivity)
+- For Harmony Link mode: Harmony Link backend running
+- For Speech Engine mode: Harmony Speech Engine backend running
 
 ### Installation
 
@@ -46,25 +68,47 @@ npm install
 
 # Copy environment configuration
 cp .env.example .env
+```
 
+### Running in Different Modes
+
+#### Harmony Link Mode (Default)
+```bash
 # Start development server
 npm run dev
+
+# Build for production
+npm run build
+```
+
+#### Harmony Speech Engine Mode
+```bash
+# Start development server
+npm run dev:speech-engine
+
+# Build for production
+npm run build:speech-engine
 ```
 
 ### Environment Configuration
 
-The UI connects to the Harmony Link backend via environment variables. Configure `.env` based on your setup:
+The frontend uses environment variables to configure the API endpoints and application mode.
 
+**Default .env (Harmony Link Mode)**:
 ```bash
-# For standalone Harmony Link
+# Default mode is Harmony Link (VITE_APP_MODE not required)
 VITE_MGMT_API_URL="http://localhost"
 VITE_MGMT_API_PORT="28081"
+VITE_MGMT_API_PATH="/api"
+VITE_MGMT_PUBLIC_API_PATH="/public"
+VITE_MGMT_API_KEY="admin"
+```
 
-# For containerized Harmony Link
-VITE_MGMT_API_URL="http://harmony-link"
+**Speech Engine Mode (.env.speech-engine)**:
+```bash
+VITE_APP_MODE=speech-engine
+VITE_MGMT_API_URL="http://localhost"
 VITE_MGMT_API_PORT="28081"
-
-# API configuration
 VITE_MGMT_API_PATH="/api"
 VITE_MGMT_PUBLIC_API_PATH="/public"
 VITE_MGMT_API_KEY="admin"
@@ -73,8 +117,11 @@ VITE_MGMT_API_KEY="admin"
 ### Build for Production
 
 ```bash
-# Build optimized production bundle
+# Build optimized production bundle for Harmony Link
 npm run build
+
+# Build optimized production bundle for Speech Engine
+npm run build:speech-engine
 
 # Preview production build
 npm run preview

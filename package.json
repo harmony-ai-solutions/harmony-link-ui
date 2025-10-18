@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:speech-engine": "vite --mode speech-engine",
     "build": "vite build",
+    "build:speech-engine": "vite build --mode speech-engine",
     "preview": "vite preview"
   },
   "dependencies": {

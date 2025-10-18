@@ -9,7 +9,7 @@ import SimulatorView from "./components/SimulatorView.jsx";
 import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
 import {LogDebug, LogError, LogPrint} from "./utils/logger.js";
 
-function App() {
+function HarmonyLinkApp() {
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
     const [settingsTab, setSettingsTab] = useState(SettingsTabGeneral);
@@ -114,4 +114,4 @@ function App() {
     )
 }
 
-export default App
+export default HarmonyLinkApp

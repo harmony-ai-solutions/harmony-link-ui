@@ -6,6 +6,7 @@ import {getConfig, validateProviderConfig } from "../../services/management/conf
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
+import { isHarmonyLinkMode } from '../../config/appMode.js';
 
 const knownModelNames = {
     "faster-whisper-large-v3-turbo": "FasterWhisper Large v3 Turbo",
@@ -30,9 +31,6 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(initialSettings);
 
-    // Integration State
-    const [availableIntegrations, setAvailableIntegrations] = useState([]);
-
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
@@ -50,7 +48,7 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
 
     // Validation Functions
     const validateEndpointAndUpdate = (value) => {
-        const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}|localhost|\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(:[0-9]{1,5})?(\/.*)?$/;
+        const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([a-z0-9]+([\-.]{1}[a-z0-9]+)*\.[a-z]{2,5}|localhost|\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(:[0-9]{1,5})?(\/.*)?$/;
         if ((moduleSettings.endpoint.length > 0 && value.length === 0) || (value.length > 0 && urlRegex.test(value) === false)) {
             showModal("Endpoint must be a valid URL.");
             setEndpoint(moduleSettings.endpoint);
@@ -70,17 +68,32 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const handleValidateConfig = async () => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
-        const currentConfig = {
-            endpoint: moduleSettings.endpoint,
-            model: moduleSettings.model
-        };
-        
         try {
-            const result = await validateProviderConfig(MODULES.VAD, PROVIDERS.HARMONYSPEECH, currentConfig);
-            setValidationState({
-                status: result.valid ? 'success' : 'error',
-                message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
-            });
+            if (isHarmonyLinkMode()) {
+                // Harmony Link mode: Use Management API validation
+                const currentConfig = {
+                    endpoint: moduleSettings.endpoint,
+                    model: moduleSettings.model
+                };
+                const result = await validateProviderConfig(MODULES.VAD, PROVIDERS.HARMONYSPEECH, currentConfig);
+                setValidationState({
+                    status: result.valid ? 'success' : 'error',
+                    message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
+                });
+            } else {
+                // Speech Engine mode: Test by fetching available models
+                if (!harmonySpeechPlugin) {
+                    throw new Error('Speech plugin not initialized');
+                }
+                const response = await harmonySpeechPlugin.showAvailableVoiceActivityDetectionModels();
+                const hasModels = response.data && response.data.length > 0;
+                setValidationState({
+                    status: hasModels ? 'success' : 'error',
+                    message: hasModels 
+                        ? `Configuration is valid! Found ${response.data.length} model(s).`
+                        : 'Configuration error: No models available from endpoint.'
+                });
+            }
         } catch (error) {
             setValidationState({ 
                 status: 'error', 
@@ -92,19 +105,28 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Utility Functions
     const setupHarmonySpeechTooling = () => {
         try {
-            // Get Harmony API Key from Base config
-            getConfig().then((appConfig) => {
-                const plugin = new HarmonySpeechEnginePlugin(appConfig.general.userapikey, moduleSettings.endpoint);
+            if (isHarmonyLinkMode()) {
+                // Harmony Link mode: Get API key from config
+                getConfig().then((appConfig) => {
+                    const plugin = new HarmonySpeechEnginePlugin(appConfig.general.userapikey, moduleSettings.endpoint);
+                    setHarmonySpeechPlugin(plugin);
+
+                    // Fetch available toolchains from Endpoint (if available)
+                    refreshAvailableVADToolchains(plugin);
+                });
+            } else {
+                // Speech Engine mode: Use empty API key
+                const plugin = new HarmonySpeechEnginePlugin('', moduleSettings.endpoint);
                 setHarmonySpeechPlugin(plugin);
 
                 // Fetch available toolchains from Endpoint (if available)
                 refreshAvailableVADToolchains(plugin);
-            });
+            }
 
         } catch (error) {
-            LogError("Unable load application config");
+            LogError("Unable to initialize Harmony Speech plugin");
             LogError(error);
-            showModal("Error loading application config");
+            showModal("Error initializing speech plugin");
         }
     }
 
@@ -175,7 +197,9 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay moduleName={MODULES.VAD} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
+                {isHarmonyLinkMode() && (
+                    <IntegrationDisplay moduleName={MODULES.VAD} providerName={PROVIDERS.HARMONYSPEECH} useIntegration={useIntegration} />
+                )}
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">

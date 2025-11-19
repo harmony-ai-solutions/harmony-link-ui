@@ -54,6 +54,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
         switch (deviceType) {
             case 'nvidia': return '🟢'; // Green circle for NVIDIA
             case 'amd': return '🔴'; // Red circle for AMD
+            case 'amd-wsl': return '🔴'; // Red circle for AMD
             case 'intel': return '🔵'; // Blue circle for Intel
             case 'cpu': return '💻'; // Laptop for CPU
             default: return '⚙️'; // Gear for unknown

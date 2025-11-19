@@ -83,7 +83,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                     {integrationOption.status.toUpperCase()}
                                 </span>
                                 <span className="text-lg font-semibold text-neutral-100">
-                                    {integrationOption.displayName}
+                                    {integrationOption.instanceName}
                                     {integrationOption.deviceType && (
                                         <span className="ml-2 text-sm text-neutral-300">
                                             ({getDeviceIcon(integrationOption.deviceType)} {integrationOption.deviceType.toUpperCase()})

@@ -69,6 +69,15 @@ export async function deleteIntegrationInstance(integrationName, instanceName) {
     await handleResponse(resp, `Failed to delete instance ${instanceName} for ${integrationName}`);
 }
 
+export async function renameIntegrationInstance(integrationName, instanceName, newInstanceName) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/rename`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ newInstanceName })
+    });
+    await handleResponse(resp, `Failed to rename instance ${instanceName} for ${integrationName}`);
+}
+
 export async function getIntegrationInstanceConfig(integrationName, instanceName) {
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/${encodeURIComponent(integrationName)}/instances/${encodeURIComponent(instanceName)}/config`, {
         headers: getAuthHeaders()

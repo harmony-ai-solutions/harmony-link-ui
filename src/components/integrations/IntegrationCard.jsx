@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus } from '../../services/management/integrationsService.js';
+import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
 import InstanceList from './InstanceList';
 
 const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInstance }) => {
@@ -86,6 +86,17 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
         return errorMessage; // Return original message if no specific handling
     };
 
+    const handleRenameInstance = async (integrationName, instanceName, newInstanceName) => {
+        try {
+            await renameIntegrationInstance(integrationName, instanceName, newInstanceName);
+            // Immediately refresh instances to show the renamed instance
+            await fetchInstances();
+        } catch (error) {
+            console.error(`Failed to rename instance ${integrationName}/${instanceName}:`, error);
+            throw error; // Re-throw to let the modal handle the error display
+        }
+    };
+
     const handleOpenProjectWebsite = (url) => {
         window.open(url, '_blank'); // Open in new tab
     };
@@ -147,6 +158,7 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
                     onControl={handleControlClick}
                     onConfigure={onConfigure}
                     onConfigFiles={onConfigFiles}
+                    onRename={handleRenameInstance}
                 />
             )}
         </div>

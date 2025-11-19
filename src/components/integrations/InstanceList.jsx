@@ -1,7 +1,7 @@
 import React from 'react';
 import InstanceCard from './InstanceCard';
 
-const InstanceList = ({ integrationName, instances, onControl, onConfigure, onConfigFiles }) => {
+const InstanceList = ({ integrationName, instances, onControl, onConfigure, onConfigFiles, onRename }) => {
     const instanceEntries = Object.entries(instances);
     
     if (instanceEntries.length === 0) {
@@ -30,6 +30,7 @@ const InstanceList = ({ integrationName, instances, onControl, onConfigure, onCo
                             onControl={onControl}
                             onConfigure={onConfigure}
                             onConfigFiles={onConfigFiles}
+                            onRename={onRename}
                             currentOperation={currentOperation}
                         />
                     );

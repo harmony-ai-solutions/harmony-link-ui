@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/management/integrationsService.js';
 import { openSystemUrl } from '../../services/management/systemService.js';
+import RenameInstanceModal from './RenameInstanceModal.jsx';
 
-const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, currentOperation }) => {
+const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, onRename, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
+    const [showRenameModal, setShowRenameModal] = useState(false);
 
     useEffect(() => {
         let interval;
@@ -68,6 +70,21 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
         }
     };
 
+    const hasActiveContainers = () => {
+        // Check if any containers exist (not in "not_created" state)
+        return instance.containers && instance.containers.some(c => c.state !== 'not_created');
+    };
+
+    const handleRename = async (newInstanceName) => {
+        try {
+            await onRename(integrationName, instanceName, newInstanceName);
+            setShowRenameModal(false);
+        } catch (error) {
+            console.error('Failed to rename instance:', error);
+            throw error; // Re-throw to let modal handle the error display
+        }
+    };
+
     const formatProgressLine = (line) => {
         // Check if this is a Docker progress line with progress bar
         const progressMatch = line.match(/^(.+?)\s+(\[=*>?\s*\])\s*(.+)$/);
@@ -123,7 +140,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
     return (
         <div className="instance-card bg-neutral-700 p-3 rounded-md shadow-sm border border-neutral-600">
             <div className="instance-header flex justify-between items-center mb-2">
-                <h4 className="text-md font-semibold text-orange-300">{instance.displayName || instance.name}</h4>
+                <h4 className="text-md font-semibold text-orange-300">{instance.name}</h4>
                 <div className="instance-badges flex gap-1">
                     {instance.deviceType && (
                         <span className={`device-badge text-xs px-2 py-0.5 rounded-full bg-neutral-600 text-neutral-200`}>
@@ -136,7 +153,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                 </div>
             </div>
             
-            {instance.description && <p className="text-neutral-300 text-sm mb-3">{instance.description}</p>}
             {instance.error && <p className="text-red-400 text-xs mb-3">Error: {instance.error}</p>}
             
             {/* Show operation status if there's an active operation */}
@@ -297,6 +313,19 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                     Config Files
                 </button>
 
+                <button 
+                    onClick={() => setShowRenameModal(true)}
+                    disabled={!!currentOperation || hasActiveContainers()}
+                    className={`font-bold py-1 px-2 rounded text-xs ${
+                        currentOperation || hasActiveContainers()
+                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                    title={hasActiveContainers() ? 'Cannot rename while Docker containers exist' : 'Rename instance'}
+                >
+                    Rename
+                </button>
+
                 {instance.status === 'running' && webURLs && webURLs.length > 0 && !currentOperation && (
                     webURLs.map((url, index) => (
                         <button
@@ -328,6 +357,15 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                     </ul>
                 </div>
             )}
+
+            <RenameInstanceModal
+                isOpen={showRenameModal}
+                onClose={() => setShowRenameModal(false)}
+                onRename={handleRename}
+                integrationName={integrationName}
+                instanceName={instanceName}
+                deviceType={instance.deviceType}
+            />
         </div>
     );
 };

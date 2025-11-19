@@ -1,10 +1,11 @@
 import React from 'react';
 
-const DeviceTypeSelector = ({ value, onChange }) => {
+const DeviceTypeSelector = ({ value, onChange, disabled = false }) => {
   const deviceTypes = [
     { label: 'CPU', value: 'cpu' },
     { label: 'NVIDIA', value: 'nvidia' },
     { label: 'AMD', value: 'amd' },
+    { label: 'AMD-WSL', value: 'amd-wsl' },
     { label: 'Intel', value: 'intel' },
   ];
 
@@ -14,7 +15,10 @@ const DeviceTypeSelector = ({ value, onChange }) => {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+        disabled={disabled}
+        className={`mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 ${
+          disabled ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       >
         {deviceTypes.map((device) => (
           <option key={device.value} value={device.value}>

@@ -6,7 +6,8 @@ import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
 import DevelopmentView from "./components/DevelopmentView.jsx";
 import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
-import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
+import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
+import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
 import {LogDebug, LogError, LogPrint} from "./utils/logger.js";
 
 function HarmonyLinkApp() {
@@ -77,6 +78,10 @@ function HarmonyLinkApp() {
                         </li>
                         <li className="mr-1 h-10 bg-neutral-900">
                             <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
+                               href="#characters" onClick={() => setSettingsTab(SettingsTabCharacters)}>Character Profiles</a>
+                        </li>
+                        <li className="mr-1 h-10 bg-neutral-900">
+                            <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
                                href="#integrations" onClick={() => setSettingsTab(SettingsTabIntegrations)}>Integrations</a>
                         </li>
                         <li className="mr-1 h-10 bg-neutral-900">
@@ -94,6 +99,9 @@ function HarmonyLinkApp() {
                     }
                     {applicationConfig && settingsTab === SettingsTabEntities &&
                         <EntitySettingsView appName={appName} entitySettings={applicationConfig.entities} saveEntitySettings={saveEntitySettings}></EntitySettingsView>
+                    }
+                    {settingsTab === SettingsTabCharacters &&
+                        <CharacterProfilesView></CharacterProfilesView>
                     }
                     {settingsTab === SettingsTabDevelopment &&
                         <DevelopmentView></DevelopmentView>

@@ -8,7 +8,7 @@ import CharacterCardImport from './CharacterCardImport';
  * Main view for managing character profiles
  */
 export default function CharacterProfilesView() {
-    const { profiles, isLoading, loadProfiles, deleteProfile } = useCharacterProfileStore();
+    const { profiles, isLoading, loadProfiles, loadImages, deleteProfile } = useCharacterProfileStore();
     const [showEditor, setShowEditor] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
@@ -17,6 +17,15 @@ export default function CharacterProfilesView() {
     useEffect(() => {
         loadProfiles();
     }, [loadProfiles]);
+
+    // Load images for all profiles when profiles are loaded
+    useEffect(() => {
+        if (profiles && profiles.length > 0) {
+            profiles.forEach(profile => {
+                loadImages(profile.id);
+            });
+        }
+    }, [profiles, loadImages]);
 
     const handleEdit = (profile) => {
         setEditingProfile(profile);

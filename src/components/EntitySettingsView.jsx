@@ -24,7 +24,7 @@ function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, c
                 >
                     <option value="">Disabled</option>
                     {configs.map(config => (
-                        <option key={config.id} value={config.id}>
+                        <option key={config.id} value={String(config.id)}>
                             {config.name}
                         </option>
                     ))}
@@ -35,18 +35,19 @@ function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, c
 }
 
 function CharacterProfilePreview({ profileId }) {
-    const { getCharacterProfile } = useCharacterProfileStore();
-    const profile = getCharacterProfile(profileId);
+    const { getProfile, getImagesForProfile } = useCharacterProfileStore();
+    const profile = getProfile(profileId);
     
     if (!profile) return null;
     
-    const primaryImage = profile.images?.find(img => img.is_primary);
+    const images = getImagesForProfile(profileId);
+    const primaryImage = images?.find(img => img.is_primary) || images?.[0];
     
     return (
         <div className="mb-4 p-4 bg-neutral-900 rounded border border-neutral-700 flex items-start space-x-4">
             {primaryImage ? (
                 <img
-                    src={primaryImage.url}
+                    src={primaryImage.data_url}
                     alt={profile.name}
                     className="w-20 h-20 rounded object-cover border border-neutral-600"
                 />
@@ -82,7 +83,8 @@ const EntitySettingsView = ({ appName }) => {
     
     const { 
         profiles: characterProfiles, 
-        loadProfiles: loadCharacterProfiles 
+        loadProfiles: loadCharacterProfiles,
+        loadImages: loadCharacterImages
     } = useCharacterProfileStore();
     
     const { 
@@ -138,15 +140,17 @@ const EntitySettingsView = ({ appName }) => {
 
     useEffect(() => {
         if (selectedEntity) {
+            // Extract config IDs from the nested modules structure
             setEntityMappings({
-                backend: selectedEntity.backend_config_id || '',
-                tts: selectedEntity.tts_config_id || '',
-                stt: selectedEntity.stt_config_id || '',
-                rag: selectedEntity.rag_config_id || '',
-                movement: selectedEntity.movement_config_id || '',
-                countenance: selectedEntity.countenance_config_id || ''
+                backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
+                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
+                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
+                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
+                countenance: selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : ''
             });
-            setSelectedCharacterProfileId(selectedEntity.character_profile_id || '');
+            // Extract character profile ID from nested structure
+            setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
         } else {
             setEntityMappings({
@@ -159,10 +163,17 @@ const EntitySettingsView = ({ appName }) => {
     const backendProvider = useMemo(() => {
         if (!entityMappings.backend) return null;
         const config = getConfigById('backend', parseInt(entityMappings.backend));
-        return config?.config?.provider;
+        return config?.provider;
     }, [entityMappings.backend, getConfigById]);
 
     const isProfileSupported = supportsCharacterProfile(backendProvider);
+
+    // Load images for selected character profile
+    useEffect(() => {
+        if (selectedCharacterProfileId && isProfileSupported) {
+            loadCharacterImages(selectedCharacterProfileId);
+        }
+    }, [selectedCharacterProfileId, isProfileSupported, loadCharacterImages]);
 
     // Helper: Generate unique entity ID
     const generateUniqueEntityId = (baseName = 'new-entity') => {
@@ -228,15 +239,16 @@ const EntitySettingsView = ({ appName }) => {
 
     const handleReset = () => {
         if (selectedEntity) {
+            // Extract config IDs from the nested modules structure
             setEntityMappings({
-                backend: selectedEntity.backend_config_id || '',
-                tts: selectedEntity.tts_config_id || '',
-                stt: selectedEntity.stt_config_id || '',
-                rag: selectedEntity.rag_config_id || '',
-                movement: selectedEntity.movement_config_id || '',
-                countenance: selectedEntity.countenance_config_id || ''
+                backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
+                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
+                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
+                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
+                countenance: selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : ''
             });
-            setSelectedCharacterProfileId(selectedEntity.character_profile_id || '');
+            setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
         }
     };
@@ -435,14 +447,22 @@ const EntitySettingsView = ({ appName }) => {
 
     const hasUnsavedChanges = () => {
         if (!selectedEntity) return false;
+        const currentBackend = selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '';
+        const currentTts = selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '';
+        const currentStt = selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '';
+        const currentRag = selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '';
+        const currentMovement = selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '';
+        const currentCountenance = selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : '';
+        const currentProfile = selectedEntity.character_profile?.id || '';
+        
         return (
-            (selectedEntity.backend_config_id || '') != entityMappings.backend ||
-            (selectedEntity.tts_config_id || '') != entityMappings.tts ||
-            (selectedEntity.stt_config_id || '') != entityMappings.stt ||
-            (selectedEntity.rag_config_id || '') != entityMappings.rag ||
-            (selectedEntity.movement_config_id || '') != entityMappings.movement ||
-            (selectedEntity.countenance_config_id || '') != entityMappings.countenance ||
-            (selectedEntity.character_profile_id || '') != (isProfileSupported ? selectedCharacterProfileId : '')
+            currentBackend != entityMappings.backend ||
+            currentTts != entityMappings.tts ||
+            currentStt != entityMappings.stt ||
+            currentRag != entityMappings.rag ||
+            currentMovement != entityMappings.movement ||
+            currentCountenance != entityMappings.countenance ||
+            currentProfile != (isProfileSupported ? selectedCharacterProfileId : '')
         );
     };
 
@@ -609,7 +629,7 @@ const EntitySettingsView = ({ appName }) => {
                                 <div className="flex w-full">
                                     <div className="w-1/5"></div>
                                     <div className="w-4/5 px-3">
-                                        <CharacterProfilePreview profileId={parseInt(selectedCharacterProfileId)} />
+                                        <CharacterProfilePreview profileId={selectedCharacterProfileId} />
                                     </div>
                                 </div>
                             )}

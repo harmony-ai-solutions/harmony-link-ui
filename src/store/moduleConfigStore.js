@@ -54,13 +54,8 @@ const useModuleConfigStore = create((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await moduleService.updateModuleConfig(moduleType, id, name, config);
-            set(produce(state => {
-                const index = state.configs[moduleType].findIndex(c => c.id === id);
-                if (index !== -1) {
-                    state.configs[moduleType][index] = { id, name, config };
-                }
-                state.isLoading = false;
-            }));
+            // Reload the updated config from the server
+            await get().loadConfigs(moduleType);
         } catch (error) {
             set({ error: error.message, isLoading: false });
             throw error;

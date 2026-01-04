@@ -76,12 +76,15 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
     useEffect(() => {
         if (config) {
             setName(config.name);
-            setModuleSettings(config.config || {});
+            // Backend now returns flat structure - config data is directly in config object
+            // Remove id and name fields to get just the settings
+            const { id, name: configName, ...settings } = config;
+            setModuleSettings(settings);
             
             // Initialize selected providers from config
             const providers = {};
             moduleDef.providers.forEach(p => {
-                const currentProvider = getNestedValue(config.config || {}, p.settingsKey) || 'disabled';
+                const currentProvider = getNestedValue(settings, p.settingsKey) || 'disabled';
                 providers[p.id] = currentProvider;
             });
             setSelectedProviders(providers);

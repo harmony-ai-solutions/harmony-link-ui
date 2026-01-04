@@ -14,6 +14,19 @@ const formatModuleTypeName = (moduleType) => {
     return nameMap[moduleType] || moduleType;
 };
 
+// Helper function to get provider display text for a config
+const getProviderDisplay = (config, moduleType) => {
+    if (moduleType === 'stt') {
+        // STT has multiple providers: transcription and VAD
+        const transcriptionProvider = config.transcription?.provider || 'None';
+        const vadProvider = config.vad?.provider || 'None';
+        return `Transcription: ${transcriptionProvider}, VAD: ${vadProvider}`;
+    }
+    
+    // For other module types, just get the provider field
+    return config.provider || 'Unknown';
+};
+
 export default function ModuleConfigList({ moduleType, configs, onCreate, onEdit }) {
     const { deleteConfig, isLoading } = useModuleConfigStore();
 
@@ -64,7 +77,7 @@ export default function ModuleConfigList({ moduleType, configs, onCreate, onEdit
                                 <tr key={config.id} className="border-b border-neutral-700 hover:bg-neutral-750 transition-colors">
                                     <td className="py-3 px-4 text-white font-medium">{config.name}</td>
                                     <td className="py-3 px-4 text-gray-300">
-                                        {config.config?.provider || config.config?.transcription?.provider || 'Unknown'}
+                                        {getProviderDisplay(config, moduleType)}
                                     </td>
                                     <td className="py-3 px-4 text-right space-x-2">
                                         <button

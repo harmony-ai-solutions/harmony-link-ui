@@ -5,6 +5,9 @@ import useModuleConfigStore from '../store/moduleConfigStore';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity } from '../services/management/entityService';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
+import ErrorDialog from "./modals/ErrorDialog.jsx";
+import ConfirmDialog from "./modals/ConfirmDialog.jsx";
+import InputDialog from "./modals/InputDialog.jsx";
 
 function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading }) {
     return (
@@ -102,6 +105,11 @@ const EntitySettingsView = ({ appName }) => {
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(0);
+    
+    // Modal states
+    const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+    const [inputDialog, setInputDialog] = useState({ isOpen: false, title: '', message: '', defaultValue: '', onConfirm: null });
 
     useEffect(() => {
         loadEntities();
@@ -114,7 +122,19 @@ const EntitySettingsView = ({ appName }) => {
         loadConfigs('countenance');
     }, []);
 
-    const selectedEntity = useMemo(() => getEntity(selectedEntityId), [selectedEntityId, entities]);
+    // Auto-select first entity when entities are loaded
+    useEffect(() => {
+        if (entities && Array.isArray(entities) && entities.length > 0 && !selectedEntityId) {
+            selectEntity(entities[0].id);
+        }
+    }, [entities, selectedEntityId, selectEntity]);
+
+    const selectedEntity = useMemo(() => {
+        if (!selectedEntityId || !entities || entities.length === 0) {
+            return null;
+        }
+        return getEntity(selectedEntityId);
+    }, [selectedEntityId, entities, getEntity]);
 
     useEffect(() => {
         if (selectedEntity) {
@@ -143,6 +163,27 @@ const EntitySettingsView = ({ appName }) => {
     }, [entityMappings.backend, getConfigById]);
 
     const isProfileSupported = supportsCharacterProfile(backendProvider);
+
+    // Helper: Generate unique entity ID
+    const generateUniqueEntityId = (baseName = 'new-entity') => {
+        if (!entities) return baseName;
+        
+        // Convert entities array to object for easier checking
+        const entityIds = {};
+        entities.forEach(e => {
+            entityIds[e.id] = true;
+        });
+        
+        let newName = baseName;
+        let counter = 0;
+        
+        while (entityIds[newName]) {
+            counter++;
+            newName = `${baseName}-${counter}`;
+        }
+        
+        return newName;
+    };
 
     const handleSave = async () => {
         try {
@@ -200,55 +241,196 @@ const EntitySettingsView = ({ appName }) => {
         }
     };
 
-    const handleAdd = async () => {
-        const entityId = prompt('Enter new entity ID:');
-        if (!entityId) return;
-        
-        if (getEntity(entityId)) {
-            alert('Entity ID already exists');
-            return;
+    // Validation helper
+    const validateEntityId = (id) => {
+        if (!id || id.trim() === '') {
+            return 'Entity ID cannot be empty';
         }
+        if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+            return 'Entity ID can only contain letters, numbers, hyphens, and underscores';
+        }
+        if (getEntity(id)) {
+            return 'Entity ID already exists';
+        }
+        return null;
+    };
 
-        try {
-            await createEntity(entityId, null);
-            setSuccessMessage('Entity created successfully');
-        } catch (error) {
-            alert(`Failed to create entity: ${error.message}`);
-        }
+    const handleAdd = () => {
+        const defaultName = generateUniqueEntityId('new-entity');
+        setInputDialog({
+            isOpen: true,
+            title: 'Add Entity',
+            message: 'Enter a unique ID for the new entity:',
+            defaultValue: defaultName,
+            onConfirm: async (entityId) => {
+                setInputDialog({ ...inputDialog, isOpen: false });
+                if (!entityId) return;
+                
+                const validationError = validateEntityId(entityId);
+                if (validationError) {
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Invalid Entity ID',
+                        message: validationError,
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                try {
+                    await createEntity(entityId, null);
+                    setSuccessMessage('Entity created successfully');
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } catch (error) {
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Creation Failed',
+                        message: `Failed to create entity: ${error.message}`,
+                        type: 'error'
+                    });
+                }
+            }
+        });
     };
 
     const handleDelete = async () => {
         if (!selectedEntityId) return;
-        if (!window.confirm(`Delete entity '${selectedEntityId}'? This cannot be undone.`)) return;
-
-        try {
-            await deleteEntity(selectedEntityId);
-            setSuccessMessage('Entity deleted successfully');
-        } catch (error) {
-            alert(`Failed to delete entity: ${error.message}`);
-        }
+        
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Confirm Delete',
+            message: `Delete entity '${selectedEntityId}'?\n\nThis action cannot be undone.`,
+            onConfirm: async () => {
+                try {
+                    await deleteEntity(selectedEntityId);
+                    setSuccessMessage('Entity deleted successfully');
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                } catch (error) {
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Deletion Failed',
+                        message: `Failed to delete entity: ${error.message}`,
+                        type: 'error'
+                    });
+                }
+            }
+        });
     };
 
-    const handleCopy = async () => {
+    const handleCopy = () => {
         if (!selectedEntityId || !selectedEntity) return;
-        const newId = prompt('Enter new entity ID:', `${selectedEntityId}_copy`);
-        if (!newId) return;
+        
+        const defaultName = generateUniqueEntityId(`${selectedEntityId}-copy`);
+        setInputDialog({
+            isOpen: true,
+            title: 'Copy Entity',
+            message: `Enter ID for the copy of '${selectedEntityId}':`,
+            defaultValue: defaultName,
+            onConfirm: async (newId) => {
+                setInputDialog({ ...inputDialog, isOpen: false });
+                if (!newId) return;
 
-        try {
-            await createEntity(newId, selectedEntity.character_profile_id);
-            const mappings = {
-                backend_config_id: selectedEntity.backend_config_id,
-                tts_config_id: selectedEntity.tts_config_id,
-                stt_config_id: selectedEntity.stt_config_id,
-                rag_config_id: selectedEntity.rag_config_id,
-                movement_config_id: selectedEntity.movement_config_id,
-                countenance_config_id: selectedEntity.countenance_config_id
-            };
-            await updateEntityMappings(newId, mappings);
-            setSuccessMessage('Entity copied successfully');
-        } catch (error) {
-            alert(`Failed to copy entity: ${error.message}`);
-        }
+                const validationError = validateEntityId(newId);
+                if (validationError) {
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Invalid Entity ID',
+                        message: validationError,
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                try {
+                    await createEntity(newId, selectedEntity.character_profile_id);
+                    const mappings = {
+                        backend_config_id: selectedEntity.backend_config_id,
+                        tts_config_id: selectedEntity.tts_config_id,
+                        stt_config_id: selectedEntity.stt_config_id,
+                        rag_config_id: selectedEntity.rag_config_id,
+                        movement_config_id: selectedEntity.movement_config_id,
+                        countenance_config_id: selectedEntity.countenance_config_id
+                    };
+                    await updateEntityMappings(newId, mappings);
+                    setSuccessMessage('Entity copied successfully');
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } catch (error) {
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Copy Failed',
+                        message: `Failed to copy entity: ${error.message}`,
+                        type: 'error'
+                    });
+                }
+            }
+        });
+    };
+
+    const handleRename = () => {
+        if (!selectedEntityId || !selectedEntity) return;
+        
+        setInputDialog({
+            isOpen: true,
+            title: 'Rename Entity',
+            message: `Enter new ID for '${selectedEntityId}':`,
+            defaultValue: selectedEntityId,
+            onConfirm: async (newId) => {
+                setInputDialog({ ...inputDialog, isOpen: false });
+                if (!newId || newId === selectedEntityId) return;
+
+                const validationError = validateEntityId(newId);
+                if (validationError) {
+                    setErrorDialog({
+                        isOpen: true,
+                        title: 'Invalid Entity ID',
+                        message: validationError,
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                setConfirmDialog({
+                    isOpen: true,
+                    title: 'Confirm Rename',
+                    message: `Rename entity '${selectedEntityId}' to '${newId}'?\n\nThis will:\n• Create a new entity with ID '${newId}'\n• Copy all configurations\n• Delete the old entity '${selectedEntityId}'\n\nThis action cannot be undone.`,
+                    onConfirm: async () => {
+                        try {
+                            // Create new entity with same configuration
+                            await createEntity(newId, selectedEntity.character_profile_id);
+                            const mappings = {
+                                backend_config_id: selectedEntity.backend_config_id,
+                                tts_config_id: selectedEntity.tts_config_id,
+                                stt_config_id: selectedEntity.stt_config_id,
+                                rag_config_id: selectedEntity.rag_config_id,
+                                movement_config_id: selectedEntity.movement_config_id,
+                                countenance_config_id: selectedEntity.countenance_config_id
+                            };
+                            await updateEntityMappings(newId, mappings);
+                            
+                            // Delete old entity
+                            await deleteEntity(selectedEntityId);
+                            
+                            // Select the new entity
+                            selectEntity(newId);
+                            
+                            setSuccessMessage(`Entity renamed from '${selectedEntityId}' to '${newId}'`);
+                            setTimeout(() => setSuccessMessage(null), 3000);
+                            setConfirmDialog({ ...confirmDialog, isOpen: false });
+                        } catch (error) {
+                            setConfirmDialog({ ...confirmDialog, isOpen: false });
+                            setErrorDialog({
+                                isOpen: true,
+                                title: 'Rename Failed',
+                                message: `Failed to rename entity: ${error.message}`,
+                                type: 'error'
+                            });
+                        }
+                    }
+                });
+            }
+        });
     };
 
     const hasUnsavedChanges = () => {
@@ -264,20 +446,62 @@ const EntitySettingsView = ({ appName }) => {
         );
     };
 
+    // Loading guard - only show spinner if entities haven't been loaded yet (null)
+    if (isEntityLoading && entities === null) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">Loading entities...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
+        <>
+            {/* Error Dialog */}
+            <ErrorDialog
+                isOpen={errorDialog.isOpen}
+                title={errorDialog.title}
+                message={errorDialog.message}
+                type={errorDialog.type}
+                onClose={() => setErrorDialog({ ...errorDialog, isOpen: false })}
+            />
+            
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+            />
+            
+            {/* Input Dialog */}
+            <InputDialog
+                isOpen={inputDialog.isOpen}
+                title={inputDialog.title}
+                message={inputDialog.message}
+                defaultValue={inputDialog.defaultValue}
+                onConfirm={inputDialog.onConfirm}
+                onCancel={() => setInputDialog({ ...inputDialog, isOpen: false })}
+            />
+            
         <div className="flex">
             {/* Left Panel: Entity List */}
             <div className="w-1/4 p-4 space-y-4 border-r border-neutral-500 min-h-[600px]">
-                <div className="flex items-center justify-center space-x-2">
-                    <button onClick={handleAdd} className="bg-neutral-700 hover:bg-neutral-600 font-bold py-1 px-3 text-orange-400 rounded">Add</button>
-                    <button onClick={handleCopy} className="bg-neutral-700 hover:bg-neutral-600 font-bold py-1 px-3 text-orange-400 rounded">Copy</button>
-                    <button onClick={handleDelete} className="bg-red-700 hover:bg-red-600 font-bold py-1 px-3 text-white rounded">Delete</button>
+                <div className="grid grid-cols-2 gap-2">
+                    <button onClick={handleAdd} className="bg-neutral-700 hover:bg-neutral-600 font-bold py-1 px-2 text-orange-400 rounded text-sm">Add</button>
+                    <button onClick={handleRename} disabled={!selectedEntityId} className="bg-neutral-700 hover:bg-neutral-600 font-bold py-1 px-2 text-orange-400 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">Rename</button>
+                    <button onClick={handleCopy} disabled={!selectedEntityId} className="bg-neutral-700 hover:bg-neutral-600 font-bold py-1 px-2 text-orange-400 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">Copy</button>
+                    <button onClick={handleDelete} disabled={!selectedEntityId} className="bg-red-700 hover:bg-red-600 font-bold py-1 px-2 text-white rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>
                 </div>
                 
                 <div className="flex flex-col space-y-2">
                     <div className="text-center">
                         <label className="text-sm font-medium text-neutral-300">
-                            Total Entities: <span className="text-orange-400">{entities.length}</span>
+                            Total Entities: <span className="text-orange-400">{entities && Array.isArray(entities) ? entities.length : 0}</span>
                         </label>
                     </div>
                     <select
@@ -286,7 +510,7 @@ const EntitySettingsView = ({ appName }) => {
                         className="w-full bg-neutral-800 border border-neutral-600 text-gray-200 p-2 rounded focus:outline-none focus:border-orange-400"
                         size="15"
                     >
-                        {entities.map((entity) => (
+                        {entities && Array.isArray(entities) && entities.map((entity) => (
                             <option key={entity.id} value={entity.id} className="p-2 border-b border-neutral-700">
                                 {entity.id}
                             </option>
@@ -368,12 +592,14 @@ const EntitySettingsView = ({ appName }) => {
                                             </option>
                                         ))}
                                     </select>
-                                    {!isProfileSupported && backendProvider && (
+                                    {!isProfileSupported && (
                                         <p className="mt-2 text-xs text-blue-400 flex items-center">
                                             <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                             </svg>
-                                            This backend provider ({backendProvider}) has built-in identity and doesn't use Harmony Link profiles.
+                                            {backendProvider 
+                                                ? `This backend provider (${backendProvider}) has built-in identity and doesn't use Harmony Link profiles.`
+                                                : 'Character profiles require a backend configuration which supports custom prompting. Please select a backend module first.'}
                                         </p>
                                     )}
                                 </div>
@@ -455,6 +681,7 @@ const EntitySettingsView = ({ appName }) => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 

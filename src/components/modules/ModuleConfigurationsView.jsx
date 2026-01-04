@@ -3,15 +3,9 @@ import useModuleConfigStore from '../../store/moduleConfigStore';
 import ModuleConfigList from './ModuleConfigList';
 import ModuleConfigEditor from './ModuleConfigEditor';
 import DynamicOptionsGroup from '../settings/DynamicOptionsGroup.jsx';
+import {MODULE_TYPE_OPTIONS} from "../../constants/moduleConfiguration.js";
 
-const MODULE_TYPE_OPTIONS = [
-    { id: 'backend', name: 'Backend / LLM', logo: null },
-    { id: 'tts', name: 'Text-to-Speech', logo: null },
-    { id: 'stt', name: 'Speech-to-Text', logo: null },
-    { id: 'rag', name: 'RAG', logo: null },
-    { id: 'movement', name: 'Movement', logo: null },
-    { id: 'countenance', name: 'Countenance', logo: null }
-];
+
 
 export default function ModuleConfigurationsView() {
     const { loadConfigs, getConfigs, setModuleType, selectedModuleType } = useModuleConfigStore();

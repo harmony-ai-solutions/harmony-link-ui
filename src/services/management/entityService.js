@@ -5,7 +5,17 @@ export async function listEntities() {
         headers: getAuthHeaders()
     });
     await handleResponse(resp, "Failed to list entities");
-    return await resp.json();
+    const data = await resp.json();
+    
+    // Convert object format {id: {...}} to array format [{id: 'id', ...}]
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return Object.entries(data).map(([id, entity]) => ({
+            id,
+            ...entity
+        }));
+    }
+    
+    return data;
 }
 
 export async function getEntity(id) {

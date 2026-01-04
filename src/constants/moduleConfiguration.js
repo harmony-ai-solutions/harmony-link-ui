@@ -7,6 +7,15 @@ import logo_blank from '../assets/images/blank_50px.png';
 import logo_elevenlabs from '../assets/images/elevenlabs_50px.png';
 import logo_openrouter from '../assets/images/or_50px.png';
 
+export const MODULE_TYPE_OPTIONS = [
+    { id: 'backend', name: 'Backend / LLM', logo: logo_blank },
+    { id: 'tts', name: 'Text-to-Speech', logo: logo_blank },
+    { id: 'stt', name: 'Speech-to-Text', logo: logo_blank },
+    { id: 'rag', name: 'RAG', logo: logo_blank },
+    { id: 'movement', name: 'Movement', logo: logo_blank },
+    { id: 'countenance', name: 'Countenance', logo: logo_blank }
+];
+
 export const MODULE_CONFIGS = {
     backend: {
         generalSettingsComponent: null,

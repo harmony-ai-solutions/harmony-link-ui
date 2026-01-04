@@ -1,6 +1,19 @@
 import React from 'react';
 import useModuleConfigStore from '../../store/moduleConfigStore';
 
+// Helper function to format module type names for display
+const formatModuleTypeName = (moduleType) => {
+    const nameMap = {
+        'backend': 'Backend',
+        'tts': 'TTS',
+        'stt': 'STT',
+        'rag': 'RAG',
+        'movement': 'Movement',
+        'countenance': 'Countenance'
+    };
+    return nameMap[moduleType] || moduleType;
+};
+
 export default function ModuleConfigList({ moduleType, configs, onCreate, onEdit }) {
     const { deleteConfig, isLoading } = useModuleConfigStore();
 
@@ -17,8 +30,8 @@ export default function ModuleConfigList({ moduleType, configs, onCreate, onEdit
     return (
         <div className="bg-neutral-800 rounded p-4">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-white capitalize">
-                    {moduleType} Configurations
+                <h2 className="text-xl font-semibold text-white">
+                    {formatModuleTypeName(moduleType)} Configurations
                 </h2>
                 <button
                     onClick={onCreate}

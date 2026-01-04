@@ -6,7 +6,6 @@ import {getConfig, validateProviderConfig} from "../../services/management/confi
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
-import { useSelectedEntity } from '../../hooks/useEntitySettings.js';
 import { isHarmonyLinkMode } from '../../config/appMode.js';
 
 
@@ -18,8 +17,6 @@ const knownModelNames = {
 }
 
 const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
-    // Use store for state management
-    const { selectedEntityId } = useSelectedEntity();
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values

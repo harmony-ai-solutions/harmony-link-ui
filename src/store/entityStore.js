@@ -4,7 +4,7 @@ import * as entityService from '../services/management/entityService.js';
 
 const useEntityStore = create((set, get) => ({
     // State
-    entities: [],
+    entities: null, // null = not loaded yet, [] = loaded but empty
     selectedEntityId: null,
     isLoading: false,
     error: null,
@@ -79,6 +79,13 @@ const useEntityStore = create((set, get) => ({
     // Getters
     getEntity: (id) => {
         const state = get();
+        // Add defensive check for undefined/null entities
+        if (!state.entities || !Array.isArray(state.entities)) {
+            return null;
+        }
+        if (!id) {
+            return null;
+        }
         return state.entities.find(e => e.id === id);
     }
 }));

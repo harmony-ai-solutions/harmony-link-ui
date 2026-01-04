@@ -7,7 +7,8 @@ import DevelopmentView from "./components/DevelopmentView.jsx";
 import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
-import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
+import ModuleConfigurationsView from "./components/modules/ModuleConfigurationsView.jsx";
+import {SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator} from './constants.jsx'
 import {LogDebug, LogError, LogPrint} from "./utils/logger.js";
 
 function HarmonyLinkApp() {
@@ -70,11 +71,15 @@ function HarmonyLinkApp() {
                         </li>
                         <li className="mr-1 h-10 bg-neutral-900">
                             <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
-                               href="#general" onClick={() => setSettingsTab(SettingsTabGeneral)}>General Settings</a>
+                               href="#general" onClick={() => setSettingsTab(SettingsTabGeneral)}>General</a>
                         </li>
                         <li className="mr-1 h-10 bg-neutral-900">
                             <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
-                               href="#entity" onClick={() => setSettingsTab(SettingsTabEntities)}>Entity Settings</a>
+                               href="#entity" onClick={() => setSettingsTab(SettingsTabEntities)}>Entities</a>
+                        </li>
+                        <li className="mr-1 h-10 bg-neutral-900">
+                            <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
+                               href="#modules" onClick={() => setSettingsTab(SettingsTabModules)}>Modules</a>
                         </li>
                         <li className="mr-1 h-10 bg-neutral-900">
                             <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
@@ -102,6 +107,9 @@ function HarmonyLinkApp() {
                     }
                     {settingsTab === SettingsTabCharacters &&
                         <CharacterProfilesView></CharacterProfilesView>
+                    }
+                    {settingsTab === SettingsTabModules &&
+                        <ModuleConfigurationsView></ModuleConfigurationsView>
                     }
                     {settingsTab === SettingsTabDevelopment &&
                         <DevelopmentView></DevelopmentView>

@@ -80,34 +80,34 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                 return (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Name</label>
+                            <label className="block text-sm font-medium text-gray-300">Name</label>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                            <label className="block text-sm font-medium text-gray-300">Description</label>
                             <textarea
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
                                 rows={3}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Personality</label>
+                            <label className="block text-sm font-medium text-gray-300">Personality</label>
                             <textarea
                                 name="personality"
                                 value={formData.personality}
                                 onChange={handleChange}
                                 rows={3}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                     </div>
@@ -116,33 +116,33 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                 return (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Appearance</label>
+                            <label className="block text-sm font-medium text-gray-300">Appearance</label>
                             <textarea
                                 name="appearance"
                                 value={formData.appearance}
                                 onChange={handleChange}
                                 rows={3}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Backstory</label>
+                            <label className="block text-sm font-medium text-gray-300">Backstory</label>
                             <textarea
                                 name="backstory"
                                 value={formData.backstory}
                                 onChange={handleChange}
                                 rows={4}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Voice Characteristics</label>
+                            <label className="block text-sm font-medium text-gray-300">Voice Characteristics</label>
                             <textarea
                                 name="voice_characteristics"
                                 value={formData.voice_characteristics}
                                 onChange={handleChange}
                                 rows={2}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                     </div>
@@ -151,36 +151,36 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                 return (
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Base System Prompt</label>
+                            <label className="block text-sm font-medium text-gray-300">Base System Prompt</label>
                             <textarea
                                 name="base_prompt"
                                 value={formData.base_prompt}
                                 onChange={handleChange}
                                 rows={4}
                                 placeholder="The primary instructions for the AI..."
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 placeholder-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Scenario</label>
+                            <label className="block text-sm font-medium text-gray-300">Scenario</label>
                             <textarea
                                 name="scenario"
                                 value={formData.scenario}
                                 onChange={handleChange}
                                 rows={2}
                                 placeholder="The current setting or context..."
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 placeholder-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">Example Dialogues</label>
+                            <label className="block text-sm font-medium text-gray-300">Example Dialogues</label>
                             <textarea
                                 name="example_dialogues"
                                 value={formData.example_dialogues}
                                 onChange={handleChange}
                                 rows={4}
                                 placeholder="User: Hello!&#10;Char: Greetings, traveller!..."
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-mono text-sm"
+                                className="mt-1 block w-full border border-neutral-600 rounded-md shadow-sm py-2 px-3 bg-neutral-700 text-neutral-100 placeholder-gray-300 focus:outline-none focus:ring-orange-500 focus:border-orange-500 font-mono text-sm"
                             />
                         </div>
                     </div>
@@ -193,28 +193,28 @@ export default function CharacterProfileEditor({ profile, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-height-[90vh] flex flex-col overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                    <h2 className="text-xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-neutral-800 rounded-lg shadow-xl w-full max-w-4xl max-height-[90vh] flex flex-col overflow-hidden border border-neutral-700">
+                <div className="px-6 py-4 border-b border-neutral-700 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-orange-400">
                         {profile ? `Edit Profile: ${profile.name}` : 'Create Character Profile'}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <div className="flex border-b border-gray-200 bg-white">
+                <div className="flex border-b border-neutral-700 bg-neutral-800">
                     {tabs.map(tab => !tab.hidden && (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`px-6 py-3 text-sm font-medium transition-colors ${
                                 activeTab === tab.id 
-                                    ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50' 
-                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    ? 'border-b-2 border-orange-500 text-orange-400 bg-neutral-700' 
+                                    : 'text-gray-400 hover:text-gray-300 hover:bg-neutral-700/50'
                             }`}
                         >
                             {tab.label}
@@ -222,7 +222,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                     ))}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 bg-white">
+                <div className="flex-1 overflow-y-auto p-6 bg-neutral-800">
                     {activeTab !== 'images' ? (
                         <form id="character-profile-form" onSubmit={handleSubmit}>
                             {renderTabContent()}
@@ -232,15 +232,15 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                     )}
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                <div className="px-6 py-4 border-t border-neutral-700 flex justify-between items-center">
                     <div>
-                        {error && <span className="text-sm text-red-600 font-medium">{error}</span>}
+                        {error && <span className="text-sm text-red-400 font-medium">{error}</span>}
                     </div>
                     <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="px-4 py-2 border border-neutral-600 rounded-md shadow-sm text-sm font-medium text-neutral-300 bg-neutral-700 hover:bg-neutral-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
                         >
                             Cancel
                         </button>
@@ -249,7 +249,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 type="submit"
                                 form="character-profile-form"
                                 disabled={saving}
-                                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {saving ? 'Saving...' : 'Save Profile'}
                             </button>

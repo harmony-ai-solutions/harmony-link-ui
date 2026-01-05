@@ -102,8 +102,12 @@ const useCharacterProfileStore = create((set, get) => ({
         try {
             const result = await characterService.importCharacterCard(file);
             set(produce(state => {
-                state.profiles.push(result.profile);
-                state.images[result.profile.id] = [result.image];
+                if (result && result.profile) {
+                    state.profiles.push(result.profile);
+                    if (result.profile.id && result.image) {
+                        state.images[result.profile.id] = [result.image];
+                    }
+                }
                 state.isLoading = false;
             }));
             return result;
@@ -155,6 +159,29 @@ const useCharacterProfileStore = create((set, get) => ({
                 state.images[profileId].push(image);
             }));
             return image;
+        } catch (error) {
+            set({ error: error.message });
+            throw error;
+        }
+    },
+    
+    /**
+     * Update image metadata (e.g., description)
+     * @param {string} profileId 
+     * @param {number} imageId 
+     * @param {Object} updates - Metadata updates (e.g., {description: "..."})
+     */
+    updateImageMetadata: async (profileId, imageId, updates) => {
+        try {
+            const updated = await characterService.updateImageMetadata(profileId, imageId, updates);
+            set(produce(state => {
+                if (state.images[profileId]) {
+                    const index = state.images[profileId].findIndex(img => img.id === imageId);
+                    if (index !== -1) {
+                        state.images[profileId][index] = { ...state.images[profileId][index], ...updated };
+                    }
+                }
+            }));
         } catch (error) {
             set({ error: error.message });
             throw error;

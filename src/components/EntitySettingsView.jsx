@@ -3,7 +3,7 @@ import useEntityStore from '../store/entityStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
 import useModuleConfigStore from '../store/moduleConfigStore';
 import { supportsCharacterProfile } from '../constants/backendProviders';
-import { updateEntity } from '../services/management/entityService';
+import { updateEntity, renameEntity } from '../services/management/entityService';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
@@ -174,6 +174,13 @@ const EntitySettingsView = ({ appName }) => {
             loadCharacterImages(selectedCharacterProfileId);
         }
     }, [selectedCharacterProfileId, isProfileSupported, loadCharacterImages]);
+
+    // Additional effect to ensure images are loaded when profile is first set
+    useEffect(() => {
+        if (selectedCharacterProfileId) {
+            loadCharacterImages(selectedCharacterProfileId);
+        }
+    }, [selectedCharacterProfileId, loadCharacterImages]);
 
     // Helper: Generate unique entity ID
     const generateUniqueEntityId = (baseName = 'new-entity') => {
@@ -356,16 +363,24 @@ const EntitySettingsView = ({ appName }) => {
                 }
 
                 try {
-                    await createEntity(newId, selectedEntity.character_profile_id);
+                    // Create entity with character profile from nested structure
+                    const characterProfileId = selectedEntity.character_profile?.id || null;
+                    await createEntity(newId, characterProfileId);
+                    
+                    // Copy module mappings from nested structure
                     const mappings = {
-                        backend_config_id: selectedEntity.backend_config_id,
-                        tts_config_id: selectedEntity.tts_config_id,
-                        stt_config_id: selectedEntity.stt_config_id,
-                        rag_config_id: selectedEntity.rag_config_id,
-                        movement_config_id: selectedEntity.movement_config_id,
-                        countenance_config_id: selectedEntity.countenance_config_id
+                        backend_config_id: selectedEntity.modules?.backend?.id || null,
+                        tts_config_id: selectedEntity.modules?.tts?.id || null,
+                        stt_config_id: selectedEntity.modules?.stt?.id || null,
+                        rag_config_id: selectedEntity.modules?.rag?.id || null,
+                        movement_config_id: selectedEntity.modules?.movement?.id || null,
+                        countenance_config_id: selectedEntity.modules?.countenance?.id || null
                     };
                     await updateEntityMappings(newId, mappings);
+                    
+                    // Reload entities to get the updated list
+                    await loadEntities();
+                    
                     setSuccessMessage('Entity copied successfully');
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } catch (error) {
@@ -406,23 +421,14 @@ const EntitySettingsView = ({ appName }) => {
                 setConfirmDialog({
                     isOpen: true,
                     title: 'Confirm Rename',
-                    message: `Rename entity '${selectedEntityId}' to '${newId}'?\n\nThis will:\n• Create a new entity with ID '${newId}'\n• Copy all configurations\n• Delete the old entity '${selectedEntityId}'\n\nThis action cannot be undone.`,
+                    message: `Rename entity '${selectedEntityId}' to '${newId}'?\n\nThis will atomically:\n• Create a new entity with ID '${newId}'\n• Copy all configurations\n• Delete the old entity '${selectedEntityId}'\n\nThis action cannot be undone.`,
                     onConfirm: async () => {
                         try {
-                            // Create new entity with same configuration
-                            await createEntity(newId, selectedEntity.character_profile_id);
-                            const mappings = {
-                                backend_config_id: selectedEntity.backend_config_id,
-                                tts_config_id: selectedEntity.tts_config_id,
-                                stt_config_id: selectedEntity.stt_config_id,
-                                rag_config_id: selectedEntity.rag_config_id,
-                                movement_config_id: selectedEntity.movement_config_id,
-                                countenance_config_id: selectedEntity.countenance_config_id
-                            };
-                            await updateEntityMappings(newId, mappings);
+                            // Use atomic rename endpoint
+                            await renameEntity(selectedEntityId, newId);
                             
-                            // Delete old entity
-                            await deleteEntity(selectedEntityId);
+                            // Reload entities to get updated list
+                            await loadEntities();
                             
                             // Select the new entity
                             selectEntity(newId);

@@ -63,3 +63,13 @@ export async function deleteEntity(id) {
     });
     await handleResponse(resp, "Failed to delete entity");
 }
+
+export async function renameEntity(oldId, newId) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${oldId}/rename`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ new_id: newId })
+    });
+    await handleResponse(resp, "Failed to rename entity");
+    return await resp.json();
+}

@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.OLLAMA];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
-    const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [baseURL, setBaseURL] = useState(mergedSettings.baseurl);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateBaseURLAndUpdate = (value) => {
@@ -36,6 +42,8 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Base URL must be a valid URL.");
             setBaseURL(moduleSettings.baseurl);
             return false;
+        } else if (value === moduleSettings.baseurl) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, baseurl: value };
         setModuleSettings(updatedSettings);
@@ -48,6 +56,8 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, embeddingmodel: value };
         setModuleSettings(updatedSettings);
@@ -56,8 +66,13 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setBaseURL(currentMergedSettings.baseurl);
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const handleValidateConfig = async () => {

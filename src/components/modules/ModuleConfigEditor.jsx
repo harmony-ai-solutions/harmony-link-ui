@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import useModuleConfigStore from '../../store/moduleConfigStore';
 import { MODULE_CONFIGS } from '../../constants/moduleConfiguration.js';
+import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
+import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import DynamicOptionsGroup from '../settings/DynamicOptionsGroup.jsx';
 
 // Import all provider-specific settings components
@@ -15,21 +17,25 @@ import CountenanceOpenAISettingsView from "./CountenanceOpenAISettingsView.jsx";
 import CountenanceOpenAICompatibleSettingsView from './CountenanceOpenAICompatibleSettingsView.jsx';
 import CountenanceOpenRouterSettingsView from "./CountenanceOpenRouterSettingsView.jsx";
 
+import MovementGeneralSettingsView from './MovementGeneralSettingsView.jsx';
 import MovementOpenAISettingsView from "./MovementOpenAISettingsView.jsx";
 import MovementOpenAICompatibleSettingsView from './MovementOpenAICompatibleSettingsView.jsx';
 import MovementOpenRouterSettingsView from "./MovementOpenRouterSettingsView.jsx";
 
+import STTGeneralSettingsView from './STTGeneralSettingsView.jsx';
 import STTHarmonySpeechSettingsView from './STTHarmonySpeechSettingsView.jsx';
 import STTOpenAISettingsView from './STTOpenAISettingsView.jsx';
 
 import VADHarmonySpeechSettingsView from './VADHarmonySpeechSettingsView.jsx';
 import VADOpenAISettingsView from './VADOpenAISettingsView.jsx';
 
+import TTSGeneralSettingsView from './TTSGeneralSettingsView.jsx';
 import TTSElevenlabsSettingsView from './TTSElevenlabsSettingsView.jsx';
 import TTSHarmonySpeechSettingsView from './TTSHarmonySpeechSettingsView.jsx';
 import TTSOpenAISettingsView from './TTSOpenAISettingsView.jsx';
 import TTSKindroidSettingsView from './TTSKindroidSettingsView.jsx';
 
+import RAGGeneralSettingsView from './RAGGeneralSettingsView.jsx';
 import RAGLocalAISettingsView from './RAGLocalAISettingsView.jsx';
 import RAGOpenAISettingsView from './RAGOpenAISettingsView.jsx';
 import RAGOpenAICompatibleSettingsView from './RAGOpenAICompatibleSettingsView.jsx';
@@ -47,17 +53,21 @@ const COMPONENT_MAP = {
     CountenanceOpenAISettingsView,
     CountenanceOpenAICompatibleSettingsView,
     CountenanceOpenRouterSettingsView,
+    MovementGeneralSettingsView,
     MovementOpenAISettingsView,
     MovementOpenAICompatibleSettingsView,
     MovementOpenRouterSettingsView,
+    STTGeneralSettingsView,
     STTHarmonySpeechSettingsView,
     STTOpenAISettingsView,
     VADHarmonySpeechSettingsView,
     VADOpenAISettingsView,
+    TTSGeneralSettingsView,
     TTSElevenlabsSettingsView,
     TTSHarmonySpeechSettingsView,
     TTSOpenAISettingsView,
     TTSKindroidSettingsView,
+    RAGGeneralSettingsView,    
     RAGLocalAISettingsView,
     RAGOpenAISettingsView,
     RAGOpenAICompatibleSettingsView,
@@ -89,6 +99,10 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
             });
             setSelectedProviders(providers);
         } else {
+            // No existing config - Merge general defaults immediately
+            const generalDefaults = MODULE_DEFAULTS[moduleType]?.general || {};
+            setModuleSettings(generalDefaults);
+
             // Default "disabled" for all providers
             const providers = {};
             moduleDef.providers.forEach(p => {
@@ -96,13 +110,34 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
             });
             setSelectedProviders(providers);
         }
-    }, [config, moduleDef]);
+    }, [config, moduleDef, moduleType]);
 
     const handleProviderChange = (providerId, pDef) => {
         setSelectedProviders(prev => ({ ...prev, [pDef.id]: providerId }));
         
         const newSettings = { ...moduleSettings };
         setNestedValue(newSettings, pDef.settingsKey, providerId);
+        
+        // Merge defaults for the newly selected provider if we're creating a new config
+        // or if the provider wasn't previously configured
+        if (providerId !== 'disabled') {
+            const providerDefaults = MODULE_DEFAULTS[moduleType]?.[providerId];
+            if (providerDefaults) {
+                const pathParts = pDef.settingsKey.split('.');
+                if (pathParts.length > 1) {
+                    // Multi-level path like 'transcription.provider'
+                    const basePath = pathParts[0];
+                    newSettings[basePath] = {
+                        ...(newSettings[basePath] || {}),
+                        [providerId]: mergeConfigWithDefaults(newSettings[basePath]?.[providerId], providerDefaults)
+                    };
+                } else {
+                    // Single level path like 'provider'
+                    newSettings[providerId] = mergeConfigWithDefaults(newSettings[providerId], providerDefaults);
+                }
+            }
+        }
+        
         setModuleSettings(newSettings);
     };
 
@@ -126,6 +161,13 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
             };
         }
         setModuleSettings(newSettings);
+    };
+
+    const handleGeneralSettingsChange = (updatedGeneralSettings) => {
+        setModuleSettings(prev => ({
+            ...prev,
+            ...updatedGeneralSettings
+        }));
     };
 
     const handleSave = async () => {
@@ -230,6 +272,20 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
                     </div>
 
                     <div className="space-y-4">
+                        {moduleDef.generalSettingsComponent && (
+                            <div className="mb-6">
+                                <h3 className="text-lg font-medium text-orange-400 border-b border-neutral-700 pb-2 mb-4">
+                                    General Settings
+                                </h3>
+                                <div className="bg-neutral-900 p-4 rounded border border-neutral-700">
+                                    {React.createElement(COMPONENT_MAP[moduleDef.generalSettingsComponent], {
+                                        initialSettings: moduleSettings,
+                                        saveSettingsFunc: handleGeneralSettingsChange
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         <h3 className="text-lg font-medium text-orange-400 border-b border-neutral-700 pb-2">
                             Provider Settings
                         </h3>

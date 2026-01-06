@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import useEntityStore from '../store/entityStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
 import useModuleConfigStore from '../store/moduleConfigStore';
+import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity, renameEntity } from '../services/management/entityService';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
@@ -103,6 +104,7 @@ const EntitySettingsView = ({ appName }) => {
         countenance: ''
     });
     const [selectedCharacterProfileId, setSelectedCharacterProfileId] = useState('');
+    const [showRAGCollections, setShowRAGCollections] = useState(false);
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -676,13 +678,36 @@ const EntitySettingsView = ({ appName }) => {
                                 isLoading={isModuleLoading}
                             />
                             
-                            <ModuleConfigSelector
-                                label="RAG Settings"
-                                moduleType="rag"
-                                selectedConfigId={entityMappings.rag}
-                                onChange={(id) => setEntityMappings(prev => ({ ...prev, rag: id }))}
-                                configs={getConfigs('rag')}
-                                isLoading={isModuleLoading}
+                            <div className="flex flex-wrap items-center w-full">
+                                <ModuleConfigSelector
+                                    label="RAG Settings"
+                                    moduleType="rag"
+                                    selectedConfigId={entityMappings.rag}
+                                    onChange={(id) => setEntityMappings(prev => ({ ...prev, rag: id }))}
+                                    configs={getConfigs('rag')}
+                                    isLoading={isModuleLoading}
+                                />
+                                <div className="w-1/5"></div>
+                                <div className="w-4/5 px-3">
+                                    <button
+                                        onClick={() => setShowRAGCollections(true)}
+                                        className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 text-sm py-1 px-3 rounded border border-neutral-600 transition-colors"
+                                    >
+                                        Manage RAG Collections
+                                    </button>
+                                </div>
+                            </div>
+
+                            <RAGCollectionManager
+                                entityId={selectedEntityId}
+                                isOpen={showRAGCollections}
+                                onClose={() => setShowRAGCollections(false)}
+                                onError={(msg) => setErrorDialog({
+                                    isOpen: true,
+                                    title: 'RAG Error',
+                                    message: msg,
+                                    type: 'error'
+                                })}
                             />
                             
                             <ModuleConfigSelector

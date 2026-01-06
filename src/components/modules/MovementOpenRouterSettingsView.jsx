@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.MOVEMENT][PROVIDERS.OPENROUTER];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,7 +26,7 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
@@ -32,13 +38,13 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
     const [modelsLoading, setModelsLoading] = useState(false);
 
     // Fields
-    const [openRouterAPIKey, setOpenRouterAPIKey] = useState(initialSettings.openrouterapikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [maxTokens, setMaxTokens] = useState(initialSettings.maxtokens);
-    const [temperature, setTemperature] = useState(initialSettings.temperature);
-    const [topP, setTopP] = useState(initialSettings.topp);
-    const [n, setN] = useState(initialSettings.n);
-    const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
+    const [openRouterAPIKey, setOpenRouterAPIKey] = useState(mergedSettings.openrouterapikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
+    const [temperature, setTemperature] = useState(mergedSettings.temperature);
+    const [topP, setTopP] = useState(mergedSettings.topp);
+    const [n, setN] = useState(mergedSettings.n);
+    const [stopTokens, setStopTokens] = useState(mergedSettings.stoptokens);
 
     // Auto-refresh models when API key changes or component loads
     const refreshAvailableModels = async () => {
@@ -122,6 +128,8 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
             showModal("Max tokens must be a positive number greater than 19.");
             setMaxTokens(moduleSettings.maxtokens);
             return false;
+        } else if (numValue === moduleSettings.maxtokens) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, maxtokens: numValue };
@@ -135,6 +143,8 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
             showModal("Temperature must be a positive number between 0.01 and 2.00, or set to -1 to disable.");
             setTemperature(moduleSettings.temperature);
             return false;
+        } else if (numValue === moduleSettings.temperature) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, temperature: numValue };
@@ -148,6 +158,8 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
             showModal("Top P must be a positive number between 0.01 and 1.00, or set to -1 to disable.");
             setTopP(moduleSettings.topp);
             return false;
+        } else if (numValue === moduleSettings.topp) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, topp: numValue };
@@ -161,6 +173,8 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
             showModal("N must be a positive number, or -1 to disable.");
             setN(moduleSettings.n);
             return false;
+        } else if (numValue === moduleSettings.n) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, n: numValue };
@@ -174,6 +188,8 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
             showModal("Stop Token List cannot be empty.");
             setStopTokens(moduleSettings.stoptokens);
             return false;
+        } else if (value.join(",") === moduleSettings.stoptokens.join(",")) {
+            return true;
         }
         // Update if validation successful
         // Split by comma
@@ -212,10 +228,21 @@ const MovementOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => 
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenRouterAPIKey(currentMergedSettings.openrouterapikey);
+        setModel(currentMergedSettings.model);
+        setMaxTokens(currentMergedSettings.maxtokens);
+        setTemperature(currentMergedSettings.temperature);
+        setTopP(currentMergedSettings.topp);
+        setN(currentMergedSettings.n);
+        setStopTokens(currentMergedSettings.stoptokens);
+
         // Auto-fetch models if API key is available (like TTS does with endpoint)
-        if (initialSettings.openrouterapikey) {
+        if (currentMergedSettings.openrouterapikey) {
             refreshAvailableModels();
         }
     };

@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [apiKey, setApiKey] = useState(initialSettings.openaiapikey);
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [apiKey, setApiKey] = useState(mergedSettings.openaiapikey);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateApiKeyAndUpdate = (value) => {
@@ -35,9 +41,13 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("OpenAI API Key cannot be empty.");
             setApiKey(moduleSettings.openaiapikey);
             return false;
+        } else if (value === moduleSettings.openaiapikey) {
+            return true; // Skip if no change
         }
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -46,15 +56,24 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true; // Skip if no change
         }
-        moduleSettings.embeddingmodel = value;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, embeddingmodel: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setApiKey(currentMergedSettings.openaiapikey);
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const handleValidateConfig = async () => {

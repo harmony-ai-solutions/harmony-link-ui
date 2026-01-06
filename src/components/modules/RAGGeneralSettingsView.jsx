@@ -2,8 +2,18 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import RAGCollectionManager from "./RAGCollectionManager.jsx";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import { MODULES } from "../../constants/modules.js";
 
 const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) => {
+    // Merge initial settings with defaults
+    const defaults = {
+        ...MODULE_DEFAULTS[MODULES.RAG].general,
+        chromem: MODULE_DEFAULTS[MODULES.RAG].chromem
+    };
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,10 +30,10 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Fields
-    const [embeddingConcurrency, setEmbeddingConcurrency] = useState(initialSettings.chromem?.embeddingconcurrency || 0);
+    const [embeddingConcurrency, setEmbeddingConcurrency] = useState(mergedSettings.chromem?.embeddingconcurrency || 0);
 
     // Validation Functions
     const validateEmbeddingConcurrencyAndUpdate = (value) => {
@@ -32,22 +42,27 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
             showModal("Embedding Concurrency must be a non-negative number between 1 and 8.");
             setEmbeddingConcurrency(moduleSettings.chromem?.embeddingconcurrency || 0);
             return false;
+        } else if (numValue === moduleSettings.chromem?.embeddingconcurrency) {
+            return true;
         }
         // Update if validation successful
-        if (!moduleSettings.chromem) {
-            moduleSettings.chromem = {};
-        }
-        const updatedChromem = { ...moduleSettings.chromem, embeddingconcurrency: numValue };
-        const updatedSettings = { ...moduleSettings, chromem: updatedChromem };
+        const updatedSettings = {
+            ...moduleSettings,
+            chromem: {
+                ...(moduleSettings.chromem || {}),
+                embeddingconcurrency: numValue
+            }
+        };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
-        setEmbeddingConcurrency(initialSettings.chromem?.embeddingconcurrency || 0);
+        setModuleSettings(currentMergedSettings);
+        setEmbeddingConcurrency(currentMergedSettings.chromem?.embeddingconcurrency || 0);
     };
 
     const openCollectionsModal = () => {
@@ -87,27 +102,8 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
                                  onBlur={(e) => validateEmbeddingConcurrencyAndUpdate(e.target.value)}/>
                       </div>
                   </div>
-                  {entityId && (
-                      <div className="flex items-center w-1/2">
-                          <div className="flex items-center justify-center">
-                              <button
-                                  onClick={openCollectionsModal}
-                                  className="bg-neutral-700 hover:bg-neutral-500 font-bold text-sm py-1 px-2 mx-1 text-orange-400">
-                                  Manage Vector Collections
-                              </button>
-                          </div>
-                      </div>
-                  )}
               </div>
           </div>
-
-          {/* Collections Management Modal */}
-          <RAGCollectionManager
-              entityId={entityId}
-              isOpen={showCollectionsModal}
-              onClose={closeCollectionsModal}
-              onError={showModal}
-          />
 
           {isModalVisible && (
               <div className="fixed inset-0 bg-gray-600/50">

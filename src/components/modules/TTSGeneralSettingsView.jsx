@@ -1,10 +1,16 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
-import {cloneDeep} from "lodash";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import { MODULES } from "../../constants/modules.js";
 
 
 const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.TTS].general;
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -18,7 +24,7 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     const ttsOutputTypes = [
         { name: 'File', value: 'file' },
@@ -26,9 +32,9 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     ];
 
     // Fields
-    const [ttsOutputType, setTtsOutputType] = useState(initialSettings.outputtype);
-    const [vocalizeNonverbal, setVocalizeNonverbal] = useState(initialSettings.vocalizenonverbal);
-    const [wordsToReplace, setWordsToReplace] = useState(initialSettings.wordstoreplace ? Object.entries(initialSettings.wordstoreplace).map(([key, value]) => `${key}: ${value}`).join('\n') : "");
+    const [ttsOutputType, setTtsOutputType] = useState(mergedSettings.outputtype);
+    const [vocalizeNonverbal, setVocalizeNonverbal] = useState(mergedSettings.vocalizenonverbal);
+    const [wordsToReplace, setWordsToReplace] = useState(mergedSettings.wordstoreplace ? Object.entries(mergedSettings.wordstoreplace).map(([key, value]) => `${key}: ${value}`).join('\n') : "");
 
     // Validation Functions
     const setTTSOutputTypeAndUpdate = (value) => {
@@ -46,6 +52,9 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const validateWordsToReplaceAndUpdate = (value) => {
         if (value.trim() === "") {
             setWordsToReplace("");
+            const updatedSettings = { ...moduleSettings, wordstoreplace: {} };
+            setModuleSettings(updatedSettings);
+            saveSettingsFunc(updatedSettings);
             return false;
         }
         // Update if validation successful
@@ -54,8 +63,8 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const lines = value.split('\n');
         lines.forEach((line, index) => {
             const [key, val] = line.split(':').map(part => part.trim());
-            if(key.length !== 0 && val.length !== 0) {
-                newWordsToReplace[key] = val;
+                if(key.length !== 0 && val.length !== 0) {
+                    newWordsToReplace[key] = val;
             }
         });
         setWordsToReplace(Object.entries(newWordsToReplace).map(([key, val]) => `${key}: ${val}`).join('\n'));
@@ -66,14 +75,20 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setTtsOutputType(currentMergedSettings.outputtype);
+        setVocalizeNonverbal(currentMergedSettings.vocalizenonverbal);
+        setWordsToReplace(currentMergedSettings.wordstoreplace ? Object.entries(currentMergedSettings.wordstoreplace).map(([key, value]) => `${key}: ${value}`).join('\n') : "");
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>
@@ -138,7 +153,7 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                           </SettingsTooltip>
                       </label>
                       <div className="w-5/6 px-3">
-                            <textarea name="systemprompts"
+                            <textarea name="wordstoreplace"
                                       className="mt-1 block w-full bg-neutral-800 min-h-24 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
                                       placeholder="List of Words to Replace in format word:replacement" value={wordsToReplace}
                                       onChange={(e) => setWordsToReplace(e.target.value)}
@@ -166,8 +181,8 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                           <div className="items-center px-4 py-3">
                           <button onClick={() => setIsModalVisible(false)}
                                       className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                  Close
-                              </button>
+                                      Close
+                                  </button>
                           </div>
                       </div>
                   </div>

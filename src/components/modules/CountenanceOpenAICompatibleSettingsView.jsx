@@ -5,8 +5,14 @@ import {validateProviderConfig, listProviderModels} from "../../services/managem
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.COUNTENANCE][PROVIDERS.OPENAI_COMPATIBLE];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,20 +26,20 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
-    const [apiKey, setApiKey] = useState(initialSettings.apikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [maxTokens, setMaxTokens] = useState(initialSettings.maxtokens);
-    const [temperature, setTemperature] = useState(initialSettings.temperature);
-    const [topP, setTopP] = useState(initialSettings.topp);
-    const [n, setN] = useState(initialSettings.n);
-    const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
+    const [baseURL, setBaseURL] = useState(mergedSettings.baseurl);
+    const [apiKey, setApiKey] = useState(mergedSettings.apikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
+    const [temperature, setTemperature] = useState(mergedSettings.temperature);
+    const [topP, setTopP] = useState(mergedSettings.topp);
+    const [n, setN] = useState(mergedSettings.n);
+    const [stopTokens, setStopTokens] = useState(mergedSettings.stoptokens);
 
     // Model dropdown state - initialize with error message like TTS component
     const [availableModels, setAvailableModels] = useState([
@@ -230,9 +236,22 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     };
 
     const setInitialValues = () => {
-        setModuleSettings(initialSettings);
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+        // Reset Entity map
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setBaseURL(currentMergedSettings.baseurl);
+        setApiKey(currentMergedSettings.apikey);
+        setModel(currentMergedSettings.model);
+        setMaxTokens(currentMergedSettings.maxtokens);
+        setTemperature(currentMergedSettings.temperature);
+        setTopP(currentMergedSettings.topp);
+        setN(currentMergedSettings.n);
+        setStopTokens(currentMergedSettings.stoptokens);
+
         // Auto-fetch models if Base URL is available (like TTS does with endpoint)
-        if (initialSettings.baseurl) {
+        if (currentMergedSettings.baseurl) {
             refreshAvailableModels();
         }
     };

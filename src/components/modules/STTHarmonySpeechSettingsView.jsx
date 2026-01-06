@@ -7,6 +7,8 @@ import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
 import { isHarmonyLinkMode } from '../../config/appMode.js';
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const knownModelNames = {
@@ -17,6 +19,10 @@ const knownModelNames = {
 }
 
 const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.STT][PROVIDERS.HARMONYSPEECH];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -30,7 +36,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference - now managed by store
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
@@ -44,8 +50,8 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     ]);
 
     // Fields
-    const [endpoint, setEndpoint] = useState(initialSettings.endpoint);
-    const [model, setModel] = useState(initialSettings.model);
+    const [endpoint, setEndpoint] = useState(mergedSettings.endpoint);
+    const [model, setModel] = useState(mergedSettings.model);
 
     // Validation Functions
     const validateEndpointAndUpdate = (value) => {
@@ -106,12 +112,12 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Utility Functions
-    const setupHarmonySpeechTooling = () => {
+    const setupHarmonySpeechTooling = (currentModuleSettings) => {
         try {
             if (isHarmonyLinkMode()) {
                 // Harmony Link mode: Get API key from config
                 getConfig().then((appConfig) => {
-                    const plugin = new HarmonySpeechEnginePlugin(appConfig.general.userapikey, moduleSettings.endpoint);
+                    const plugin = new HarmonySpeechEnginePlugin(appConfig.general.userapikey, currentModuleSettings.endpoint);
                     setHarmonySpeechPlugin(plugin);
 
                     // Fetch available toolchains from Endpoint (if available)
@@ -119,7 +125,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 });
             } else {
                 // Speech Engine mode: Use empty API key
-                const plugin = new HarmonySpeechEnginePlugin('', moduleSettings.endpoint);
+                const plugin = new HarmonySpeechEnginePlugin('', currentModuleSettings.endpoint);
                 setHarmonySpeechPlugin(plugin);
 
                 // Fetch available toolchains from Endpoint (if available)
@@ -165,11 +171,16 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     }
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setEndpoint(currentMergedSettings.endpoint);
+        setModel(currentMergedSettings.model);
 
         // Setup Harmony Speech
-        setupHarmonySpeechTooling();
+        setupHarmonySpeechTooling(currentMergedSettings);
     };
 
     const useIntegration = (integration, urlIndex = 0) => {

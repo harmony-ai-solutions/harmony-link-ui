@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.MISTRAL];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,13 +26,13 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [apiKey, setApiKey] = useState(initialSettings.mistralapikey);
+    const [apiKey, setApiKey] = useState(mergedSettings.mistralapikey);
 
     // Validation Functions
     const validateApiKeyAndUpdate = (value) => {
@@ -34,6 +40,8 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Mistral API Key cannot be empty.");
             setApiKey(moduleSettings.mistralapikey);
             return false;
+        } else if (value === moduleSettings.mistralapikey) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, mistralapikey: value };
         setModuleSettings(updatedSettings);
@@ -42,8 +50,12 @@ const RAGMistralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setApiKey(currentMergedSettings.mistralapikey);
     };
 
     const handleValidateConfig = async () => {

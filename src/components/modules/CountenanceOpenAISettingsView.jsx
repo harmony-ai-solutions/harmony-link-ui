@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.COUNTENANCE][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,7 +26,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
@@ -32,13 +38,13 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [modelsLoading, setModelsLoading] = useState(false);
 
     // Fields
-    const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [maxTokens, setMaxTokens] = useState(initialSettings.maxtokens);
-    const [temperature, setTemperature] = useState(initialSettings.temperature);
-    const [topP, setTopP] = useState(initialSettings.topp);
-    const [n, setN] = useState(initialSettings.n);
-    const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
+    const [openAIAPIKey, setOpenAIAPIKey] = useState(mergedSettings.openaiapikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
+    const [temperature, setTemperature] = useState(mergedSettings.temperature);
+    const [topP, setTopP] = useState(mergedSettings.topp);
+    const [n, setN] = useState(mergedSettings.n);
+    const [stopTokens, setStopTokens] = useState(mergedSettings.stoptokens);
 
     // Auto-refresh models when API key changes or component loads
     const refreshAvailableModels = async () => {
@@ -212,10 +218,21 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenAIAPIKey(currentMergedSettings.openaiapikey);
+        setModel(currentMergedSettings.model);
+        setMaxTokens(currentMergedSettings.maxtokens);
+        setTemperature(currentMergedSettings.temperature);
+        setTopP(currentMergedSettings.topp);
+        setN(currentMergedSettings.n);
+        setStopTokens(currentMergedSettings.stoptokens);
+
         // Auto-fetch models if API key is available (like TTS does with endpoint)
-        if (initialSettings.openaiapikey) {
+        if (currentMergedSettings.openaiapikey) {
             refreshAvailableModels();
         }
     };

@@ -211,15 +211,6 @@ function BackendConfigurationDisplay({ config, loading, error }) {
                             </div>
                         )}
                         
-                        {providerConfig?.systemprompts && providerConfig.systemprompts.length > 0 && (
-                            <div>
-                                <span className="text-gray-400">System Prompts:</span>
-                                <div className="ml-2 text-gray-300 text-xs bg-neutral-600 p-2 rounded mt-1 max-h-20 overflow-y-auto custom-scrollbar">
-                                    {providerConfig.systemprompts.join('\n')}
-                                </div>
-                            </div>
-                        )}
-                        
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
                             <div>
                                 <span className="text-gray-400">Stop Tokens:</span>

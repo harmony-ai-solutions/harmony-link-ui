@@ -1,9 +1,16 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import { MODULES } from "../../constants/modules.js";
 
 
 const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.STT].general;
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -17,12 +24,12 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Fields
-    const [mainStreamTimeMillis, setMainStreamTimeMillis] = useState(initialSettings.streamrecording.mainstreamtimemillis);
-    const [transitionStreamTimeMillis, setTransitionStreamTimeMillis] = useState(initialSettings.streamrecording.transitionstreamtimemillis);
-    const [maxBufferCount, setMaxBufferCount] = useState(initialSettings.streamrecording.maxbuffercount);
+    const [mainStreamTimeMillis, setMainStreamTimeMillis] = useState(mergedSettings.streamrecording.mainstreamtimemillis);
+    const [transitionStreamTimeMillis, setTransitionStreamTimeMillis] = useState(mergedSettings.streamrecording.transitionstreamtimemillis);
+    const [maxBufferCount, setMaxBufferCount] = useState(mergedSettings.streamrecording.maxbuffercount);
 
     // Validation Functions
     const validateTranscriptionMainStreamTimeMillisAndUpdate = (value) => {
@@ -70,8 +77,14 @@ const STTGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setMainStreamTimeMillis(currentMergedSettings.streamrecording.mainstreamtimemillis);
+        setTransitionStreamTimeMillis(currentMergedSettings.streamrecording.transitionstreamtimemillis);
+        setMaxBufferCount(currentMergedSettings.streamrecording.maxbuffercount);
     };
 
     useEffect(() => {

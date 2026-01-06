@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.BACKEND][PROVIDERS.CHARACTERAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [apiToken, setApiToken] = useState(initialSettings.apitoken);
-    const [chatRoomURL, setChatRoomURL] = useState(initialSettings.chatroomurl);
+    const [apiToken, setApiToken] = useState(mergedSettings.apitoken);
+    const [chatRoomURL, setChatRoomURL] = useState(mergedSettings.chatroomurl);
 
 
     // Validation Functions
@@ -80,14 +86,19 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setApiToken(currentMergedSettings.apitoken);
+        setChatRoomURL(currentMergedSettings.chatroomurl);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>

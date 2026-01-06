@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.LOCALAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,13 +26,13 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateEmbeddingModelAndUpdate = (value) => {
@@ -34,6 +40,8 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, embeddingmodel: value };
         setModuleSettings(updatedSettings);
@@ -42,8 +50,12 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const handleValidateConfig = async () => {

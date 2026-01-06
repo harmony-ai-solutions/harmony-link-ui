@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.TTS][PROVIDERS.ELEVENLABS];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,19 +26,19 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [elevenlabsApiKey, setElevenlabsApiKey] = useState(initialSettings.elevenlabsapikey);
-    const [modelId, setModelId] = useState(initialSettings.modelid);
-    const [voiceId, setVoiceId] = useState(initialSettings.voiceid);
-    const [stability, setStability] = useState(initialSettings.stability);
-    const [similarityBoost, setSimilarityBoost] = useState(initialSettings.similarityboost);
-    const [style, setStyle] = useState(initialSettings.style);
-    const [speakerBoost, setSpeakerBoost] = useState(initialSettings.speakerboost);
+    const [elevenlabsApiKey, setElevenlabsApiKey] = useState(mergedSettings.elevenlabsapikey);
+    const [modelId, setModelId] = useState(mergedSettings.modelid);
+    const [voiceId, setVoiceId] = useState(mergedSettings.voiceid);
+    const [stability, setStability] = useState(mergedSettings.stability);
+    const [similarityBoost, setSimilarityBoost] = useState(mergedSettings.similarityboost);
+    const [style, setStyle] = useState(mergedSettings.style);
+    const [speakerBoost, setSpeakerBoost] = useState(mergedSettings.speakerboost);
 
     // Validation Functions
     const validateApiKeyAndUpdate = (value) => {
@@ -111,6 +117,7 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
         return true;
     };
     const setSpeakerBoostAndUpdate = (value) => {
+        setSpeakerBoost(value);
         const updatedSettings = { ...moduleSettings, speakerboost: value };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
@@ -144,14 +151,24 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setElevenlabsApiKey(currentMergedSettings.elevenlabsapikey);
+        setModelId(currentMergedSettings.modelid);
+        setVoiceId(currentMergedSettings.voiceid);
+        setStability(currentMergedSettings.stability);
+        setSimilarityBoost(currentMergedSettings.similarityboost);
+        setStyle(currentMergedSettings.style);
+        setSpeakerBoost(currentMergedSettings.speakerboost);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>
@@ -166,7 +183,7 @@ const TTSElevenlabsSettingsView = ({initialSettings, saveSettingsFunc}) => {
                           API Key
                           <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                            setTooltipVisible={setTooltipVisible}>
-                              Your Elevenlabs API Key
+                                Your Elevenlabs API Key
                           </SettingsTooltip>
                       </label>
                       <div className="w-5/6 px-3">

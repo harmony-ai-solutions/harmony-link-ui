@@ -1,10 +1,16 @@
 import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
-import {cloneDeep} from "lodash";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import { MODULES } from "../../constants/modules.js";
 
 
 const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.MOVEMENT].general;
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -18,11 +24,11 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Fields
-    const [startupSyncTimeout, setStartupSyncTimeout] = useState(initialSettings.startupsynctimeout);
-    const [executionThreshold, setExecutionThreshold] = useState(initialSettings.executionthreshold);
+    const [startupSyncTimeout, setStartupSyncTimeout] = useState(mergedSettings.startupsynctimeout);
+    const [executionThreshold, setExecutionThreshold] = useState(mergedSettings.executionthreshold);
 
     // Validation Functions
     const validateStartupSyncTimeoutAndUpdate = (value) => {
@@ -31,6 +37,8 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Action Sync Timeout should be at least 2 seconds.");
             setStartupSyncTimeout(moduleSettings.startupsynctimeout);
             return false;
+        } else if (numValue === moduleSettings.startupsynctimeout) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, startupsynctimeout: numValue };
@@ -44,6 +52,8 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Execution Threshold must be a positive number between 0.01 and 1.00.");
             setExecutionThreshold(moduleSettings.executionthreshold);
             return false;
+        } else if (numValue === moduleSettings.executionthreshold) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, executionthreshold: numValue };
@@ -53,14 +63,19 @@ const MovementGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setStartupSyncTimeout(currentMergedSettings.startupsynctimeout);
+        setExecutionThreshold(currentMergedSettings.executionthreshold);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>

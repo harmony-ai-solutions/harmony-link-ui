@@ -4,8 +4,14 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 const VADOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.VAD][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -19,13 +25,13 @@ const VADOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [openAIApiKey, setOpenAIApiKey] = useState(initialSettings.openaiapikey);
+    const [openAIApiKey, setOpenAIApiKey] = useState(mergedSettings.openaiapikey);
 
     // Validation Functions
     const validateOpenAIApiKeyAndUpdate = (value) => {
@@ -35,8 +41,9 @@ const VADOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -62,14 +69,18 @@ const VADOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenAIApiKey(currentMergedSettings.openaiapikey);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return (
         <>

@@ -5,9 +5,15 @@ import {validateProviderConfig} from "../../services/management/configService.js
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from '../../constants/modules.js';
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.OPENAI_COMPATIBLE];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -21,15 +27,15 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
-    const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
-    const [apiKey, setApiKey] = useState(initialSettings.apikey);
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [baseURL, setBaseURL] = useState(mergedSettings.baseurl);
+    const [apiKey, setApiKey] = useState(mergedSettings.apikey);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateBaseURLAndUpdate = (value) => {
@@ -38,15 +44,22 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
             showModal("Base URL must be a valid URL.");
             setBaseURL(moduleSettings.baseurl);
             return false;
+        } else if (value === moduleSettings.baseurl) {
+            return true;
         }
-        moduleSettings.baseurl = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, baseurl: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const validateApiKeyAndUpdate = (value) => {
-        moduleSettings.apikey = value;
-        saveSettingsFunc(moduleSettings);
+        if (value === moduleSettings.apikey) {
+            return true;
+        }
+        const updatedSettings = { ...moduleSettings, apikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -55,14 +68,22 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true;
         }
-        moduleSettings.embeddingmodel = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, embeddingmodel: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
-        setModuleSettings(initialSettings);
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+        setModuleSettings(currentMergedSettings);
+
+        setBaseURL(currentMergedSettings.baseurl);
+        setApiKey(currentMergedSettings.apikey);
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const useIntegration = (integration, urlIndex = 0) => {

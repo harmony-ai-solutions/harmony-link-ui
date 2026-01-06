@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.BACKEND][PROVIDERS.OPENROUTER];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,7 +26,7 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
@@ -32,15 +38,13 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [modelsLoading, setModelsLoading] = useState(false);
 
     // Fields
-    const [openRouterAPIKey, setOpenRouterAPIKey] = useState(initialSettings.openrouterapikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [maxTokens, setMaxTokens] = useState(initialSettings.maxtokens);
-    const [temperature, setTemperature] = useState(initialSettings.temperature);
-    const [topP, setTopP] = useState(initialSettings.topp);
-    const [n, setN] = useState(initialSettings.n);
-    const [stopTokens, setStopTokens] = useState(initialSettings.stoptokens);
-    const [systemPrompts, setSystemPrompts] = useState(initialSettings.systemprompts ? initialSettings.systemprompts.join(" ") : "");
-    const [userPrompts, setUserPrompts] = useState(initialSettings.userprompts ? initialSettings.userprompts.join(" ") : "");
+    const [openRouterAPIKey, setOpenRouterAPIKey] = useState(mergedSettings.openrouterapikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
+    const [temperature, setTemperature] = useState(mergedSettings.temperature);
+    const [topP, setTopP] = useState(mergedSettings.topp);
+    const [n, setN] = useState(mergedSettings.n);
+    const [stopTokens, setStopTokens] = useState(mergedSettings.stoptokens);
 
     // Auto-refresh models when API key changes or component loads
     const refreshAvailableModels = async () => {
@@ -64,9 +68,7 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
             temperature: moduleSettings.temperature,
             topp: moduleSettings.topp,
             n: moduleSettings.n,
-            stoptokens: moduleSettings.stoptokens,
-            systemprompts: moduleSettings.systemprompts,
-            userprompts: moduleSettings.userprompts
+            stoptokens: moduleSettings.stoptokens
         };
 
         try {
@@ -187,46 +189,6 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     };
-    const validateSystemPromptsAndUpdate = (value) => {
-        if (value.trim() === "") {
-            setSystemPrompts("");
-            return false;
-        }
-        // Update if validation successful
-        // Split by dot, but add the dot back in at the end.
-        const values = value.split(".");
-        values.forEach((value, index) => {
-            const trimmed = value.trim();
-            if(trimmed.length !== 0) {
-                values[index] = value.trim() + ".";
-            }
-        });
-        setSystemPrompts(values.filter(item => item !== "").join(" "));
-        const updatedSettings = { ...moduleSettings, systemprompts: values };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-        return true;
-    };
-    const validateUserPromptsAndUpdate = (value) => {
-        if (value.trim() === "") {
-            setUserPrompts("");
-            return false;
-        }
-        // Update if validation successful
-        // Split by dot, but add the dot back in at the end.
-        const values = value.split(".");
-        values.forEach((value, index) => {
-            const trimmed = value.trim();
-            if(trimmed.length !== 0) {
-                values[index] = value.trim() + ".";
-            }
-        });
-        setUserPrompts(values.filter(item => item !== "").join(" "));
-        const updatedSettings = { ...moduleSettings, userprompts: values };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-        return true;
-    };
 
     const handleValidateConfig = async () => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
@@ -238,9 +200,7 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
             temperature: moduleSettings.temperature,
             topp: moduleSettings.topp,
             n: moduleSettings.n,
-            stoptokens: moduleSettings.stoptokens,
-            systemprompts: moduleSettings.systemprompts,
-            userprompts: moduleSettings.userprompts
+            stoptokens: moduleSettings.stoptokens
         };
 
         try {
@@ -258,10 +218,21 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenRouterAPIKey(currentMergedSettings.openrouterapikey);
+        setModel(currentMergedSettings.model);
+        setMaxTokens(currentMergedSettings.maxtokens);
+        setTemperature(currentMergedSettings.temperature);
+        setTopP(currentMergedSettings.topp);
+        setN(currentMergedSettings.n);
+        setStopTokens(currentMergedSettings.stoptokens);
+
         // Auto-fetch models if API key is available (like TTS does with endpoint)
-        if (initialSettings.openrouterapikey) {
+        if (currentMergedSettings.openrouterapikey) {
             refreshAvailableModels();
         }
     };
@@ -414,40 +385,6 @@ const BackendOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                    placeholder="Stop Token List" value={stopTokens}
                                    onChange={(e) => setStopTokens(e.target.value)}
                                    onBlur={(e) => validateStopTokensAndUpdate(e.target.value)}/>
-                        </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
-                            System prompt
-                            <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
-                                             setTooltipVisible={setTooltipVisible}>
-                                System prompt used to control the behaviour of the model.
-                                <br/>Free form input
-                            </SettingsTooltip>
-                        </label>
-                        <div className="w-5/6 px-3">
-                            <textarea name="systemprompts"
-                                      className="mt-1 block w-full bg-neutral-800 min-h-24 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                      placeholder="System prompt" value={systemPrompts}
-                                      onChange={(e) => setSystemPrompts(e.target.value)}
-                                      onBlur={(e) => validateSystemPromptsAndUpdate(e.target.value)}/>
-                        </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
-                            User prompt
-                            <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible}
-                                             setTooltipVisible={setTooltipVisible}>
-                                User prompt used to provide additional context
-                                <br/>Free form input
-                            </SettingsTooltip>
-                        </label>
-                        <div className="w-5/6 px-3">
-                            <textarea name="userprompts"
-                                      className="mt-1 block w-full bg-neutral-800 min-h-24 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                      placeholder="User prompt" value={userPrompts}
-                                      onChange={(e) => setUserPrompts(e.target.value)}
-                                      onBlur={(e) => validateUserPromptsAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                 </div>

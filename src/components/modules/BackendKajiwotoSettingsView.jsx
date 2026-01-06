@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.BACKEND][PROVIDERS.KAJIWOTO];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,15 +26,15 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
-    const [username, setUsername] = useState(initialSettings.username);
-    const [password, setPassword] = useState(initialSettings.password);
-    const [kajiRoomURL, setKajiRoomURL] = useState(initialSettings.kajiroomurl);
+    const [username, setUsername] = useState(mergedSettings.username);
+    const [password, setPassword] = useState(mergedSettings.password);
+    const [kajiRoomURL, setKajiRoomURL] = useState(mergedSettings.kajiroomurl);
 
 
     // Validation Functions
@@ -96,14 +102,20 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setUsername(currentMergedSettings.username);
+        setPassword(currentMergedSettings.password);
+        setKajiRoomURL(currentMergedSettings.kajiroomurl);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return (
         <>

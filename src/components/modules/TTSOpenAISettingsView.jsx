@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.TTS][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,7 +26,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
@@ -31,11 +37,11 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     ];
 
     // Fields
-    const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [voice, setVoice] = useState(initialSettings.voice);
-    const [speed, setSpeed] = useState(initialSettings.speed);
-    const [format, setFormat] = useState(initialSettings.format);
+    const [openAIAPIKey, setOpenAIAPIKey] = useState(mergedSettings.openaiapikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [voice, setVoice] = useState(mergedSettings.voice);
+    const [speed, setSpeed] = useState(mergedSettings.speed);
+    const [format, setFormat] = useState(mergedSettings.format);
 
     // Validation Functions
     const validateApikeyAndUpdate = (value) => {
@@ -45,14 +51,16 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const setModelAndUpdate = (value) => {
         setModel(value);
-        moduleSettings.model = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, model: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     }
     const validateVoiceIdAndUpdate = (value) => {
@@ -62,20 +70,22 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.voice = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, voice: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateSpeedAndUpdate = (value) => {
         const numValue = parseFloat(value);
         if (isNaN(numValue) || (numValue < 0.25 || numValue > 4.00)) {
-            showModal("Stability must be a positive number between 0.25 and 4.00, or set to 0 to disable.");
+            showModal("Speed must be a positive number between 0.25 and 4.00.");
             setSpeed(moduleSettings.speed);
             return false;
         }
         // Update if validation successful
-        moduleSettings.speed = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, speed: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateFormatAndUpdate = (value) => {
@@ -85,8 +95,9 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.format = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, format: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -116,14 +127,22 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenAIAPIKey(currentMergedSettings.openaiapikey);
+        setModel(currentMergedSettings.model);
+        setVoice(currentMergedSettings.voice);
+        setSpeed(currentMergedSettings.speed);
+        setFormat(currentMergedSettings.format);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return (
         <>

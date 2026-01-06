@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const TTSKindroidSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.TTS][PROVIDERS.KINDROID];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const TTSKindroidSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [apiKey, setApiKey] = useState(initialSettings.apikey);
-    const [kindroidID, setKindroidID] = useState(initialSettings.kindroidid);
+    const [apiKey, setApiKey] = useState(mergedSettings.apikey);
+    const [kindroidID, setKindroidID] = useState(mergedSettings.kindroidid);
 
 
     // Validation Functions
@@ -36,6 +42,8 @@ const TTSKindroidSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("API Key cannot be empty.");
             setApiKey(moduleSettings.apikey);
             return false;
+        } else if (value === moduleSettings.apikey) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, apikey: value };
@@ -48,6 +56,8 @@ const TTSKindroidSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Kindroid ID cannot be empty.");
             setKindroidID(moduleSettings.kindroidid);
             return false;
+        } else if (value === moduleSettings.kindroidid) {
+            return true;
         }
         // Update if validation successful
         const updatedSettings = { ...moduleSettings, kindroidid: value };
@@ -79,14 +89,19 @@ const TTSKindroidSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setApiKey(currentMergedSettings.apikey);
+        setKindroidID(currentMergedSettings.kindroidid);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return(
       <>

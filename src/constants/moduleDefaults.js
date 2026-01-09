@@ -133,7 +133,7 @@ export const MODULE_DEFAULTS = {
             provider: "disabled"
         }
     },
-    countenance: {
+    cognition: {
         [PROVIDERS.OPENAI]: {
             openaiapikey: "",
             model: "gpt-4o",

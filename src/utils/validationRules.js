@@ -227,7 +227,7 @@ export const moduleValidationConfig = {
         }
     },
     
-    countenance: {
+    cognition: {
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
             apikey: [validationRules.required, validationRules.nonEmpty],

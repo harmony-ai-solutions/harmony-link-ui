@@ -2,15 +2,15 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig, listProviderModels} from "../../services/management/configService.js";
-import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
-import { MODULES, PROVIDERS } from '../../constants/modules.js';
+import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
-const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) => {
+
+const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Merge initial settings with defaults
-    const defaults = MODULE_DEFAULTS[MODULES.COUNTENANCE][PROVIDERS.OPENAI_COMPATIBLE];
+    const defaults = MODULE_DEFAULTS[MODULES.COGNITION][PROVIDERS.OPENAI];
     const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
 
     const [tooltipVisible, setTooltipVisible] = useState(0);
@@ -31,9 +31,14 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
+    // Model dropdown state - initialize with error message like TTS component
+    const [availableModels, setAvailableModels] = useState([
+        {name: "Error: no models available", value: null}
+    ]);
+    const [modelsLoading, setModelsLoading] = useState(false);
+
     // Fields
-    const [baseURL, setBaseURL] = useState(mergedSettings.baseurl);
-    const [apiKey, setApiKey] = useState(mergedSettings.apikey);
+    const [openAIAPIKey, setOpenAIAPIKey] = useState(mergedSettings.openaiapikey);
     const [model, setModel] = useState(mergedSettings.model);
     const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
     const [temperature, setTemperature] = useState(mergedSettings.temperature);
@@ -41,30 +46,23 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     const [n, setN] = useState(mergedSettings.n);
     const [stopTokens, setStopTokens] = useState(mergedSettings.stoptokens);
 
-    // Model dropdown state - initialize with error message like TTS component
-    const [availableModels, setAvailableModels] = useState([
-        {name: "Error: no models available", value: null}
-    ]);
-    const [modelsLoading, setModelsLoading] = useState(false);
-
-    // Auto-refresh models when API key or Base URL changes or component loads
+    // Auto-refresh models when API key changes or component loads
     const refreshAvailableModels = async () => {
         // Smart refresh: avoid unnecessary calls if we already have valid models
         if (availableModels.length > 0 && !availableModels[0].name.startsWith("Error") && !availableModels[0].name.startsWith("Updating models")) {
             return;
         }
         
-        if (!moduleSettings.baseurl) {
-            setAvailableModels([{name: "Error: Base URL required", value: null}]);
+        if (!moduleSettings.openaiapikey) {
+            setAvailableModels([{name: "Error: API Key not set", value: null}]);
             return;
         }
 
         setModelsLoading(true);
         setAvailableModels([{name: 'Updating models...', value: null }]);
-
+        
         const currentConfig = {
-            baseurl: moduleSettings.baseurl,
-            apikey: moduleSettings.apikey,
+            openaiapikey: moduleSettings.openaiapikey,
             model: moduleSettings.model,
             maxtokens: moduleSettings.maxtokens,
             temperature: moduleSettings.temperature,
@@ -72,11 +70,11 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
             n: moduleSettings.n,
             stoptokens: moduleSettings.stoptokens
         };
-
+        
         try {
-            const result = await listProviderModels(MODULES.COUNTENANCE, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
+            const result = await listProviderModels(MODULES.COGNITION, PROVIDERS.OPENAI, currentConfig);
             if (result.error) {
-                setAvailableModels([{name: "Error: please check Base URL and API Key", value: null}]);
+                setAvailableModels([{name: "Error: please check API Key", value: null}]);
             } else if (result.error || !result.models || result.models.length === 0) {
                 setAvailableModels([{name: "Error: no models available", value: null}]);
             } else {
@@ -99,35 +97,20 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     };
 
     // Validation Functions
-    const validateBaseURLAndUpdate = (value) => {
-        const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}|localhost|\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(:[0-9]{1,5})?(\/.*)?$/;
-        if ((moduleSettings.baseurl.length > 0 && value.length === 0) || (value.length > 0 && urlRegex.test(value) === false)) {
-            showModal("Base URL must be a valid URL.");
-            setBaseURL(moduleSettings.baseurl);
-            return false;
-        } else if (value === moduleSettings.baseurl) {
-            return true; // Skip if no change
-        }
-        // Update if validation successful
-        const updatedSettings = { ...moduleSettings, baseurl: value };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-
-        // Auto-refresh models after Base URL update
-        setAvailableModels([{name: "Updating models...", value: null}]);
-        refreshAvailableModels();
-        return true;
-    };
     const validateApikeyAndUpdate = (value) => {
-        if (value === moduleSettings.apikey) {
+        if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
+            showModal("API Key cannot be empty.");
+            setOpenAIAPIKey(moduleSettings.openaiapikey);
+            return false;
+        } else if (value === moduleSettings.openaiapikey) {
             return true; // Skip if no change
         }
         // Update if validation successful
-        const updatedSettings = { ...moduleSettings, apikey: value };
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
 
-        // Auto-refresh models after API key update
+        // Auto-refresh models after API key update (like TTS does with endpoint)
         setAvailableModels([{name: "Updating models...", value: null}]);
         refreshAvailableModels();
         return true;
@@ -211,8 +194,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            baseurl: moduleSettings.baseurl,
-            apikey: moduleSettings.apikey,
+            openaiapikey: moduleSettings.openaiapikey,
             model: moduleSettings.model,
             maxtokens: moduleSettings.maxtokens,
             temperature: moduleSettings.temperature,
@@ -222,7 +204,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
         };
         
         try {
-            const result = await validateProviderConfig(MODULES.COUNTENANCE, PROVIDERS.OPENAI_COMPATIBLE, currentConfig);
+            const result = await validateProviderConfig(MODULES.COGNITION, PROVIDERS.OPENAI, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -241,8 +223,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
         setModuleSettings(currentMergedSettings);
 
         // Update individual fields
-        setBaseURL(currentMergedSettings.baseurl);
-        setApiKey(currentMergedSettings.apikey);
+        setOpenAIAPIKey(currentMergedSettings.openaiapikey);
         setModel(currentMergedSettings.model);
         setMaxTokens(currentMergedSettings.maxtokens);
         setTemperature(currentMergedSettings.temperature);
@@ -250,22 +231,10 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
         setN(currentMergedSettings.n);
         setStopTokens(currentMergedSettings.stoptokens);
 
-        // Auto-fetch models if Base URL is available (like TTS does with endpoint)
-        if (currentMergedSettings.baseurl) {
+        // Auto-fetch models if API key is available (like TTS does with endpoint)
+        if (currentMergedSettings.openaiapikey) {
             refreshAvailableModels();
         }
-    };
-
-    const useIntegration = (integration, urlIndex = 0) => {
-        const selectedURL = integration.apiURLs[urlIndex];
-        setBaseURL(selectedURL);
-        const updatedSettings = { ...moduleSettings, baseurl: selectedURL };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-
-        // Auto-refresh models after integration selection
-        setAvailableModels([{name: "Updating models...", value: null}]);
-        refreshAvailableModels();
     };
 
     useEffect(() => {
@@ -280,46 +249,29 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     onValidate={handleValidateConfig}
                     validationState={validationState}
                 />
-                <IntegrationDisplay moduleName={MODULES.COUNTENANCE} providerName={PROVIDERS.OPENAI_COMPATIBLE} useIntegration={useIntegration} />
                 <div className="flex flex-wrap items-center -px-10 w-full">
-                    <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
-                            Base URL
-                            <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
-                                             setTooltipVisible={setTooltipVisible}>
-                                The base URL for the OpenAI compatible API endpoint.
-                            </SettingsTooltip>
-                        </label>
-                        <div className="w-5/6 px-3">
-                            <input type="text" name="baseurl"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="Base URL" value={baseURL}
-                                   onChange={(e) => setBaseURL(e.target.value)}
-                                   onBlur={(e) => validateBaseURLAndUpdate(e.target.value)}/>
-                        </div>
-                    </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             API Key
-                            <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                Your API Key for the OpenAI compatible service (if required).
+                                Your OpenAI API Key
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="apikey"
                                    className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="API Key" value={apiKey}
-                                   onChange={(e) => setApiKey(e.target.value)}
+                                   placeholder="OpenAI API Key" value={openAIAPIKey}
+                                   onChange={(e) => setOpenAIAPIKey(e.target.value)}
                                    onBlur={(e) => validateApikeyAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Model
-                            <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                OpenAI Compatible Model you want to use. Models are automatically loaded when you provide a valid Base URL.
+                                OpenAI Model you want to use. Models are automatically loaded when you provide a valid API key.
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
@@ -348,7 +300,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Max Tokens
-                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Maximum new tokens to generate per request.
                             </SettingsTooltip>
@@ -364,7 +316,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Temperature
-                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Temperature defines the likelihood of the model choosing tokens that are outside the
                                 context.
@@ -384,7 +336,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Top P
-                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 Top P defines the probability of the model choosing the most likely next word.
                                 <br/>A higher value means the model is more deterministic, but it also can lead to
@@ -403,7 +355,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
                             Number of Results
-                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 How many chat completion choices / results to generate per request.
                                 <br/>Set to -1 to disable.
@@ -420,7 +372,7 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
                     <div className="flex items-center mb-6 w-full">
                         <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
                             Stop Tokens
-                            <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
+                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
                                 List of Stop tokens, comma separated.
                                 <br/>If the model encounters a stop token during generation, it will end the current
@@ -467,4 +419,4 @@ const CountenanceOpenAICompatibleSettingsView = ({initialSettings, saveSettingsF
     );
 }
 
-export default CountenanceOpenAICompatibleSettingsView;
+export default CognitionOpenAISettingsView;

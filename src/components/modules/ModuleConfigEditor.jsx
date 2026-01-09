@@ -13,9 +13,9 @@ import BackendKindroidSettingsView from './BackendKindroidAISettingsView.jsx';
 import BackendOpenAISettingsView from './BackendOpenAISettingsView.jsx';
 import BackendOpenRouterSettingsView from "./BackendOpenRouterSettingsView.jsx";
 
-import CountenanceOpenAISettingsView from "./CountenanceOpenAISettingsView.jsx";
-import CountenanceOpenAICompatibleSettingsView from './CountenanceOpenAICompatibleSettingsView.jsx';
-import CountenanceOpenRouterSettingsView from "./CountenanceOpenRouterSettingsView.jsx";
+import CognitionOpenAISettingsView from "./CognitionOpenAISettingsView.jsx";
+import CognitionOpenAICompatibleSettingsView from './CognitionOpenAICompatibleSettingsView.jsx';
+import CognitionOpenRouterSettingsView from "./CognitionOpenRouterSettingsView.jsx";
 
 import MovementGeneralSettingsView from './MovementGeneralSettingsView.jsx';
 import MovementOpenAISettingsView from "./MovementOpenAISettingsView.jsx";
@@ -50,9 +50,9 @@ const COMPONENT_MAP = {
     BackendKindroidSettingsView,
     BackendOpenAISettingsView,
     BackendOpenRouterSettingsView,
-    CountenanceOpenAISettingsView,
-    CountenanceOpenAICompatibleSettingsView,
-    CountenanceOpenRouterSettingsView,
+    CognitionOpenAISettingsView,
+    CognitionOpenAICompatibleSettingsView,
+    CognitionOpenRouterSettingsView,
     MovementGeneralSettingsView,
     MovementOpenAISettingsView,
     MovementOpenAICompatibleSettingsView,

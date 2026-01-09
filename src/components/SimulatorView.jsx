@@ -18,7 +18,7 @@ import MovementTab from './simulator/tabs/MovementTab';
 import TTSTab from './simulator/tabs/TTSTab';
 import STTTab from './simulator/tabs/STTTab';
 import RAGTab from './simulator/tabs/RAGTab';
-import CountenanceTab from './simulator/tabs/CountenanceTab';
+import CognitionTab from './simulator/tabs/CognitionTab';
 
 function SimulatorView() {
     // Connection state
@@ -40,7 +40,7 @@ function SimulatorView() {
         tts: null,
         stt: null,
         rag: null,
-        countenance: null
+        cognition: null
     });
     const [moduleConfigsLoading, setModuleConfigsLoading] = useState(false);
     const [moduleConfigErrors, setModuleConfigErrors] = useState({});
@@ -52,7 +52,7 @@ function SimulatorView() {
         tts: { loading: false, response: null, error: null },
         stt: { loading: false, response: null, error: null },
         rag: { loading: false, response: null, error: null },
-        countenance: { loading: false, response: null, error: null }
+        cognition: { loading: false, response: null, error: null }
     });
 
     // RAG collections state
@@ -154,7 +154,7 @@ function SimulatorView() {
                 tts: null,
                 stt: null,
                 rag: null,
-                countenance: null
+                cognition: null
             });
             setRagCollections([]);
             return;
@@ -189,7 +189,7 @@ function SimulatorView() {
                 tts: null,
                 stt: null,
                 rag: null,
-                countenance: null
+                cognition: null
             });
             setRagCollections([]);
         }
@@ -292,7 +292,7 @@ function SimulatorView() {
                     tts: entityConfig.tts || null,
                     stt: entityConfig.stt || null,
                     rag: entityConfig.rag || null,
-                    countenance: entityConfig.countenance || null
+                    cognition: entityConfig.cognition || null
                 };
 
                 setModuleConfigs(newModuleConfigs);
@@ -314,7 +314,7 @@ function SimulatorView() {
                     tts: 'Entity configuration not found',
                     stt: 'Entity configuration not found',
                     rag: 'Entity configuration not found',
-                    countenance: 'Entity configuration not found'
+                    cognition: 'Entity configuration not found'
                 });
             }
         } catch (error) {
@@ -326,7 +326,7 @@ function SimulatorView() {
                 tts: errorMessage,
                 stt: errorMessage,
                 rag: errorMessage,
-                countenance: errorMessage
+                cognition: errorMessage
             });
         } finally {
             setModuleConfigsLoading(false);
@@ -443,7 +443,7 @@ function SimulatorView() {
             tts: { loading: false, response: null, error: null },
             stt: { loading: false, response: null, error: null },
             rag: { loading: false, response: null, error: null },
-            countenance: { loading: false, response: null, error: null }
+            cognition: { loading: false, response: null, error: null }
         });
     };
 
@@ -462,7 +462,7 @@ function SimulatorView() {
         { id: 'tts', label: 'TTS', icon: '🔊' },
         { id: 'stt', label: 'STT', icon: '🎤' },
         { id: 'rag', label: 'RAG', icon: '💡' },
-        { id: 'countenance', label: 'Countenance', icon: '😊' }
+        { id: 'cognition', label: 'Cognition', icon: '😊' }
     ];
 
     // Render tab content
@@ -522,8 +522,8 @@ function SimulatorView() {
                         onRefreshCollections={loadRAGCollections}
                     />
                 );
-            case 'countenance':
-                return <CountenanceTab {...commonProps} />;
+            case 'cognition':
+                return <CognitionTab {...commonProps} />;
             default:
                 return <div>Tab not found</div>;
         }

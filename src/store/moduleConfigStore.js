@@ -6,7 +6,7 @@ const useModuleConfigStore = create((set, get) => ({
     // State - organized by module type
     configs: {
         backend: [],
-        countenance: [],
+        cognition: [],
         movement: [],
         rag: [],
         stt: [],

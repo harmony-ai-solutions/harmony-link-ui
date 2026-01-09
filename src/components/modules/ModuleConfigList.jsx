@@ -9,7 +9,7 @@ const formatModuleTypeName = (moduleType) => {
         'stt': 'STT',
         'rag': 'RAG',
         'movement': 'Movement',
-        'countenance': 'Countenance'
+        'cognition': 'Cognition'
     };
     return nameMap[moduleType] || moduleType;
 };

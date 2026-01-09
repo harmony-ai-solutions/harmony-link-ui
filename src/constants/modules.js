@@ -5,7 +5,7 @@ export const MODULES = {
     STT: 'stt',
     VAD: 'vad',
     RAG: 'rag',
-    COUNTENANCE: 'countenance',
+    COGNITION: 'cognition',
     MOVEMENT: 'movement'
 };
 

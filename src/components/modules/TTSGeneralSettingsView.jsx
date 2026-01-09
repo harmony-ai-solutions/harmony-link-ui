@@ -132,7 +132,7 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
                               which means the AI will for example say "smiles" (nonverbal part) and "Hello my Friend"
                               (verbal part)
                               instead of just "Hello my Friend".
-                              <br/>Recommended to disable unless you're debugging countenance or movement issues.
+                              <br/>Recommended to disable unless you're debugging cognition or movement issues.
                           </SettingsTooltip>
                       </label>
                       <div className="w-1/2 px-3">

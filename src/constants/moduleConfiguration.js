@@ -13,7 +13,7 @@ export const MODULE_TYPE_OPTIONS = [
     { id: 'stt', name: 'Speech-to-Text', logo: logo_blank },
     { id: 'rag', name: 'RAG', logo: logo_blank },
     { id: 'movement', name: 'Movement', logo: logo_blank },
-    { id: 'countenance', name: 'Countenance', logo: logo_blank }
+    { id: 'cognition', name: 'Cognition', logo: logo_blank }
 ];
 
 export const MODULE_CONFIGS = {
@@ -44,12 +44,12 @@ export const MODULE_CONFIGS = {
             }
         ]
     },
-    countenance: {
+    cognition: {
         generalSettingsComponent: null,
         providers: [
             {
-                id: 'countenance',
-                name: 'Countenance Provider',
+                id: 'cognition',
+                name: 'Cognition Provider',
                 settingsKey: 'provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
@@ -58,9 +58,9 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'CountenanceOpenAICompatibleSettingsView',
-                    openai: 'CountenanceOpenAISettingsView',
-                    openrouter: 'CountenanceOpenRouterSettingsView'
+                    openaicompatible: 'CognitionOpenAICompatibleSettingsView',
+                    openai: 'CognitionOpenAISettingsView',
+                    openrouter: 'CognitionOpenRouterSettingsView'
                 }
             }
         ]

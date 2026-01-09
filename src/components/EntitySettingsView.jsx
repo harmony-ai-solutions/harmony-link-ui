@@ -101,7 +101,7 @@ const EntitySettingsView = ({ appName }) => {
         stt: '',
         rag: '',
         movement: '',
-        countenance: ''
+        cognition: ''
     });
     const [selectedCharacterProfileId, setSelectedCharacterProfileId] = useState('');
     const [showRAGCollections, setShowRAGCollections] = useState(false);
@@ -123,7 +123,7 @@ const EntitySettingsView = ({ appName }) => {
         loadConfigs('stt');
         loadConfigs('rag');
         loadConfigs('movement');
-        loadConfigs('countenance');
+        loadConfigs('cognition');
     }, []);
 
     // Auto-select first entity when entities are loaded
@@ -149,14 +149,14 @@ const EntitySettingsView = ({ appName }) => {
                 stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
                 rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
                 movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
-                countenance: selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : ''
+                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : ''
             });
             // Extract character profile ID from nested structure
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
         } else {
             setEntityMappings({
-                backend: '', tts: '', stt: '', rag: '', movement: '', countenance: ''
+                backend: '', tts: '', stt: '', rag: '', movement: '', cognition: ''
             });
             setSelectedCharacterProfileId('');
         }
@@ -229,7 +229,7 @@ const EntitySettingsView = ({ appName }) => {
                 stt_config_id: entityMappings.stt ? parseInt(entityMappings.stt) : null,
                 rag_config_id: entityMappings.rag ? parseInt(entityMappings.rag) : null,
                 movement_config_id: entityMappings.movement ? parseInt(entityMappings.movement) : null,
-                countenance_config_id: entityMappings.countenance ? parseInt(entityMappings.countenance) : null
+                cognition_config_id: entityMappings.cognition ? parseInt(entityMappings.cognition) : null
             };
             
             await updateEntityMappings(selectedEntityId, mappings);
@@ -255,7 +255,7 @@ const EntitySettingsView = ({ appName }) => {
                 stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
                 rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
                 movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
-                countenance: selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : ''
+                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : ''
             });
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
@@ -376,7 +376,7 @@ const EntitySettingsView = ({ appName }) => {
                         stt_config_id: selectedEntity.modules?.stt?.id || null,
                         rag_config_id: selectedEntity.modules?.rag?.id || null,
                         movement_config_id: selectedEntity.modules?.movement?.id || null,
-                        countenance_config_id: selectedEntity.modules?.countenance?.id || null
+                        cognition_config_id: selectedEntity.modules?.cognition?.id || null
                     };
                     await updateEntityMappings(newId, mappings);
                     
@@ -460,7 +460,7 @@ const EntitySettingsView = ({ appName }) => {
         const currentStt = selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '';
         const currentRag = selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '';
         const currentMovement = selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '';
-        const currentCountenance = selectedEntity.modules?.countenance?.id ? String(selectedEntity.modules.countenance.id) : '';
+        const currentCognition = selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '';
         const currentProfile = selectedEntity.character_profile?.id || '';
         
         return (
@@ -469,7 +469,7 @@ const EntitySettingsView = ({ appName }) => {
             currentStt != entityMappings.stt ||
             currentRag != entityMappings.rag ||
             currentMovement != entityMappings.movement ||
-            currentCountenance != entityMappings.countenance ||
+            currentCognition != entityMappings.cognition ||
             currentProfile != (isProfileSupported ? selectedCharacterProfileId : '')
         );
     };
@@ -720,11 +720,11 @@ const EntitySettingsView = ({ appName }) => {
                             />
                             
                             <ModuleConfigSelector
-                                label="Countenance"
-                                moduleType="countenance"
-                                selectedConfigId={entityMappings.countenance}
-                                onChange={(id) => setEntityMappings(prev => ({ ...prev, countenance: id }))}
-                                configs={getConfigs('countenance')}
+                                label="Cognition"
+                                moduleType="cognition"
+                                selectedConfigId={entityMappings.cognition}
+                                onChange={(id) => setEntityMappings(prev => ({ ...prev, cognition: id }))}
+                                configs={getConfigs('cognition')}
                                 isLoading={isModuleLoading}
                             />
                         </section>

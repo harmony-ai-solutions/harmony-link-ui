@@ -8,9 +8,9 @@ import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
-const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+const CognitionOpenRouterSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Merge initial settings with defaults
-    const defaults = MODULE_DEFAULTS[MODULES.COUNTENANCE][PROVIDERS.OPENAI];
+    const defaults = MODULE_DEFAULTS[MODULES.COGNITION][PROVIDERS.OPENROUTER];
     const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
 
     const [tooltipVisible, setTooltipVisible] = useState(0);
@@ -38,7 +38,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     const [modelsLoading, setModelsLoading] = useState(false);
 
     // Fields
-    const [openAIAPIKey, setOpenAIAPIKey] = useState(mergedSettings.openaiapikey);
+    const [openRouterAPIKey, setOpenRouterAPIKey] = useState(mergedSettings.openrouterapikey);
     const [model, setModel] = useState(mergedSettings.model);
     const [maxTokens, setMaxTokens] = useState(mergedSettings.maxtokens);
     const [temperature, setTemperature] = useState(mergedSettings.temperature);
@@ -53,7 +53,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return;
         }
         
-        if (!moduleSettings.openaiapikey) {
+        if (!moduleSettings.openrouterapikey) {
             setAvailableModels([{name: "Error: API Key not set", value: null}]);
             return;
         }
@@ -62,7 +62,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setAvailableModels([{name: 'Updating models...', value: null }]);
         
         const currentConfig = {
-            openaiapikey: moduleSettings.openaiapikey,
+            openrouterapikey: moduleSettings.openrouterapikey,
             model: moduleSettings.model,
             maxtokens: moduleSettings.maxtokens,
             temperature: moduleSettings.temperature,
@@ -72,7 +72,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         };
         
         try {
-            const result = await listProviderModels(MODULES.COUNTENANCE, PROVIDERS.OPENAI, currentConfig);
+            const result = await listProviderModels(MODULES.COGNITION, PROVIDERS.OPENROUTER, currentConfig);
             if (result.error) {
                 setAvailableModels([{name: "Error: please check API Key", value: null}]);
             } else if (result.error || !result.models || result.models.length === 0) {
@@ -98,15 +98,15 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
 
     // Validation Functions
     const validateApikeyAndUpdate = (value) => {
-        if (value.trim() === "" && moduleSettings.openaiapikey.length > 0) {
+        if (value.trim() === "" && moduleSettings.openrouterapikey.length > 0) {
             showModal("API Key cannot be empty.");
-            setOpenAIAPIKey(moduleSettings.openaiapikey);
+            setOpenRouterAPIKey(moduleSettings.openrouterapikey);
             return false;
-        } else if (value === moduleSettings.openaiapikey) {
+        } else if (value === moduleSettings.openrouterapikey) {
             return true; // Skip if no change
         }
         // Update if validation successful
-        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        const updatedSettings = { ...moduleSettings, openrouterapikey: value };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
 
@@ -194,7 +194,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setValidationState({ status: 'loading', message: 'Validating configuration...' });
         
         const currentConfig = {
-            openaiapikey: moduleSettings.openaiapikey,
+            openrouterapikey: moduleSettings.openrouterapikey,
             model: moduleSettings.model,
             maxtokens: moduleSettings.maxtokens,
             temperature: moduleSettings.temperature,
@@ -204,7 +204,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         };
         
         try {
-            const result = await validateProviderConfig(MODULES.COUNTENANCE, PROVIDERS.OPENAI, currentConfig);
+            const result = await validateProviderConfig(MODULES.COGNITION, PROVIDERS.OPENROUTER, currentConfig);
             setValidationState({
                 status: result.valid ? 'success' : 'error',
                 message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
@@ -223,7 +223,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setModuleSettings(currentMergedSettings);
 
         // Update individual fields
-        setOpenAIAPIKey(currentMergedSettings.openaiapikey);
+        setOpenRouterAPIKey(currentMergedSettings.openrouterapikey);
         setModel(currentMergedSettings.model);
         setMaxTokens(currentMergedSettings.maxtokens);
         setTemperature(currentMergedSettings.temperature);
@@ -232,7 +232,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         setStopTokens(currentMergedSettings.stoptokens);
 
         // Auto-fetch models if API key is available (like TTS does with endpoint)
-        if (currentMergedSettings.openaiapikey) {
+        if (currentMergedSettings.openrouterapikey) {
             refreshAvailableModels();
         }
     };
@@ -255,14 +255,14 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                             API Key
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                Your OpenAI API Key
+                                Your OpenRouter API Key
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="apikey"
                                    className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                   placeholder="OpenAI API Key" value={openAIAPIKey}
-                                   onChange={(e) => setOpenAIAPIKey(e.target.value)}
+                                   placeholder="OpenRouter API Key" value={openRouterAPIKey}
+                                   onChange={(e) => setOpenRouterAPIKey(e.target.value)}
                                    onBlur={(e) => validateApikeyAndUpdate(e.target.value)}/>
                         </div>
                     </div>
@@ -271,7 +271,7 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                             Model
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
-                                OpenAI Model you want to use. Models are automatically loaded when you provide a valid API key.
+                                OpenRouter Model you want to use. Models are automatically loaded when you provide a valid API key.
                             </SettingsTooltip>
                         </label>
                         <div className="w-2/3 px-3">
@@ -419,4 +419,4 @@ const CountenanceOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     );
 }
 
-export default CountenanceOpenAISettingsView;
+export default CognitionOpenRouterSettingsView;

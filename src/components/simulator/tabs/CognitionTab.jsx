@@ -1,8 +1,8 @@
 import React from 'react';
-import CountenanceConfigurationDisplay from '../config/CountenanceConfigurationDisplay';
+import CognitionConfigurationDisplay from '../config/CognitionConfigurationDisplay.jsx';
 import FormResponseDisplay from '../shared/FormResponseDisplay';
 
-function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading, moduleConfigErrors, formResponses, onSendEvent, onClearFormResponse }) {
+function CognitionTab({ connectionStatus, moduleConfigs, moduleConfigsLoading, moduleConfigErrors, formResponses, onSendEvent, onClearFormResponse }) {
     return (
         <div className="p-3 bg-gradient-to-br from-neutral-800 to-neutral-900 min-h-full">
             <div className="mb-3">
@@ -13,7 +13,7 @@ function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading,
                         </svg>
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-white">Countenance Module Simulation</h3>
+                        <h3 className="text-lg font-bold text-white">Cognition Module Simulation</h3>
                         <p className="text-gray-400 text-xs">Facial Expression • Emotion Processing • Visual Communication</p>
                     </div>
                 </div>
@@ -42,15 +42,15 @@ function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading,
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-semibold text-white">Configuration</h4>
-                                    <p className="text-pink-300/70 text-xs">Current countenance provider and expression settings</p>
+                                    <p className="text-pink-300/70 text-xs">Current cognition provider and expression settings</p>
                                 </div>
                             </div>
                         </div>
                         <div className="p-3">
-                            <CountenanceConfigurationDisplay 
-                                config={moduleConfigs.countenance}
+                            <CognitionConfigurationDisplay 
+                                config={moduleConfigs.cognition}
                                 loading={moduleConfigsLoading}
-                                error={moduleConfigErrors.countenance}
+                                error={moduleConfigErrors.cognition}
                             />
                         </div>
                     </div>
@@ -65,7 +65,7 @@ function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading,
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-semibold text-white">Event Simulation</h4>
-                                    <p className="text-green-300/70 text-xs">Test countenance functionality with expression generation</p>
+                                    <p className="text-green-300/70 text-xs">Test cognition functionality with expression generation</p>
                                 </div>
                             </div>
                         </div>
@@ -83,25 +83,25 @@ function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading,
                                     <p className="text-xs text-gray-400">Generate facial expressions based on utterances</p>
                                     <button
                                         onClick={() => onSendEvent({
-                                            event_type: 'COUNTENANCE_GENERATE_EXPRESSION',
+                                            event_type: 'COGNITION_GENERATE_EXPRESSION',
                                             status: 'NEW',
                                             payload: {
                                                 type: 'UTTERANCE_VERBAL',
                                                 content: 'Hello there! How are you doing today?'
                                             }
-                                        }, 'countenance')}
+                                        }, 'cognition')}
                                         className="w-full bg-neutral-700 hover:bg-neutral-500 font-bold py-1.5 px-3 text-orange-400 rounded text-sm disabled:opacity-50"
-                                        disabled={formResponses.countenance.loading}
+                                        disabled={formResponses.cognition.loading}
                                     >
-                                        {formResponses.countenance.loading ? 'Generating...' : 'Generate Expression'}
+                                        {formResponses.cognition.loading ? 'Generating...' : 'Generate Expression'}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="mt-3">
                                 <FormResponseDisplay 
-                                    formState={formResponses.countenance}
-                                    onClear={() => onClearFormResponse('countenance')}
+                                    formState={formResponses.cognition}
+                                    onClear={() => onClearFormResponse('cognition')}
                                 />
                             </div>
                         </div>
@@ -112,4 +112,4 @@ function CountenanceTab({ connectionStatus, moduleConfigs, moduleConfigsLoading,
     );
 }
 
-export default CountenanceTab;
+export default CognitionTab;

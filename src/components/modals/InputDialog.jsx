@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const InputDialog = ({ 
-    isOpen, 
-    title, 
-    message, 
+/**
+ * Reusable input dialog component
+ * Styled with premium aesthetics, backdrop blur and theme variables.
+ */
+const InputDialog = ({
+    isOpen,
+    title,
+    message,
     defaultValue = '',
     placeholder = '',
-    onConfirm, 
+    onConfirm,
     onCancel,
     confirmText = 'OK',
     cancelText = 'Cancel'
@@ -40,52 +44,45 @@ const InputDialog = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <div 
-                className="absolute inset-0 bg-black bg-opacity-50" 
-                onClick={onCancel}
-            ></div>
-            
-            {/* Dialog */}
-            <div className="relative bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-                {/* Title */}
-                <h3 className="text-lg font-semibold text-orange-400 mb-3">
-                    {title}
-                </h3>
-                
-                {/* Message */}
-                {message && (
-                    <p className="text-sm text-gray-300 mb-4 whitespace-pre-line">
-                        {message}
-                    </p>
-                )}
-                
-                {/* Input Field */}
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    className="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-orange-400 mb-6"
-                />
-                
-                {/* Buttons */}
-                <div className="flex justify-end space-x-3">
-                    <button
-                        onClick={onCancel}
-                        className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-gray-300 rounded transition-colors"
-                    >
-                        {cancelText}
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded transition-colors"
-                    >
-                        {confirmText}
-                    </button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-background-surface border border-white/10 max-w-md w-full rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="p-8">
+                    <h3 className="text-xl font-extrabold text-text-primary mb-3 tracking-tight">
+                        {title}
+                    </h3>
+
+                    {message && (
+                        <p className="text-[15px] leading-relaxed text-text-secondary mb-6 font-medium whitespace-pre-line">
+                            {message}
+                        </p>
+                    )}
+
+                    <div className="mb-8">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={placeholder}
+                            className="input-field w-full py-3 px-4 text-base transition-all duration-200"
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={onCancel}
+                            className="btn-secondary px-6 py-2.5"
+                        >
+                            {cancelText}
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            className="btn-primary px-8 py-2.5 shadow-lg shadow-accent-primary/20"
+                        >
+                            {confirmText}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,9 +1,11 @@
 import React from 'react'
-import {createRoot} from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import './style.css'
 import { isHarmonySpeechEngineMode } from './config/appMode.js'
 import HarmonyLinkApp from './HarmonyLinkApp.jsx'
 import HarmonySpeechEngineApp from './HarmonySpeechEngineApp.jsx'
+
+import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 const container = document.getElementById('root')
 
@@ -14,6 +16,8 @@ const AppComponent = isHarmonySpeechEngineMode() ? HarmonySpeechEngineApp : Harm
 
 root.render(
     <React.StrictMode>
-        <AppComponent/>
+        <ThemeProvider>
+            <AppComponent />
+        </ThemeProvider>
     </React.StrictMode>
 )

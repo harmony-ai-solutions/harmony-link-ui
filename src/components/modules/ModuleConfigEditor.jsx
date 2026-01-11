@@ -13,6 +13,7 @@ import BackendKindroidSettingsView from './BackendKindroidAISettingsView.jsx';
 import BackendOpenAISettingsView from './BackendOpenAISettingsView.jsx';
 import BackendOpenRouterSettingsView from "./BackendOpenRouterSettingsView.jsx";
 
+import CognitionGeneralSettingsView from './CognitionGeneralSettingsView.jsx';
 import CognitionOpenAISettingsView from "./CognitionOpenAISettingsView.jsx";
 import CognitionOpenAICompatibleSettingsView from './CognitionOpenAICompatibleSettingsView.jsx';
 import CognitionOpenRouterSettingsView from "./CognitionOpenRouterSettingsView.jsx";
@@ -50,6 +51,7 @@ const COMPONENT_MAP = {
     BackendKindroidSettingsView,
     BackendOpenAISettingsView,
     BackendOpenRouterSettingsView,
+    CognitionGeneralSettingsView,
     CognitionOpenAISettingsView,
     CognitionOpenAICompatibleSettingsView,
     CognitionOpenRouterSettingsView,

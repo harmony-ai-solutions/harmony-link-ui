@@ -161,6 +161,10 @@ export const MODULE_DEFAULTS = {
             topp: 1.0,
             n: -1,
             stoptokens: ["\\n"]
+        },
+        general: {
+            maxcognitionevents: 20,
+            generateexpressions: true
         }
     },
     movement: {

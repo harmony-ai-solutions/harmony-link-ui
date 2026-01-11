@@ -31,7 +31,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
-    // Model dropdown state - initialize with error message like TTS component
+    // Model dropdown state
     const [availableModels, setAvailableModels] = useState([
         {name: "Error: no models available", value: null}
     ]);
@@ -60,7 +60,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
 
         setModelsLoading(true);
         setAvailableModels([{name: 'Updating models...', value: null }]);
-        
+
         const currentConfig = {
             openaiapikey: moduleSettings.openaiapikey,
             model: moduleSettings.model,
@@ -70,7 +70,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             n: moduleSettings.n,
             stoptokens: moduleSettings.stoptokens
         };
-        
+
         try {
             const result = await listProviderModels(MODULES.COGNITION, PROVIDERS.OPENAI, currentConfig);
             if (result.error) {
@@ -115,6 +115,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         refreshAvailableModels();
         return true;
     };
+
     const setModelAndUpdate = (value) => {
         setModel(value);
         const updatedSettings = { ...moduleSettings, model: value };
@@ -122,6 +123,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     }
+
     const validateMaxTokensAndUpdate = (value) => {
         const numValue = parseInt(value, 10);
         if (isNaN(numValue) || numValue <= 20) {
@@ -135,6 +137,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     };
+
     const validateTemperatureAndUpdate = (value) => {
         const numValue = parseFloat(value);
         if (isNaN(numValue) || (numValue <= 0.01 || numValue > 2.00) && numValue !== -1.00) {
@@ -148,6 +151,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     };
+
     const validateTopPAndUpdate = (value) => {
         const numValue = parseFloat(value);
         if (isNaN(numValue) || (numValue <= 0.01 || numValue > 1.00) && numValue !== -1.00) {
@@ -161,6 +165,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     };
+
     const validateNAndUpdate = (value) => {
         const numValue = parseInt(value, 10);
         if (isNaN(numValue) || numValue < -1 || numValue === 0) {
@@ -174,6 +179,7 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
         saveSettingsFunc(updatedSettings);
         return true;
     };
+
     const validateStopTokensAndUpdate = (value) => {
         value = value.split(",").filter(item => item !== "");
         if (value.length === 0) {
@@ -238,7 +244,6 @@ const CognitionOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     useEffect(() => {
-        LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
     }, [initialSettings]);
 

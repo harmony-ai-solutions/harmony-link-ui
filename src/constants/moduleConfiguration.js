@@ -45,7 +45,7 @@ export const MODULE_CONFIGS = {
         ]
     },
     cognition: {
-        generalSettingsComponent: null,
+        generalSettingsComponent: 'CognitionGeneralSettingsView',
         providers: [
             {
                 id: 'cognition',

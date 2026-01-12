@@ -130,3 +130,40 @@ body {
     background: var(--gradient-primary);
     border-radius: 99px;
 }
+
+/* Gradient Button Utility */
+.btn-accent-gradient {
+    background: linear-gradient(to right, var(--color-accent-primary), var(--color-accent-secondary)) !important;
+    color: white !important;
+    border: none !important;
+    transition: all 0.2s ease;
+    border-radius: 0.5rem;
+}
+
+.btn-accent-gradient:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* Custom Select Option Styling */
+.input-field option:checked {
+    background-color: var(--color-accent-primary) !important;
+    color: white !important;
+}
+
+.input-field option:hover {
+    background-color: var(--color-background-elevated) !important;
+}
+
+/* Ensure select scrollbar tracks don't show when inactive/themed */
+select.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+/* Base themed option styles for all module selects */
+.input-field option {
+    background-color: var(--color-background-surface);
+    color: var(--color-text-primary);
+    padding: 8px;
+    /* Note: browsers may ignore this */
+}

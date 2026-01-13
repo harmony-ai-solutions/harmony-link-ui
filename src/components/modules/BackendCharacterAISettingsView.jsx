@@ -6,6 +6,7 @@ import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx"
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import ErrorDialog from "../modals/ErrorDialog.jsx";
 
 
 const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => {
@@ -108,8 +109,8 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
                     validationState={validationState}
                 />
               <div className="flex flex-wrap items-center -px-10 w-full">
-                  <div className="flex items-center mb-6 w-full">
-                      <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                  <div className="flex items-center mb-4 w-full">
+                      <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                           API Token
                           <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                            setTooltipVisible={setTooltipVisible}>
@@ -118,14 +119,14 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
                       </label>
                       <div className="w-2/3 px-3">
                           <input type="password" name="apitoken"
-                                 className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                 className="input-field w-full p-2 rounded"
                                  placeholder="Character AI API Token" value={apiToken}
                                  onChange={(e) => setApiToken(e.target.value)}
                                  onBlur={(e) => validateApiTokenAndUpdate(e.target.value)}/>
                       </div>
                   </div>
-                  <div className="flex items-center mb-6 w-full">
-                      <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                  <div className="flex items-center mb-4 w-full">
+                      <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                           Chatroom URL
                           <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                            setTooltipVisible={setTooltipVisible}>
@@ -136,7 +137,7 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
                       </label>
                       <div className="w-2/3 px-3">
                           <input type="text" name="chatroomurl"
-                                 className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                 className="input-field w-full p-2 rounded"
                                  placeholder="CharacterAI Chatroom URL" value={chatRoomURL}
                                  onChange={(e) => setChatRoomURL(e.target.value)}
                                  onBlur={(e) => validateChatRoomAndUpdate(e.target.value)}/>
@@ -144,32 +145,13 @@ const BackendCharacterAISettingsView = ({initialSettings, saveSettingsFunc}) => 
                   </div>
               </div>
           </div>
-          {isModalVisible && (
-              <div className="fixed inset-0 bg-gray-600/50">
-                  <div
-                      className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                      <div className="mt-3 text-center">
-                          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                   stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                              </svg>
-                          </div>
-                          <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
-                          <div className="mt-2 px-7 py-3">
-                              <p className="text-sm text-gray-200">{modalMessage}</p>
-                          </div>
-                          <div className="items-center px-4 py-3">
-                              <button onClick={() => setIsModalVisible(false)}
-                                      className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                  Close
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          )}
+          <ErrorDialog
+              isOpen={isModalVisible}
+              title="Invalid Input"
+              message={modalMessage}
+              onClose={() => setIsModalVisible(false)}
+              type="error"
+          />
       </>
     );
 }

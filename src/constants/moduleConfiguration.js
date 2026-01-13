@@ -8,12 +8,12 @@ import logo_elevenlabs from '../assets/images/elevenlabs_50px.png';
 import logo_openrouter from '../assets/images/or_50px.png';
 
 export const MODULE_TYPE_OPTIONS = [
-    { id: 'backend', name: 'Backend / LLM', logo: logo_blank },
-    { id: 'tts', name: 'Text-to-Speech', logo: logo_blank },
-    { id: 'stt', name: 'Speech-to-Text', logo: logo_blank },
-    { id: 'rag', name: 'RAG', logo: logo_blank },
-    { id: 'movement', name: 'Movement', logo: logo_blank },
-    { id: 'cognition', name: 'Cognition', logo: logo_blank }
+    { id: 'backend', name: 'Backend / LLM', emoji: '🧠' },
+    { id: 'tts', name: 'Text-to-Speech', emoji: '🗣️' },
+    { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️' },
+    { id: 'rag', name: 'RAG', emoji: '📚' },
+    { id: 'movement', name: 'Movement', emoji: '💃' },
+    { id: 'cognition', name: 'Cognition', emoji: '🧩' }
 ];
 
 export const MODULE_CONFIGS = {

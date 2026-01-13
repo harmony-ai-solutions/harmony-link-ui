@@ -9,7 +9,7 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-background-surface border border-white/10 max-w-sm w-full rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="modal-content max-w-sm w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-8 text-center">
                     <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-accent-primary/10 mb-6">
                         <svg className="h-7 w-7 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">

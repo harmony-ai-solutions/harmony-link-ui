@@ -48,6 +48,7 @@ export const ThemeProvider = ({ children }) => {
         root.style.setProperty('--color-border-default', colors.border.default);
         root.style.setProperty('--color-border-focus', colors.border.focus);
         root.style.setProperty('--color-border-hover', colors.border.hover);
+        root.style.setProperty('--color-border-accent', colors.border.accent);
 
         // Gradients
         root.style.setProperty('--gradient-primary', colors.gradients.primary);
@@ -96,7 +97,7 @@ export const ThemeProvider = ({ children }) => {
                     accent: { primary: '#ec4899', primaryHover: '#f472b6', secondary: '#a78bfa', secondaryHover: '#c4b5fd' },
                     status: { success: '#10b981', successBg: 'rgba(16, 185, 129, 0.1)', warning: '#f59e0b', warningBg: 'rgba(245, 158, 11, 0.1)', error: '#ef4444', errorBg: 'rgba(239, 68, 68, 0.1)', info: '#3b82f6', infoBg: 'rgba(59, 130, 246, 0.1)' },
                     text: { primary: '#f1f5f9', secondary: '#cbd5e1', muted: '#94a3b8', disabled: '#64748b' },
-                    border: { default: '#334155', focus: '#ec4899', hover: '#475569' },
+                    border: { default: '#334155', focus: '#ec4899', hover: '#475569', accent: '#ec4899' },
                     gradients: { primary: 'linear-gradient(135deg, #ec4899 0%, #a78bfa 100%)', secondary: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', surface: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(167, 139, 250, 0.05) 100%)' }
                 }
             };

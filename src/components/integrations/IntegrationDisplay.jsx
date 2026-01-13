@@ -64,7 +64,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
     return (
         <div className="flex flex-wrap w-full">
             <div className="flex items-center mb-2 w-full">
-                <label className="text-sm font-medium text-gray-300 px-3">
+                <label className="text-sm font-medium text-text-secondary px-3">
                     Available Integrations
                     <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                      setTooltipVisible={setTooltipVisible}>
@@ -74,8 +74,8 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                 </label>
             </div>
             <div className="w-full px-3">
-                {availableIntegrations.map(integrationOption => ( // Renamed 'integration' to 'integrationOption'
-                    <div key={`${integrationOption.name}-${integrationOption.instanceName}`} className="flex flex-col p-2 mb-4 rounded-lg shadow-md border border-neutral-500 bg-gradient-to-br from-neutral-700 to-neutral-900">
+                {availableIntegrations.map(integrationOption => (
+                    <div key={`${integrationOption.name}-${integrationOption.instanceName}`} className="integration-card mb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
                                 <span className={`px-2 py-1 text-xs rounded-full mr-2 font-semibold ${
@@ -83,10 +83,10 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                 }`}>
                                     {integrationOption.status.toUpperCase()}
                                 </span>
-                                <span className="text-lg font-semibold text-neutral-100">
+                                <span className="text-lg font-semibold text-text-primary">
                                     {integrationOption.instanceName}
                                     {integrationOption.deviceType && (
-                                        <span className="ml-2 text-sm text-neutral-300">
+                                        <span className="ml-2 text-sm text-text-secondary">
                                             ({getDeviceIcon(integrationOption.deviceType)} {integrationOption.deviceType.toUpperCase()})
                                         </span>
                                     )}
@@ -98,7 +98,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                         <button
                                             key={`api-${index}`}
                                             onClick={() => handleUseIntegration(integrationOption, index)}
-                                            className="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded-md text-sm font-medium transition duration-200 ease-in-out">
+                                            className="btn-primary px-2 rounded text-sm">
                                             Apply API config
                                         </button>
                                     ))
@@ -108,13 +108,13 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                         <button
                                             key={`web-${index}`}
                                             onClick={() => handleOpenWebInterface(integrationOption, index)}
-                                            className="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded-md text-sm font-medium transition duration-200 ease-in-out">
+                                            className="btn-secondary py-1 px-2 rounded text-sm">
                                             Open Web UI
                                         </button>
                                     ))
                                 )}
                                 {!integrationOption.available && (!integrationOption.apiURLs || integrationOption.apiURLs.length === 0) && (!integrationOption.webURLs || integrationOption.webURLs.length === 0) && (
-                                    <span className="text-sm text-neutral-400">No available endpoints or not running.</span>
+                                    <span className="text-sm text-text-muted">No available endpoints or not running.</span>
                                 )}
                             </div>
                         </div>

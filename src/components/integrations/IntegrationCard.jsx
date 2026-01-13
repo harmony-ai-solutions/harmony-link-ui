@@ -106,46 +106,44 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
     const runningCount = Object.values(instances).filter(instance => instance.status === 'running').length;
 
     return (
-        <div className="integration-card bg-neutral-800 p-4 rounded-lg shadow-md">
-            <div className="integration-header flex justify-between items-center mb-2">
-                <h3 className="text-xl font-semibold text-orange-400">{integration.displayName}</h3>
-                <div className="instance-summary text-sm text-neutral-400">
-                    {loadingInstances ? (
-                        <span>Loading instances...</span>
-                    ) : (
-                        instanceCount > 0 ? (
-                            <span>
-                                {instanceCount} instance{instanceCount !== 1 ? 's ' : ' '}
-                                ({runningCount} running)
-                            </span>
-                        ) : (
-                            <span>No instances configured</span>
-                        )
-                    )}
-                </div>
-            </div>
-            
-            <p className="text-neutral-300 text-sm mb-2">{integration.description}</p>
-
-            <div className="integration-actions flex flex-wrap gap-2 mb-6">
+        <div className="integration-card">
+            <div className="integration-header flex justify-between items-start mb-2">
+                <h3 className="text-xl font-semibold text-accent-primary">{integration.displayName}</h3>
                 <button
                     onClick={() => handleOpenProjectWebsite(integration.projectWebsite)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs"
+                    className="btn-website-link text-xs py-1 px-2 rounded font-semibold flex-shrink-0"
                 >
-                    Open Project Website
+                    🌐 Website
                 </button>
+            </div>
+            
+            <p className="text-text-secondary text-sm mb-2">{integration.description}</p>
+
+            <div className="instance-summary text-sm text-text-muted mb-4">
+                {loadingInstances ? (
+                    <span>Loading instances...</span>
+                ) : (
+                    instanceCount > 0 ? (
+                        <span>
+                            {instanceCount} instance{instanceCount !== 1 ? 's ' : ' '}
+                            ({runningCount} running)
+                        </span>
+                    ) : (
+                        <span>No instances configured</span>
+                    )
+                )}
             </div>
 
             <div className="integration-actions flex flex-wrap gap-2 mb-4">
                 <button 
                     onClick={() => setShowInstances(!showInstances)}
-                    className="bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-1 px-3 rounded text-sm"
+                    className="btn-secondary py-1 px-3 rounded text-sm"
                 >
                     {showInstances ? 'Hide Instances' : 'Show Instances'}
                 </button>
                 <button 
                     onClick={() => onCreateInstance(integration.name)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-1 px-3 rounded text-sm"
+                    className="btn-primary py-1 px-3 rounded text-sm"
                 >
                     Add Instance
                 </button>

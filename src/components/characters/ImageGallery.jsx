@@ -63,10 +63,10 @@ export default function ImageGallery({ profileId }) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-orange-400">Character Images</h3>
+                <h3 className="text-lg font-medium text-accent-primary">Character Images</h3>
                 <button
                     onClick={() => setShowUploadModal(true)}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                    className="btn-primary px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                     Upload Image
                 </button>
@@ -78,7 +78,7 @@ export default function ImageGallery({ profileId }) {
                         key={image.id}
                         className={`
                             relative rounded-lg overflow-hidden border-2 transition-all
-                            ${image.is_primary ? 'border-orange-500 ring-2 ring-orange-500/30' : 'border-neutral-600'}
+                            ${image.is_primary ? 'border-accent-primary ring-2 ring-accent-primary/30' : 'border-border-default'}
                         `}
                     >
                         <img
@@ -95,7 +95,7 @@ export default function ImageGallery({ profileId }) {
                                 </div>
                             )}
                             {image.description && (
-                                <div className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg flex items-center gap-1"
+                                <div className="bg-status-info text-white text-xs font-bold px-2 py-1 rounded shadow-lg flex items-center gap-1"
                                      title={image.description}>
                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -138,7 +138,7 @@ export default function ImageGallery({ profileId }) {
             </div>
             
             {images.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-text-muted">
                     <p>No images yet. Upload one to get started!</p>
                 </div>
             )}
@@ -165,31 +165,31 @@ export default function ImageGallery({ profileId }) {
             
             {/* Edit Description Modal */}
             {editingImage && (
-                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="bg-neutral-800 rounded-lg p-6 max-w-md w-full mx-4 border border-neutral-700">
-                        <h2 className="text-xl font-semibold mb-4 text-orange-400">Edit Image Description</h2>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="modal-content max-w-md w-full mx-4">
+                        <h2 className="text-xl font-semibold mb-4 text-accent-primary">Edit Image Description</h2>
                         
                         <textarea
                             value={editDescription}
                             onChange={(e) => setEditDescription(e.target.value)}
                             maxLength={1000}
                             rows={4}
-                            className="w-full border border-neutral-600 rounded-lg px-3 py-2 bg-neutral-700 text-neutral-100 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="input-field w-full resize-none"
                             placeholder="Describe this image..."
                             autoFocus
                         />
-                        <p className="mt-1 text-xs text-gray-300">{editDescription.length}/1000 characters</p>
+                        <p className="mt-1 text-xs text-text-muted">{editDescription.length}/1000 characters</p>
                         
                         <div className="flex justify-end gap-2 mt-4">
                             <button
                                 onClick={handleCancelEdit}
-                                className="px-4 py-2 border border-neutral-600 rounded-lg text-neutral-300 bg-neutral-700 hover:bg-neutral-600 transition-colors"
+                                className="btn-secondary px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleSaveDescription(editingImage)}
-                                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                                className="btn-primary px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                             >
                                 Save
                             </button>

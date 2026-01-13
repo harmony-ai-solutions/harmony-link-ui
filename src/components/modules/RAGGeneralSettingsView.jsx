@@ -83,7 +83,7 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
           <div className="flex flex-wrap w-full pt-2">
               <div className="flex flex-wrap items-center -px-10 mb-3 w-full">
                   <div className="flex items-center w-1/2">
-                      <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                      <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                           Embedding Concurrency
                           <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                            setTooltipVisible={setTooltipVisible}>
@@ -96,7 +96,7 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
                       </label>
                       <div className="w-2/3 px-3">
                           <input type="number" name="embeddingconcurrency"
-                                 className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                 className="input-field mt-1 block w-full"
                                  placeholder="Embedding Concurrency (0 = unlimited)" value={embeddingConcurrency}
                                  onChange={(e) => setEmbeddingConcurrency(e.target.value)}
                                  onBlur={(e) => validateEmbeddingConcurrencyAndUpdate(e.target.value)}/>
@@ -117,7 +117,7 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
                                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                               </svg>
                           </div>
-                          <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
+                          <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
                           <div className="mt-2 px-7 py-3">
                               <p className="text-sm text-gray-200">{modalMessage}</p>
                           </div>

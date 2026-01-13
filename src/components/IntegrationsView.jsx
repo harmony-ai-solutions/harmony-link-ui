@@ -136,32 +136,52 @@ const IntegrationsView = () => {
 
   if (!quickstartPathConfigured) {
     return (
-      <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4 text-orange-400">Integrations</h2>
-        <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
+      <div className="flex flex-col min-h-full bg-background-base">
+        {/* View Header */}
+        <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+          <h1 className="text-2xl font-extrabold tracking-tight">
+            <span className="text-gradient-primary">Integrations</span>
+          </h1>
+          <p className="text-xs text-text-muted mt-0.5 font-medium">
+            Manage and deploy containerized AI services
+          </p>
+        </div>
+
+        <div className="flex-1 p-6">
+          <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-orange-400">Integrations</h2>
-
-      <div className="flex justify-between items-center mb-4">
-        <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
-
-        <DockerStatusIndicator dockerStatus={dockerStatus} />
-
-        <button 
-          onClick={fetchIntegrationsAndStatuses}
-          disabled={refreshing}
-          className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 mx-1 text-orange-400"
-        >
-          {refreshing ? 'Refreshing...' : 'Refresh All'}
-        </button>
+    <div className="flex flex-col min-h-full bg-background-base">
+      {/* View Header */}
+      <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+        <h1 className="text-2xl font-extrabold tracking-tight">
+          <span className="text-gradient-primary">Integrations</span>
+        </h1>
+        <p className="text-xs text-text-muted mt-0.5 font-medium">
+          Manage and deploy containerized AI services
+        </p>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div className="flex-1 p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
+
+          <DockerStatusIndicator dockerStatus={dockerStatus} />
+
+          <button 
+            onClick={fetchIntegrationsAndStatuses}
+            disabled={refreshing}
+            className="btn-secondary"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh All'}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {integrations.map((integration) => (
           <IntegrationCard
             key={integration.name}
@@ -171,6 +191,7 @@ const IntegrationsView = () => {
             onCreateInstance={handleCreateInstanceClick}
           />
         ))}
+        </div>
       </div>
 
       {showConfigEditor && selectedIntegrationName && selectedInstanceName && (

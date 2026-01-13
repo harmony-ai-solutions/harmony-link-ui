@@ -45,7 +45,7 @@ const InputDialog = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-background-surface border border-white/10 max-w-md w-full rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="modal-content max-w-md w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-8">
                     <h3 className="text-xl font-extrabold text-text-primary mb-3 tracking-tight">
                         {title}

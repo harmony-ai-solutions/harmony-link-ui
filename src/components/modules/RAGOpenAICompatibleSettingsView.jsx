@@ -132,7 +132,7 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                                     useIntegration={useIntegration}/>
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             Base URL
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -143,14 +143,14 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="text" name="baseurl"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="Base URL" value={baseURL}
                                    onChange={(e) => setBaseURL(e.target.value)}
                                    onBlur={(e) => validateBaseURLAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             API Key
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -160,14 +160,14 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="apikey"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="API Key" value={apiKey}
                                    onChange={(e) => setApiKey(e.target.value)}
                                    onBlur={(e) => validateApiKeyAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             Embedding Model
                             <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -178,7 +178,7 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="text" name="embeddingmodel"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="Embedding Model Name" value={embeddingModel}
                                    onChange={(e) => setEmbeddingModel(e.target.value)}
                                    onBlur={(e) => validateEmbeddingModelAndUpdate(e.target.value)}/>
@@ -198,7 +198,7 @@ const RAGOpenAICompatibleSettingsView = ({initialSettings, saveSettingsFunc}) =>
                                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
+                            <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
                             <div className="mt-2 px-7 py-3">
                                 <p className="text-sm text-gray-200">{modalMessage}</p>
                             </div>

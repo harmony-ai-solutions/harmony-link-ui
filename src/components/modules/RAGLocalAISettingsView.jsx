@@ -93,7 +93,7 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                 />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             Embedding Model
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -104,7 +104,7 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="text" name="embeddingmodel"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="Embedding Model Name" value={embeddingModel}
                                    onChange={(e) => setEmbeddingModel(e.target.value)}
                                    onBlur={(e) => validateEmbeddingModelAndUpdate(e.target.value)}/>
@@ -124,7 +124,7 @@ const RAGLocalAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
+                            <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
                             <div className="mt-2 px-7 py-3">
                                 <p className="text-sm text-gray-200">{modalMessage}</p>
                             </div>

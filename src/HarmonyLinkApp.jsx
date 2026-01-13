@@ -7,7 +7,7 @@ import DevelopmentView from "./components/DevelopmentView.jsx";
 import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
-import ModuleConfigurationsView from "./components/modules/ModuleConfigurationsView.jsx";
+import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 

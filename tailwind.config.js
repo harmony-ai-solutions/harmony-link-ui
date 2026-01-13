@@ -38,6 +38,7 @@ export default {
           default: 'var(--color-border-default)',
           focus: 'var(--color-border-focus)',
           hover: 'var(--color-border-hover)',
+          accent: 'var(--color-border-accent)',
         },
       },
       backgroundImage: {
@@ -49,4 +50,3 @@ export default {
   },
   plugins: [],
 }
-

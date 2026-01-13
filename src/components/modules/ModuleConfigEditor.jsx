@@ -150,10 +150,13 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
         if (pathParts.length > 1) {
             // Multi-level path like 'transcription.provider'
             const basePath = pathParts[0]; // 'transcription'
-            if (!newSettings[basePath]) newSettings[basePath] = {};
-            newSettings[basePath][providerId] = { 
-                ...(newSettings[basePath][providerId] || {}),
-                ...updatedProviderSettings 
+            // Deep copy the nested object to avoid mutating frozen store objects
+            newSettings[basePath] = {
+                ...(newSettings[basePath] || {}),
+                [providerId]: { 
+                    ...(newSettings[basePath]?.[providerId] || {}),
+                    ...updatedProviderSettings 
+                }
             };
         } else {
             // Single level path like 'provider'

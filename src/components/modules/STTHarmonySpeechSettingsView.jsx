@@ -10,6 +10,7 @@ import { isHarmonyLinkMode } from '../../config/appMode.js';
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 import ErrorDialog from "../modals/ErrorDialog.jsx";
+import ThemedSelect from "../widgets/ThemedSelect.jsx";
 
 
 const knownModelNames = {
@@ -67,7 +68,7 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
 
-        // Refresh Speech Tooling
+        // Use existing plugin and update its URL
         if (harmonySpeechPlugin) {
             harmonySpeechPlugin.setBaseURL(value);
             refreshAvailableSTToolchains(harmonySpeechPlugin);
@@ -190,6 +191,12 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
+        
+        // Use existing plugin and update its URL
+        if (harmonySpeechPlugin) {
+            harmonySpeechPlugin.setBaseURL(selectedURL);
+            refreshAvailableSTToolchains(harmonySpeechPlugin);
+        }
     };
 
     const handleModelSelectionChange = (selectedModelId) => {
@@ -243,17 +250,17 @@ const STTHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                             it will be influencing how well the AI will understand you or other speakers.
                         </SettingsTooltip>
                     </label>
-                    <select
-                        value={model}
-                        onChange={(e) => handleModelSelectionChange(e.target.value)}
-                        className="input-field block w-1/2 mx-3"
-                    >
-                        {modelOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="w-1/2 px-3">
+                        <ThemedSelect
+                            value={model}
+                            onChange={handleModelSelectionChange}
+                            options={modelOptions.map(opt => ({
+                                label: opt.name,
+                                value: opt.value
+                            }))}
+                            placeholder="Select transcription model..."
+                        />
+                    </div>
                 </div>
             </div>
             <ErrorDialog

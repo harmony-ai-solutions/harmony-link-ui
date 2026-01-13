@@ -15,6 +15,7 @@ import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 import ErrorDialog from "../modals/ErrorDialog.jsx";
 import ConfirmDialog from "../modals/ConfirmDialog.jsx";
 import InputDialog from "../modals/InputDialog.jsx";
+import ThemedSelect from "../widgets/ThemedSelect.jsx";
 
 const knownModelNames = {
     "harmonyspeech": "HarmonySpeech V1",
@@ -304,6 +305,12 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
+        
+        // Use existing plugin and update its URL
+        if (harmonySpeechPlugin) {
+            harmonySpeechPlugin.setBaseURL(selectedURL);
+            refreshAvailableTTSToolchains(harmonySpeechPlugin);
+        }
     };
 
     useEffect(() => {
@@ -699,17 +706,17 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                         Select the AI model for speech synthesis.
                                     </SettingsTooltip>
                                 </label>
-                                <select
-                                    value={currentVoiceConfig.model}
-                                    onChange={(e) => handleModelSelectionChange(e.target.value)}
-                                    className="input-field block w-1/2"
-                                >
-                                    {modelOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.name}
-                                        </option>
-                                    ))}
-                            </select>
+                                <div className="w-1/2 px-3">
+                                    <ThemedSelect
+                                        value={currentVoiceConfig.model}
+                                        onChange={handleModelSelectionChange}
+                                        options={modelOptions.map(opt => ({
+                                            label: opt.name,
+                                            value: opt.value
+                                        }))}
+                                        placeholder="Select model..."
+                                    />
+                                </div>
                         </div>
                         <div className="flex items-center w-1/2">
                             <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
@@ -720,21 +727,20 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                     Single-Speaker-TTS, Realtime Speech-To-Speech etc.
                                 </SettingsTooltip>
                             </label>
-                            <select
-                                value={currentVoiceConfig.operation_mode}
-                                onChange={(e) => handleOperationModeChange(e.target.value)}
-                                className="input-field block w-1/2"
-                            >
-                                {modelOperationModes[currentVoiceConfig.model] ? (
-                                    modelOperationModes[currentVoiceConfig.model].map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option key="" value="">Default</option>
-                                )}
-                            </select>
+                            <div className="w-1/2 px-3">
+                                <ThemedSelect
+                                    value={currentVoiceConfig.operation_mode}
+                                    onChange={handleOperationModeChange}
+                                    options={modelOperationModes[currentVoiceConfig.model] ? 
+                                        modelOperationModes[currentVoiceConfig.model].map(opt => ({
+                                            label: opt.name,
+                                            value: opt.value
+                                        })) : 
+                                        [{label: "Default", value: ""}]
+                                    }
+                                    placeholder="Select operation mode..."
+                                />
+                            </div>
                         </div>
                     </div>
                     {currentVoiceConfig.operation_mode === "voice_cloning" && (
@@ -847,21 +853,20 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 <br/>Not all models support multiple languages.
                             </SettingsTooltip>
                         </label>
-                        <select
-                            value={currentVoiceConfig.language}
-                            onChange={(e) => handleLanguageSelectionChange(e.target.value)}
-                            className="input-field block w-1/2"
-                        >
-                            {modelLanguageOptions[currentVoiceConfig.model] ? (
-                                modelLanguageOptions[currentVoiceConfig.model].map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option key="" value="">Default</option>
-                            )}
-                        </select>
+                        <div className="w-1/2 px-3">
+                            <ThemedSelect
+                                value={currentVoiceConfig.language}
+                                onChange={handleLanguageSelectionChange}
+                                options={modelLanguageOptions[currentVoiceConfig.model] ? 
+                                    modelLanguageOptions[currentVoiceConfig.model].map(opt => ({
+                                        label: opt.name,
+                                        value: opt.value
+                                    })) : 
+                                    [{label: "Default", value: ""}]
+                                }
+                                placeholder="Select language..."
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
@@ -872,21 +877,20 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 <br/>Not all models support output voices.
                             </SettingsTooltip>
                         </label>
-                        <select
-                            value={currentVoiceConfig.voice}
-                            onChange={(e) => handleVoiceSelectionChange(e.target.value)}
-                            className="input-field block w-1/2"
-                        >
-                            {modelVoiceOptions[currentVoiceConfig.model] && modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language] ? (
-                                modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language].map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option key="" value="">Default</option>
-                            )}
-                        </select>
+                        <div className="w-1/2 px-3">
+                            <ThemedSelect
+                                value={currentVoiceConfig.voice}
+                                onChange={handleVoiceSelectionChange}
+                                options={modelVoiceOptions[currentVoiceConfig.model] && modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language] ? 
+                                    modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language].map(opt => ({
+                                        label: opt.name,
+                                        value: opt.value
+                                    })) : 
+                                    [{label: "Default", value: ""}]
+                                }
+                                placeholder="Select voice..."
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
                         <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">

@@ -10,6 +10,7 @@ import { isHarmonyLinkMode } from '../../config/appMode.js';
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 import ErrorDialog from "../modals/ErrorDialog.jsx";
+import ThemedSelect from "../widgets/ThemedSelect.jsx";
 
 const knownModelNames = {
     "faster-whisper-large-v3-turbo": "FasterWhisper Large v3 Turbo",
@@ -66,9 +67,11 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
 
-        // Refresh Speech Tooling
-        harmonySpeechPlugin.setBaseURL(value);
-        refreshAvailableVADToolchains(harmonySpeechPlugin);
+        // Use existing plugin and update its URL
+        if (harmonySpeechPlugin) {
+            harmonySpeechPlugin.setBaseURL(value);
+            refreshAvailableVADToolchains(harmonySpeechPlugin);
+        }
         return true;
     };
 
@@ -187,6 +190,12 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
+        
+        // Use existing plugin and update its URL
+        if (harmonySpeechPlugin) {
+            harmonySpeechPlugin.setBaseURL(selectedURL);
+            refreshAvailableVADToolchains(harmonySpeechPlugin);
+        }
     };
 
     const handleModelSelectionChange = (selectedModelId) => {
@@ -242,17 +251,17 @@ const VADHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                             inference performance will do the job just as good.
                         </SettingsTooltip>
                     </label>
-                    <select
-                        value={model}
-                        onChange={(e) => handleModelSelectionChange(e.target.value)}
-                        className="input-field block w-1/2 mx-3"
-                    >
-                        {vadModelOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="w-1/2 px-3">
+                        <ThemedSelect
+                            value={model}
+                            onChange={handleModelSelectionChange}
+                            options={vadModelOptions.map(opt => ({
+                                label: opt.name,
+                                value: opt.value
+                            }))}
+                            placeholder="Select VAD model..."
+                        />
+                    </div>
                 </div>
             </div>
             <ErrorDialog

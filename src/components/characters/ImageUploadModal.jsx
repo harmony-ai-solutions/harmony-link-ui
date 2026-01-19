@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 
 /**
@@ -61,8 +62,8 @@ export default function ImageUploadModal({ profileId, onClose }) {
         }
     };
     
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    const modalContent = (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]">
             <div className="modal-content max-w-md w-full mx-4">
                 <h2 className="text-xl font-semibold mb-4 text-accent-primary">Upload Image</h2>
                 
@@ -136,4 +137,6 @@ export default function ImageUploadModal({ profileId, onClose }) {
             </div>
         </div>
     );
+    
+    return createPortal(modalContent, document.body);
 }

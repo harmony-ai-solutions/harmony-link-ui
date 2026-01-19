@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { listThemes } from '../services/management/themeService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
+import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 
 const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const { currentTheme, switchTheme } = useTheme();
@@ -19,6 +20,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [confirmModalMessage, setConfirmModalMessage] = useState('');
     const [confirmModalYes, setConfirmModalYes] = useState(() => { });
     const [confirmModalNo, setConfirmModalNo] = useState(() => { });
+
+    // Device Management modal state
+    const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
 
     // Show Modal Functions
     const showModal = (message) => {
@@ -152,13 +156,23 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
-                <h1 className="text-2xl font-extrabold tracking-tight">
-                    <span className="text-gradient-primary">General</span> Settings
-                </h1>
-                <p className="text-xs text-text-muted mt-0.5 font-medium">
-                    Global application configuration and appearance settings
-                </p>
+            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4 flex items-start justify-between">
+                <div>
+                    <h1 className="text-2xl font-extrabold tracking-tight">
+                        <span className="text-gradient-primary">General</span> Settings
+                    </h1>
+                    <p className="text-xs text-text-muted mt-0.5 font-medium">
+                        Global application configuration and appearance settings
+                    </p>
+                </div>
+                <button
+                    onClick={() => setShowDeviceManagementModal(true)}
+                    className="btn-secondary flex items-center gap-2 flex-shrink-0">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Manage Devices
+                </button>
             </div>
 
             <div className="flex-1 p-6 space-y-8 max-w-7xl">
@@ -432,6 +446,12 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     setConfirmModalVisible(false);
                     confirmModalNo();
                 }}
+            />
+
+            {/* Device Management Modal */}
+            <DeviceManagementModal
+                show={showDeviceManagementModal}
+                onClose={() => setShowDeviceManagementModal(false)}
             />
         </div>
     );

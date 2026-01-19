@@ -14,7 +14,7 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
     return (
         <div 
             onClick={onClick}
-            className="rounded-lg overflow-hidden cursor-pointer group transition-all hover:scale-[1.02] hover:shadow-2xl border border-border-accent hover:border-accent-primary"
+            className="character-profile-card overflow-hidden cursor-pointer group hover:scale-[1.02]"
         >
             <div className="aspect-[3/4] relative bg-elevated">
                 {primaryImage ? (

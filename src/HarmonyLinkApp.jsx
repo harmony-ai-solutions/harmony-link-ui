@@ -8,6 +8,9 @@ import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
+import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
+import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
+import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 
@@ -18,6 +21,10 @@ function HarmonyLinkApp() {
 
     // Main Config reference
     const [applicationConfig, setApplicationConfig] = useState(null);
+
+    // Device approval state
+    const [pendingDevices, setPendingDevices] = useState([]);
+    const [currentDevice, setCurrentDevice] = useState(null);
 
     // Save Functions
     const saveGeneralSettings = (newGeneralSettings, createBackup = true) => {
@@ -61,6 +68,63 @@ function HarmonyLinkApp() {
             LogError(error);
         }
     }, []);
+
+    // Device approval watcher effect
+    useEffect(() => {
+        // Start watching for device approval requests
+        deviceApprovalWatcher.start();
+
+        // Listen for pending devices
+        const handlePendingDevices = (devices) => {
+            setPendingDevices(devices);
+
+            // Show modal for first device if not already showing
+            if (devices.length > 0 && !currentDevice) {
+                setCurrentDevice(devices[0]);
+            }
+        };
+
+        deviceApprovalWatcher.addListener(handlePendingDevices);
+
+        return () => {
+            deviceApprovalWatcher.removeListener(handlePendingDevices);
+            deviceApprovalWatcher.stop();
+        };
+    }, [currentDevice]);
+
+    // Handle device approval
+    const handleApproveDevice = async () => {
+        if (!currentDevice) return;
+
+        try {
+            await deviceApprovalWatcher.approveDevice(currentDevice.device_id);
+
+            // Move to next device or close modal
+            const remaining = pendingDevices.filter(d => d.device_id !== currentDevice.device_id);
+            setPendingDevices(remaining);
+            setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
+        } catch (error) {
+            LogError('Failed to approve device:', error);
+            alert('Failed to approve device. Please try again.');
+        }
+    };
+
+    // Handle device rejection
+    const handleRejectDevice = async () => {
+        if (!currentDevice) return;
+
+        try {
+            await deviceApprovalWatcher.rejectDevice(currentDevice.device_id);
+
+            // Move to next device or close modal
+            const remaining = pendingDevices.filter(d => d.device_id !== currentDevice.device_id);
+            setPendingDevices(remaining);
+            setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
+        } catch (error) {
+            LogError('Failed to reject device:', error);
+            alert('Failed to reject device. Please try again.');
+        }
+    };
 
     return (
         <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
@@ -134,7 +198,10 @@ function HarmonyLinkApp() {
 
             <div className="flex-1 bg-background-base min-h-[calc(100vh-6rem)]">
                 {applicationConfig && settingsTab === SettingsTabGeneral &&
-                    <GeneralSettingsView generalSettings={applicationConfig.general} saveGeneralSettings={saveGeneralSettings}></GeneralSettingsView>
+                    <GeneralSettingsView 
+                        generalSettings={applicationConfig.general} 
+                        saveGeneralSettings={saveGeneralSettings}
+                    ></GeneralSettingsView>
                 }
                 {applicationConfig && settingsTab === SettingsTabEntities &&
                     <EntitySettingsView appName={appName}></EntitySettingsView>
@@ -155,6 +222,14 @@ function HarmonyLinkApp() {
                     <SimulatorView></SimulatorView>
                 }
             </div>
+
+            {/* Device Approval Modal */}
+            <DeviceApprovalModal
+                device={currentDevice}
+                onApprove={handleApproveDevice}
+                onReject={handleRejectDevice}
+                show={currentDevice !== null}
+            />
 
             <footer className="flex items-center justify-center bg-background-base border-t border-white/5">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">

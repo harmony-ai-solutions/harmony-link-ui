@@ -2,36 +2,43 @@ import React from 'react';
 
 /**
  * Reusable confirmation dialog component
- * Styled to match the app theme, replaces window.confirm()
+ * Styled with premium aesthetics, backdrop blur and theme variables.
  */
 const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Yes', cancelText = 'No' }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600/50 z-50 flex items-center justify-center">
-            <div className="relative mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                <div className="mt-3 text-center">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-200">
-                        <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="modal-content max-w-sm w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="p-8 text-center">
+                    <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-accent-primary/10 mb-6">
+                        <svg className="h-7 w-7 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">{title}</h3>
-                    <div className="mt-2 px-7 py-3">
-                        <p className="text-sm text-gray-200 whitespace-pre-line">{message}</p>
+
+                    <h3 className="text-xl font-extrabold text-text-primary mb-3 tracking-tight">
+                        {title}
+                    </h3>
+
+                    <div className="mb-8 px-2">
+                        <p className="text-[15px] leading-relaxed text-text-secondary whitespace-pre-line font-medium">
+                            {message}
+                        </p>
                     </div>
-                    <div className="flex justify-center gap-4 pt-3">
-                        <button
-                            onClick={onConfirm}
-                            className="bg-orange-500 hover:bg-orange-600 font-bold py-2 px-6 text-white rounded transition-colors"
-                        >
-                            {confirmText}
-                        </button>
+
+                    <div className="flex gap-3">
                         <button
                             onClick={onCancel}
-                            className="bg-neutral-700 hover:bg-neutral-600 font-bold py-2 px-6 text-gray-300 rounded transition-colors"
+                            className="btn-secondary flex-1 py-3"
                         >
                             {cancelText}
+                        </button>
+                        <button
+                            onClick={onConfirm}
+                            className="btn-primary flex-1 py-3 shadow-lg shadow-accent-primary/20"
+                        >
+                            {confirmText}
                         </button>
                     </div>
                 </div>

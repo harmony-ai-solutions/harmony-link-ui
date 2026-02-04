@@ -14,9 +14,9 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
     return (
         <div 
             onClick={onClick}
-            className="bg-neutral-700 rounded-lg border border-neutral-600 shadow-sm hover:shadow-lg hover:border-orange-500/50 transition-all cursor-pointer overflow-hidden group"
+            className="character-profile-card overflow-hidden cursor-pointer group hover:scale-[1.02]"
         >
-            <div className="aspect-[3/4] relative bg-neutral-800">
+            <div className="aspect-[3/4] relative bg-elevated">
                 {primaryImage ? (
                     <img 
                         src={primaryImage.data_url} 
@@ -24,14 +24,14 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500">
+                    <div className="w-full h-full flex items-center justify-center text-text-disabled">
                         <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </div>
                 )}
                 
-                <div className="absolute inset-0 bg-orange-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+                <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity" />
                 
                 {onDelete && (
                     <button
@@ -39,7 +39,7 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                             e.stopPropagation();
                             onDelete(profile.id);
                         }}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        className="absolute top-2 right-2 p-1.5 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                         title="Delete profile"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -50,8 +50,8 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
             </div>
             
             <div className="p-4">
-                <h3 className="font-semibold text-orange-400 truncate">{profile.name}</h3>
-                <p className="text-sm text-gray-400 line-clamp-2 mt-1 min-h-[2.5rem]">
+                <h3 className="font-semibold text-accent-primary truncate">{profile.name}</h3>
+                <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
                     {profile.description || "No description provided."}
                 </p>
             </div>

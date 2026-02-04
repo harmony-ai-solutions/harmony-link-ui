@@ -43,33 +43,33 @@ export default function CharacterCardImport({ onSuccess }) {
                 className={`
                     border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                     transition-colors duration-200
-                    ${isDragActive ? 'border-orange-500 bg-orange-500/10' : 'border-neutral-600 hover:border-neutral-500'}
+                    ${isDragActive ? 'border-accent-primary bg-accent-primary/10' : 'border-border-default hover:border-border-hover'}
                     ${uploading ? 'opacity-50 cursor-not-allowed' : ''}
                 `}
             >
                 <input {...getInputProps()} />
                 {uploading ? (
                     <div className="space-y-2">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-                        <p className="text-gray-400">Importing character card...</p>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto"></div>
+                        <p className="text-text-muted">Importing character card...</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
-                        <p className="text-lg font-medium text-neutral-100">
+                        <p className="text-lg font-medium text-text-primary">
                             {isDragActive ? 'Drop the PNG file here' : 'Drag & drop a character card PNG'}
                         </p>
-                        <p className="text-sm text-gray-400">or click to select file</p>
-                        <p className="text-xs text-gray-500 mt-2">Supports Character Card V1, V2, and V3 formats</p>
+                        <p className="text-sm text-text-muted">or click to select file</p>
+                        <p className="text-xs text-text-disabled mt-2">Supports Character Card V1, V2, and V3 formats</p>
                     </div>
                 )}
             </div>
             
             {error && (
-                <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
-                    <p className="text-sm text-red-400">{error}</p>
+                <div className="alert-error">
+                    <p className="text-sm">{error}</p>
                 </div>
             )}
         </div>

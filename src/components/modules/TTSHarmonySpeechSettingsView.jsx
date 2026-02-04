@@ -12,6 +12,10 @@ import { MODULES, PROVIDERS } from '../../constants/modules.js';
 import { isHarmonyLinkMode } from "../../config/appMode.js";
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import ErrorDialog from "../modals/ErrorDialog.jsx";
+import ConfirmDialog from "../modals/ConfirmDialog.jsx";
+import InputDialog from "../modals/InputDialog.jsx";
+import ThemedSelect from "../widgets/ThemedSelect.jsx";
 
 const knownModelNames = {
     "harmonyspeech": "HarmonySpeech V1",
@@ -301,6 +305,12 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         const updatedSettings = { ...moduleSettings, endpoint: selectedURL };
         setModuleSettings(updatedSettings);
         saveSettingsFunc(updatedSettings);
+        
+        // Use existing plugin and update its URL
+        if (harmonySpeechPlugin) {
+            harmonySpeechPlugin.setBaseURL(selectedURL);
+            refreshAvailableTTSToolchains(harmonySpeechPlugin);
+        }
     };
 
     useEffect(() => {
@@ -624,7 +634,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
                         <div className="flex items-center mt-2 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                            <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                                 Voice Configuration
                                 <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                                  setTooltipVisible={setTooltipVisible}>
@@ -634,7 +644,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                             <select
                                 value={voiceConfigFile}
                                 onChange={(e) => changeVoiceConfigAndUpdate(e.target.value)}
-                                className="block w-1/3 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field block w-1/3"
                             >
                                 {voiceConfigs && voiceConfigs.length > 0 ? (
                                     voiceConfigs.map((config) => (
@@ -647,20 +657,18 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 )}
                             </select>
                             <button onClick={handleSaveConfig}
-                                    className="bg-neutral-700 hover:bg-neutral-500 font-semibold py-1 px-2 mx-1 text-orange-400 text-sm">
+                                    className="btn-primary py-1 px-2 mx-1 text-sm">
                                 Save
                             </button>
                             <button onClick={handleRenameConfig}
-                                    className={`font-semibold py-1 px-2 mx-1 text-sm ${voiceConfigs && voiceConfigs.includes(voiceConfigFile) 
-                                        ? 'bg-neutral-700 hover:bg-neutral-500 text-orange-400' 
-                                        : 'bg-neutral-600 text-neutral-400 cursor-not-allowed'}`}
+                                    className={`btn-secondary font-semibold py-1 px-2 mx-1 text-sm ${!voiceConfigs || !voiceConfigs.includes(voiceConfigFile) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     disabled={!voiceConfigs || !voiceConfigs.includes(voiceConfigFile)}>
                                 Rename
                             </button>
                             <button onClick={handleDeleteConfig}
                                     className={`font-semibold py-1 px-2 mx-1 text-sm ${voiceConfigs && voiceConfigs.includes(voiceConfigFile)
-                                        ? 'bg-red-700 hover:bg-red-500 text-white'
-                                        : 'bg-neutral-600 text-neutral-400 cursor-not-allowed'}`}
+                                        ? 'bg-error hover:bg-error/80 text-white'
+                                        : 'bg-surface-elevated text-text-muted cursor-not-allowed opacity-50'}`}
                                     disabled={!voiceConfigs || !voiceConfigs.includes(voiceConfigFile)}>
                                 Delete
                             </button>
@@ -669,11 +677,11 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
 
                     <div className="flex flex-wrap items-center mb-6 w-full border-t border-neutral-500">
                         <div className="flex items-center mt-2 mb-2 w-full">
-                            <h2 className="text-l font-bold text-gray-300">Basic Settings</h2>
+                            <h2 className="text-l font-bold text-text-secondary">Basic Settings</h2>
                         </div>
                         <div className="flex items-center mb-6 w-full">
                             <div className="flex items-center w-full">
-                                <label className="block text-sm font-medium text-gray-300 w-1/4 px-3">
+                                <label className="block text-sm font-medium text-text-secondary w-1/4 px-3">
                                     Endpoint URL
                                     <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                                      setTooltipVisible={setTooltipVisible}>
@@ -682,7 +690,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 </label>
                                 <div className="w-3/4">
                                     <input type="text" name="endpoint"
-                                           className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                           className="input-field mt-1 block w-full"
                                            placeholder="Endpoint URL" value={endpoint}
                                            onChange={(e) => setEndpoint(e.target.value)}
                                            onBlur={(e) => validateEndpointAndUpdate(e.target.value)}/>
@@ -691,27 +699,27 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                         <div className="flex items-center mb-6 w-full">
                             <div className="flex items-center w-1/2">
-                                <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                                     Model Selection
                                     <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                                      setTooltipVisible={setTooltipVisible}>
                                         Select the AI model for speech synthesis.
                                     </SettingsTooltip>
                                 </label>
-                                <select
-                                    value={currentVoiceConfig.model}
-                                    onChange={(e) => handleModelSelectionChange(e.target.value)}
-                                    className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                >
-                                    {modelOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.name}
-                                        </option>
-                                    ))}
-                            </select>
+                                <div className="w-1/2 px-3">
+                                    <ThemedSelect
+                                        value={currentVoiceConfig.model}
+                                        onChange={handleModelSelectionChange}
+                                        options={modelOptions.map(opt => ({
+                                            label: opt.name,
+                                            value: opt.value
+                                        }))}
+                                        placeholder="Select model..."
+                                    />
+                                </div>
                         </div>
                         <div className="flex items-center w-1/2">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                                 Operation Mode
                                 <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
                                                  setTooltipVisible={setTooltipVisible}>
@@ -719,27 +727,26 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                     Single-Speaker-TTS, Realtime Speech-To-Speech etc.
                                 </SettingsTooltip>
                             </label>
-                            <select
-                                value={currentVoiceConfig.operation_mode}
-                                onChange={(e) => handleOperationModeChange(e.target.value)}
-                                className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                            >
-                                {modelOperationModes[currentVoiceConfig.model] ? (
-                                    modelOperationModes[currentVoiceConfig.model].map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option key="" value="">Default</option>
-                                )}
-                            </select>
+                            <div className="w-1/2 px-3">
+                                <ThemedSelect
+                                    value={currentVoiceConfig.operation_mode}
+                                    onChange={handleOperationModeChange}
+                                    options={modelOperationModes[currentVoiceConfig.model] ? 
+                                        modelOperationModes[currentVoiceConfig.model].map(opt => ({
+                                            label: opt.name,
+                                            value: opt.value
+                                        })) : 
+                                        [{label: "Default", value: ""}]
+                                    }
+                                    placeholder="Select operation mode..."
+                                />
+                            </div>
                         </div>
                     </div>
                     {currentVoiceConfig.operation_mode === "voice_cloning" && (
                         <div className="w-full">
                             <div className="flex items-center mb-2 w-full">
-                                <h2 className="text-l font-bold text-gray-300">
+                                <h2 className="text-l font-bold text-text-secondary">
                                     Voice Embedding Settings
                                     <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
                                                      setTooltipVisible={setTooltipVisible}>
@@ -748,14 +755,14 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                                 Speech Frameworks can use this vocal data to align their output when performing
                                                 voice cloning.
                                                 <br/>
-                                                <br/><span className="text-orange-400">CAUTION: Embeddings of different models are usually not compatible with each other.</span>
+                                                <br/><span className="text-warning">CAUTION: Embeddings of different models are usually not compatible with each other.</span>
                                             </span>
                                     </SettingsTooltip>
                                 </h2>
                             </div>
                             <div className="flex items-center mb-6 w-full">
                                 <div className="flex items-center mt-2 w-2/3">
-                                    <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                                         Voice File
                                         <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
                                                          setTooltipVisible={setTooltipVisible}>
@@ -767,7 +774,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                             type="file"
                                             accept=".wav,.mp3,.flac"
                                             onChange={handleEmbeddingFileChange}
-                                            className="block w-full text-sm text-orange-400 file:mr-4 file:py-1 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-neutral-700 file:text-orange-400 hover:file:bg-neutral-500 file:cursor-pointer"
+                                            className="input-file"
                                         />
                                     </div>
                                 </div>
@@ -785,11 +792,11 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                         <div className="w-full flex items-center">
                                             <button
                                                 onClick={handleGenerateEmbedding}
-                                                className="bg-neutral-700 hover:bg-neutral-500 font-semibold py-1 px-2 mx-1 text-sm text-orange-400"
+                                                className="btn-primary py-1 px-2 mx-1 text-sm"
                                             >
                                                 Generate Embedding
                                             </button>
-                                            <label className="text-sm font-medium text-gray-300">
+                                            <label className="text-sm font-medium text-text-secondary">
                                                 <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
                                                                  setTooltipVisible={setTooltipVisible}>
                                                     This sends an embedding Request for the provided audio file to the
@@ -797,7 +804,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                                     <br/>The received embedding data will be stored in the current voice
                                                     configuration.
                                                     <br/>
-                                                    <br/><span className="text-orange-400">CAUTION: Existing embedding data will be replaced.</span>
+                                                    <br/><span className="text-warning">CAUTION: Existing embedding data will be replaced.</span>
                                                 </SettingsTooltip>
                                             </label>
                                         </div>
@@ -814,7 +821,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                             }
                                         </div>
                                         <div className="w-1/2 px-3 flex items-center">
-                                            <span className="text-sm text-orange-400">{embeddingStatus}</span>
+                                            <span className="text-sm text-warning">{embeddingStatus}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -822,7 +829,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     )}
                     <div className="flex items-center mb-2 w-full">
-                        <h2 className="text-l font-bold text-gray-300">
+                        <h2 className="text-l font-bold text-text-secondary">
                             Voice Generation Settings
                             <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -830,7 +837,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                                 Settings for the model when generating speech.
                                                 <br/>
                                                 <br/>ATTENTION: Not all models support all settings. Please refer to the <span
-                                                className="text-orange-400"><a
+                                                className="text-warning"><a
                                                 href="https://github.com/harmony-ai-solutions/harmony-speech-engine/blob/main/docs/models.md"
                                                 target="_blank">Documentation</a></span> for possible settings.
                                             </span>
@@ -838,7 +845,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </h2>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Language
                             <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -846,24 +853,23 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 <br/>Not all models support multiple languages.
                             </SettingsTooltip>
                         </label>
-                        <select
-                            value={currentVoiceConfig.language}
-                            onChange={(e) => handleLanguageSelectionChange(e.target.value)}
-                            className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                        >
-                            {modelLanguageOptions[currentVoiceConfig.model] ? (
-                                modelLanguageOptions[currentVoiceConfig.model].map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option key="" value="">Default</option>
-                            )}
-                        </select>
+                        <div className="w-1/2 px-3">
+                            <ThemedSelect
+                                value={currentVoiceConfig.language}
+                                onChange={handleLanguageSelectionChange}
+                                options={modelLanguageOptions[currentVoiceConfig.model] ? 
+                                    modelLanguageOptions[currentVoiceConfig.model].map(opt => ({
+                                        label: opt.name,
+                                        value: opt.value
+                                    })) : 
+                                    [{label: "Default", value: ""}]
+                                }
+                                placeholder="Select language..."
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Voice
                             <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -871,24 +877,23 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 <br/>Not all models support output voices.
                             </SettingsTooltip>
                         </label>
-                        <select
-                            value={currentVoiceConfig.voice}
-                            onChange={(e) => handleVoiceSelectionChange(e.target.value)}
-                            className="block w-1/2 bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                        >
-                            {modelVoiceOptions[currentVoiceConfig.model] && modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language] ? (
-                                modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language].map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.name}
-                                    </option>
-                                ))
-                            ) : (
-                                <option key="" value="">Default</option>
-                            )}
-                        </select>
+                        <div className="w-1/2 px-3">
+                            <ThemedSelect
+                                value={currentVoiceConfig.voice}
+                                onChange={handleVoiceSelectionChange}
+                                options={modelVoiceOptions[currentVoiceConfig.model] && modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language] ? 
+                                    modelVoiceOptions[currentVoiceConfig.model][currentVoiceConfig.language].map(opt => ({
+                                        label: opt.name,
+                                        value: opt.value
+                                    })) : 
+                                    [{label: "Default", value: ""}]
+                                }
+                                placeholder="Select voice..."
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Seed
                         </label>
                         <div className="w-1/2">
@@ -897,7 +902,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 min="0"
                                 step="1"
                                 name="seed"
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field mt-1 block w-full"
                                 placeholder="Seed"
                                 value={currentVoiceConfig.seed}
                                 onChange={(e) =>
@@ -910,7 +915,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Style
                         </label>
                         <div className="w-1/2">
@@ -919,7 +924,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 min="0"
                                 step="1"
                                 name="style"
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field mt-1 block w-full"
                                 placeholder="Style"
                                 value={currentVoiceConfig.style}
                                 onChange={(e) =>
@@ -932,7 +937,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Speed
                         </label>
                         <div className="w-1/2">
@@ -940,7 +945,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 type="number"
                                 step="0.01"
                                 name="speed"
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field mt-1 block w-full"
                                 placeholder="Speed"
                                 value={currentVoiceConfig.speed}
                                 onChange={(e) =>
@@ -953,7 +958,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Pitch
                         </label>
                         <div className="w-1/2">
@@ -961,7 +966,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 type="number"
                                 step="0.01"
                                 name="pitch"
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field mt-1 block w-full"
                                 placeholder="Pitch"
                                 value={currentVoiceConfig.pitch}
                                 onChange={(e) =>
@@ -974,7 +979,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                             Energy
                         </label>
                         <div className="w-1/2">
@@ -982,7 +987,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 type="number"
                                 step="0.01"
                                 name="energy"
-                                className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                className="input-field mt-1 block w-full"
                                 placeholder="Energy"
                                 value={currentVoiceConfig.energy}
                                 onChange={(e) =>
@@ -995,7 +1000,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </div>
                     </div>
                     <div className="flex items-center mb-2 w-full">
-                        <h2 className="text-l font-bold text-gray-300">
+                        <h2 className="text-l font-bold text-text-secondary">
                             Generate Speech
                             <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -1008,7 +1013,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </div>
                     <div className="flex items-center mb-2 w-full">
                         <div className="flex items-center w-2/3">
-                            <label className="block text-sm font-medium text-gray-300 w-1/4 px-3">
+                            <label className="block text-sm font-medium text-text-secondary w-1/4 px-3">
                                 Input Text
                                 <SettingsTooltip tooltipIndex={12} tooltipVisible={() => tooltipVisible}
                                                  setTooltipVisible={setTooltipVisible}>
@@ -1017,7 +1022,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                             </label>
                             <div className="w-3/4 px-3">
                                 <textarea name="generation_text"
-                                          className="mt-1 block w-full bg-neutral-800 min-h-24 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                          className="input-field mt-1 block w-full min-h-24"
                                           placeholder="Type text to generate speech from here"
                                           value={generationText}
                                           onChange={(e) => setGenerationText(e.target.value)}
@@ -1029,7 +1034,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 <div className="w-full mb-2">
                                     <button
                                         onClick={handleSynthesizeVoice}
-                                        className="bg-neutral-700 hover:bg-neutral-500 font-semibold py-1 px-2 text-sm text-orange-400 w-full"
+                                        className="btn-primary py-1 px-2 text-sm w-full"
                                     >
                                         Generate Speech
                                     </button>
@@ -1043,70 +1048,46 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </div>
                 </div>
             </div>
-            {isModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div
-                        className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <div
-                                className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                     stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">{modalTitle}</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{modalMessage}</p>
-                            </div>
-                            <div className="items-center px-4 py-3">
-                                <button onClick={() => setIsModalVisible(false)}
-                                        className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {confirmModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <h3 className="text-lg leading-6 font-medium text-orange-500">{confirmModalTitle}</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{confirmModalMessage}</p>
-                            </div>
-                            {confirmModalHasInput && <div className="mt-2 px-7 py-3">
-                                <input type="text" name="confirm_modal_input"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder={confirmModalMessage} value={confirmModalInput}
-                                       onChange={(e) => setConfirmModalInput(e.target.value)}
-                                       onBlur={(e) => setConfirmModalInput(e.target.value)}/>
-                            </div>}
-                            <div className="flex justify-center gap-4 pt-3">
-                                <button onClick={() => {
-                                    setConfirmModalVisible(false);
-                                    if (confirmModalHasInput) {
-                                        confirmModalYes(confirmModalInput);
-                                    } else {
-                                        confirmModalYes(null);
-                                    }
-                                }}
-                                        className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 mx-1 text-orange-400">
-                                    Confirm
-                                </button>
-                                <button onClick={() => {
-                                    setConfirmModalVisible(false);
-                                    confirmModalNo(); }}
-                                        className="bg-red-700 hover:bg-red-500 font-bold py-1 px-2 mx-1 text-white">
-                                    Abort
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <ErrorDialog
+                isOpen={isModalVisible}
+                title={modalTitle}
+                message={modalMessage}
+                onClose={() => setIsModalVisible(false)}
+                type={modalTitle === 'Success' ? 'success' : 'error'}
+            />
+            {confirmModalHasInput ? (
+                <InputDialog
+                    isOpen={confirmModalVisible}
+                    title={confirmModalTitle}
+                    message={confirmModalMessage}
+                    defaultValue={confirmModalInput}
+                    onConfirm={(value) => {
+                        setConfirmModalVisible(false);
+                        confirmModalYes(value);
+                    }}
+                    onCancel={() => {
+                        setConfirmModalVisible(false);
+                        confirmModalNo();
+                    }}
+                    confirmText="Confirm"
+                    cancelText="Abort"
+                />
+            ) : (
+                <ConfirmDialog
+                    isOpen={confirmModalVisible}
+                    title={confirmModalTitle}
+                    message={confirmModalMessage}
+                    onConfirm={() => {
+                        setConfirmModalVisible(false);
+                        confirmModalYes(null);
+                    }}
+                    onCancel={() => {
+                        setConfirmModalVisible(false);
+                        confirmModalNo();
+                    }}
+                    confirmText="Confirm"
+                    cancelText="Abort"
+                />
             )}
         </>
     );

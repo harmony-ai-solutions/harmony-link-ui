@@ -7,30 +7,41 @@ const DockerStatusIndicator = ({ dockerStatus }) => {
     return date.toLocaleTimeString();
   };
 
-  const getDockerStatusColor = () => {
-    if (dockerStatus.available) return 'text-green-400';
-    return 'text-red-400';
+  const getDockerStatusStyle = () => {
+    if (dockerStatus.available) {
+      return {
+        text: 'Available',
+        color: 'var(--color-status-success)',
+        bgColor: 'var(--color-success-bg)',
+        borderColor: 'var(--color-success-bg)'
+      };
+    }
+    return {
+      text: dockerStatus.hasClient ? 'Daemon Unavailable' : 'Not Available',
+      color: 'var(--color-status-error)',
+      bgColor: 'var(--color-error-bg)',
+      borderColor: 'var(--color-error-bg)'
+    };
   };
 
-  const getDockerStatusText = () => {
-    if (dockerStatus.available) return 'Available';
-    if (dockerStatus.hasClient) return 'Daemon Unavailable';
-    return 'Not Available';
-  };
+  const statusStyle = getDockerStatusStyle();
 
   return (
-    <div className="p-3 bg-neutral-800 rounded-lg border border-neutral-700">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <span className="text-sm font-medium text-neutral-300">Docker Status:</span>
-          <span className={`text-sm font-semibold ${getDockerStatusColor()}`}>
-            {getDockerStatusText()}
-          </span>
-          <span className="text-xs text-neutral-500">
-            Last checked: {formatLastCheck(dockerStatus.lastCheck)}
-          </span>
-        </div>
-      </div>
+    <div className="card-compact flex items-center space-x-3">
+      <span className="text-sm font-medium text-text-secondary">Docker:</span>
+      <span 
+        className="status-badge"
+        style={{
+          color: statusStyle.color,
+          backgroundColor: statusStyle.bgColor,
+          borderColor: statusStyle.borderColor
+        }}
+      >
+        {statusStyle.text}
+      </span>
+      <span className="text-xs text-text-muted">
+        {formatLastCheck(dockerStatus.lastCheck)}
+      </span>
     </div>
   );
 };

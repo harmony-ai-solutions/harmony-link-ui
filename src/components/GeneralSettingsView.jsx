@@ -1,8 +1,15 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
-import {LogDebug, LogPrint} from "../utils/logger.js";
+import { LogDebug, LogPrint } from "../utils/logger.js";
+import { useTheme } from '../contexts/ThemeContext';
+import { listThemes } from '../services/management/themeService';
+import ConfirmDialog from './modals/ConfirmDialog.jsx';
+import ErrorDialog from './modals/ErrorDialog.jsx';
+import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 
-const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
+const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
+    const { currentTheme, switchTheme } = useTheme();
+    const [themes, setThemes] = useState([]);
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -11,8 +18,11 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
 
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
     const [confirmModalMessage, setConfirmModalMessage] = useState('');
-    const [confirmModalYes, setConfirmModalYes] = useState(()=>{});
-    const [confirmModalNo, setConfirmModalNo] = useState(()=>{});
+    const [confirmModalYes, setConfirmModalYes] = useState(() => { });
+    const [confirmModalNo, setConfirmModalNo] = useState(() => { });
+
+    // Device Management modal state
+    const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
 
     // Show Modal Functions
     const showModal = (message) => {
@@ -26,6 +36,8 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
 
     // Fields
     const [workingDir, setWorkingDir] = useState("");
+    const [dataDir, setDataDir] = useState("");
+    const [databaseFileName, setDatabaseFileName] = useState("");
     const [authEndpoint, setAuthEndpoint] = useState("");
     const [userApiKey, setUserApiKey] = useState("");
     const [useHarmonyCloud, setUseHarmonyCloud] = useState(false);
@@ -39,6 +51,22 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
         if (value.trim() === "") {
             showModal("Working Directory cannot be empty.");
             setWorkingDir(generalSettings.workingdir);
+            return false;
+        }
+        return true;
+    };
+    const validateDataDir = (value) => {
+        if (value.trim() === "") {
+            showModal("Data Directory cannot be empty.");
+            setDataDir(generalSettings.datadir);
+            return false;
+        }
+        return true;
+    };
+    const validateDatabaseFileName = (value) => {
+        if (value.trim() === "") {
+            showModal("Database File Name cannot be empty.");
+            setDatabaseFileName(generalSettings.databasefilename);
             return false;
         }
         return true;
@@ -79,6 +107,8 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
 
     const setInitialValues = () => {
         setWorkingDir(generalSettings.workingdir);
+        setDataDir(generalSettings.datadir);
+        setDatabaseFileName(generalSettings.databasefilename);
         setAuthEndpoint(generalSettings.authendpoint);
         setUserApiKey(generalSettings.userapikey);
         setUseHarmonyCloud(generalSettings.useharmonycloud)
@@ -97,6 +127,8 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
 
     const updateSettingValues = () => {
         generalSettings.workingdir = workingDir;
+        generalSettings.datadir = dataDir;
+        generalSettings.databasefilename = databaseFileName;
         generalSettings.authendpoint = authEndpoint;
         generalSettings.userapikey = userApiKey;
         generalSettings.useharmonycloud = useHarmonyCloud;
@@ -104,6 +136,7 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
         generalSettings.logfile = logFile;
         generalSettings.port = port;
         generalSettings.clientconnectionbuffer = clientConnectionBuffer;
+        generalSettings.currenttheme = currentTheme;
         // Configure Modal Dialog whether a backup should be made
         setConfirmModalYes(() => saveSettingsWithBackup);
         setConfirmModalNo(() => saveSettingsWithoutBackup);
@@ -113,213 +146,314 @@ const GeneralSettingsView = ({generalSettings, saveGeneralSettings}) => {
     useEffect(() => {
         LogDebug(JSON.stringify(generalSettings));
         setInitialValues();
+
+        // Fetch themes
+        listThemes().then(setThemes).catch(err => {
+            console.error("Failed to load themes:", err);
+        });
     }, []);
 
     return (
-        <>
-            <div className="p-4">
-                <div className="flex flex-wrap">
-                    <div className="flex flex-wrap -px-10 w-2/3">
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
-                                Working Directory
-                                <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Specify the directory used for storing entity specific working data and temporary
-                                    files.
-                                </SettingsTooltip>
-                            </label>
-                            <div className="w-2/3 px-3">
-                                <input type="text" name="workingDir"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder="Path to working directory" value={workingDir}
-                                       onChange={(e) => setWorkingDir(e.target.value)}
-                                       onBlur={(e) => validateWorkingDir(e.target.value)}/>
+        <div className="flex flex-col min-h-full bg-background-base">
+            {/* View Header */}
+            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4 flex items-start justify-between">
+                <div>
+                    <h1 className="text-2xl font-extrabold tracking-tight">
+                        <span className="text-gradient-primary">General</span> Settings
+                    </h1>
+                    <p className="text-xs text-text-muted mt-0.5 font-medium">
+                        Global application configuration and appearance settings
+                    </p>
+                </div>
+                <button
+                    onClick={() => setShowDeviceManagementModal(true)}
+                    className="btn-secondary flex items-center gap-2 flex-shrink-0">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Manage Devices
+                </button>
+            </div>
+
+            <div className="flex-1 p-6 space-y-8 max-w-7xl">
+                {/* Connection Settings Section */}
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">Application & Cloud</span>
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        {/* Left Column: Input Fields */}
+                        <div className="space-y-4">
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    Working Directory
+                                    <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        Specify the directory used for storing entity specific working data and temporary files.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" name="workingDir"
+                                        className="input-field w-full"
+                                        placeholder="Path to working directory" value={workingDir}
+                                        onChange={(e) => setWorkingDir(e.target.value)}
+                                        onBlur={(e) => validateWorkingDir(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    Data Directory
+                                    <SettingsTooltip tooltipIndex={101} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        The primary directory for persistent data, including themes and application state.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" name="dataDir"
+                                        className="input-field w-full"
+                                        placeholder="Path to data directory" value={dataDir}
+                                        onChange={(e) => setDataDir(e.target.value)}
+                                        onBlur={(e) => validateDataDir(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    Database File
+                                    <SettingsTooltip tooltipIndex={102} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        The filename of the SQLite database within the data directory.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" name="databaseFileName"
+                                        className="input-field w-full"
+                                        placeholder="e.g. data.sqlite" value={databaseFileName}
+                                        onChange={(e) => setDatabaseFileName(e.target.value)}
+                                        onBlur={(e) => validateDatabaseFileName(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    Auth Endpoint
+                                    <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        Web URL for Harmony.AI's authentication service. Required for using our cloud services.
+                                        <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">Changing this field is disabled if the cloud features are turned off.</span>
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" name="authEndpoint"
+                                        className="input-field w-full transition-all duration-200"
+                                        placeholder="Authentication endpoint URL" value={authEndpoint} disabled={!useHarmonyCloud}
+                                        onChange={(e) => setAuthEndpoint(e.target.value)}
+                                        onBlur={(e) => validateAuthEndpoint(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    User API Key
+                                    <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        Personal API Key of your user Account. Also stored in file 'harmony-user.key'.
+                                        <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">Changing this field is disabled if the cloud features are turned off.</span>
+                                        <br />
+                                        <span className="text-accent-primary font-bold mt-2 block">CAUTION:</span>
+                                        <span className="text-text-secondary italic text-[11px]">Changing this value to a wrong one and saving can result in losing access to online features provided by Harmony.AI.</span>
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="password" name="userApiKey"
+                                        className="input-field w-full transition-all duration-200"
+                                        placeholder="API Key" value={userApiKey} disabled={!useHarmonyCloud}
+                                        onChange={(e) => setUserApiKey(e.target.value)}
+                                        onBlur={(e) => validateUserApiKey(e.target.value)} />
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
-                                Auth Endpoint
-                                <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Web URL for Harmony.AI's authentication service. Required for using our cloud
-                                    services.
-                                    <br/>Changing this field is disabled if the cloud features are turned off.
-                                </SettingsTooltip>
+
+                        {/* Right Column: Checkboxes */}
+                        <div className="space-y-4">
+                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
+                                <input type="checkbox" name="useHarmonyCloud"
+                                    className="rounded text-accent-primary focus:ring-accent-primary"
+                                    checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)} />
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">Use Harmony Cloud</span>
+                                        <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
+                                            setTooltipVisible={setTooltipVisible}>
+                                            Whether Harmony Link should authenticate with the Harmony.AI cloud upon startup.
+                                            <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">Cloud Services like Speech Engine can only be used when authenticated. (Requires restart to apply)</span>
+                                        </SettingsTooltip>
+                                    </div>
+                                    <span className="text-xs text-text-muted">Authenticate with Harmony.AI cloud services</span>
+                                </div>
                             </label>
-                            <div className="w-2/3 px-3">
-                                <input type="text" name="authEndpoint"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder="Authentication endpoint URL" value={authEndpoint} disabled={!useHarmonyCloud}
-                                       onChange={(e) => setAuthEndpoint(e.target.value)}
-                                       onBlur={(e) => validateAuthEndpoint(e.target.value)}/>
-                            </div>
-                        </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
-                                User API Key
-                                <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Personal API Key of your user Account. Also stored in file 'harmony-user.key'.
-                                    <br/>Changing this field is disabled if the cloud features are turned off.
-                                    <br/>
-                                    <br/><span className="text-orange-400">CAUTION: Changing this value to a wrong one and saving can result in losing access to online features provided by Harmony.AI.</span>
-                                </SettingsTooltip>
+                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
+                                <input type="checkbox" name="confirmEvents"
+                                    className="rounded text-accent-primary focus:ring-accent-primary"
+                                    checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)} />
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">Confirm Events</span>
+                                        <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
+                                            setTooltipVisible={setTooltipVisible}>
+                                            Whether Harmony Link should send confirmation events for each event it receives.
+                                            <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">(Useful for Debugging or in stateful contexts)</span>
+                                        </SettingsTooltip>
+                                    </div>
+                                    <span className="text-xs text-text-muted">Send confirmation events for each received event</span>
+                                </div>
                             </label>
-                            <div className="w-2/3 px-3">
-                                <input type="password" name="userApiKey"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder="API Key" value={userApiKey} disabled={!useHarmonyCloud}
-                                       onChange={(e) => setUserApiKey(e.target.value)}
-                                       onBlur={(e) => validateUserApiKey(e.target.value)}/>
-                            </div>
+                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
+                                <input type="checkbox" name="logFile"
+                                    className="rounded text-accent-primary focus:ring-accent-primary"
+                                    checked={logFile} onChange={(e) => setLogFile(e.target.checked)} />
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">Create Log File</span>
+                                        <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
+                                            setTooltipVisible={setTooltipVisible}>
+                                            Whether Harmony Link should write a log file while running.
+                                            <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">(Changing requires restart)</span>
+                                        </SettingsTooltip>
+                                    </div>
+                                    <span className="text-xs text-text-muted">Write detailed log file to disk (requires restart)</span>
+                                </div>
+                            </label>
                         </div>
                     </div>
-                    <div className="flex flex-wrap -px-10 w-1/3">
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                                Use Harmony Cloud
-                                <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Whether Harmony Link should authenticate with the Harmony.AI cloud upon startup.
-                                    <br/>Cloud Services like Speech Engine can only be used when authenticated.
-                                    <br/>(save settings and restart Harmony Link to apply)
-                                </SettingsTooltip>
-                            </label>
-                            <div className="w-1/2 px-3">
-                                <input type="checkbox" name="useHarmonyCloud" className="rounded text-indigo-600 mt-1"
-                                       checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)}/>
+                </section>
 
-                            </div>
-                        </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                                Confirm Events
-                                <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Whether Harmony Link should send confirmation events for each event it receives.
-                                    <br/>(Useful for Debugging or in stateful contexts)
-                                </SettingsTooltip>
-                            </label>
-                            <div className="w-1/2 px-3">
-                                <input type="checkbox" name="confirmEvents" className="rounded text-indigo-600 mt-1"
-                                       checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)}/>
-
-                            </div>
-                        </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                                Create Log File
-                                <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    Whether Harmony Link should write a log file while running.
-                                    <br/>(Changing requires restart)
-                                </SettingsTooltip>
-                            </label>
-                            <div className="w-1/2 px-3">
-                                <input type="checkbox" name="logFile" className="rounded text-indigo-600 mt-1"
-                                       checked={logFile} onChange={(e) => setLogFile(e.target.checked)}/>
-                            </div>
-                        </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                                Client Connection Port
+                {/* Network & Infrastructure Section */}
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
+                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">Network & Infrastructure</span>
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        <div className="flex items-center w-full">
+                            <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                Connection Port
                                 <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
+                                    setTooltipVisible={setTooltipVisible}>
                                     Port on this machine which Harmony Plugins can to connect to.
                                 </SettingsTooltip>
                             </label>
-                            <div className="w-1/2 px-3">
+                            <div className="w-2/3 px-3">
                                 <input type="number" name="port"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder="Enter port number" value={port}
-                                       onChange={(e) => setPort(parseInt(e.target.value) || -1)}
-                                       onBlur={(e) => validatePort(parseInt(e.target.value) || -1)}/>
+                                    className="input-field w-full"
+                                    placeholder="Enter port number" value={port}
+                                    onChange={(e) => setPort(parseInt(e.target.value) || -1)}
+                                    onBlur={(e) => validatePort(parseInt(e.target.value) || -1)} />
                             </div>
                         </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <label className="block text-sm font-medium text-gray-300 w-1/2 px-3">
-                                Client WebSocket Buffer
+                        <div className="flex items-center w-full">
+                            <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                WebSocket Buffer (Bytes)
                                 <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
-                                                 setTooltipVisible={setTooltipVisible}>
-                                    If using WebSocket, this defines the message buffer size in Bytes. Connecting
-                                    WebSocket Clients need to match this value.
-                                    <br/>If you're running into issues with broken WebSocket Messages from- or to
-                                    Harmony Link, increasing this value might fix it.
+                                    setTooltipVisible={setTooltipVisible}>
+                                    If using WebSocket, this defines the message buffer size in Bytes. Connecting WebSocket Clients need to match this value.
+                                    <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">If you're running into issues with broken WebSocket Messages, increasing this value might fix it.</span>
                                 </SettingsTooltip>
                             </label>
-                            <div className="w-1/2 px-3">
+                            <div className="w-2/3 px-3">
                                 <input type="number" name="clientConnectionBuffer"
-                                       className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
-                                       placeholder="Buffer size" value={clientConnectionBuffer}
-                                       onChange={(e) => setClientConnectionBuffer(parseInt(e.target.value) || -1)}
-                                       onBlur={(e) => validateClientConnectionBuffer(parseInt(e.target.value) || -1)}/>
-
+                                    className="input-field w-full"
+                                    placeholder="Buffer size" value={clientConnectionBuffer}
+                                    onChange={(e) => setClientConnectionBuffer(parseInt(e.target.value) || -1)}
+                                    onBlur={(e) => validateClientConnectionBuffer(parseInt(e.target.value) || -1)} />
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div className="flex items-center justify-start pl-2 pb-2">
-                    <button
-                        onClick={updateSettingValues}
-                        className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 mx-1 text-orange-400">Save
-                    </button>
+                {/* Theme Selector Section */}
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
+                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">Appearance & Personalization</span>
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {themes.map((theme) => (
+                            <div
+                                key={theme.id}
+                                onClick={() => switchTheme(theme.id)}
+                                className={`card p-3 min-h-[4.5rem] cursor-pointer transition-all duration-200 group relative ${currentTheme === theme.id
+                                    ? 'border-accent-primary ring-1 ring-accent-primary bg-background-elevated shadow-lg shadow-accent-primary/10'
+                                    : 'hover:border-white/10 hover:bg-background-hover'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {/* Theme preview dot */}
+                                    <div
+                                        className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0"
+                                        style={{ background: theme.colors.background.base }}
+                                    >
+                                        <div
+                                            className="w-full h-1/2 mt-auto"
+                                            style={{ background: theme.colors.accent.primary }}
+                                        />
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <h4 className={`font-bold text-sm truncate ${currentTheme === theme.id ? 'text-accent-primary' : 'text-text-primary group-hover:text-accent-primary transition-colors'}`}>
+                                            {theme.name}
+                                        </h4>
+                                        <p className="text-[11px] font-medium text-text-muted truncate">{theme.description}</p>
+                                    </div>
+                                    {currentTheme === theme.id && (
+                                        <div className="text-accent-primary flex-shrink-0">
+                                            <svg className="w-5 h-5 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-6 border-t border-white/10">
                     <button
                         onClick={setInitialValues}
-                        className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 mx-1 text-orange-400">Reset
+                        className="btn-secondary">
+                        Reset Changes
+                    </button>
+                    <button
+                        onClick={updateSettingValues}
+                        className="btn-primary">
+                        Save Settings
                     </button>
                 </div>
             </div>
-            {isModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div
-                        className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                     stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{modalMessage}</p>
-                            </div>
-                            <div className="items-center px-4 py-3">
-                                <button onClick={() => setIsModalVisible(false)}
-                                        className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {confirmModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <h3 className="text-lg leading-6 font-medium text-orange-500">Confirmation Required</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{confirmModalMessage}</p>
-                            </div>
-                            <div className="flex justify-center gap-4 pt-3">
-                                <button onClick={() => { setConfirmModalVisible(false); confirmModalYes();}}
-                                        className="bg-neutral-700 hover:bg-neutral-500 font-bold py-1 px-2 mx-1 text-orange-400">
-                                    Yes
-                                </button>
-                                <button onClick={() => { setConfirmModalVisible(false); confirmModalNo(); }}
-                                        className="bg-red-700 hover:bg-red-500 font-bold py-1 px-2 mx-1 text-white">
-                                    No
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
+
+            <ErrorDialog
+                isOpen={isModalVisible}
+                title="Invalid Input"
+                message={modalMessage}
+                onClose={() => setIsModalVisible(false)}
+            />
+
+            <ConfirmDialog
+                isOpen={confirmModalVisible}
+                title="Confirmation Required"
+                message={confirmModalMessage}
+                onConfirm={() => {
+                    setConfirmModalVisible(false);
+                    confirmModalYes();
+                }}
+                onCancel={() => {
+                    setConfirmModalVisible(false);
+                    confirmModalNo();
+                }}
+            />
+
+            {/* Device Management Modal */}
+            <DeviceManagementModal
+                show={showDeviceManagementModal}
+                onClose={() => setShowDeviceManagementModal(false)}
+            />
+        </div>
     );
 }
 

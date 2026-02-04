@@ -150,10 +150,13 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
         if (pathParts.length > 1) {
             // Multi-level path like 'transcription.provider'
             const basePath = pathParts[0]; // 'transcription'
-            if (!newSettings[basePath]) newSettings[basePath] = {};
-            newSettings[basePath][providerId] = { 
-                ...(newSettings[basePath][providerId] || {}),
-                ...updatedProviderSettings 
+            // Deep copy the nested object to avoid mutating frozen store objects
+            newSettings[basePath] = {
+                ...(newSettings[basePath] || {}),
+                [providerId]: { 
+                    ...(newSettings[basePath]?.[providerId] || {}),
+                    ...updatedProviderSettings 
+                }
             };
         } else {
             // Single level path like 'provider'
@@ -222,9 +225,9 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
         }
 
         return (
-            <div key={pDef.id} className="mb-6 pb-6 border-b border-neutral-700 last:border-0 last:pb-0">
+            <div key={pDef.id} className="mb-6 pb-6 border-b border-border-default last:border-0 last:pb-0">
                 <div className="flex items-center mb-4">
-                    <label className="w-1/4 text-sm font-medium text-gray-300">
+                    <label className="w-1/4 text-sm font-medium text-text-secondary">
                         {pDef.name}
                     </label>
                     <div className="w-3/4">
@@ -238,7 +241,7 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
                 </div>
 
                 {selectedProvider !== 'disabled' && SettingsComponent && (
-                    <div className="bg-neutral-900 p-4 rounded border border-neutral-700">
+                    <div className="bg-elevated p-4 rounded border border-border-default">
                         <SettingsComponent
                             initialSettings={providerSettings}
                             saveSettingsFunc={(updated) => handleProviderSettingsChange(updated, selectedProvider, pDef)}
@@ -250,25 +253,25 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-            <div className="bg-neutral-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-neutral-700">
-                <div className="p-6 border-b border-neutral-700 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="modal-content w-full max-w-4xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-border-default flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-accent-primary">
                         {config ? 'Edit' : 'Create'} {moduleType.toUpperCase()} Configuration
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+                    <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl transition-colors">&times;</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1 space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-text-secondary mb-2">
                             Configuration Name
                         </label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-neutral-900 border border-neutral-600 text-white p-2 rounded focus:border-orange-500 focus:outline-none"
+                            className="input-field w-full p-2 rounded"
                             placeholder="e.g. My Custom Backend"
                         />
                     </div>
@@ -276,10 +279,10 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
                     <div className="space-y-4">
                         {moduleDef.generalSettingsComponent && (
                             <div className="mb-6">
-                                <h3 className="text-lg font-medium text-orange-400 border-b border-neutral-700 pb-2 mb-4">
+                                <h3 className="text-lg font-medium text-accent-primary border-b border-border-default pb-2 mb-4">
                                     General Settings
                                 </h3>
-                                <div className="bg-neutral-900 p-4 rounded border border-neutral-700">
+                                <div className="bg-elevated p-4 rounded border border-border-default">
                                     {React.createElement(COMPONENT_MAP[moduleDef.generalSettingsComponent], {
                                         initialSettings: moduleSettings,
                                         saveSettingsFunc: handleGeneralSettingsChange
@@ -288,24 +291,24 @@ export default function ModuleConfigEditor({ moduleType, config, onClose }) {
                             </div>
                         )}
 
-                        <h3 className="text-lg font-medium text-orange-400 border-b border-neutral-700 pb-2">
+                        <h3 className="text-lg font-medium text-accent-primary border-b border-border-default pb-2">
                             Provider Settings
                         </h3>
                         {moduleDef.providers.map(renderProviderSection)}
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-neutral-700 flex justify-end space-x-4">
+                <div className="p-6 border-t border-border-default flex justify-end space-x-4">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition-colors"
+                        className="btn-secondary px-6 py-2 rounded"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isLoading}
-                        className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors disabled:opacity-50"
+                        className="btn-primary px-6 py-2 rounded disabled:opacity-50"
                     >
                         {isLoading ? 'Saving...' : 'Save Configuration'}
                     </button>

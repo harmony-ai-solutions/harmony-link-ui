@@ -1,17 +1,36 @@
 @reference "../../style.css";
 
 .rhap_container {
-    @apply bg-neutral-700 text-orange-400 p-2;
+    background-color: var(--color-background-elevated);
+    color: var(--color-accent-primary);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
 }
 
 .rhap_main-controls-button {
-    @apply text-orange-400;
+    color: var(--color-accent-primary);
+}
+
+.rhap_main-controls-button:hover {
+    color: var(--color-accent-primary-hover);
 }
 
 .rhap_progress-bar {
-    @apply bg-neutral-300;
+    background-color: var(--color-background-surface);
+}
+
+.rhap_progress-filled {
+    background-color: var(--color-accent-primary);
 }
 
 .rhap_time {
-    @apply text-neutral-300;
+    color: var(--color-text-secondary);
+}
+
+.rhap_volume-button {
+    color: var(--color-accent-primary);
+}
+
+.rhap_volume-bar {
+    background-color: var(--color-background-surface);
 }

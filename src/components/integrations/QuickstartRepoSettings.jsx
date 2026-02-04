@@ -54,13 +54,13 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
 
   return (
     <>
-      <div className="bg-neutral-800 p-4 rounded shadow-md mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-orange-400">Quickstart Repository Settings</h3>
+      <div className="card-compact">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-text-primary">Quickstart Repository Settings</h3>
           <button
             onClick={handleOpenGitHub}
             disabled={githubLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm disabled:opacity-50"
+            className="btn-primary text-sm py-1.5 px-3 disabled:opacity-50"
             title="Open GitHub repository in browser"
           >
             {githubLoading ? 'Opening...' : '📂 GitHub Repo'}
@@ -74,20 +74,20 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
               value={path}
               onChange={(e) => setPath(e.target.value)}
               placeholder="Enter path to quickstart repository (e.g., D:/projects/quickstart)"
-              className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 px-3 py-2 rounded"
+              className="input-field w-full"
             />
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && <p className="text-status-error text-sm">{error}</p>}
             <div className="flex space-x-2">
               <button 
                 onClick={handleSave} 
-                className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded"
+                className="btn-primary"
                 disabled={loading || !path}
               >
                 {loading ? 'Saving...' : 'Save Path'}
               </button>
               <button 
                 onClick={handleBrowse} 
-                className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded"
+                className="btn-secondary"
                 disabled={loading}
               >
                 Browse
@@ -95,13 +95,20 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <p className="text-gray-300 text-sm">
-              Current Path: <span className="font-mono text-green-400">{path || 'Not configured'}</span>
-            </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-medium text-text-secondary flex-shrink-0">Current Path:</span>
+              <input
+                type="text"
+                value={path || 'Not configured'}
+                disabled
+                className="input-field flex-1 font-mono text-sm opacity-90 cursor-default"
+                style={{ color: 'var(--color-status-success)' }}
+              />
+            </div>
             <button 
               onClick={() => setIsEditing(true)} 
-              className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded"
+              className="btn-secondary flex-shrink-0"
             >
               Edit Path
             </button>

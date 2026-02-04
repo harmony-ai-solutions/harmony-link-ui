@@ -4,9 +4,16 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import ErrorDialog from "../modals/ErrorDialog.jsx";
 
 
 const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.BACKEND][PROVIDERS.KAJIWOTO];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,15 +27,15 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
-    const [username, setUsername] = useState(initialSettings.username);
-    const [password, setPassword] = useState(initialSettings.password);
-    const [kajiRoomURL, setKajiRoomURL] = useState(initialSettings.kajiroomurl);
+    const [username, setUsername] = useState(mergedSettings.username);
+    const [password, setPassword] = useState(mergedSettings.password);
+    const [kajiRoomURL, setKajiRoomURL] = useState(mergedSettings.kajiroomurl);
 
 
     // Validation Functions
@@ -96,14 +103,20 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setUsername(currentMergedSettings.username);
+        setPassword(currentMergedSettings.password);
+        setKajiRoomURL(currentMergedSettings.kajiroomurl);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return (
         <>
@@ -113,8 +126,8 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     validationState={validationState}
                 />
                 <div className="flex flex-wrap items-center -px-10 w-full">
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <div className="flex items-center mb-4 w-1/2">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             Username
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -123,14 +136,14 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="text" name="username"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field w-full p-2 rounded"
                                    placeholder="Kajiwoto Username" value={username}
                                    onChange={(e) => setUsername(e.target.value)}
                                    onBlur={(e) => validateUserNameAndUpdate(e.target.value)}/>
                         </div>
                     </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <div className="flex items-center mb-4 w-1/2">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             Password
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -139,14 +152,14 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="password"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field w-full p-2 rounded"
                                    placeholder="Kajiwoto Password" value={password}
                                    onChange={(e) => setPassword(e.target.value)}
                                    onBlur={(e) => validatePasswordAndUpdate(e.target.value)}/>
                         </div>
                     </div>
-                    <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                    <div className="flex items-center mb-4 w-full">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             Chatroom URL
                             <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -157,7 +170,7 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="text" name="kajiroomurl"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field w-full p-2 rounded"
                                    placeholder="Kajiwoto Chatroom URL" value={kajiRoomURL}
                                    onChange={(e) => setKajiRoomURL(e.target.value)}
                                    onBlur={(e) => validateKajiRoomAndUpdate(e.target.value)}/>
@@ -165,32 +178,13 @@ const BackendKajiwotoSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </div>
                 </div>
             </div>
-            {isModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div
-                        className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                     stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{modalMessage}</p>
-                            </div>
-                            <div className="items-center px-4 py-3">
-                                <button onClick={() => setIsModalVisible(false)}
-                                        className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ErrorDialog
+                isOpen={isModalVisible}
+                title="Invalid Input"
+                message={modalMessage}
+                onClose={() => setIsModalVisible(false)}
+                type="error"
+            />
         </>
     );
 }

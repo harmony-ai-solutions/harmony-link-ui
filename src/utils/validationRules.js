@@ -224,10 +224,18 @@ export const moduleValidationConfig = {
         kindroid: {
             apikey: [validationRules.required, validationRules.nonEmpty],
             kindroidid: [validationRules.required, validationRules.nonEmpty]
-        }
+        },
+        vocalizenonverbal: []
     },
     
-    countenance: {
+    cognition: {
+        openai: {
+            openaiapikey: [validationRules.required, validationRules.nonEmpty],
+            model: [validationRules.required, validationRules.nonEmpty],
+            maxtokens: [validationRules.positiveNumber],
+            temperature: [validationRules.range(-2, 2)],
+            topp: [validationRules.range(0, 1)]
+        },
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
             apikey: [validationRules.required, validationRules.nonEmpty],
@@ -235,13 +243,36 @@ export const moduleValidationConfig = {
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
             topp: [validationRules.range(0, 1)]
-        }
+        },
+        openrouter: {
+            openrouterapikey: [validationRules.required, validationRules.nonEmpty],
+            model: [validationRules.required, validationRules.nonEmpty],
+            maxtokens: [validationRules.positiveNumber],
+            temperature: [validationRules.range(-2, 2)],
+            topp: [validationRules.range(0, 1)]
+        },
+        maxcognitionevents: [validationRules.positiveNumber],
+        generateexpressions: []
     },
     
     movement: {
+        openai: {
+            openaiapikey: [validationRules.required, validationRules.nonEmpty],
+            model: [validationRules.required, validationRules.nonEmpty],
+            maxtokens: [validationRules.positiveNumber],
+            temperature: [validationRules.range(-2, 2)],
+            topp: [validationRules.range(0, 1)]
+        },
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
             apikey: [validationRules.required, validationRules.nonEmpty],
+            model: [validationRules.required, validationRules.nonEmpty],
+            maxtokens: [validationRules.positiveNumber],
+            temperature: [validationRules.range(-2, 2)],
+            topp: [validationRules.range(0, 1)]
+        },
+        openrouter: {
+            openrouterapikey: [validationRules.required, validationRules.nonEmpty],
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
@@ -426,6 +457,7 @@ export const fieldDisplayNames = {
     password: 'Password',
     kindroidid: 'Kindroid ID',
     voice: 'Voice',
+    maxcognitionevents: 'Max Cognition Events',
     startupsynctimeout: 'Startup Sync Timeout',
     executionthreshold: 'Execution Threshold',
     embeddingconcurrency: 'Embedding Concurrency'

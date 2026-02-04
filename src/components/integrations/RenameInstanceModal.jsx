@@ -87,8 +87,8 @@ const RenameInstanceModal = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-neutral-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="modal-content w-full max-w-md">
                 <h3 className="text-2xl font-bold mb-4 text-orange-400">
                     Rename Instance: {instanceName}
                 </h3>

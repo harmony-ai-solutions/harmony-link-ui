@@ -139,12 +139,12 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
     };
 
     return (
-        <div className="instance-card bg-neutral-700 p-3 rounded-md shadow-sm border border-neutral-600">
+        <div className="instance-card card p-3">
             <div className="instance-header flex justify-between items-center mb-2">
-                <h4 className="text-md font-semibold text-orange-300">{instance.name}</h4>
+                <h4 className="text-md font-semibold text-accent-primary">{instance.name}</h4>
                 <div className="instance-badges flex gap-1">
                     {instance.deviceType && (
-                        <span className={`device-badge text-xs px-2 py-0.5 rounded-full bg-neutral-600 text-neutral-200`}>
+                        <span className={`device-badge text-xs px-2 py-0.5 rounded-full bg-background-elevated text-text-secondary border border-border-default`}>
                             {getDeviceIcon(instance.deviceType)} {instance.deviceType.toUpperCase()}
                         </span>
                     )}
@@ -154,20 +154,20 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                 </div>
             </div>
             
-            {instance.error && <p className="text-red-400 text-xs mb-3">Error: {instance.error}</p>}
+            {instance.error && <p className="text-status-error text-xs mb-3">Error: {instance.error}</p>}
             
             {/* Show operation status if there's an active operation */}
             {currentOperation && currentOperation.inProgress && (
-                <div className="operation-status bg-blue-900 border border-blue-600 rounded p-3 mb-3">
+                <div className="operation-status bg-status-info-bg border border-status-info rounded p-3 mb-3">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
-                            <span className="text-blue-300 text-sm font-medium">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary"></div>
+                            <span className="text-text-primary text-sm font-medium">
                                 {currentOperation.message || `${currentOperation.type}...`}
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-blue-400 text-xs">
+                            <span className="text-text-secondary text-xs">
                                 {Math.floor((Date.now() - new Date(currentOperation.startTime).getTime()) / 1000)}s
                             </span>
                             <button
@@ -179,7 +179,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                                         console.error('Failed to cancel operation:', error);
                                     }
                                 }}
-                                className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+                                className="bg-status-error hover:bg-status-error/90 text-white text-xs px-2 py-1 rounded transition-colors"
                                 title="Cancel Operation"
                             >
                                 Cancel
@@ -190,13 +190,13 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                     {/* Progress bar */}
                     {currentOperation.progress && (
                         <div className="mb-2">
-                            <div className="flex justify-between text-xs text-blue-300 mb-1">
+                            <div className="flex justify-between text-xs text-text-secondary mb-1">
                                 <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
                                 <span>{currentOperation.progress.overallPercent}%</span>
                             </div>
-                            <div className="w-full bg-blue-800 rounded-full h-2">
+                            <div className="w-full bg-background-surface rounded-full h-2">
                                 <div 
-                                    className="bg-blue-400 h-2 rounded-full transition-all duration-300" 
+                                    className="bg-accent-primary h-2 rounded-full transition-all duration-300" 
                                     style={{ width: `${currentOperation.progress.overallPercent}%` }}
                                 ></div>
                             </div>
@@ -205,7 +205,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                     
                     {/* Phase information */}
                     {currentOperation.phase && (
-                        <div className="text-xs text-blue-200 mb-2">
+                        <div className="text-xs text-text-secondary mb-2">
                             <span className="font-medium">Phase:</span> {currentOperation.phase.replace(/_/g, ' ')}
                         </div>
                     )}

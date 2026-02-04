@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.OLLAMA];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
 
     // Fields
-    const [baseURL, setBaseURL] = useState(initialSettings.baseurl);
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [baseURL, setBaseURL] = useState(mergedSettings.baseurl);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateBaseURLAndUpdate = (value) => {
@@ -36,6 +42,8 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Base URL must be a valid URL.");
             setBaseURL(moduleSettings.baseurl);
             return false;
+        } else if (value === moduleSettings.baseurl) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, baseurl: value };
         setModuleSettings(updatedSettings);
@@ -48,6 +56,8 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true;
         }
         const updatedSettings = { ...moduleSettings, embeddingmodel: value };
         setModuleSettings(updatedSettings);
@@ -56,8 +66,13 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setBaseURL(currentMergedSettings.baseurl);
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const handleValidateConfig = async () => {
@@ -96,7 +111,7 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
                 />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             Base URL
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -107,14 +122,14 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="text" name="baseurl"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="http://localhost:11434" value={baseURL}
                                    onChange={(e) => setBaseURL(e.target.value)}
                                    onBlur={(e) => validateBaseURLAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             Embedding Model
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -128,7 +143,7 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="text" name="embeddingmodel"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="nomic-embed-text" value={embeddingModel}
                                    onChange={(e) => setEmbeddingModel(e.target.value)}
                                    onBlur={(e) => validateEmbeddingModelAndUpdate(e.target.value)}/>
@@ -148,7 +163,7 @@ const RAGOllamaSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
+                            <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
                             <div className="mt-2 px-7 py-3">
                                 <p className="text-sm text-gray-200">{modalMessage}</p>
                             </div>

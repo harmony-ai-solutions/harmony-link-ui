@@ -7,6 +7,15 @@ import logo_blank from '../assets/images/blank_50px.png';
 import logo_elevenlabs from '../assets/images/elevenlabs_50px.png';
 import logo_openrouter from '../assets/images/or_50px.png';
 
+export const MODULE_TYPE_OPTIONS = [
+    { id: 'backend', name: 'Backend / LLM', emoji: '🧠' },
+    { id: 'tts', name: 'Text-to-Speech', emoji: '🗣️' },
+    { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️' },
+    { id: 'rag', name: 'RAG', emoji: '📚' },
+    { id: 'movement', name: 'Movement', emoji: '💃' },
+    { id: 'cognition', name: 'Cognition', emoji: '🧩' }
+];
+
 export const MODULE_CONFIGS = {
     backend: {
         generalSettingsComponent: null,
@@ -35,12 +44,12 @@ export const MODULE_CONFIGS = {
             }
         ]
     },
-    countenance: {
-        generalSettingsComponent: null,
+    cognition: {
+        generalSettingsComponent: 'CognitionGeneralSettingsView',
         providers: [
             {
-                id: 'countenance',
-                name: 'Countenance Provider',
+                id: 'cognition',
+                name: 'Cognition Provider',
                 settingsKey: 'provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
@@ -49,9 +58,9 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'CountenanceOpenAICompatibleSettingsView',
-                    openai: 'CountenanceOpenAISettingsView',
-                    openrouter: 'CountenanceOpenRouterSettingsView'
+                    openaicompatible: 'CognitionOpenAICompatibleSettingsView',
+                    openai: 'CognitionOpenAISettingsView',
+                    openrouter: 'CognitionOpenRouterSettingsView'
                 }
             }
         ]

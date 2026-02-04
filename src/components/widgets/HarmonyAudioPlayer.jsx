@@ -8,18 +8,14 @@ const HarmonyAudioPlayer = ({ src }) => {
         <div className="w-full">
             <AudioPlayer
                 src={src}
-                className="bg-neutral-700 text-orange-400 rounded-lg p-2"
-                // Custom styling via CSS or Tailwind
+                // Styling is handled in HarmonyAudioPlayer.css with theme-aware classes
                 style={{
-                    // Example: Override some default styles
                     borderRadius: '0',
                 }}
-                // Disable default styles if needed
                 layout="horizontal"
                 showJumpControls={false}
                 customAdditionalControls={[]}
                 customVolumeControls={[]}
-                // Add more customization as needed
             />
         </div>
     );

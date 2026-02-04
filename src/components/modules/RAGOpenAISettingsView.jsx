@@ -4,9 +4,15 @@ import {LogDebug} from "../../utils/logger.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 
 
 const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.RAG][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,14 +26,14 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
 
     // Fields
-    const [apiKey, setApiKey] = useState(initialSettings.openaiapikey);
-    const [embeddingModel, setEmbeddingModel] = useState(initialSettings.embeddingmodel);
+    const [apiKey, setApiKey] = useState(mergedSettings.openaiapikey);
+    const [embeddingModel, setEmbeddingModel] = useState(mergedSettings.embeddingmodel);
 
     // Validation Functions
     const validateApiKeyAndUpdate = (value) => {
@@ -35,9 +41,13 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("OpenAI API Key cannot be empty.");
             setApiKey(moduleSettings.openaiapikey);
             return false;
+        } else if (value === moduleSettings.openaiapikey) {
+            return true; // Skip if no change
         }
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -46,15 +56,24 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             showModal("Embedding Model cannot be empty.");
             setEmbeddingModel(moduleSettings.embeddingmodel);
             return false;
+        } else if (value === moduleSettings.embeddingmodel) {
+            return true; // Skip if no change
         }
-        moduleSettings.embeddingmodel = value;
-        saveSettingsFunc(moduleSettings);
+        // Update if validation successful
+        const updatedSettings = { ...moduleSettings, embeddingmodel: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setApiKey(currentMergedSettings.openaiapikey);
+        setEmbeddingModel(currentMergedSettings.embeddingmodel);
     };
 
     const handleValidateConfig = async () => {
@@ -96,7 +115,7 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                 />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             OpenAI API Key
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -107,14 +126,14 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="password" name="openaiapikey"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="OpenAI API Key" value={apiKey}
                                    onChange={(e) => setApiKey(e.target.value)}
                                    onBlur={(e) => validateApiKeyAndUpdate(e.target.value)}/>
                         </div>
                     </div>
                     <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                             Embedding Model
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -127,7 +146,7 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-2/3 px-3">
                             <input type="text" name="embeddingmodel"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="text-embedding-3-small" value={embeddingModel}
                                    onChange={(e) => setEmbeddingModel(e.target.value)}
                                    onBlur={(e) => validateEmbeddingModelAndUpdate(e.target.value)}/>
@@ -147,7 +166,7 @@ const RAGOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                                           d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
+                            <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
                             <div className="mt-2 px-7 py-3">
                                 <p className="text-sm text-gray-200">{modalMessage}</p>
                             </div>

@@ -2,55 +2,59 @@ import React from "react";
 
 const ConfigVerificationSection = ({ onValidate, validationState, className = "" }) => {
     return (
-        <div className={`flex items-center mb-3 mt-2 w-full ${className}`}>
-            <div className="w-1/4 px-3">
-                <button
-                    onClick={onValidate}
-                    disabled={validationState.status === 'loading'}
-                    className="w-full p-1 text-sm font-medium text-neutral-200 hover:text-white border border-neutral-500 bg-gradient-to-br from-neutral-700 to-blue-700 hover:bg-gradient-to-br hover:from-neutral-700 hover:to-blue-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {validationState.status === 'loading' ? 'Validating...' : 'Verify Configuration'}
-                </button>
-            </div>
-            <div className="w-3/4 px-3">
-                {validationState.status !== 'idle' && (
-                    <div className={`p-1 rounded-md ${
-                        validationState.status === 'success'
-                            ? 'bg-green-900 text-green-200 border border-green-700'
-                            : validationState.status === 'error'
-                                ? 'bg-red-900 text-red-200 border border-red-700'
-                                : 'bg-blue-900 text-blue-200 border border-blue-700'
+        <div className={`flex flex-col mb-6 w-full gap-2 ${className}`}>
+            <div className={`flex items-center justify-between ${
+                validationState.status === 'success' ? 'card-compact-success' :
+                validationState.status === 'error' ? 'card-compact-error' :
+                'card-compact-info'
+            }`}>
+                <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-colors duration-300 ${
+                        validationState.status === 'success' ? 'bg-success/20 border-success/40 text-success' :
+                        validationState.status === 'error' ? 'bg-error/20 border-error/40 text-error' :
+                        'bg-info/20 border-info/40 text-info'
                     }`}>
-                        <div className="flex items-center">
-                            {validationState.status === 'loading' && (
-                                <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                            strokeWidth="4" fill="none"/>
-                                    <path className="opacity-75" fill="currentColor"
-                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                                </svg>
-                            )}
-                            {validationState.status === 'success' && (
-                                <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd"
-                                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                          clipRule="evenodd"/>
-                                </svg>
-                            )}
-                            {validationState.status === 'error' && (
-                                <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd"
-                                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                          clipRule="evenodd"/>
-                                </svg>
-                            )}
-                            <span className="text-sm">{validationState.message}</span>
-                        </div>
+                        {validationState.status === 'success' ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        ) : validationState.status === 'error' ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        )}
                     </div>
-                )}
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-text-primary">Configuration Verification</h4>
+                        <p className="text-[10px] text-text-muted font-bold opacity-80 italic">Connection Test & Validation</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                    {validationState.status !== 'idle' && (
+                        <span className={`text-xs font-bold animate-in fade-in slide-in-from-right-2 duration-300 ${
+                            validationState.status === 'success' ? 'text-success' :
+                            validationState.status === 'error' ? 'text-error' :
+                            'text-info'
+                        }`}>
+                            {validationState.message}
+                        </span>
+                    )}
+                    <button
+                        onClick={onValidate}
+                        disabled={validationState.status === 'loading'}
+                        className="btn-primary py-1.5 px-4 rounded-lg font-bold text-[10px] tracking-widest uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md hover:shadow-accent-primary/20 active:scale-95"
+                    >
+                        {validationState.status === 'loading' ? 'Verifying...' : 'Verify Now'}
+                    </button>
+                </div>
             </div>
         </div>
     );
-}
+};
 
 export default ConfigVerificationSection;

@@ -1,13 +1,13 @@
 import React from 'react';
 
-// Countenance Configuration Display Component
-function CountenanceConfigurationDisplay({ config, loading, error }) {
+// Cognition Configuration Display Component
+function CognitionConfigurationDisplay({ config, loading, error }) {
     if (loading) {
         return (
             <div className="bg-neutral-700 rounded p-2">
                 <div className="flex items-center text-yellow-400 text-sm">
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400 mr-2"></div>
-                    Loading countenance configuration...
+                    Loading cognition configuration...
                 </div>
             </div>
         );
@@ -26,7 +26,7 @@ function CountenanceConfigurationDisplay({ config, loading, error }) {
     if (!config) {
         return (
             <div className="bg-neutral-700 rounded p-2">
-                <div className="text-gray-400 text-sm">No countenance configuration available</div>
+                <div className="text-gray-400 text-sm">No cognition configuration available</div>
             </div>
         );
     }
@@ -127,15 +127,6 @@ function CountenanceConfigurationDisplay({ config, loading, error }) {
                             </div>
                         )}
                         
-                        {providerConfig?.systemprompts && providerConfig.systemprompts.length > 0 && (
-                            <div>
-                                <span className="text-gray-400">System Prompts:</span>
-                                <div className="ml-2 text-gray-300 text-xs bg-neutral-600 p-2 rounded mt-1 max-h-20 overflow-y-auto custom-scrollbar">
-                                    {providerConfig.systemprompts.join('\n')}
-                                </div>
-                            </div>
-                        )}
-                        
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
                             <div>
                                 <span className="text-gray-400">Stop Tokens:</span>
@@ -159,4 +150,4 @@ function CountenanceConfigurationDisplay({ config, loading, error }) {
     );
 }
 
-export default CountenanceConfigurationDisplay;
+export default CognitionConfigurationDisplay;

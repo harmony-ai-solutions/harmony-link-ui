@@ -31,7 +31,7 @@ This frontend can operate in two distinct modes:
 
 ## Features
 
-- **AI Module Configuration**: Configure Backend, TTS, STT, Movement, and Countenance modules
+- **AI Module Configuration**: Configure Backend, TTS, STT, Movement, and Cognition modules
 - **Integration Management**: Discover, configure, and control external AI services via Docker
 - **Real-time Monitoring**: Live system status and event monitoring
 - **Development Tools**: Built-in simulator and testing interfaces

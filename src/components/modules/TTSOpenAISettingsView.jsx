@@ -4,9 +4,16 @@ import {LogDebug} from "../../utils/logger.js";
 import {validateProviderConfig} from "../../services/management/configService.js";
 import ConfigVerificationSection from "../widgets/ConfigVerificationSection.jsx";
 import {MODULES, PROVIDERS} from "../../constants/modules.js";
+import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
+import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
+import ErrorDialog from "../modals/ErrorDialog.jsx";
 
 
 const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
+    // Merge initial settings with defaults
+    const defaults = MODULE_DEFAULTS[MODULES.TTS][PROVIDERS.OPENAI];
+    const mergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
+
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -20,7 +27,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Base Settings reference
-    const [moduleSettings, setModuleSettings] = useState(initialSettings);
+    const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
     // Validation State
     const [validationState, setValidationState] = useState({status: 'idle', message: ''});
@@ -31,11 +38,11 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     ];
 
     // Fields
-    const [openAIAPIKey, setOpenAIAPIKey] = useState(initialSettings.openaiapikey);
-    const [model, setModel] = useState(initialSettings.model);
-    const [voice, setVoice] = useState(initialSettings.voice);
-    const [speed, setSpeed] = useState(initialSettings.speed);
-    const [format, setFormat] = useState(initialSettings.format);
+    const [openAIAPIKey, setOpenAIAPIKey] = useState(mergedSettings.openaiapikey);
+    const [model, setModel] = useState(mergedSettings.model);
+    const [voice, setVoice] = useState(mergedSettings.voice);
+    const [speed, setSpeed] = useState(mergedSettings.speed);
+    const [format, setFormat] = useState(mergedSettings.format);
 
     // Validation Functions
     const validateApikeyAndUpdate = (value) => {
@@ -45,14 +52,16 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.openaiapikey = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, openaiapikey: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const setModelAndUpdate = (value) => {
         setModel(value);
-        moduleSettings.model = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, model: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     }
     const validateVoiceIdAndUpdate = (value) => {
@@ -62,20 +71,22 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.voice = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, voice: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateSpeedAndUpdate = (value) => {
         const numValue = parseFloat(value);
         if (isNaN(numValue) || (numValue < 0.25 || numValue > 4.00)) {
-            showModal("Stability must be a positive number between 0.25 and 4.00, or set to 0 to disable.");
+            showModal("Speed must be a positive number between 0.25 and 4.00.");
             setSpeed(moduleSettings.speed);
             return false;
         }
         // Update if validation successful
-        moduleSettings.speed = numValue;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, speed: numValue };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
     const validateFormatAndUpdate = (value) => {
@@ -85,8 +96,9 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
             return false;
         }
         // Update if validation successful
-        moduleSettings.format = value;
-        saveSettingsFunc(moduleSettings);
+        const updatedSettings = { ...moduleSettings, format: value };
+        setModuleSettings(updatedSettings);
+        saveSettingsFunc(updatedSettings);
         return true;
     };
 
@@ -116,14 +128,22 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const setInitialValues = () => {
+        const currentMergedSettings = mergeConfigWithDefaults(initialSettings, defaults);
         // Reset Entity map
-        setModuleSettings(initialSettings);
+        setModuleSettings(currentMergedSettings);
+
+        // Update individual fields
+        setOpenAIAPIKey(currentMergedSettings.openaiapikey);
+        setModel(currentMergedSettings.model);
+        setVoice(currentMergedSettings.voice);
+        setSpeed(currentMergedSettings.speed);
+        setFormat(currentMergedSettings.format);
     };
 
     useEffect(() => {
         LogDebug(JSON.stringify(initialSettings));
         setInitialValues();
-    }, []);
+    }, [initialSettings]);
 
     return (
         <>
@@ -134,7 +154,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                 />
                 <div className="flex flex-wrap items-center -px-10 w-full">
                     <div className="flex items-center mb-6 w-full">
-                        <label className="block text-sm font-medium text-gray-300 w-1/6 px-3">
+                        <label className="block text-sm font-medium text-text-secondary w-1/6 px-3">
                             API Key
                             <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
                                              setTooltipVisible={setTooltipVisible}>
@@ -143,7 +163,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                         </label>
                         <div className="w-5/6 px-3">
                             <input type="password" name="apikey"
-                                   className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                                   className="input-field mt-1 block w-full"
                                    placeholder="OpenAI API Key" value={openAIAPIKey}
                                    onChange={(e) => setOpenAIAPIKey(e.target.value)}
                                    onBlur={(e) => validateApikeyAndUpdate(e.target.value)}/>
@@ -151,7 +171,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </div>
                 </div>
                 <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                         Model
                         <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                          setTooltipVisible={setTooltipVisible}>
@@ -162,7 +182,7 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                         <select
                             value={model}
                             onChange={(e) => setModelAndUpdate(e.target.value)}
-                            className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100">
+                            className="input-field mt-1 block w-full">
                             {modelOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
                                     {option.name}
@@ -172,11 +192,11 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </div>
                 </div>
                 <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                         Voice
                         <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                          setTooltipVisible={setTooltipVisible}>
-                            Name / ID of the OpenAI Voice. Please check the <span className="text-orange-400"><a
+                            Name / ID of the OpenAI Voice. Please check the <span className="text-warning"><a
                             href="https://platform.openai.com/docs/api-reference/audio/createSpeech#audio-createspeech-voice"
                             target="_blank">OpenAI
                           documentation</a></span> for possible
@@ -185,18 +205,18 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </label>
                     <div className="w-2/3 px-3">
                         <input type="text" name="voice"
-                               className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                               className="input-field mt-1 block w-full"
                                placeholder="OpenAI Voice Name" value={voice}
                                onChange={(e) => setVoice(e.target.value)}
                                onBlur={(e) => validateVoiceIdAndUpdate(e.target.value)}/>
                     </div>
                 </div>
                 <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                         Speed
                         <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
                                          setTooltipVisible={setTooltipVisible}>
-                            Modifier for Voice Speed. Please check the <span className="text-orange-400"><a
+                            Modifier for Voice Speed. Please check the <span className="text-warning"><a
                             href="https://platform.openai.com/docs/api-reference/audio/createSpeech#audio-createspeech-speed"
                             target="_blank">OpenAI
                           documentation</a></span> for possible
@@ -205,19 +225,19 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </label>
                     <div className="w-2/3 px-3">
                         <input type="number" name="speed" step=".01"
-                               className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                               className="input-field mt-1 block w-full"
                                placeholder="Speed" value={speed}
                                onChange={(e) => setSpeed(e.target.value)}
                                onBlur={(e) => validateSpeedAndUpdate(e.target.value)}/>
                     </div>
                 </div>
                 <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-gray-300 w-1/3 px-3">
+                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                         Output Format
                         <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
                                          setTooltipVisible={setTooltipVisible}>
                             Output File Format of the OpenAI Voice. Please check the <span
-                            className="text-orange-400"><a
+                            className="text-warning"><a
                             href="https://platform.openai.com/docs/api-reference/audio/createSpeech#audio-createspeech-response_format"
                             target="_blank">OpenAI
                           documentation</a></span> for possible
@@ -226,39 +246,20 @@ const TTSOpenAISettingsView = ({initialSettings, saveSettingsFunc}) => {
                     </label>
                     <div className="w-2/3 px-3">
                         <input type="text" name="voiceid"
-                               className="mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100"
+                               className="input-field mt-1 block w-full"
                                placeholder="Output Format" value={format}
                                onChange={(e) => setFormat(e.target.value)}
                                onBlur={(e) => validateFormatAndUpdate(e.target.value)}/>
                     </div>
                 </div>
             </div>
-            {isModalVisible && (
-                <div className="fixed inset-0 bg-gray-600/50">
-                    <div
-                        className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                        <div className="mt-3 text-center">
-                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                     stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <h3 className="text-lg leading-6 font-medium text-orange-500 mt-4">Invalid Input</h3>
-                            <div className="mt-2 px-7 py-3">
-                                <p className="text-sm text-gray-200">{modalMessage}</p>
-                            </div>
-                            <div className="items-center px-4 py-3">
-                                <button onClick={() => setIsModalVisible(false)}
-                                        className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ErrorDialog
+                isOpen={isModalVisible}
+                title="Invalid Input"
+                message={modalMessage}
+                onClose={() => setIsModalVisible(false)}
+                type="error"
+            />
         </>
     );
 }

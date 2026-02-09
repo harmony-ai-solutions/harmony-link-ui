@@ -12,6 +12,8 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * @property {string} [base_prompt] - Base system prompt for AI
  * @property {string} [scenario] - Character scenario/context
  * @property {string} [example_dialogues] - Example conversations
+ * @property {number} typing_speed_wpm - Typing speed in words per minute for chat simulation
+ * @property {number} audio_response_chance_percent - Percentage chance (0-100) character responds with audio
  * @property {string} created_at
  * @property {string} updated_at
  */

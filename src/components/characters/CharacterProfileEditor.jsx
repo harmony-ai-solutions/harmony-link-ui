@@ -19,7 +19,9 @@ export default function CharacterProfileEditor({ profile, onClose }) {
         voice_characteristics: '',
         base_prompt: '',
         scenario: '',
-        example_dialogues: ''
+        example_dialogues: '',
+        typing_speed_wpm: 60,
+        audio_response_chance_percent: 50
     });
     
     const createProfile = useCharacterProfileStore(state => state.createProfile);
@@ -38,7 +40,9 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                 voice_characteristics: profile.voice_characteristics || '',
                 base_prompt: profile.base_prompt || '',
                 scenario: profile.scenario || '',
-                example_dialogues: profile.example_dialogues || ''
+                example_dialogues: profile.example_dialogues || '',
+                typing_speed_wpm: profile.typing_speed_wpm ?? 60,
+                audio_response_chance_percent: profile.audio_response_chance_percent ?? 50
             });
         }
     }, [profile]);
@@ -182,6 +186,51 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 placeholder="User: Hello!&#10;Char: Greetings, traveller!..."
                                 className="input-field w-full resize-none font-mono text-sm"
                             />
+                        </div>
+                        
+                        {/* Behavior Settings Section */}
+                        <div className="pt-4 border-t border-border-default">
+                            <h3 className="text-sm font-semibold text-text-primary mb-4">Chat Behavior Settings</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                                        Typing Speed (WPM)
+                                        <span className="text-xs text-text-muted ml-2">Words per minute</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="typing_speed_wpm"
+                                        value={formData.typing_speed_wpm}
+                                        onChange={handleChange}
+                                        min="1"
+                                        max="200"
+                                        className="input-field w-full"
+                                    />
+                                    <p className="text-xs text-text-muted mt-1">
+                                        Average: 40-60 WPM. Affects typing indicator duration in chats.
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-text-secondary mb-1">
+                                        Audio Response Chance (%)
+                                        <span className="text-xs text-text-muted ml-2">0-100%</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="audio_response_chance_percent"
+                                        value={formData.audio_response_chance_percent}
+                                        onChange={handleChange}
+                                        min="0"
+                                        max="100"
+                                        className="input-field w-full"
+                                    />
+                                    <p className="text-xs text-text-muted mt-1">
+                                        Percentage chance character responds with audio message.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );

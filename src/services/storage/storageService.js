@@ -51,6 +51,17 @@ export async function saveVoiceConfig(name, configJson) {
 }
 
 /**
+ * Update a voice configuration
+ * @param {string} name - Configuration name
+ * @param {string} configJson - Configuration JSON string
+ * @returns {Promise<void>}
+ */
+export async function updateVoiceConfig(name, configJson) {
+  const storage = getStorageImplementation();
+  return storage.updateVoiceConfig(name, configJson);
+}
+
+/**
  * Delete a voice configuration
  * @param {string} name - Configuration name
  * @returns {Promise<void>}

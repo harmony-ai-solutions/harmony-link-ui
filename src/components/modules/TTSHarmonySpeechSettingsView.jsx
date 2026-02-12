@@ -3,7 +3,7 @@ import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug, LogError} from "../../utils/logger.js";
 import {HarmonySpeechEnginePlugin} from "@harmony-ai/harmonyspeech";
 import {getConfig, validateProviderConfig} from "../../services/management/configService.js";
-import {listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, deleteVoiceConfig, renameVoiceConfig} from "../../services/storage/storageService.js";
+import {listVoiceConfigs, loadVoiceConfig, saveVoiceConfig, updateVoiceConfig, deleteVoiceConfig, renameVoiceConfig} from "../../services/storage/storageService.js";
 import HarmonyAudioPlayer from "../widgets/HarmonyAudioPlayer.jsx";
 import Heatmap from "../widgets/Heatmap.jsx";
 import IntegrationDisplay from "../integrations/IntegrationDisplay.jsx";
@@ -29,6 +29,7 @@ const embeddingStatusInProgress = "Embedding in progress...";
 const embeddingStatusDone = "Embedding updated.";
 const embeddingStatusFailed = "Embedding failed.";
 
+const NEW_CONFIG_OPTION = "__NEW_VOICE_CONFIG__";
 
 const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Merge initial settings with defaults
@@ -183,6 +184,22 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     // Utility Functions
+    const loadDefaultVoiceConfig = () => {
+        const defaultConfig = {
+            model: "harmonyspeech",
+            operation_mode: "voice_cloning",
+            language: "",
+            voice: "",
+            style: 0,
+            speed: 1.00,
+            pitch: 1.00,
+            energy: 1.00,
+            seed: 42,
+            target_embedding: ""
+        };
+        setCurrentVoiceConfig(defaultConfig);
+    };
+
     const setupHarmonySpeechTooling = (currentModuleSettings) => {
         try {
             if (isHarmonyLinkMode()) {
@@ -210,12 +227,31 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         }
     }
 
-    const refreshVoiceConfigs = () => {
+    const refreshVoiceConfigs = (preserveCurrentConfig = true, configFileName = null) => {
         try {
             listVoiceConfigs().then((result) => {
                 setVoiceConfigs(result);
-                if (result.length > 0) {
-                    changeVoiceConfigAndUpdate(result[0]);
+                
+                // Use provided config file name or fall back to moduleSettings
+                const currentConfigFile = configFileName !== null ? configFileName : moduleSettings.voiceconfigfile;
+                
+                if (preserveCurrentConfig && currentConfigFile) {
+                    // Check if the saved config still exists in the list
+                    if (result.includes(currentConfigFile)) {
+                        // Only load the configuration if it's different from the current voiceConfigFile
+                        // This prevents race conditions when the user is actively selecting configs
+                        if (voiceConfigFile !== currentConfigFile) {
+                            changeVoiceConfigAndUpdate(currentConfigFile);
+                        }
+                    } else {
+                        // Config was deleted or doesn't exist, reset to new
+                        setVoiceConfigFile(NEW_CONFIG_OPTION);
+                        loadDefaultVoiceConfig();
+                    }
+                } else {
+                    // No config to preserve or explicitly resetting
+                    setVoiceConfigFile(NEW_CONFIG_OPTION);
+                    loadDefaultVoiceConfig();
                 }
             });
         } catch (error) {
@@ -290,13 +326,12 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
 
         // Update individual fields
         setEndpoint(currentMergedSettings.endpoint);
-        setVoiceConfigFile(currentMergedSettings.voiceconfigfile);
 
         // Setup Harmony Speech
         setupHarmonySpeechTooling(currentMergedSettings);
 
-        // Update Voice Configs
-        refreshVoiceConfigs();
+        // Update Voice Configs - pass the config file name from merged settings
+        refreshVoiceConfigs(true, currentMergedSettings.voiceconfigfile);
     };
 
     const useIntegration = (integration, urlIndex = 0) => {
@@ -320,8 +355,14 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
 
     // Config Management Handlers
     const changeVoiceConfigAndUpdate = async (selectedConfig) => {
-        if (selectedConfig === "") {
-            return false;
+        if (selectedConfig === "" || selectedConfig === NEW_CONFIG_OPTION) {
+            // Load defaults for new config
+            loadDefaultVoiceConfig();
+            setVoiceConfigFile(NEW_CONFIG_OPTION);
+            const updatedSettings = { ...moduleSettings, voiceconfigfile: "" };
+            setModuleSettings(updatedSettings);
+            saveSettingsFunc(updatedSettings);
+            return true;
         }
 
         try {
@@ -353,7 +394,8 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             const configString = JSON.stringify(currentVoiceConfig, null, 2);
             saveVoiceConfig(configName, configString)
                 .then(() => {
-                    refreshVoiceConfigs();
+                    // Refresh and select the newly saved config
+                    refreshVoiceConfigs(true, configName);
                     showModal("Configuration saved successfully.", "Success");
                     setConfirmModalVisible(false);
                 })
@@ -376,11 +418,49 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setConfirmModalVisible(false);
     }
 
+    const updateVoiceConfiguration = (configName) => {
+        try {
+            const configString = JSON.stringify(currentVoiceConfig, null, 2);
+            updateVoiceConfig(configName, configString)
+                .then(() => {
+                    showModal("Configuration updated successfully.", "Success");
+                    setConfirmModalVisible(false);
+                })
+                .catch((error) => {
+                    LogError("Failed to update voice configuration.");
+                    LogError(error);
+                    showModal("Failed to update the voice configuration.", "An Error occurred");
+                });
+            return true;
+        } catch (error) {
+            LogError("Error stringifying the voice configuration.");
+            LogError(error);
+            showModal("Failed to update the voice configuration.", "An Error occurred");
+            return false;
+        }
+    }
+
     const handleSaveConfig = () => {
+        if (voiceConfigFile === NEW_CONFIG_OPTION) {
+            // Creating new config - prompt for name
+            setConfirmModalInput('');
+            setConfirmModalYes(() => saveVoiceConfiguration);
+            setConfirmModalNo(() => cancelSaveVoiceConfiguration);
+            showConfirmModal("Please enter a name for the configuration", true, "Save voice configuration");
+        } else {
+            // Updating existing config - show confirmation
+            setConfirmModalInput('');
+            setConfirmModalYes(() => () => updateVoiceConfiguration(voiceConfigFile));
+            setConfirmModalNo(() => () => setConfirmModalVisible(false));
+            showConfirmModal(`Do you want to update the configuration "${voiceConfigFile}"?`, false, "Update voice configuration");
+        }
+    };
+
+    const handleSaveAsNew = () => {
         setConfirmModalInput('');
         setConfirmModalYes(() => saveVoiceConfiguration);
         setConfirmModalNo(() => cancelSaveVoiceConfiguration);
-        showConfirmModal("Please enter a name for the configuration", true, "Save voice configuration");
+        showConfirmModal("Please enter a name for the new configuration", true, "Save voice configuration");
     };
 
     const handleVoiceSelectionChange = (selectedVoiceId) => {
@@ -582,7 +662,8 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setConfirmModalYes(() => () => {
             deleteVoiceConfig(voiceConfigFile)
                 .then(() => {
-                    refreshVoiceConfigs();
+                    // After delete, reset to new config option
+                    refreshVoiceConfigs(false);
                     showModal("Configuration deleted successfully.", "Success");
                 })
                 .catch((error) => {
@@ -608,7 +689,8 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             }
             renameVoiceConfig(voiceConfigFile, newName)
                 .then(() => {
-                    refreshVoiceConfigs();
+                    // After rename, select the renamed config
+                    refreshVoiceConfigs(true, newName);
                     showModal("Configuration renamed successfully.", "Success");
                 })
                 .catch((error) => {
@@ -646,20 +728,25 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                                 onChange={(e) => changeVoiceConfigAndUpdate(e.target.value)}
                                 className="input-field block w-1/3"
                             >
-                                {voiceConfigs && voiceConfigs.length > 0 ? (
+                                <option value={NEW_CONFIG_OPTION}>New Voice Config</option>
+                                {voiceConfigs && voiceConfigs.length > 0 && (
                                     voiceConfigs.map((config) => (
                                         <option key={config} value={config}>
                                             {config}
                                         </option>
                                     ))
-                                ) : (
-                                    <option value="">No Configs Available</option>
                                 )}
                             </select>
                             <button onClick={handleSaveConfig}
                                     className="btn-primary py-1 px-2 mx-1 text-sm">
-                                Save
+                                {voiceConfigFile === NEW_CONFIG_OPTION ? 'Save' : 'Update'}
                             </button>
+                            {voiceConfigFile !== NEW_CONFIG_OPTION && (
+                                <button onClick={handleSaveAsNew}
+                                        className="btn-secondary py-1 px-2 mx-1 text-sm">
+                                    Save New
+                                </button>
+                            )}
                             <button onClick={handleRenameConfig}
                                     className={`btn-secondary font-semibold py-1 px-2 mx-1 text-sm ${!voiceConfigs || !voiceConfigs.includes(voiceConfigFile) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     disabled={!voiceConfigs || !voiceConfigs.includes(voiceConfigFile)}>

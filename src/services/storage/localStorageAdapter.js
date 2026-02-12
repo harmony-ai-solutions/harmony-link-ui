@@ -43,6 +43,18 @@ export function saveVoiceConfig(name, configJson) {
 }
 
 /**
+ * Update a voice configuration in localStorage
+ * @param {string} name - Configuration name
+ * @param {string} configJson - Configuration JSON string
+ * @returns {Promise<void>}
+ */
+export function updateVoiceConfig(name, configJson) {
+  // For localStorage, update is the same as save (overwrites by default)
+  localStorage.setItem("voiceConfig_" + name, configJson);
+  return Promise.resolve();
+}
+
+/**
  * Delete a voice configuration from localStorage
  * @param {string} name - Configuration name
  * @returns {Promise<void>}

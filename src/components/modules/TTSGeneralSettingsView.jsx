@@ -27,23 +27,11 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
     // Base Settings reference
     const [moduleSettings, setModuleSettings] = useState(mergedSettings);
 
-    const ttsOutputTypes = [
-        { name: 'File', value: 'file' },
-        { name: 'Binary', value: 'binary' },
-    ];
-
     // Fields
-    const [ttsOutputType, setTtsOutputType] = useState(mergedSettings.outputtype);
     const [vocalizeNonverbal, setVocalizeNonverbal] = useState(mergedSettings.vocalizenonverbal);
     const [wordsToReplace, setWordsToReplace] = useState(mergedSettings.wordstoreplace ? Object.entries(mergedSettings.wordstoreplace).map(([key, value]) => `${key}: ${value}`).join('\n') : "");
 
     // Validation Functions
-    const setTTSOutputTypeAndUpdate = (value) => {
-        setTtsOutputType(value);
-        const updatedSettings = { ...moduleSettings, outputtype: value };
-        setModuleSettings(updatedSettings);
-        saveSettingsFunc(updatedSettings);
-    }
     const setVocalizeNonverbalAndUpdate = (value) => {
         setVocalizeNonverbal(value);
         const updatedSettings = { ...moduleSettings, vocalizenonverbal: value };
@@ -81,7 +69,6 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
         setModuleSettings(currentMergedSettings);
 
         // Update individual fields
-        setTtsOutputType(currentMergedSettings.outputtype);
         setVocalizeNonverbal(currentMergedSettings.vocalizenonverbal);
         setWordsToReplace(currentMergedSettings.wordstoreplace ? Object.entries(currentMergedSettings.wordstoreplace).map(([key, value]) => `${key}: ${value}`).join('\n') : "");
     };
@@ -95,34 +82,6 @@ const TTSGeneralSettingsView = ({initialSettings, saveSettingsFunc}) => {
       <>
           <div className="flex flex-wrap w-full pt-2">
               <div className="flex flex-wrap items-center -px-10 mb-3 w-full">
-                  <div className="flex items-center mb-6 w-1/2">
-                      <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
-                          Output Type
-                          <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
-                                           setTooltipVisible={setTooltipVisible}>
-                              The Type of Speech Data which is returned to the Plugin
-                              <br/>
-                              <br/>File: Saves a File with random unique name in the Entity's temporary
-                              folder on disk, which can be loaded and played by the Plugin asynchronously.
-                              <br/>
-                              <br/>Binary: Returns the Speech Data as raw bytes.
-                              <br/>
-                              <br/>The containing data type is always provided as part of the result event.
-                          </SettingsTooltip>
-                      </label>
-                      <div className="w-2/3 px-3">
-                          <select
-                              value={ttsOutputType}
-                              onChange={(e) => setTTSOutputTypeAndUpdate(e.target.value)}
-                              className="input-field mt-1 block w-full">
-                              {ttsOutputTypes.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                      {option.name}
-                                  </option>
-                              ))}
-                          </select>
-                      </div>
-                  </div>
                   <div className="flex items-center mb-6 w-1/2">
                       <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
                           Vocalize Nonverbal Interaction

@@ -9,6 +9,7 @@ import {
   listVoiceConfigs as apiListVoiceConfigs,
   loadVoiceConfig as apiLoadVoiceConfig,
   saveVoiceConfig as apiSaveVoiceConfig,
+  updateVoiceConfig as apiUpdateVoiceConfig,
   deleteVoiceConfig as apiDeleteVoiceConfig,
   renameVoiceConfig as apiRenameVoiceConfig
 } from '../management/configService.js';
@@ -38,6 +39,16 @@ export function loadVoiceConfig(name) {
  */
 export function saveVoiceConfig(name, configJson) {
   return apiSaveVoiceConfig(name, configJson);
+}
+
+/**
+ * Update a voice configuration on API
+ * @param {string} name - Configuration name
+ * @param {string} configJson - Configuration JSON string
+ * @returns {Promise<void>}
+ */
+export function updateVoiceConfig(name, configJson) {
+  return apiUpdateVoiceConfig(name, configJson);
 }
 
 /**

@@ -44,6 +44,15 @@ export async function saveVoiceConfig(name, configJson) {
     await handleResponse(resp, "Failed to save voice config");
 }
 
+export async function updateVoiceConfig(name, configJson) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/voices/${encodeURIComponent(name)}`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({config: configJson})
+    });
+    await handleResponse(resp, "Failed to update voice config");
+}
+
 export async function deleteVoiceConfig(name) {
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/voices/${encodeURIComponent(name)}`, {
         method: "DELETE",

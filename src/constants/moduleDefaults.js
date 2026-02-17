@@ -200,5 +200,38 @@ export const MODULE_DEFAULTS = {
             startupsynctimeout: 30,
             executionthreshold: 0.5
         }
+    },
+    vision: {
+        provider: null,
+        resolution_width: 640,
+        resolution_height: 480,
+        [PROVIDERS.OPENAI]: {
+            openaiapikey: "",
+            model: "gpt-4o",
+            maxtokens: 500,
+            temperature: 0.7,
+            topp: 1.0,
+            n: 1,
+            stoptokens: []
+        },
+        [PROVIDERS.OPENROUTER]: {
+            openrouterapikey: "",
+            model: "google/gemini-2.0-flash-exp",
+            maxtokens: 500,
+            temperature: 0.7,
+            topp: 1.0,
+            n: 1,
+            stoptokens: []
+        },
+        [PROVIDERS.OPENAI_COMPATIBLE]: {
+            baseurl: "http://localhost:8080/v1",
+            apikey: "",
+            model: "",
+            maxtokens: 500,
+            temperature: 0.7,
+            topp: 1.0,
+            n: 1,
+            stoptokens: []
+        }
     }
 };

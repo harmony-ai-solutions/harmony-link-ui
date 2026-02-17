@@ -36,6 +36,11 @@ import TTSHarmonySpeechSettingsView from './TTSHarmonySpeechSettingsView.jsx';
 import TTSOpenAISettingsView from './TTSOpenAISettingsView.jsx';
 import TTSKindroidSettingsView from './TTSKindroidSettingsView.jsx';
 
+import VisionGeneralSettingsView from './VisionGeneralSettingsView.jsx';
+import VisionOpenAISettingsView from './VisionOpenAISettingsView.jsx';
+import VisionOpenAICompatibleSettingsView from './VisionOpenAICompatibleSettingsView.jsx';
+import VisionOpenRouterSettingsView from './VisionOpenRouterSettingsView.jsx';
+
 import RAGGeneralSettingsView from './RAGGeneralSettingsView.jsx';
 import RAGLocalAISettingsView from './RAGLocalAISettingsView.jsx';
 import RAGOpenAISettingsView from './RAGOpenAISettingsView.jsx';
@@ -69,6 +74,10 @@ const COMPONENT_MAP = {
     TTSHarmonySpeechSettingsView,
     TTSOpenAISettingsView,
     TTSKindroidSettingsView,
+    VisionGeneralSettingsView,
+    VisionOpenAISettingsView,
+    VisionOpenAICompatibleSettingsView,
+    VisionOpenRouterSettingsView,
     RAGGeneralSettingsView,    
     RAGLocalAISettingsView,
     RAGOpenAISettingsView,

@@ -13,7 +13,8 @@ export const MODULE_TYPE_OPTIONS = [
     { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️' },
     { id: 'rag', name: 'RAG', emoji: '📚' },
     { id: 'movement', name: 'Movement', emoji: '💃' },
-    { id: 'cognition', name: 'Cognition', emoji: '🧩' }
+    { id: 'cognition', name: 'Cognition', emoji: '🧩' },
+    { id: 'vision', name: 'Vision', emoji: '👁️' }
 ];
 
 export const MODULE_CONFIGS = {
@@ -163,6 +164,27 @@ export const MODULE_CONFIGS = {
                     harmonyspeech: 'TTSHarmonySpeechSettingsView',
                     openai: 'TTSOpenAISettingsView',
                     kindroid: 'TTSKindroidSettingsView'
+                }
+            }
+        ]
+    },
+    vision: {
+        generalSettingsComponent: 'VisionGeneralSettingsView',
+        providers: [
+            {
+                id: 'vision',
+                name: 'Vision Provider',
+                settingsKey: 'provider',
+                providerOptions: [
+                    { id: 'disabled', name: 'Disabled', logo: logo_blank },
+                    { id: 'openai', name: 'OpenAI', logo: logo_openai },
+                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
+                    { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
+                ],
+                components: {
+                    openai: 'VisionOpenAISettingsView',
+                    openrouter: 'VisionOpenRouterSettingsView',
+                    openaicompatible: 'VisionOpenAICompatibleSettingsView'
                 }
             }
         ]

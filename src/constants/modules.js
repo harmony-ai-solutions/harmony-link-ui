@@ -6,7 +6,8 @@ export const MODULES = {
     VAD: 'vad',
     RAG: 'rag',
     COGNITION: 'cognition',
-    MOVEMENT: 'movement'
+    MOVEMENT: 'movement',
+    VISION: 'vision'
 };
 
 // Provider Names

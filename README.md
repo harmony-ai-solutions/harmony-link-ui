@@ -70,6 +70,27 @@ npm install
 cp .env.example .env
 ```
 
+### Using from Harmony Speech Engine Repository
+
+If you are working from the `harmony-speech-engine` repository and `frontend/` is not present yet, clone the unified frontend into `frontend/` first:
+
+```bash
+# Clone the repository
+git clone https://github.com/harmony-ai-solutions/harmony-link-ui.git frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Copy environment configuration
+cp .env.speech-engine .env
+
+# Start in Harmony Speech Engine mode
+npm run dev:speech-engine
+```
+
+For local HSE development, always use **Speech Engine mode**.
+
 ### Running in Different Modes
 
 #### Harmony Link Mode (Default)
@@ -132,30 +153,33 @@ npm run preview
 ### Building the Image
 
 ```bash
-# Build the Docker image
-docker build -t harmony-link-ui .
+# Build Harmony Link mode image
+docker build -f Dockerfile.harmony-link -t harmony-link-ui .
 
-# Run the container
-docker run -p 3000:3000 harmony-link-ui
+# Build Harmony Speech Engine mode image
+docker build -f Dockerfile.speech-engine -t harmonyspeech-ui .
+
+# Run the Speech Engine mode image
+docker run -p 8080:80 harmonyspeech-ui
 ```
 
 ### Using Pre-built Images
 
 ```bash
-# Pull and run the latest image
-docker pull harmonyai/harmony-link-ui:latest
-docker run -p 3000:3000 harmonyai/harmony-link-ui:latest
+# Pull and run the latest Harmony Speech Engine UI image
+docker pull harmonyai/harmonyspeech-ui:latest
+docker run -p 8080:80 harmonyai/harmonyspeech-ui:latest
 ```
 
 ## API Integration
 
-The UI communicates with the Harmony Link backend through:
+The UI communicates with Harmony backends through:
 
 - **Management API**: Configuration, entity management, and system control
 - **Events API**: Real-time event monitoring and development tools
 - **Public API**: Status and health checks
 
-Ensure your Harmony Link backend is running and accessible at the configured API endpoints.
+Ensure your target backend (Harmony Link or Harmony Speech Engine) is running and accessible at the configured API endpoints.
 
 ## Project Structure
 

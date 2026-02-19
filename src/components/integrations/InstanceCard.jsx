@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/management/integrationsService.js';
 import { openSystemUrl } from '../../services/management/systemService.js';
 import RenameInstanceModal from './RenameInstanceModal.jsx';
@@ -6,10 +6,15 @@ import RenameInstanceModal from './RenameInstanceModal.jsx';
 const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, onRename, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
     const [showRenameModal, setShowRenameModal] = useState(false);
+    const [showLogsModal, setShowLogsModal] = useState(false);
+    const [showContainers, setShowContainers] = useState(false);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [showErrorTooltip, setShowErrorTooltip] = useState(false);
 
+    // Web URL polling
     useEffect(() => {
         let interval;
-        
+
         const fetchWebURLs = async () => {
             if (instance.status === 'running') {
                 try {
@@ -24,19 +29,28 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             }
         };
 
-        fetchWebURLs(); // Initial fetch
-        
-        // Set up continuous polling when instance is running
+        fetchWebURLs();
+
         if (instance.status === 'running') {
-            interval = setInterval(fetchWebURLs, 5000); // Poll every 5 seconds
+            interval = setInterval(fetchWebURLs, 5000);
         }
 
-        return () => {
-            if (interval) clearInterval(interval);
-        };
+        return () => { if (interval) clearInterval(interval); };
     }, [integrationName, instanceName, instance.status]);
 
-    const getStatusColor = (status) => {
+    // Elapsed time ticker for logs modal
+    useEffect(() => {
+        if (!showLogsModal || !currentOperation?.inProgress || !currentOperation?.startTime) return;
+
+        const tick = () => {
+            setElapsedSeconds(Math.floor((Date.now() - new Date(currentOperation.startTime).getTime()) / 1000));
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [showLogsModal, currentOperation]);
+
+    const getStatusDotClass = (status) => {
         switch (status) {
             case 'running': return 'bg-green-500';
             case 'stopped': return 'bg-red-500';
@@ -48,31 +62,28 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             default: return 'bg-gray-500';
         }
     };
-    
+
     const getDeviceIcon = (deviceType) => {
         switch (deviceType) {
-            case 'nvidia': return '🟢'; // Green circle for NVIDIA
-            case 'amd': return '🔴'; // Red circle for AMD
-            case 'amd-wsl': return '🔴'; // Red circle for AMD
-            case 'intel': return '🔵'; // Blue circle for Intel
-            case 'cpu': return '💻'; // Laptop for CPU
-            default: return '⚙️'; // Gear for unknown
+            case 'nvidia': return '🟢';
+            case 'amd': return '🔴';
+            case 'amd-wsl': return '🔴';
+            case 'intel': return '🔵';
+            case 'cpu': return '💻';
+            default: return '⚙️';
         }
     };
 
     const handleOpenWebInterface = async (url) => {
         try {
-            // Try to open in system browser first (works in standalone mode)
             await openSystemUrl(url);
         } catch (error) {
-            // Fallback to opening in new tab (container mode or error)
             console.log('System browser opening failed, falling back to window.open:', error.message);
             window.open(url, '_blank');
         }
     };
 
     const hasActiveContainers = () => {
-        // Check if any containers exist (not in "not_created" state)
         return instance.containers && instance.containers.some(c => c.state !== 'not_created');
     };
 
@@ -82,283 +93,327 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             setShowRenameModal(false);
         } catch (error) {
             console.error('Failed to rename instance:', error);
-            throw error; // Re-throw to let modal handle the error display
+            throw error;
+        }
+    };
+
+    const handleCancelOperation = async () => {
+        try {
+            await cancelIntegrationInstanceOperation(integrationName, instanceName);
+        } catch (error) {
+            console.error('Failed to cancel operation:', error);
         }
     };
 
     const formatProgressLine = (line) => {
-        // Check if this is a Docker progress line with progress bar
         const progressMatch = line.match(/^(.+?)\s+(\[=*>?\s*\])\s*(.+)$/);
-        if (!progressMatch) {
-            return line; // Return original line if no progress bar found
-        }
+        if (!progressMatch) return line;
 
-        const [, prefix, progressBar, suffix] = progressMatch;
-        
-        // Calculate available space (rough estimate based on container width)
-        const containerWidth = 300; // Approximate width in pixels
-        const charWidth = 7; // Approximate character width
-        const availableChars = Math.floor(containerWidth / charWidth);
-        
-        // Reserve space for prefix and suffix
-        const prefixLength = prefix.length;
-        const suffixLength = suffix.length;
-        const reservedSpace = prefixLength + suffixLength + 4; // +4 for spacing
-        
-        // Calculate max progress bar width
-        const maxProgressWidth = Math.max(10, availableChars - reservedSpace);
-        
-        // Extract progress percentage if available
+        const [, prefix, , suffix] = progressMatch;
+        const maxProgressWidth = 20;
         let progressPercent = 0;
+
         const percentMatch = suffix.match(/(\d+(?:\.\d+)?)%/);
         if (percentMatch) {
             progressPercent = parseFloat(percentMatch[1]);
         } else {
-            // Try to extract from size info like "45.2MB/89.3MB"
             const sizeMatch = suffix.match(/(\d+(?:\.\d+)?[KMGT]?B)\/(\d+(?:\.\d+)?[KMGT]?B)/);
             if (sizeMatch) {
                 const current = parseFloat(sizeMatch[1]);
                 const total = parseFloat(sizeMatch[2]);
-                if (total > 0) {
-                    progressPercent = (current / total) * 100;
-                }
+                if (total > 0) progressPercent = (current / total) * 100;
             }
         }
-        
-        // Create responsive progress bar
+
         const filledWidth = Math.floor((progressPercent / 100) * maxProgressWidth);
-        const emptyWidth = maxProgressWidth - filledWidth - 1; // -1 for the arrow
-        
-        const responsiveProgressBar = '[' + 
-            '='.repeat(Math.max(0, filledWidth)) + 
-            (filledWidth > 0 ? '>' : '') + 
-            ' '.repeat(Math.max(0, emptyWidth)) + 
+        const emptyWidth = maxProgressWidth - filledWidth - 1;
+        const bar = '[' +
+            '='.repeat(Math.max(0, filledWidth)) +
+            (filledWidth > 0 ? '>' : '') +
+            ' '.repeat(Math.max(0, emptyWidth)) +
             ']';
-        
-        return `${prefix} ${responsiveProgressBar} ${suffix}`;
+
+        return `${prefix} ${bar} ${suffix}`;
     };
 
+    const isRunning = instance.status === 'running' || instance.status === 'partially_running';
+    const imagePullKeys = currentOperation?.progress?.imagePulls
+        ? Object.keys(currentOperation.progress.imagePulls)
+        : [];
+
     return (
-        <div className="instance-card card p-3">
-            <div className="instance-header flex justify-between items-center mb-2">
-                <h4 className="text-md font-semibold text-accent-primary">{instance.name}</h4>
-                <div className="instance-badges flex gap-1">
-                    {instance.deviceType && (
-                        <span className={`device-badge text-xs px-2 py-0.5 rounded-full bg-background-elevated text-text-secondary border border-border-default`}>
-                            {getDeviceIcon(instance.deviceType)} {instance.deviceType.toUpperCase()}
-                        </span>
-                    )}
-                    <span className={`status-badge text-xs px-2 py-0.5 rounded-full text-white ${getStatusColor(instance.status)}`}>
-                        {instance.status ? instance.status.replace(/_/g, ' ') : 'N/A'}
+        <div className="instance-row">
+            {/* Subtle accent-secondary tint overlay */}
+            <div className="instance-row-tint" />
+
+            {/* ── Main instance row ─────────────────────────────────────── */}
+            <div className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 flex-wrap">
+
+                {/* [1] Status dot */}
+                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${getStatusDotClass(instance.status)}`} />
+
+                {/* [2] Instance name — no forced truncation, wraps if needed */}
+                <span
+                    className="text-sm font-semibold min-w-0 break-words"
+                    style={{ color: 'var(--color-text-primary)' }}
+                >
+                    {instance.name}
+                </span>
+
+                {/* [3] Device type badge */}
+                {instance.deviceType && (
+                    <span
+                        className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                            backgroundColor: 'var(--color-background-surface)',
+                            border: '1px solid var(--color-border-default)',
+                            color: 'var(--color-text-secondary)',
+                        }}
+                    >
+                        {getDeviceIcon(instance.deviceType)} {instance.deviceType.toUpperCase()}
                     </span>
-                </div>
-            </div>
-            
-            {instance.error && <p className="text-status-error text-xs mb-3">Error: {instance.error}</p>}
-            
-            {/* Show operation status if there's an active operation */}
-            {currentOperation && currentOperation.inProgress && (
-                <div className="operation-status bg-status-info-bg border border-status-info rounded p-3 mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary"></div>
-                            <span className="text-text-primary text-sm font-medium">
-                                {currentOperation.message || `${currentOperation.type}...`}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-text-secondary text-xs">
-                                {Math.floor((Date.now() - new Date(currentOperation.startTime).getTime()) / 1000)}s
-                            </span>
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        await cancelIntegrationInstanceOperation(integrationName, instanceName);
-                                        // The operation status will be updated through the normal polling mechanism
-                                    } catch (error) {
-                                        console.error('Failed to cancel operation:', error);
-                                    }
-                                }}
-                                className="bg-status-error hover:bg-status-error/90 text-white text-xs px-2 py-1 rounded transition-colors"
-                                title="Cancel Operation"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {/* Progress bar */}
-                    {currentOperation.progress && (
-                        <div className="mb-2">
-                            <div className="flex justify-between text-xs text-text-secondary mb-1">
-                                <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
-                                <span>{currentOperation.progress.overallPercent}%</span>
-                            </div>
-                            <div className="w-full bg-background-surface rounded-full h-2">
-                                <div 
-                                    className="bg-accent-primary h-2 rounded-full transition-all duration-300" 
-                                    style={{ width: `${currentOperation.progress.overallPercent}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Phase information */}
-                    {currentOperation.phase && (
-                        <div className="text-xs text-text-secondary mb-2">
-                            <span className="font-medium">Phase:</span> {currentOperation.phase.replace(/_/g, ' ')}
-                        </div>
-                    )}
-                    
-                    {/* Image pull progress */}
-                    {currentOperation.progress && currentOperation.progress.imagePulls && Object.keys(currentOperation.progress.imagePulls).length > 0 && (
-                        <div className="text-xs text-blue-200 mb-2">
-                            <div className="font-medium mb-1">Image Progress:</div>
-                            {Object.entries(currentOperation.progress.imagePulls).map(([imageName, pull]) => (
-                                <div key={imageName} className="flex justify-between items-center mb-1">
-                                    <span className="truncate max-w-32" title={imageName}>
-                                        {imageName.split(':')[0]}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`px-1 py-0.5 rounded text-xs ${
-                                            pull.status === 'complete' ? 'bg-green-600' :
-                                            pull.status === 'extracting' ? 'bg-yellow-600' :
-                                            'bg-blue-600'
-                                        }`}>
-                                            {pull.status}
-                                        </span>
-                                        {pull.percent > 0 && <span>{pull.percent}%</span>}
-                                        {pull.size && <span className="text-xs opacity-75">{pull.size}</span>}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    
-                    {/* Recent output */}
-                    {currentOperation.output && currentOperation.output.length > 0 && (
-                        <div className="text-xs text-blue-200">
-                            <div className="font-medium mb-1">Recent Output:</div>
-                            <div className="bg-blue-950 rounded p-2 max-h-20 overflow-y-auto">
-                                {currentOperation.output.slice(-3).map((line, index) => (
-                                    <div key={index} className="font-mono text-xs opacity-75 truncate" title={line}>
-                                        {formatProgressLine(line)}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            <div className="instance-actions flex flex-wrap gap-2 mb-3">
-                <button 
-                    onClick={() => onConfigure(integrationName, instanceName)}
-                    disabled={!!currentOperation}
-                    className={`font-bold py-1 px-2 rounded text-xs ${
-                        currentOperation 
-                            ? 'bg-neutral-500 text-neutral-400 cursor-not-allowed' 
-                            : 'bg-neutral-600 hover:bg-neutral-500 text-white'
-                    }`}
-                >
-                    Configure
-                </button>
-                
-                {instance.status === 'running' || instance.status === 'partially_running' ? (
-                    <button 
-                        onClick={() => onControl(integrationName, instanceName, 'stop')}
-                        disabled={!!currentOperation}
-                        className={`font-bold py-1 px-2 rounded text-xs ${
-                            currentOperation 
-                                ? 'bg-red-400 text-red-200 cursor-not-allowed' 
-                                : 'bg-red-600 hover:bg-red-700 text-white'
-                        }`}
-                    >
-                        {currentOperation?.type === 'stop' ? 'Stopping...' : 'Stop'}
-                    </button>
-                ) : (
-                    <button 
-                        onClick={() => onControl(integrationName, instanceName, 'start')}
-                        disabled={!!currentOperation}
-                        className={`font-bold py-1 px-2 rounded text-xs ${
-                            currentOperation 
-                                ? 'bg-green-400 text-green-200 cursor-not-allowed' 
-                                : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
-                    >
-                        {currentOperation?.type === 'start' ? 'Starting...' : 'Start'}
-                    </button>
                 )}
-                
-                <button 
-                    onClick={() => onControl(integrationName, instanceName, 'restart')}
-                    disabled={!!currentOperation}
-                    className={`font-bold py-1 px-2 rounded text-xs ${
-                        currentOperation 
-                            ? 'bg-yellow-400 text-yellow-200 cursor-not-allowed' 
-                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                    }`}
-                >
-                    {currentOperation?.type === 'restart' ? 'Restarting...' : 'Restart'}
-                </button>
 
-                <button 
-                    onClick={() => onConfigFiles(integrationName, instanceName)}
-                    disabled={!!currentOperation}
-                    className={`font-bold py-1 px-2 rounded text-xs ${
-                        currentOperation 
-                            ? 'bg-blue-400 text-blue-200 cursor-not-allowed' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                >
-                    Config Files
-                </button>
+                {/* [4] Status label — suppressed when an error is present (error badge takes its place) */}
+                {!instance.error && (
+                    <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
+                        {instance.status?.replace(/_/g, ' ') ?? 'N/A'}
+                    </span>
+                )}
 
-                <button 
-                    onClick={() => setShowRenameModal(true)}
-                    disabled={!!currentOperation || hasActiveContainers()}
-                    className={`font-bold py-1 px-2 rounded text-xs ${
-                        currentOperation || hasActiveContainers()
-                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    }`}
-                    title={hasActiveContainers() ? 'Cannot rename while Docker containers exist' : 'Rename instance'}
-                >
-                    Rename
-                </button>
+                {/* [5] Error badge — replaces status text; hover reveals styled tooltip immediately */}
+                {instance.error && (
+                    <span className="relative flex-shrink-0 inline-flex items-center">
+                        {/* Warning icon trigger — no background or border, just the symbol */}
+                        <span
+                            className="text-sm cursor-help inline-flex items-center leading-none"
+                            style={{ color: 'var(--color-warning)' }}
+                            onMouseEnter={() => setShowErrorTooltip(true)}
+                            onMouseLeave={() => setShowErrorTooltip(false)}
+                        >
+                            ⚠
+                        </span>
 
-                {instance.status === 'running' && webURLs && webURLs.length > 0 && !currentOperation && (
-                    webURLs.map((url, index) => (
+                        {/* Immediate hover tooltip — positioned above the badge */}
+                        {showErrorTooltip && (
+                            <div
+                                className="absolute bottom-full left-0 mb-2 z-30 text-xs rounded px-2.5 py-1.5 pointer-events-none"
+                                style={{
+                                    backgroundColor: 'var(--color-background-elevated)',
+                                    border: '1px solid var(--color-warning)',
+                                    color: 'var(--color-text-primary)',
+                                    boxShadow: '0 4px 14px rgba(0,0,0,0.45)',
+                                    whiteSpace: 'normal',
+                                    wordBreak: 'break-word',
+                                    minWidth: '14rem',
+                                    maxWidth: '24rem',
+                                }}
+                            >
+                                {instance.error}
+                            </div>
+                        )}
+                    </span>
+                )}
+
+                {/* [6] Inline operation progress (compact, while operation active) */}
+                {currentOperation?.inProgress && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <div
+                            className="w-3 h-3 rounded-full animate-spin flex-shrink-0"
+                            style={{
+                                border: '2px solid transparent',
+                                borderBottomColor: 'var(--color-accent-primary)',
+                                borderRightColor: 'var(--color-accent-primary)',
+                            }}
+                        />
+                        <span
+                            className="text-xs truncate max-w-36"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                            {currentOperation.message ?? `${currentOperation.type}…`}
+                        </span>
+                        {currentOperation.progress && (
+                            <div
+                                className="w-16 rounded-full h-1.5 flex-shrink-0"
+                                style={{ backgroundColor: 'var(--color-background-surface)' }}
+                            >
+                                <div
+                                    className="h-1.5 rounded-full transition-all duration-300"
+                                    style={{
+                                        width: `${currentOperation.progress.overallPercent}%`,
+                                        backgroundColor: 'var(--color-accent-primary)',
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* [7] Action buttons */}
+                <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
+
+                    <button
+                        onClick={() => onConfigure(integrationName, instanceName)}
+                        disabled={!!currentOperation}
+                        className="instance-action-btn"
+                    >
+                        Configure
+                    </button>
+
+                    {isRunning ? (
                         <button
-                            key={`web-ui-${index}`}
+                            onClick={() => onControl(integrationName, instanceName, 'stop')}
+                            disabled={!!currentOperation}
+                            className="instance-action-btn-danger"
+                        >
+                            {currentOperation?.type === 'stop' ? 'Stopping…' : 'Stop'}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => onControl(integrationName, instanceName, 'start')}
+                            disabled={!!currentOperation}
+                            className="instance-action-btn-success"
+                        >
+                            {currentOperation?.type === 'start' ? 'Starting…' : 'Start'}
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => onControl(integrationName, instanceName, 'restart')}
+                        disabled={!!currentOperation}
+                        className="instance-action-btn-warning"
+                    >
+                        {currentOperation?.type === 'restart' ? 'Restarting…' : 'Restart'}
+                    </button>
+
+                    <button
+                        onClick={() => onConfigFiles(integrationName, instanceName)}
+                        disabled={!!currentOperation}
+                        className="instance-action-btn-info"
+                    >
+                        Config Files
+                    </button>
+
+                    <button
+                        onClick={() => setShowRenameModal(true)}
+                        disabled={!!currentOperation || hasActiveContainers()}
+                        className="instance-action-btn"
+                        title={hasActiveContainers() ? 'Cannot rename while Docker containers exist' : 'Rename instance'}
+                    >
+                        Rename
+                    </button>
+
+                    {isRunning && webURLs && webURLs.map((url, i) => (
+                        <button
+                            key={`web-ui-${i}`}
                             onClick={() => handleOpenWebInterface(url)}
-                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-1 px-2 rounded text-xs"
+                            className="instance-action-btn-accent"
                         >
                             Open Web UI
                         </button>
-                    ))
-                )}
+                    ))}
+
+                    {/* Logs icon button — opens operation log modal */}
+                    {currentOperation && (
+                        <button
+                            onClick={() => setShowLogsModal(true)}
+                            className="instance-action-btn-icon"
+                            title="View operation logs"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </button>
+                    )}
+
+                    {/* Container details toggle */}
+                    {instance.containers && instance.containers.length > 0 && (
+                        <button
+                            onClick={() => setShowContainers(!showContainers)}
+                            className="instance-action-btn-icon"
+                            title={showContainers ? 'Hide containers' : 'Show container details'}
+                        >
+                            <svg
+                                className="w-3.5 h-3.5"
+                                style={{
+                                    transform: showContainers ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s ease',
+                                }}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    )}
+
+                </div>
             </div>
-            
-            {instance.containers && instance.containers.length > 0 && (
-                <div className="container-info text-neutral-400 text-xs">
-                    <h5 className="font-semibold mb-1">Containers:</h5>
-                    <ul className="list-disc list-inside">
-                        {instance.containers.map(container => (
-                            <li key={container.id} className="mb-0.5">
-                                <span className="font-medium text-neutral-200">{container.name}</span>: {container.state} 
-                                {container.health && ` (${container.health})`}
+
+            {/* ── Container Details Expansion ───────────────────────────── */}
+            {showContainers && instance.containers && instance.containers.length > 0 && (
+                <div
+                    className="pl-14 pr-4 pb-3"
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                >
+                    <div
+                        className="mt-1.5 rounded-lg overflow-hidden"
+                        style={{
+                            border: '1px solid var(--color-border-default)',
+                            backgroundColor: 'var(--color-background-base)',
+                        }}
+                    >
+                        {/* Header */}
+                        <div
+                            className="px-3 py-1.5"
+                            style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                background: 'linear-gradient(to right, var(--color-background-elevated), transparent)',
+                            }}
+                        >
+                            <span
+                                className="text-xs font-semibold uppercase tracking-wide"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                                Containers
+                            </span>
+                        </div>
+
+                        {/* Container rows */}
+                        {instance.containers.map((container, idx) => (
+                            <div
+                                key={container.id || idx}
+                                className="flex items-center gap-3 px-3 py-1.5 text-xs"
+                                style={{
+                                    color: 'var(--color-text-muted)',
+                                    borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                                }}
+                            >
+                                <span
+                                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${container.state === 'running' ? 'bg-green-500' : 'bg-gray-500'}`}
+                                />
+                                <span className="font-medium flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+                                    {container.name}
+                                </span>
+                                <span>{container.state}</span>
+                                {container.health && <span>({container.health})</span>}
                                 {container.ports && container.ports.length > 0 && (
-                                    <span className="ml-2">
+                                    <span className="ml-1">
                                         Ports: {container.ports.map(p => `${p.publicPort || p.privatePort}/${p.type}`).join(', ')}
                                     </span>
                                 )}
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </div>
             )}
 
+            {/* ── Rename Modal ─────────────────────────────────────────── */}
             <RenameInstanceModal
                 isOpen={showRenameModal}
                 onClose={() => setShowRenameModal(false)}
@@ -367,6 +422,181 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                 instanceName={instanceName}
                 deviceType={instance.deviceType}
             />
+
+            {/* ── Operation Logs Modal ──────────────────────────────────── */}
+            {showLogsModal && currentOperation && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+                    onClick={() => setShowLogsModal(false)}
+                >
+                    <div
+                        className="relative w-[600px] max-h-[72vh] flex flex-col rounded-xl overflow-hidden"
+                        style={{
+                            border: '1px solid var(--color-border-default)',
+                            background: 'linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-base) 100%)',
+                            boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Modal header */}
+                        <div
+                            className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+                            style={{
+                                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                                background: 'linear-gradient(135deg, var(--color-nuance-integrations), transparent 60%)',
+                                backgroundSize: '100% 100%',
+                            }}
+                        >
+                            <div
+                                className="absolute inset-x-0 top-0 h-full pointer-events-none"
+                                style={{
+                                    background: 'linear-gradient(135deg, var(--color-nuance-integrations) 0%, transparent 55%)',
+                                    opacity: 0.1,
+                                }}
+                            />
+                            <div className="relative flex items-center gap-2.5">
+                                <div
+                                    className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+                                    style={{ backgroundColor: 'var(--color-nuance-integrations)', opacity: 0.8 }}
+                                >
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                                        Operation Logs — {instanceName}
+                                    </h4>
+                                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                                        {currentOperation.type} · {elapsedSeconds}s elapsed
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowLogsModal(false)}
+                                className="relative text-lg leading-none transition-colors"
+                                style={{ color: 'var(--color-text-muted)' }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Progress bar */}
+                        {currentOperation.progress && (
+                            <div
+                                className="px-4 py-2.5 flex-shrink-0"
+                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                            >
+                                <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
+                                    <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
+                                    <span>{currentOperation.progress.overallPercent}%</span>
+                                </div>
+                                <div
+                                    className="w-full rounded-full h-1.5"
+                                    style={{ backgroundColor: 'var(--color-background-surface)' }}
+                                >
+                                    <div
+                                        className="h-1.5 rounded-full transition-all duration-300"
+                                        style={{
+                                            width: `${currentOperation.progress.overallPercent}%`,
+                                            backgroundColor: 'var(--color-nuance-integrations)',
+                                        }}
+                                    />
+                                </div>
+                                {currentOperation.phase && (
+                                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                                        Phase: {currentOperation.phase.replace(/_/g, ' ')}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Image pull progress */}
+                        {imagePullKeys.length > 0 && (
+                            <div
+                                className="px-4 py-2 flex-shrink-0"
+                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                            >
+                                <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+                                    Image Pulls:
+                                </p>
+                                {imagePullKeys.map(imageName => {
+                                    const pull = currentOperation.progress.imagePulls[imageName];
+                                    return (
+                                        <div
+                                            key={imageName}
+                                            className="flex items-center justify-between text-xs mb-1"
+                                            style={{ color: 'var(--color-text-muted)' }}
+                                        >
+                                            <span className="truncate max-w-52" title={imageName}>
+                                                {imageName.split(':')[0]}
+                                            </span>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <span
+                                                    className="px-1.5 py-0.5 rounded text-xs text-white"
+                                                    style={{
+                                                        backgroundColor:
+                                                            pull.status === 'complete' ? 'var(--color-success)' :
+                                                            pull.status === 'extracting' ? 'var(--color-warning)' :
+                                                            'var(--color-info)',
+                                                        opacity: 0.85,
+                                                    }}
+                                                >
+                                                    {pull.status}
+                                                </span>
+                                                {pull.percent > 0 && <span>{pull.percent}%</span>}
+                                                {pull.size && <span style={{ opacity: 0.6 }}>{pull.size}</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Scrollable log output */}
+                        <div
+                            className="flex-1 overflow-y-auto px-4 py-3 font-mono text-xs space-y-0.5"
+                            style={{
+                                backgroundColor: 'var(--color-background-base)',
+                                color: 'var(--color-text-secondary)',
+                            }}
+                        >
+                            {currentOperation.output && currentOperation.output.length > 0 ? (
+                                currentOperation.output.map((line, i) => (
+                                    <div key={i} className="truncate opacity-80" title={line}>
+                                        {formatProgressLine(line)}
+                                    </div>
+                                ))
+                            ) : (
+                                <span className="italic" style={{ color: 'var(--color-text-muted)' }}>
+                                    No output yet…
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div
+                            className="flex justify-between items-center px-4 py-2.5 flex-shrink-0"
+                            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                                {currentOperation.inProgress ? 'Operation in progress…' : 'Operation complete.'}
+                            </span>
+                            {currentOperation.inProgress && (
+                                <button
+                                    onClick={handleCancelOperation}
+                                    className="text-xs px-3 py-1 rounded font-semibold text-white transition-all"
+                                    style={{ backgroundColor: 'var(--color-error)' }}
+                                >
+                                    Cancel Operation
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

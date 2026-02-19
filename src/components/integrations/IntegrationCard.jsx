@@ -14,7 +14,7 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
             setInstances(fetchedInstances);
         } catch (error) {
             console.error(`Failed to fetch instances for ${integration.name}:`, error);
-            setInstances({}); // Clear instances on error
+            setInstances({});
         } finally {
             setLoadingInstances(false);
         }
@@ -22,135 +22,136 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
 
     useEffect(() => {
         fetchInstances();
-        const interval = setInterval(fetchInstances, 5000); // Refresh instances every 5 seconds
+        const interval = setInterval(fetchInstances, 5000);
         return () => clearInterval(interval);
     }, [fetchInstances]);
 
     const handleControlClick = async (integrationName, instanceName, action) => {
         try {
             await controlIntegrationInstance(integrationName, instanceName, action);
-            // Immediately refresh instances to get updated operation status from backend
             fetchInstances();
         } catch (error) {
             console.error(`Failed to perform ${action} on ${integrationName}/${instanceName}:`, error);
-            
-            // Check if this is a Docker-related error and trigger Docker status check
             const errorMessage = error.message || error.toString();
             if (isDockerRelatedError(errorMessage)) {
-                console.log('Docker-related error detected, checking Docker status...');
-                try {
-                    await getDockerStatus(); // This will trigger a Docker status update
-                } catch (dockerError) {
+                try { await getDockerStatus(); } catch (dockerError) {
                     console.error('Failed to check Docker status:', dockerError);
                 }
             }
-            
-            // Show user-friendly error message
-            const friendlyMessage = getFriendlyErrorMessage(errorMessage);
-            alert(`Error: ${friendlyMessage}`);
-            
-            // Refresh instances even on error to clear any stale operation state
+            alert(`Error: ${getFriendlyErrorMessage(errorMessage)}`);
             fetchInstances();
         }
     };
 
-    // Helper function to detect Docker-related errors
     const isDockerRelatedError = (errorMessage) => {
         const dockerKeywords = [
-            'docker',
-            'daemon',
-            'connection refused',
-            'network is unreachable',
-            'cannot connect to the docker daemon',
-            'docker endpoint'
+            'docker', 'daemon', 'connection refused',
+            'network is unreachable', 'cannot connect to the docker daemon', 'docker endpoint'
         ];
-        
-        const lowerError = errorMessage.toLowerCase();
-        return dockerKeywords.some(keyword => lowerError.includes(keyword));
+        return dockerKeywords.some(keyword => errorMessage.toLowerCase().includes(keyword));
     };
 
-    // Helper function to provide user-friendly error messages
     const getFriendlyErrorMessage = (errorMessage) => {
-        if (isDockerRelatedError(errorMessage)) {
-            return 'Docker is not available. Please ensure Docker is running and try again.';
-        }
-        
-        if (errorMessage.includes('pulling')) {
-            return 'Failed to pull Docker images. Please check your internet connection and try again.';
-        }
-        
-        if (errorMessage.includes('network')) {
-            return 'Network error occurred. Please check your connection and try again.';
-        }
-        
-        return errorMessage; // Return original message if no specific handling
+        if (isDockerRelatedError(errorMessage)) return 'Docker is not available. Please ensure Docker is running and try again.';
+        if (errorMessage.includes('pulling')) return 'Failed to pull Docker images. Please check your internet connection and try again.';
+        if (errorMessage.includes('network')) return 'Network error occurred. Please check your connection and try again.';
+        return errorMessage;
     };
 
     const handleRenameInstance = async (integrationName, instanceName, newInstanceName) => {
         try {
             await renameIntegrationInstance(integrationName, instanceName, newInstanceName);
-            // Immediately refresh instances to show the renamed instance
             await fetchInstances();
         } catch (error) {
             console.error(`Failed to rename instance ${integrationName}/${instanceName}:`, error);
-            throw error; // Re-throw to let the modal handle the error display
+            throw error;
         }
     };
 
     const handleOpenProjectWebsite = (url) => {
-        window.open(url, '_blank'); // Open in new tab
+        window.open(url, '_blank');
     };
 
     const instanceCount = Object.keys(instances).length;
-    // Fixed: Use capital S for Status to match backend structure
     const runningCount = Object.values(instances).filter(instance => instance.status === 'running').length;
 
     return (
-        <div className="integration-card">
-            <div className="integration-header flex justify-between items-start mb-2">
-                <h3 className="text-xl font-semibold text-accent-primary">{integration.displayName}</h3>
-                <button
-                    onClick={() => handleOpenProjectWebsite(integration.projectWebsite)}
-                    className="btn-website-link text-xs py-1 px-2 rounded font-semibold flex-shrink-0"
-                >
-                    🌐 Website
-                </button>
-            </div>
-            
-            <p className="text-text-secondary text-sm mb-2">{integration.description}</p>
+        <div className="integration-row">
+            {/* Accent tint overlay — top-left to transparent */}
+            <div className="integration-row-tint" />
 
-            <div className="instance-summary text-sm text-text-muted mb-4">
-                {loadingInstances ? (
-                    <span>Loading instances...</span>
-                ) : (
-                    instanceCount > 0 ? (
-                        <span>
-                            {instanceCount} instance{instanceCount !== 1 ? 's ' : ' '}
-                            ({runningCount} running)
+            {/* Left accent stripe */}
+            <div className="integration-row-stripe" />
+
+            {/* ── Main Row ──────────────────────────────────────────────── */}
+            <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+
+                {/* [1] Chevron toggle */}
+                <button
+                    onClick={() => setShowInstances(!showInstances)}
+                    className="integration-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
+                    title={showInstances ? 'Hide Instances' : 'Show Instances'}
+                >
+                    <svg
+                        className="w-4 h-4"
+                        style={{
+                            transform: showInstances ? 'rotate(90deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                        }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+
+                {/* [2] Integration identity — grows to fill available space, no forced truncation */}
+                <div className="flex flex-col min-w-0 flex-1">
+                    <span className="integration-row-name text-sm font-bold leading-tight break-words">
+                        {integration.displayName}
+                    </span>
+                    <span className="text-xs leading-tight mt-0.5 break-words" style={{ color: 'var(--color-text-muted)' }}>
+                        {integration.description}
+                    </span>
+                </div>
+
+                {/* [3] Instance count pill — centered in its own fixed-width zone */}
+                <div className="flex items-center justify-center flex-shrink-0 w-48">
+                    {loadingInstances ? (
+                        <span className="text-xs italic" style={{ color: 'var(--color-text-muted)' }}>
+                            Loading…
                         </span>
                     ) : (
-                        <span>No instances configured</span>
-                    )
-                )}
+                        <span className="integration-count-pill text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">
+                            {instanceCount === 0
+                                ? 'No instances'
+                                : `${instanceCount} instance${instanceCount !== 1 ? 's' : ''} · ${runningCount} running`}
+                        </span>
+                    )}
+                </div>
+
+                {/* [4] Action buttons — inline, left-anchored in their group */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                        onClick={() => onCreateInstance(integration.name)}
+                        className="btn-primary py-1 px-3 text-xs"
+                    >
+                        + Add Instance
+                    </button>
+                    <button
+                        onClick={() => handleOpenProjectWebsite(integration.projectWebsite)}
+                        className="btn-website-link py-1 px-3 text-xs rounded"
+                    >
+                        🌐 Website
+                    </button>
+                </div>
+
             </div>
 
-            <div className="integration-actions flex flex-wrap gap-2 mb-4">
-                <button 
-                    onClick={() => setShowInstances(!showInstances)}
-                    className="btn-secondary py-1 px-3 rounded text-sm"
-                >
-                    {showInstances ? 'Hide Instances' : 'Show Instances'}
-                </button>
-                <button 
-                    onClick={() => onCreateInstance(integration.name)}
-                    className="btn-primary py-1 px-3 rounded text-sm"
-                >
-                    Add Instance
-                </button>
-            </div>
-            
+            {/* ── Expandable Instance Sub-Rows ─────────────────────────── */}
             {showInstances && (
-                <InstanceList 
+                <InstanceList
                     integrationName={integration.name}
                     instances={instances}
                     onControl={handleControlClick}

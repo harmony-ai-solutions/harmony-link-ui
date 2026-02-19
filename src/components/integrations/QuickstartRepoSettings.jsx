@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { setQuickstartRepoPath } from '../../services/management/integrationsService.js';
 import DirectoryBrowserModal from './DirectoryBrowserModal';
-import {openSystemUrl} from "../../services/management/systemService.js";
+import { openSystemUrl } from '../../services/management/systemService.js';
 
 const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
   const [path, setPath] = useState(currentPath || '');
@@ -54,66 +54,99 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
 
   return (
     <>
-      <div className="card-compact">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-text-primary">Quickstart Repository Settings</h3>
+      <div className="integration-row">
+        {/* Accent tint overlay */}
+        <div className="integration-row-tint" />
+
+        {/* Left accent stripe */}
+        <div className="integration-row-stripe" />
+
+        {/* ── Header Row ─────────────────────────────────────────────── */}
+        <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+
+          {/* Identity */}
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="integration-row-name text-sm font-bold leading-tight break-words">
+              Quickstart Repository
+            </span>
+            <span className="text-xs leading-tight mt-0.5 break-words" style={{ color: 'var(--color-text-muted)' }}>
+              Local path to the Harmony AI Quickstart repository
+            </span>
+          </div>
+
+          {/* GitHub button */}
           <button
             onClick={handleOpenGitHub}
             disabled={githubLoading}
-            className="btn-primary text-sm py-1.5 px-3 disabled:opacity-50"
-            title="Open GitHub repository in browser"
+            className="btn-website-link py-1 px-3 text-xs rounded flex-shrink-0 disabled:opacity-50"
+            title="Open GitHub repository"
           >
-            {githubLoading ? 'Opening...' : '📂 GitHub Repo'}
+            {githubLoading ? '…' : '🌐 GitHub'}
           </button>
         </div>
-        
-        {isEditing ? (
-          <div className="flex flex-col space-y-2">
-            <input
-              type="text"
-              value={path}
-              onChange={(e) => setPath(e.target.value)}
-              placeholder="Enter path to quickstart repository (e.g., D:/projects/quickstart)"
-              className="input-field w-full"
-            />
-            {error && <p className="text-status-error text-sm">{error}</p>}
-            <div className="flex space-x-2">
-              <button 
-                onClick={handleSave} 
-                className="btn-primary"
-                disabled={loading || !path}
-              >
-                {loading ? 'Saving...' : 'Save Path'}
-              </button>
-              <button 
-                onClick={handleBrowse} 
-                className="btn-secondary"
-                disabled={loading}
-              >
-                Browse
-              </button>
+
+        {/* ── Path Configuration Area ─────────────────────────────────── */}
+        <div
+          className="relative px-5 py-3"
+          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.07)' }}
+        >
+          {isEditing ? (
+            /* Editing state */
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={path}
+                  onChange={(e) => setPath(e.target.value)}
+                  placeholder="Enter path to quickstart repository (e.g., D:/projects/quickstart)"
+                  className="input-field flex-1 text-sm"
+                />
+                <button
+                  onClick={handleBrowse}
+                  disabled={loading}
+                  className="instance-action-btn flex-shrink-0 disabled:opacity-50"
+                >
+                  Browse
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={loading || !path}
+                  className="instance-action-btn-success flex-shrink-0 disabled:opacity-50"
+                >
+                  {loading ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+              {error && (
+                <p className="text-xs" style={{ color: 'var(--color-error)' }}>
+                  {error}
+                </p>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-medium text-text-secondary flex-shrink-0">Current Path:</span>
+          ) : (
+            /* Display state */
+            <div className="flex items-center gap-3">
+              <span
+                className="text-xs font-medium flex-shrink-0"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Path:
+              </span>
               <input
                 type="text"
                 value={path || 'Not configured'}
                 disabled
-                className="input-field flex-1 font-mono text-sm opacity-90 cursor-default"
-                style={{ color: 'var(--color-status-success)' }}
+              className="input-field flex-1 font-mono text-xs opacity-90 cursor-default"
+                style={{ color: 'var(--color-accent-primary)' }}
               />
+              <button
+                onClick={() => setIsEditing(true)}
+                className="instance-action-btn flex-shrink-0"
+              >
+                Edit
+              </button>
             </div>
-            <button 
-              onClick={() => setIsEditing(true)} 
-              className="btn-secondary flex-shrink-0"
-            >
-              Edit Path
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Directory Browser Modal */}

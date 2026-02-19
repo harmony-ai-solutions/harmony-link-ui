@@ -167,21 +167,28 @@ const IntegrationsView = () => {
       </div>
 
       <div className="flex-1 p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
+        <div className="flex items-start gap-3">
 
-          <DockerStatusIndicator dockerStatus={dockerStatus} />
+          {/* Quickstart repo settings — capped at half the screen width */}
+          <div className="flex-1 min-w-0 max-w-[50%]">
+            <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
+          </div>
 
-          <button 
-            onClick={fetchIntegrationsAndStatuses}
-            disabled={refreshing}
-            className="btn-secondary"
-          >
-            {refreshing ? 'Refreshing...' : 'Refresh All'}
-          </button>
+          {/* Docker status badge + Refresh All — stacked at far right, button centered below badge */}
+          <div className="flex flex-col items-center gap-2 flex-shrink-0 ml-auto">
+            <DockerStatusIndicator dockerStatus={dockerStatus} />
+            <button
+              onClick={fetchIntegrationsAndStatuses}
+              disabled={refreshing}
+              className="btn-secondary"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh All'}
+            </button>
+          </div>
+
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-3">
         {integrations.map((integration) => (
           <IntegrationCard
             key={integration.name}

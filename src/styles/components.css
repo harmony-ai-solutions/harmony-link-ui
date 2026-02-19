@@ -1,4 +1,4 @@
-/* Base Layout */
+*/* Base Layout */
 body {
     background-color: var(--color-background-base);
     color: var(--color-text-primary);
@@ -323,4 +323,292 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 .btn-website-link:hover {
     filter: brightness(1.15);
     transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Integration Row — Modern full-width row design with gradient
+   ═══════════════════════════════════════════════════════════════════ */
+
+.integration-row {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border-default);
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.integration-row:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Prismatic tint overlay: accent-primary color bleeds from top-left */
+.integration-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-primary) 0%,
+        transparent 55%
+    );
+    opacity: 0.09;
+}
+
+/* Left accent stripe */
+.integration-row-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(
+        to bottom,
+        var(--color-accent-primary),
+        var(--color-accent-secondary)
+    );
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+/* Integration name uses accent-primary color */
+.integration-row-name {
+    color: var(--color-accent-primary);
+}
+
+/* Chevron button */
+.integration-row-chevron {
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.integration-row-chevron:hover {
+    color: var(--color-accent-primary);
+}
+
+/* Instance count pill */
+.integration-count-pill {
+    background-color: var(--color-background-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Instance Rows — Inset sub-rows nested under integration rows
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Container that wraps all instance sub-rows */
+.instance-rows-container {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Individual instance row */
+.instance-row {
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background-color 0.15s ease;
+}
+
+.instance-row:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+/* Subtle secondary accent tint overlay (dimmer than integration row) */
+.instance-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-secondary) 0%,
+        transparent 40%
+    );
+    opacity: 0.04;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Instance Action Buttons — Compact XS pill-style buttons
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Base button — neutral/elevated */
+.instance-action-btn {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn:hover:not(:disabled) {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-border-hover);
+}
+
+.instance-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Success (start) */
+.instance-action-btn-success {
+    background-color: var(--color-success);
+    border: 1px solid var(--color-success);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn-success:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.instance-action-btn-success:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Danger (stop) */
+.instance-action-btn-danger {
+    background-color: var(--color-error);
+    border: 1px solid var(--color-error);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.instance-action-btn-danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Warning (restart) */
+.instance-action-btn-warning {
+    background-color: var(--color-warning);
+    border: 1px solid var(--color-warning);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn-warning:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.instance-action-btn-warning:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Info (config files) */
+.instance-action-btn-info {
+    background-color: var(--color-info);
+    border: 1px solid var(--color-info);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn-info:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.instance-action-btn-info:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Accent/secondary (open web UI) */
+.instance-action-btn-accent {
+    background-color: var(--color-accent-secondary);
+    border: 1px solid var(--color-accent-secondary);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.instance-action-btn-accent:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.instance-action-btn-accent:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Icon-only button (logs, container toggle) */
+.instance-action-btn-icon {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-muted);
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.instance-action-btn-icon:hover:not(:disabled) {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    background-color: var(--color-background-hover);
+}
+
+.instance-action-btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }

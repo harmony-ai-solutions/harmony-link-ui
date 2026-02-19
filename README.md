@@ -91,6 +91,24 @@ npm run dev:speech-engine
 
 For local HSE development, always use **Speech Engine mode**.
 
+### Using from Harmony Link Repository
+
+If you are working from the `harmony-link` repository and `frontend/` is not present yet, clone the unified frontend into `frontend/` first:
+
+```bash
+# Clone the repository
+git clone https://github.com/harmony-ai-solutions/harmony-link-ui.git frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start in Harmony Link mode (default)
+npm run dev
+```
+
+For local Harmony Link development, use **Harmony Link mode**.
+
 ### Running in Different Modes
 
 #### Harmony Link Mode (Default)
@@ -166,6 +184,10 @@ docker run -p 8080:80 harmonyspeech-ui
 ### Using Pre-built Images
 
 ```bash
+# Pull and run the latest Harmony Link UI image
+docker pull harmonyai/harmony-link-ui:latest
+docker run -p 8080:80 harmonyai/harmony-link-ui:latest
+
 # Pull and run the latest Harmony Speech Engine UI image
 docker pull harmonyai/harmonyspeech-ui:latest
 docker run -p 8080:80 harmonyai/harmonyspeech-ui:latest

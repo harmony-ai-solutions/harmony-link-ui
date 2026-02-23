@@ -41,6 +41,8 @@ import VisionOpenAISettingsView from './VisionOpenAISettingsView.jsx';
 import VisionOpenAICompatibleSettingsView from './VisionOpenAICompatibleSettingsView.jsx';
 import VisionOpenRouterSettingsView from './VisionOpenRouterSettingsView.jsx';
 
+import ImaginationComfyUISettingsView from './ImaginationComfyUISettingsView.jsx';
+
 import RAGGeneralSettingsView from './RAGGeneralSettingsView.jsx';
 import RAGLocalAISettingsView from './RAGLocalAISettingsView.jsx';
 import RAGOpenAISettingsView from './RAGOpenAISettingsView.jsx';
@@ -78,7 +80,8 @@ const COMPONENT_MAP = {
     VisionOpenAISettingsView,
     VisionOpenAICompatibleSettingsView,
     VisionOpenRouterSettingsView,
-    RAGGeneralSettingsView,    
+    ImaginationComfyUISettingsView,
+    RAGGeneralSettingsView,
     RAGLocalAISettingsView,
     RAGOpenAISettingsView,
     RAGOpenAICompatibleSettingsView,

@@ -113,3 +113,16 @@ export async function listProviderModels(module, provider, config) {
     await handleResponse(resp, `Failed to fetch models for ${module}/${provider}`);
     return await resp.json();
 }
+
+export async function parseImaginationWorkflow(workflowJSON) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/module-configs/imagination/parse-workflow`,
+        {
+            method: 'POST',
+            headers: getJsonHeaders(),
+            body: JSON.stringify({ workflow_json: workflowJSON }),
+        }
+    );
+    await handleResponse(resp, 'Failed to parse imagination workflow');
+    return await resp.json(); // { nodes: [ { id, title, class_type, inputs: [...] } ] }
+}

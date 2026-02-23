@@ -14,7 +14,8 @@ export const MODULE_TYPE_OPTIONS = [
     { id: 'rag', name: 'RAG', emoji: '📚' },
     { id: 'movement', name: 'Movement', emoji: '💃' },
     { id: 'cognition', name: 'Cognition', emoji: '🧩' },
-    { id: 'vision', name: 'Vision', emoji: '👁️' }
+    { id: 'vision', name: 'Vision', emoji: '👁️' },
+    { id: 'imagination', name: 'Imagination', emoji: '🎨' }
 ];
 
 export const MODULE_CONFIGS = {
@@ -164,6 +165,23 @@ export const MODULE_CONFIGS = {
                     harmonyspeech: 'TTSHarmonySpeechSettingsView',
                     openai: 'TTSOpenAISettingsView',
                     kindroid: 'TTSKindroidSettingsView'
+                }
+            }
+        ]
+    },
+    imagination: {
+        generalSettingsComponent: null,
+        providers: [
+            {
+                id: 'imagination',
+                name: 'Image Generation Provider',
+                settingsKey: 'provider',
+                providerOptions: [
+                    { id: 'disabled', name: 'Disabled', logo: logo_blank },
+                    { id: 'comfyui', name: 'ComfyUI', logo: logo_blank },
+                ],
+                components: {
+                    comfyui: 'ImaginationComfyUISettingsView',
                 }
             }
         ]

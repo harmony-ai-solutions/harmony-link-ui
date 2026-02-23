@@ -7,7 +7,8 @@ export const MODULES = {
     RAG: 'rag',
     COGNITION: 'cognition',
     MOVEMENT: 'movement',
-    VISION: 'vision'
+    VISION: 'vision',
+    IMAGINATION: 'imagination'
 };
 
 // Provider Names
@@ -22,5 +23,6 @@ export const PROVIDERS = {
     LOCALAI: 'localai',
     KAJIWOTO: 'kajiwoto',
     CHARACTERAI: 'characterai',
-    OPENROUTER: 'openrouter'
+    OPENROUTER: 'openrouter',
+    COMFYUI: 'comfyui'
 };

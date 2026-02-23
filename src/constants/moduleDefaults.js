@@ -201,6 +201,28 @@ export const MODULE_DEFAULTS = {
             executionthreshold: 0.5
         }
     },
+    imagination: {
+        [PROVIDERS.COMFYUI]: {
+            baseurl: "http://localhost:3000",
+            apikey: "",
+            workflowprofiles: {
+                default: {
+                    workflowjson: "",
+                    promptnodeid: "",
+                    promptfieldname: "text",
+                    negativenodeid: "",
+                    negativefieldname: "text",
+                    seednodeid: "",
+                    seedfieldname: "seed",
+                    width: 512,
+                    height: 512,
+                    charactertrigger: "",
+                    characterbaseprompt: "",
+                    systempromphint: ""
+                }
+            }
+        }
+    },
     vision: {
         provider: null,
         resolution_width: 640,

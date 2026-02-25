@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
-import { parseImaginationWorkflow, validateProviderConfig } from '../../services/management/configService.js';
+import { parseImaginationWorkflow, validateProviderConfig, testImaginationGeneration } from '../../services/management/configService.js';
 import IntegrationDisplay from '../integrations/IntegrationDisplay.jsx';
 import ConfigVerificationSection from '../widgets/ConfigVerificationSection.jsx';
+import SettingsTooltip from '../settings/SettingsTooltip.jsx';
 
 const EMPTY_PROFILE = {
     workflowjson: '',
@@ -25,6 +26,12 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
     const defaults = MODULE_DEFAULTS[MODULES.IMAGINATION][PROVIDERS.COMFYUI];
     const merged = mergeConfigWithDefaults(initialSettings, defaults);
 
+    // Tooltip visibility (shared index pattern used by SettingsTooltip)
+    const [tooltipVisible, setTooltipVisible] = useState(0);
+
+    // Ref to suppress useEffect re-initialisation when the save came from us
+    const isSelfSave = useRef(false);
+
     // Connection settings
     const [baseURL, setBaseURL] = useState(merged.baseurl || '');
     const [apiKey, setAPIKey] = useState(merged.apikey || '');
@@ -42,11 +49,21 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
     const [parseError, setParseError] = useState('');
     const [parsedNodes, setParsedNodes] = useState([]);
 
+    // Test generation state
+    const [testPositivePrompt, setTestPositivePrompt] = useState('');
+    const [testNegativePrompt, setTestNegativePrompt] = useState('');
+    const [testSeed, setTestSeed] = useState(0);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [testResult, setTestResult] = useState(null);   // { images: [], seed_used: number }
+    const [testError, setTestError] = useState('');
+
     // Current profile shortcut
     const currentProfile = profiles[selectedProfile] || { ...EMPTY_PROFILE };
 
-    // Persist all settings upward
+    // Persist all settings upward.
+    // Sets isSelfSave so the useEffect skips re-initialisation for our own saves.
     const save = (updatedBaseURL, updatedAPIKey, updatedProfiles) => {
+        isSelfSave.current = true;
         saveSettingsFunc({
             ...merged,
             baseurl: updatedBaseURL,
@@ -154,7 +171,37 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         return node ? node.inputs : [];
     };
 
+    // Test generation handler — calls the stateless management API endpoint directly
+    const handleTestGeneration = async () => {
+        setIsGenerating(true);
+        setTestResult(null);
+        setTestError('');
+        try {
+            const comfyConfig = {
+                baseurl: baseURL,
+                apikey: apiKey,
+                workflowprofiles: profiles,
+            };
+            const result = await testImaginationGeneration(
+                comfyConfig, selectedProfile,
+                testPositivePrompt, testNegativePrompt,
+                testSeed
+            );
+            setTestResult(result);
+        } catch (err) {
+            setTestError(err.message);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     useEffect(() => {
+        // Skip re-initialisation when we triggered the update ourselves via save()
+        if (isSelfSave.current) {
+            isSelfSave.current = false;
+            return;
+        }
+        // External update (e.g. switching config in parent) — full re-init
         const remerged = mergeConfigWithDefaults(initialSettings, defaults);
         setBaseURL(remerged.baseurl || '');
         setAPIKey(remerged.apikey || '');
@@ -241,6 +288,11 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-text-secondary mb-1">
                         Workflow JSON
+                        <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            Paste the ComfyUI API-format workflow here ("Save (API Format)" from the ComfyUI web UI, not the UI format).
+                            This JSON is used as the base execution graph for every image generation. The fields below define
+                            where Harmony Link injects prompts and the random seed into this graph at runtime.
+                        </SettingsTooltip>
                     </label>
                     <textarea
                         className="input-field w-full font-mono text-xs"
@@ -273,7 +325,13 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 <div className="grid grid-cols-2 gap-4 mb-4">
                     {/* Prompt node */}
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Prompt Node</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Prompt Node
+                            <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The ComfyUI node ID whose input receives the AI-generated positive image description.
+                                Typically a CLIPTextEncode node labelled "Positive" in your workflow.
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 ? (
                             <select className="input-field w-full"
                                 value={currentProfile.promptnodeid}
@@ -289,7 +347,13 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                         )}
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Prompt Field</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Prompt Field
+                            <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The input field name within the Prompt Node that accepts the positive text prompt.
+                                Usually "text" for CLIPTextEncode nodes. Use the dropdown after parsing to see all available inputs on the selected node.
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 && currentProfile.promptnodeid ? (
                             <select className="input-field w-full"
                                 value={currentProfile.promptfieldname}
@@ -307,7 +371,13 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
 
                     {/* Negative prompt node */}
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Negative Node</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Negative Node
+                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The ComfyUI node ID whose input receives the negative prompt (things to avoid in the image).
+                                Typically a CLIPTextEncode node labelled "Negative" in your workflow.
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 ? (
                             <select className="input-field w-full"
                                 value={currentProfile.negativenodeid}
@@ -323,7 +393,12 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                         )}
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Negative Field</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Negative Field
+                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The input field name within the Negative Node that accepts the negative text prompt. Usually "text".
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 && currentProfile.negativenodeid ? (
                             <select className="input-field w-full"
                                 value={currentProfile.negativefieldname}
@@ -341,7 +416,13 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
 
                     {/* Seed node */}
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Seed Node</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Seed Node
+                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The ComfyUI node ID that holds the random seed for image generation.
+                                Typically a KSampler node. Harmony Link injects the seed here to allow reproducible generations.
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 ? (
                             <select className="input-field w-full"
                                 value={currentProfile.seednodeid}
@@ -357,7 +438,12 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                         )}
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">Seed Field</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                            Seed Field
+                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                The input field name within the Seed Node that holds the seed value. Usually "seed" or "noise_seed" depending on the sampler type.
+                            </SettingsTooltip>
+                        </label>
                         {parsedNodes.length > 0 && currentProfile.seednodeid ? (
                             <select className="input-field w-full"
                                 value={currentProfile.seedfieldname}
@@ -376,7 +462,14 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
 
                 {/* Dimensions */}
                 <div className="flex items-center gap-4 mb-4">
-                    <label className="text-sm font-medium text-text-secondary w-1/4">Image Size</label>
+                    <label className="text-sm font-medium text-text-secondary w-1/4">
+                        Image Size
+                        <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            The width × height (in pixels) of the generated image. Harmony Link injects these values into the
+                            first EmptyLatentImage node found in the workflow. Leave at your desired output resolution —
+                            use multiples of 64 (e.g. 512×512, 768×1024) for best compatibility with most SD models.
+                        </SettingsTooltip>
+                    </label>
                     <div className="flex items-center gap-2">
                         <input type="number" className="input-field w-24"
                             value={currentProfile.width}
@@ -395,10 +488,25 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 <div className="border-t border-border-default pt-4">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                         Character / Selfie Settings
+                        <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            These settings define how character-specific image generation ("selfies") works.
+                            When the Cognition module decides to generate a selfie, the final positive prompt sent to ComfyUI is assembled in three layers:
+                            1. Trigger Word(s) — prepended first to activate the character LoRA
+                            2. Base Prompt — your fixed appearance description, appended after the trigger words
+                            3. Activity Hint — dynamically generated by the AI at runtime based on the current scene/context (e.g. "smiling at the camera in a park")
+                            Final prompt = {"{trigger words}"}, {"{base prompt}"}, {"{activity hint}"}
+                        </SettingsTooltip>
                     </h5>
 
                     <div className="flex items-center mb-3 w-full">
-                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2">Trigger Word(s)</label>
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2">
+                            Trigger Word(s)
+                            <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                LoRA trigger words that activate your character's LoRA model. These are prepended to the start of every selfie prompt.
+                                Example: "ohwx woman". Without these, the LoRA won't recognise the character.
+                                Leave empty if you're not using a character LoRA.
+                            </SettingsTooltip>
+                        </label>
                         <input type="text" className="input-field w-3/4"
                             value={currentProfile.charactertrigger}
                             onChange={e => updateProfileField('charactertrigger', e.target.value)}
@@ -406,7 +514,14 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                     </div>
 
                     <div className="flex items-start mb-3 w-full">
-                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">Base Prompt</label>
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
+                            Base Prompt
+                            <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                A fixed prompt describing your character's permanent visual appearance — things that should always be present in every selfie
+                                (hair colour, eye colour, clothing style, aesthetic). Example: "portrait of ohwx woman, short red hair, blue eyes, highly detailed".
+                                This is combined with the dynamically generated activity description from the Cognition module at runtime.
+                            </SettingsTooltip>
+                        </label>
                         <textarea className="input-field w-3/4" rows={3}
                             value={currentProfile.characterbaseprompt}
                             onChange={e => updateProfileField('characterbaseprompt', e.target.value)}
@@ -414,12 +529,102 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                     </div>
 
                     <div className="flex items-start mb-3 w-full">
-                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">System Hint</label>
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
+                            System Hint
+                            <SettingsTooltip tooltipIndex={12} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                An optional instruction injected into the LLM system prompt when generating the activity description for a selfie.
+                                Use this to guide the AI on what to describe. Example: "Describe only the setting and current activity. Do NOT describe physical appearance — that is handled separately. Be vivid but concise (max 20 words)."
+                                Without this hint the AI may redundantly describe appearance details already covered in the Base Prompt.
+                            </SettingsTooltip>
+                        </label>
                         <textarea className="input-field w-3/4" rows={3}
                             value={currentProfile.systempromphint}
                             onChange={e => updateProfileField('systempromphint', e.target.value)}
                             placeholder="Hint injected into the LLM system prompt when generating selfie descriptions" />
                     </div>
+                </div>
+
+                {/* ── Test Generation ── */}
+                <div className="border-t border-border-default pt-4 mt-2">
+                    <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
+                        Test Generation
+                        <SettingsTooltip tooltipIndex={13} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            Tests the current saved configuration directly against the ComfyUI API using the selected profile.
+                            No entity or simulator required — a temporary connection is created for this test only.
+                            The generated image(s) will be displayed below. Use Seed 0 for a random seed each time,
+                            or set a specific seed to get reproducible results.
+                        </SettingsTooltip>
+                    </h5>
+                    <p className="text-xs text-text-muted mb-3">
+                        Profile: <span className="text-text-primary font-medium">{selectedProfile}</span>
+                    </p>
+
+                    <div className="flex items-start mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
+                            Positive Prompt
+                        </label>
+                        <textarea className="input-field w-3/4" rows={2}
+                            value={testPositivePrompt}
+                            onChange={e => setTestPositivePrompt(e.target.value)}
+                            placeholder="e.g. a beautiful sunset over mountains, highly detailed..." />
+                    </div>
+
+                    <div className="flex items-start mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
+                            Negative Prompt
+                        </label>
+                        <textarea className="input-field w-3/4" rows={2}
+                            value={testNegativePrompt}
+                            onChange={e => setTestNegativePrompt(e.target.value)}
+                            placeholder="(optional) e.g. blurry, low quality, watermark..." />
+                    </div>
+
+                    <div className="flex items-center mb-4 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2">
+                            Seed
+                            <SettingsTooltip tooltipIndex={14} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                Set a specific seed value to get reproducible results from the same prompt.
+                                Leave at 0 to use a random seed on each generation.
+                                The seed actually used is reported after a successful generation.
+                            </SettingsTooltip>
+                        </label>
+                        <input type="number" className="input-field w-48"
+                            value={testSeed}
+                            onChange={e => setTestSeed(parseInt(e.target.value) || 0)}
+                            min={0} step={1}
+                            placeholder="0 = random" />
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-4">
+                        <button className="btn-primary px-4 py-1 text-sm"
+                            onClick={handleTestGeneration}
+                            disabled={isGenerating || !baseURL}>
+                            {isGenerating ? '⏳ Generating...' : '🎨 Generate Test Image'}
+                        </button>
+                        {!baseURL && (
+                            <span className="text-xs text-text-muted">Configure a Base URL first.</span>
+                        )}
+                    </div>
+
+                    {testError && (
+                        <div className="rounded p-2 bg-red-900/30 border border-red-700 text-xs text-red-400 mb-3">
+                            {testError}
+                        </div>
+                    )}
+
+                    {testResult && (
+                        <div>
+                            <p className="text-xs text-text-muted mb-2">
+                                ✓ Generation successful — Seed used: <span className="text-text-primary font-medium">{testResult.seed_used}</span>
+                            </p>
+                            <div className="flex flex-wrap gap-3">
+                                {testResult.images && testResult.images.map((img, idx) => (
+                                    <img key={idx} src={img} alt={`Generated ${idx + 1}`}
+                                        className="rounded border border-border-default max-w-xs max-h-64 object-contain" />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

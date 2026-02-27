@@ -27,7 +27,7 @@
     "react-dropzone": "^14.3.8",
     "react-h5-audio-player": "^3.10.0",
     "react-plotly.js": "^2.6.0",
-    "zustand": "^4.5.7"
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",

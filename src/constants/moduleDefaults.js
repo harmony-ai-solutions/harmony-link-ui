@@ -212,12 +212,13 @@ export const MODULE_DEFAULTS = {
                     promptfieldname: "text",
                     negativenodeid: "",
                     negativefieldname: "text",
+                    negativeprompt: "",
                     seednodeid: "",
                     seedfieldname: "seed",
                     width: 512,
                     height: 512,
-                    charactertrigger: "",
-                    characterbaseprompt: "",
+                    trigger: "",
+                    baseprompt: "",
                     systempromphint: ""
                 }
             }

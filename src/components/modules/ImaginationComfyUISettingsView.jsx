@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
 import { MODULES, PROVIDERS } from '../../constants/modules.js';
@@ -13,12 +13,13 @@ const EMPTY_PROFILE = {
     promptfieldname: 'text',
     negativenodeid: '',
     negativefieldname: 'text',
+    negativeprompt: '',
     seednodeid: '',
     seedfieldname: 'seed',
     width: 512,
     height: 512,
-    charactertrigger: '',
-    characterbaseprompt: '',
+    trigger: '',
+    baseprompt: '',
     systempromphint: '',
 };
 
@@ -56,6 +57,9 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
     const [isGenerating, setIsGenerating] = useState(false);
     const [testResult, setTestResult] = useState(null);   // { images: [], seed_used: number }
     const [testError, setTestError] = useState('');
+
+    // Profile removal confirmation
+    const [confirmRemove, setConfirmRemove] = useState(false);
 
     // Current profile shortcut
     const currentProfile = profiles[selectedProfile] || { ...EMPTY_PROFILE };
@@ -118,6 +122,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setProfiles(updatedProfiles);
         setSelectedProfile(name);
         setNewProfileName('');
+        setConfirmRemove(false);
         setParsedNodes([]);
         save(baseURL, apiKey, updatedProfiles);
     };
@@ -132,6 +137,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setProfiles(updatedProfiles);
         setSelectedProfile(nextProfile);
         setParsedNodes([]);
+        setConfirmRemove(false);
         save(baseURL, apiKey, updatedProfiles);
     };
 
@@ -158,6 +164,23 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         }
     };
 
+    // Silently parse the workflow JSON for a given profile and update parsedNodes.
+    // Used on profile load and profile switch to restore node dropdown state automatically.
+    // Does NOT update parseError — use the explicit "Parse" button for user-facing errors.
+    const parseWorkflowForProfile = useCallback(async (workflowJson) => {
+        if (!workflowJson) return;
+        try {
+            const result = await parseImaginationWorkflow(workflowJson);
+            if (result && result.nodes && result.nodes.length > 0) {
+                setParsedNodes(result.nodes);
+            } else {
+                setParsedNodes([]);
+            }
+        } catch {
+            setParsedNodes([]);
+        }
+    }, []);
+
     // Node dropdown options
     const nodeOptions = parsedNodes.map(n => ({
         value: n.id,
@@ -177,6 +200,21 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setTestResult(null);
         setTestError('');
         try {
+            // Assemble effective positive prompt: trigger + baseprompt + user test input
+            const parts = [
+                currentProfile.trigger,
+                currentProfile.baseprompt,
+                testPositivePrompt,
+            ].filter(Boolean);
+            const effectivePositive = parts.join(', ');
+
+            // Assemble effective negative prompt: profile negativeprompt + user test input
+            const negParts = [
+                currentProfile.negativeprompt,
+                testNegativePrompt,
+            ].filter(Boolean);
+            const effectiveNegative = negParts.join(', ');
+
             const comfyConfig = {
                 baseurl: baseURL,
                 apikey: apiKey,
@@ -184,7 +222,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
             };
             const result = await testImaginationGeneration(
                 comfyConfig, selectedProfile,
-                testPositivePrompt, testNegativePrompt,
+                effectivePositive, effectiveNegative,
                 testSeed
             );
             setTestResult(result);
@@ -206,9 +244,15 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setBaseURL(remerged.baseurl || '');
         setAPIKey(remerged.apikey || '');
         setProfiles(remerged.workflowprofiles || { default: { ...EMPTY_PROFILE } });
-        setSelectedProfile(Object.keys(remerged.workflowprofiles || { default: EMPTY_PROFILE })[0] || 'default');
+        const firstProfile = Object.keys(remerged.workflowprofiles || { default: EMPTY_PROFILE })[0] || 'default';
+        setSelectedProfile(firstProfile);
         setParsedNodes([]);
-    }, [initialSettings]);
+        // Auto-parse so node dropdowns are immediately available for saved configs
+        const firstWorkflowJson = remerged.workflowprofiles?.[firstProfile]?.workflowjson;
+        if (firstWorkflowJson) {
+            parseWorkflowForProfile(firstWorkflowJson);
+        }
+    }, [initialSettings, parseWorkflowForProfile]);
 
     return (
         <div className="flex flex-col w-full gap-4 pt-2">
@@ -252,29 +296,58 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
             <div className="border border-border-default rounded p-3 mb-1">
                 <h4 className="text-sm font-semibold text-accent-primary mb-3">Workflow Profiles</h4>
 
-                {/* Profile tabs */}
-                <div className="flex flex-wrap gap-2 mb-3">
+                {/* Profile tabs — active non-default tab shows an × to initiate removal */}
+                <div className="flex flex-wrap gap-2 mb-2">
                     {Object.keys(profiles).map(name => (
                         <button key={name}
-                            className={`px-3 py-1 rounded text-sm ${selectedProfile === name ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => { setSelectedProfile(name); setParsedNodes([]); }}>
+                            className={`px-3 py-1 rounded text-sm flex items-center gap-1.5 ${selectedProfile === name ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => {
+                                setSelectedProfile(name);
+                                setParsedNodes([]);
+                                setConfirmRemove(false);
+                                const json = profiles[name]?.workflowjson;
+                                if (json) {
+                                    parseWorkflowForProfile(json);
+                                }
+                            }}>
                             {name}
+                            {selectedProfile === name && name !== 'default' && Object.keys(profiles).length > 1 && (
+                                <span
+                                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none transition-all hover:brightness-125"
+                                    style={{ backgroundColor: 'var(--color-error)', color: '#ffffff' }}
+                                    title={`Remove "${name}"`}
+                                    onClick={e => { e.stopPropagation(); setConfirmRemove(true); }}>
+                                    ✕
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
 
-                {/* Add / Remove profile */}
+                {/* Confirmation banner — appears after clicking × on a tab */}
+                {confirmRemove && (
+                    <div className="flex items-center gap-3 mb-3 px-3 py-2 rounded bg-red-900/20 border border-red-700/40">
+                        <span className="text-xs text-text-muted flex-1">
+                            Remove profile <span className="text-text-primary font-medium">"{selectedProfile}"</span>? This cannot be undone.
+                        </span>
+                        <button className="px-3 py-1 text-xs rounded bg-red-700 hover:bg-red-600 text-white"
+                            onClick={() => { setConfirmRemove(false); handleRemoveProfile(); }}>
+                            Yes, Remove
+                        </button>
+                        <button className="btn-secondary px-3 py-1 text-xs"
+                            onClick={() => setConfirmRemove(false)}>
+                            Cancel
+                        </button>
+                    </div>
+                )}
+
+                {/* Add profile */}
                 <div className="flex items-center gap-2">
                     <input type="text" className="input-field flex-1"
                         value={newProfileName}
                         onChange={e => setNewProfileName(e.target.value)}
                         placeholder="New profile name..." />
                     <button className="btn-primary px-3 py-1 text-sm" onClick={handleAddProfile}>Add</button>
-                    <button className="btn-secondary px-3 py-1 text-sm"
-                        onClick={handleRemoveProfile}
-                        disabled={Object.keys(profiles).length <= 1}>
-                        Remove
-                    </button>
                 </div>
             </div>
 
@@ -301,7 +374,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                         onChange={e => updateProfileField('workflowjson', e.target.value)}
                         placeholder="Paste your ComfyUI workflow JSON here (API format, not UI format)..." />
                     <div className="flex items-center gap-3 mt-2">
-                        <button className="btn-primary px-4 py-1 text-sm"
+                        <button className="btn-secondary px-4 py-1 text-sm"
                             onClick={handleParseWorkflow}
                             disabled={isParsing}>
                             {isParsing ? 'Parsing...' : '⚙ Parse Workflow Nodes'}
@@ -322,141 +395,138 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 </div>
 
                 {/* Node / Field Mappings */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                    {/* Prompt node */}
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Prompt Node
+                <div className="mb-4">
+                    <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                        Node Mappings
+                    </h5>
+                    <p className="text-xs text-text-muted mb-3">
+                        Select which ComfyUI nodes receive the positive prompt, negative prompt, and random seed.
+                        Parse the workflow JSON above to enable dropdown selection.
+                    </p>
+
+                    {/* Prompt pair */}
+                    <div className="flex items-center gap-2 mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 shrink-0">
+                            Positive Prompt
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The ComfyUI node ID whose input receives the AI-generated positive image description.
-                                Typically a CLIPTextEncode node labelled "Positive" in your workflow.
+                                Node ID and field name that receive the AI-generated positive image description.
+                                Typically a CLIPTextEncode node labelled "Positive". The field is usually "text".
                             </SettingsTooltip>
                         </label>
-                        {parsedNodes.length > 0 ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.promptnodeid}
-                                onChange={e => updateProfileField('promptnodeid', e.target.value)}>
-                                <option value="">— select —</option>
-                                {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.promptnodeid}
-                                onChange={e => updateProfileField('promptnodeid', e.target.value)}
-                                placeholder="e.g. 6" />
-                        )}
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.promptnodeid}
+                                    onChange={e => updateProfileField('promptnodeid', e.target.value)}>
+                                    <option value="">— node —</option>
+                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.promptnodeid}
+                                    onChange={e => updateProfileField('promptnodeid', e.target.value)}
+                                    placeholder="Node ID, e.g. 6" />
+                            )}
+                        </div>
+                        <span className="text-text-muted text-xs shrink-0">→</span>
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 && currentProfile.promptnodeid ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.promptfieldname}
+                                    onChange={e => updateProfileField('promptfieldname', e.target.value)}>
+                                    <option value="">— field —</option>
+                                    {fieldsForNode(currentProfile.promptnodeid).map(f => <option key={f} value={f}>{f}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.promptfieldname}
+                                    onChange={e => updateProfileField('promptfieldname', e.target.value)}
+                                    placeholder="Field name, e.g. text" />
+                            )}
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Prompt Field
+                    {/* Negative pair */}
+                    <div className="flex items-center gap-2 mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 shrink-0">
+                            Negative Prompt
                             <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The input field name within the Prompt Node that accepts the positive text prompt.
-                                Usually "text" for CLIPTextEncode nodes. Use the dropdown after parsing to see all available inputs on the selected node.
+                                Node ID and field name that receive the negative prompt (things to avoid).
+                                Typically a CLIPTextEncode node labelled "Negative". The field is usually "text".
                             </SettingsTooltip>
                         </label>
-                        {parsedNodes.length > 0 && currentProfile.promptnodeid ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.promptfieldname}
-                                onChange={e => updateProfileField('promptfieldname', e.target.value)}>
-                                <option value="">— select —</option>
-                                {fieldsForNode(currentProfile.promptnodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.promptfieldname}
-                                onChange={e => updateProfileField('promptfieldname', e.target.value)}
-                                placeholder="e.g. text" />
-                        )}
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.negativenodeid}
+                                    onChange={e => updateProfileField('negativenodeid', e.target.value)}>
+                                    <option value="">— node —</option>
+                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.negativenodeid}
+                                    onChange={e => updateProfileField('negativenodeid', e.target.value)}
+                                    placeholder="Node ID, e.g. 7" />
+                            )}
+                        </div>
+                        <span className="text-text-muted text-xs shrink-0">→</span>
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 && currentProfile.negativenodeid ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.negativefieldname}
+                                    onChange={e => updateProfileField('negativefieldname', e.target.value)}>
+                                    <option value="">— field —</option>
+                                    {fieldsForNode(currentProfile.negativenodeid).map(f => <option key={f} value={f}>{f}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.negativefieldname}
+                                    onChange={e => updateProfileField('negativefieldname', e.target.value)}
+                                    placeholder="Field name, e.g. text" />
+                            )}
+                        </div>
                     </div>
 
-                    {/* Negative prompt node */}
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Negative Node
+                    {/* Seed pair */}
+                    <div className="flex items-center gap-2 mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 shrink-0">
+                            Seed
                             <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The ComfyUI node ID whose input receives the negative prompt (things to avoid in the image).
-                                Typically a CLIPTextEncode node labelled "Negative" in your workflow.
+                                Node ID and field name that hold the random seed for generation.
+                                Typically a KSampler node. Field is usually "seed" or "noise_seed".
                             </SettingsTooltip>
                         </label>
-                        {parsedNodes.length > 0 ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.negativenodeid}
-                                onChange={e => updateProfileField('negativenodeid', e.target.value)}>
-                                <option value="">— select —</option>
-                                {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.negativenodeid}
-                                onChange={e => updateProfileField('negativenodeid', e.target.value)}
-                                placeholder="e.g. 7" />
-                        )}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Negative Field
-                            <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The input field name within the Negative Node that accepts the negative text prompt. Usually "text".
-                            </SettingsTooltip>
-                        </label>
-                        {parsedNodes.length > 0 && currentProfile.negativenodeid ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.negativefieldname}
-                                onChange={e => updateProfileField('negativefieldname', e.target.value)}>
-                                <option value="">— select —</option>
-                                {fieldsForNode(currentProfile.negativenodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.negativefieldname}
-                                onChange={e => updateProfileField('negativefieldname', e.target.value)}
-                                placeholder="e.g. text" />
-                        )}
-                    </div>
-
-                    {/* Seed node */}
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Seed Node
-                            <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The ComfyUI node ID that holds the random seed for image generation.
-                                Typically a KSampler node. Harmony Link injects the seed here to allow reproducible generations.
-                            </SettingsTooltip>
-                        </label>
-                        {parsedNodes.length > 0 ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.seednodeid}
-                                onChange={e => updateProfileField('seednodeid', e.target.value)}>
-                                <option value="">— select —</option>
-                                {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.seednodeid}
-                                onChange={e => updateProfileField('seednodeid', e.target.value)}
-                                placeholder="e.g. 3" />
-                        )}
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-1">
-                            Seed Field
-                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                The input field name within the Seed Node that holds the seed value. Usually "seed" or "noise_seed" depending on the sampler type.
-                            </SettingsTooltip>
-                        </label>
-                        {parsedNodes.length > 0 && currentProfile.seednodeid ? (
-                            <select className="input-field w-full"
-                                value={currentProfile.seedfieldname}
-                                onChange={e => updateProfileField('seedfieldname', e.target.value)}>
-                                <option value="">— select —</option>
-                                {fieldsForNode(currentProfile.seednodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                            </select>
-                        ) : (
-                            <input type="text" className="input-field w-full"
-                                value={currentProfile.seedfieldname}
-                                onChange={e => updateProfileField('seedfieldname', e.target.value)}
-                                placeholder="e.g. seed" />
-                        )}
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.seednodeid}
+                                    onChange={e => updateProfileField('seednodeid', e.target.value)}>
+                                    <option value="">— node —</option>
+                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.seednodeid}
+                                    onChange={e => updateProfileField('seednodeid', e.target.value)}
+                                    placeholder="Node ID, e.g. 3" />
+                            )}
+                        </div>
+                        <span className="text-text-muted text-xs shrink-0">→</span>
+                        <div className="flex-1">
+                            {parsedNodes.length > 0 && currentProfile.seednodeid ? (
+                                <select className="input-field w-full"
+                                    value={currentProfile.seedfieldname}
+                                    onChange={e => updateProfileField('seedfieldname', e.target.value)}>
+                                    <option value="">— field —</option>
+                                    {fieldsForNode(currentProfile.seednodeid).map(f => <option key={f} value={f}>{f}</option>)}
+                                </select>
+                            ) : (
+                                <input type="text" className="input-field w-full"
+                                    value={currentProfile.seedfieldname}
+                                    onChange={e => updateProfileField('seedfieldname', e.target.value)}
+                                    placeholder="Field name, e.g. seed" />
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -464,7 +534,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 <div className="flex items-center gap-4 mb-4">
                     <label className="text-sm font-medium text-text-secondary w-1/4">
                         Image Size
-                        <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                        <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                             The width × height (in pixels) of the generated image. Harmony Link injects these values into the
                             first EmptyLatentImage node found in the workflow. Leave at your desired output resolution —
                             use multiples of 64 (e.g. 512×512, 768×1024) for best compatibility with most SD models.
@@ -484,63 +554,82 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                     </div>
                 </div>
 
-                {/* Character-specific settings */}
+                {/* Generation Settings */}
                 <div className="border-t border-border-default pt-4">
-                    <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
-                        Character / Selfie Settings
-                        <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                            These settings define how character-specific image generation ("selfies") works.
-                            When the Cognition module decides to generate a selfie, the final positive prompt sent to ComfyUI is assembled in three layers:
-                            1. Trigger Word(s) — prepended first to activate the character LoRA
-                            2. Base Prompt — your fixed appearance description, appended after the trigger words
-                            3. Activity Hint — dynamically generated by the AI at runtime based on the current scene/context (e.g. "smiling at the camera in a park")
-                            Final prompt = {"{trigger words}"}, {"{base prompt}"}, {"{activity hint}"}
+                    <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+                        Generation Settings
+                        <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            These settings define the fixed prompt components used for every generation in this profile.
+                            Trigger words activate LoRA models, Base Prompt provides a fixed positive baseline,
+                            Negative Prompt specifies what to avoid, and System Hint guides the AI's scene description.
                         </SettingsTooltip>
                     </h5>
+                    <p className="text-xs text-text-muted mb-3">
+                        These values are prepended to every AI-generated prompt for this profile at runtime.
+                        Leave empty if you do not need a fixed baseline for this profile.
+                    </p>
 
                     <div className="flex items-center mb-3 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2">
                             Trigger Word(s)
-                            <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                LoRA trigger words that activate your character's LoRA model. These are prepended to the start of every selfie prompt.
-                                Example: "ohwx woman". Without these, the LoRA won't recognise the character.
-                                Leave empty if you're not using a character LoRA.
+                            <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                LoRA trigger words prepended to the start of every positive prompt for this profile.
+                                Example: "ohwx woman". These activate a LoRA model trained on a specific subject or style.
+                                Leave empty if you are not using a LoRA for this profile.
                             </SettingsTooltip>
                         </label>
                         <input type="text" className="input-field w-3/4"
-                            value={currentProfile.charactertrigger}
-                            onChange={e => updateProfileField('charactertrigger', e.target.value)}
+                            value={currentProfile.trigger || ''}
+                            onChange={e => updateProfileField('trigger', e.target.value)}
                             placeholder="LoRA trigger word(s), e.g. ohwx woman" />
                     </div>
 
                     <div className="flex items-start mb-3 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
                             Base Prompt
-                            <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                A fixed prompt describing your character's permanent visual appearance — things that should always be present in every selfie
-                                (hair colour, eye colour, clothing style, aesthetic). Example: "portrait of ohwx woman, short red hair, blue eyes, highly detailed".
-                                This is combined with the dynamically generated activity description from the Cognition module at runtime.
+                            <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                A fixed positive prompt baseline always prepended to every generation for this profile.
+                                Describe fixed visual properties such as appearance, style, or quality modifiers.
+                                Example: "portrait of ohwx woman, short red hair, blue eyes, highly detailed, 8k".
+                                Combined with the AI-generated activity description and Trigger words at runtime.
                             </SettingsTooltip>
                         </label>
                         <textarea className="input-field w-3/4" rows={3}
-                            value={currentProfile.characterbaseprompt}
-                            onChange={e => updateProfileField('characterbaseprompt', e.target.value)}
-                            placeholder="Base prompt added to every selfie request, e.g. 'portrait of ohwx woman, highly detailed'" />
+                            value={currentProfile.baseprompt || ''}
+                            onChange={e => updateProfileField('baseprompt', e.target.value)}
+                            placeholder="Fixed positive baseline for every generation, e.g. 'portrait of ohwx woman, highly detailed'" />
+                    </div>
+
+                    <div className="flex items-start mb-3 w-full">
+                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
+                            Negative Prompt
+                            <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                A fixed negative prompt applied to every generation for this profile — things to avoid
+                                in every image (e.g. "blurry, low quality, watermark, deformed, ugly").
+                                At runtime this is prepended to any dynamic negative prompt from the caller.
+                                Leave empty if your workflow does not use a negative conditioning node.
+                            </SettingsTooltip>
+                        </label>
+                        <textarea className="input-field w-3/4" rows={3}
+                            value={currentProfile.negativeprompt || ''}
+                            onChange={e => updateProfileField('negativeprompt', e.target.value)}
+                            placeholder="e.g. blurry, low quality, watermark, deformed, ugly" />
                     </div>
 
                     <div className="flex items-start mb-3 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
                             System Hint
-                            <SettingsTooltip tooltipIndex={12} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                An optional instruction injected into the LLM system prompt when generating the activity description for a selfie.
-                                Use this to guide the AI on what to describe. Example: "Describe only the setting and current activity. Do NOT describe physical appearance — that is handled separately. Be vivid but concise (max 20 words)."
-                                Without this hint the AI may redundantly describe appearance details already covered in the Base Prompt.
+                            <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                An optional instruction injected into the LLM system prompt when generating the activity
+                                description for this profile. Use this to guide the AI on what kind of scene to describe.
+                                Example: "Describe only the setting and current activity. Be vivid but concise (max 20 words)."
+                                Without this hint the AI may produce descriptions that overlap with the Base Prompt content.
                             </SettingsTooltip>
                         </label>
                         <textarea className="input-field w-3/4" rows={3}
                             value={currentProfile.systempromphint}
                             onChange={e => updateProfileField('systempromphint', e.target.value)}
-                            placeholder="Hint injected into the LLM system prompt when generating selfie descriptions" />
+                            placeholder="Hint injected into the LLM system prompt when generating descriptions" />
                     </div>
                 </div>
 
@@ -548,18 +637,15 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                 <div className="border-t border-border-default pt-4 mt-2">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                         Test Generation
-                        <SettingsTooltip tooltipIndex={13} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                        <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                             Tests the current saved configuration directly against the ComfyUI API using the selected profile.
                             No entity or simulator required — a temporary connection is created for this test only.
                             The generated image(s) will be displayed below. Use Seed 0 for a random seed each time,
                             or set a specific seed to get reproducible results.
                         </SettingsTooltip>
                     </h5>
-                    <p className="text-xs text-text-muted mb-3">
-                        Profile: <span className="text-text-primary font-medium">{selectedProfile}</span>
-                    </p>
 
-                    <div className="flex items-start mb-3 w-full">
+                    <div className="flex items-start mb-1 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
                             Positive Prompt
                         </label>
@@ -568,8 +654,15 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                             onChange={e => setTestPositivePrompt(e.target.value)}
                             placeholder="e.g. a beautiful sunset over mountains, highly detailed..." />
                     </div>
+                    {(currentProfile.trigger || currentProfile.baseprompt) && (
+                        <p className="text-xs text-text-muted mt-1 mb-3 ml-[25%] pl-2">
+                            ↳ Profile prefix will be prepended: <span className="text-text-primary italic">
+                                {[currentProfile.trigger, currentProfile.baseprompt].filter(Boolean).join(', ')}
+                            </span>
+                        </p>
+                    )}
 
-                    <div className="flex items-start mb-3 w-full">
+                    <div className="flex items-start mb-1 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2 pt-1">
                             Negative Prompt
                         </label>
@@ -578,11 +671,18 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
                             onChange={e => setTestNegativePrompt(e.target.value)}
                             placeholder="(optional) e.g. blurry, low quality, watermark..." />
                     </div>
+                    {currentProfile.negativeprompt && (
+                        <p className="text-xs text-text-muted mt-1 mb-3 ml-[25%] pl-2">
+                            ↳ Profile negative will be prepended: <span className="text-text-primary italic">
+                                {currentProfile.negativeprompt}
+                            </span>
+                        </p>
+                    )}
 
                     <div className="flex items-center mb-4 w-full">
                         <label className="text-sm font-medium text-text-secondary w-1/4 px-2">
                             Seed
-                            <SettingsTooltip tooltipIndex={14} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                            <SettingsTooltip tooltipIndex={12} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                 Set a specific seed value to get reproducible results from the same prompt.
                                 Leave at 0 to use a random seed on each generation.
                                 The seed actually used is reported after a successful generation.

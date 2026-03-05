@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@harmony-ai/harmonyspeech": "^0.1.1",
-    "@headlessui/react": "^2.2.7",
+    "@headlessui/react": "^2.2.9",
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@tailwindcss/vite": "^4.1.12",
@@ -25,7 +25,7 @@
     "react-audio-player": "^0.17.0",
     "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
-    "react-h5-audio-player": "^3.10.0",
+    "react-h5-audio-player": "^3.10.1",
     "react-plotly.js": "^2.6.0",
     "zustand": "^4.5.7"
   },

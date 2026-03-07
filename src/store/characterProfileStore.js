@@ -228,6 +228,36 @@ const useCharacterProfileStore = create((set, get) => ({
         }
     },
     
+    /**
+     * Trigger VL analysis for a character image and update local state.
+     * @param {string} profileId
+     * @param {number} imageId
+     * @param {number} visionConfigId
+     */
+    analyzeImage: async (profileId, imageId, visionConfigId) => {
+        try {
+            const result = await characterService.analyzeImage(profileId, imageId, visionConfigId);
+            // Update local image state with the returned VL data
+            set(produce(state => {
+                if (state.images[profileId]) {
+                    const index = state.images[profileId].findIndex(img => img.id === imageId);
+                    if (index !== -1) {
+                        state.images[profileId][index] = {
+                            ...state.images[profileId][index],
+                            vl_model: result.vl_model,
+                            vl_model_interpretation: result.vl_model_interpretation,
+                            description: result.description,
+                        };
+                    }
+                }
+            }));
+            return result;
+        } catch (error) {
+            set({ error: error.message });
+            throw error;
+        }
+    },
+    
     // Getters
     
     /**

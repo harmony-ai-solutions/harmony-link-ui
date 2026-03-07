@@ -14,6 +14,7 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * @property {string} [example_dialogues] - Example conversations
  * @property {number} typing_speed_wpm - Typing speed in words per minute for chat simulation
  * @property {number} audio_response_chance_percent - Percentage chance (0-100) character responds with audio
+ * @property {number|null} [vision_config_id] - ID of the Vision module config for image analysis
  * @property {string} created_at
  * @property {string} updated_at
  */
@@ -23,12 +24,14 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * @property {number} id
  * @property {string} character_profile_id
  * @property {string} mime_type - image/png, image/jpeg, image/webp
- * @property {string} description
+ * @property {string} description - Short contextual label (auto-generated or manual)
  * @property {boolean} is_primary - Only one image per character can be primary
  * @property {number} display_order
  * @property {string} data_url - Base64 data URL for display (data:image/png;base64,...)
+ * @property {string} [vl_model] - VL model used for analysis (e.g. "gpt-4o")
+ * @property {string} [vl_model_interpretation] - Detailed objective description from VL model
  * @property {string} created_at
- * @note VL model fields are internal only and not included in API responses
+ * @property {string} updated_at
  */
 
 /**
@@ -232,4 +235,26 @@ export async function setPrimaryImage(characterId, imageId) {
         headers: getAuthHeaders()
     });
     await handleResponse(resp, "Failed to set primary image");
+}
+
+/**
+ * Trigger VL analysis for a character image.
+ * Runs two prompts: detailed interpretation (stored in vl_model_interpretation)
+ * and a short contextual label (stored in description).
+ * @param {string} characterId
+ * @param {number} imageId
+ * @param {number} visionConfigId - ID of the Vision module config to use
+ * @returns {Promise<{vl_model: string, vl_model_interpretation: string, description: string}>}
+ */
+export async function analyzeImage(characterId, imageId, visionConfigId) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-profiles/${characterId}/images/${imageId}/analyze-vision`,
+        {
+            method: 'POST',
+            headers: getJsonHeaders(),
+            body: JSON.stringify({ vision_config_id: visionConfigId }),
+        }
+    );
+    await handleResponse(resp, 'Failed to analyze image');
+    return await resp.json();
 }

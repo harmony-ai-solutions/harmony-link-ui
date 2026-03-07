@@ -234,7 +234,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                     <div className="space-y-5">
                         <div className="character-editor-field-group">
                             <label className="character-editor-label">Appearance</label>
-                            <p className="character-editor-hint">Physical description — used for image generation and visual context.</p>
+                            <p className="character-editor-hint">Physical description - used for visual roleplay, image generation and contextual behaviour.</p>
                             <textarea
                                 name="appearance"
                                 value={appearance}
@@ -284,7 +284,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                             <div className="space-y-4 p-4">
                                 <div className="character-editor-field-group">
                                     <label className="character-editor-label">Base System Prompt</label>
-                                    <p className="character-editor-hint">Primary instructions passed to the AI model.</p>
+                                    <p className="character-editor-hint">Primary instructions passed to the AI model. Overrides internal base prompt.</p>
                                     <textarea
                                         name="base_prompt"
                                         value={basePrompt}
@@ -296,7 +296,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 </div>
                                 <div className="character-editor-field-group">
                                     <label className="character-editor-label">Scenario</label>
-                                    <p className="character-editor-hint">The current setting or context for the conversation.</p>
+                                    <p className="character-editor-hint">The current setting or context for the conversation (if not defined by active session).</p>
                                     <textarea
                                         name="scenario"
                                         value={scenario}
@@ -308,7 +308,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 </div>
                                 <div className="character-editor-field-group">
                                     <label className="character-editor-label">Example Dialogues</label>
-                                    <p className="character-editor-hint">Sample exchanges that guide the AI's response style.</p>
+                                    <p className="character-editor-hint">Sample exchanges and reaction behaviour that guide the AI's response style.</p>
                                     <textarea
                                         name="example_dialogues"
                                         value={exampleDialogues}
@@ -345,7 +345,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                         max="200"
                                         className="input-field w-full"
                                     />
-                                    <p className="character-editor-hint">Average: 40–60 WPM. Affects typing indicator duration.</p>
+                                    <p className="character-editor-hint">Average Human: 40–60 WPM. Affects typing indicator duration.</p>
                                 </div>
                                 <div className="character-editor-field-group">
                                     <label className="character-editor-label">
@@ -362,7 +362,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                         max="100"
                                         className="input-field w-full"
                                     />
-                                    <p className="character-editor-hint">Probability of responding with an audio message.</p>
+                                    <p className="character-editor-hint">Probability of responding with an audio message. Requires TTS.</p>
                                 </div>
                             </div>
                         </div>

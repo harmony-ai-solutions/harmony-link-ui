@@ -67,11 +67,13 @@ const EntitySettingsView = ({ appName }) => {
 
     const [entityMappings, setEntityMappings] = useState({
         backend: '',
-        tts: '',
-        stt: '',
-        rag: '',
+        cognition: '',
+        imagination: '',
         movement: '',
-        cognition: ''
+        rag: '',
+        stt: '',
+        tts: '',
+        vision: ''
     });
     const [selectedCharacterProfileId, setSelectedCharacterProfileId] = useState('');
     const [showRAGCollections, setShowRAGCollections] = useState(false);
@@ -89,11 +91,13 @@ const EntitySettingsView = ({ appName }) => {
         loadEntities();
         loadCharacterProfiles();
         loadConfigs('backend');
-        loadConfigs('tts');
-        loadConfigs('stt');
-        loadConfigs('rag');
-        loadConfigs('movement');
         loadConfigs('cognition');
+        loadConfigs('imagination');
+        loadConfigs('movement');
+        loadConfigs('rag');
+        loadConfigs('stt');
+        loadConfigs('tts');
+        loadConfigs('vision');
     }, []);
 
     // Auto-select first entity when entities are loaded
@@ -115,18 +119,20 @@ const EntitySettingsView = ({ appName }) => {
             // Extract config IDs from the nested modules structure
             setEntityMappings({
                 backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
-                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
-                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
-                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '',
+                imagination: selectedEntity.modules?.imagination?.id ? String(selectedEntity.modules.imagination.id) : '',
                 movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
-                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : ''
+                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
+                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
+                vision: selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : ''
             });
             // Extract character profile ID from nested structure
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
         } else {
             setEntityMappings({
-                backend: '', tts: '', stt: '', rag: '', movement: '', cognition: ''
+                backend: '', cognition: '', imagination: '', movement: '', rag: '', stt: '', tts: '', vision: ''
             });
             setSelectedCharacterProfileId('');
         }
@@ -195,11 +201,13 @@ const EntitySettingsView = ({ appName }) => {
             // Update module mappings
             const mappings = {
                 backend_config_id: entityMappings.backend ? parseInt(entityMappings.backend) : null,
-                tts_config_id: entityMappings.tts ? parseInt(entityMappings.tts) : null,
-                stt_config_id: entityMappings.stt ? parseInt(entityMappings.stt) : null,
-                rag_config_id: entityMappings.rag ? parseInt(entityMappings.rag) : null,
+                cognition_config_id: entityMappings.cognition ? parseInt(entityMappings.cognition) : null,
+                imagination_config_id: entityMappings.imagination ? parseInt(entityMappings.imagination) : null,
                 movement_config_id: entityMappings.movement ? parseInt(entityMappings.movement) : null,
-                cognition_config_id: entityMappings.cognition ? parseInt(entityMappings.cognition) : null
+                rag_config_id: entityMappings.rag ? parseInt(entityMappings.rag) : null,
+                stt_config_id: entityMappings.stt ? parseInt(entityMappings.stt) : null,
+                tts_config_id: entityMappings.tts ? parseInt(entityMappings.tts) : null,
+                vision_config_id: entityMappings.vision ? parseInt(entityMappings.vision) : null
             };
 
             await updateEntityMappings(selectedEntityId, mappings);
@@ -221,11 +229,13 @@ const EntitySettingsView = ({ appName }) => {
             // Extract config IDs from the nested modules structure
             setEntityMappings({
                 backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
-                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
-                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
-                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '',
+                imagination: selectedEntity.modules?.imagination?.id ? String(selectedEntity.modules.imagination.id) : '',
                 movement: selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '',
-                cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : ''
+                rag: selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '',
+                stt: selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '',
+                tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
+                vision: selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : ''
             });
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setError(null);
@@ -342,11 +352,13 @@ const EntitySettingsView = ({ appName }) => {
                     // Copy module mappings from nested structure
                     const mappings = {
                         backend_config_id: selectedEntity.modules?.backend?.id || null,
-                        tts_config_id: selectedEntity.modules?.tts?.id || null,
-                        stt_config_id: selectedEntity.modules?.stt?.id || null,
-                        rag_config_id: selectedEntity.modules?.rag?.id || null,
+                        cognition_config_id: selectedEntity.modules?.cognition?.id || null,
+                        imagination_config_id: selectedEntity.modules?.imagination?.id || null,
                         movement_config_id: selectedEntity.modules?.movement?.id || null,
-                        cognition_config_id: selectedEntity.modules?.cognition?.id || null
+                        rag_config_id: selectedEntity.modules?.rag?.id || null,
+                        stt_config_id: selectedEntity.modules?.stt?.id || null,
+                        tts_config_id: selectedEntity.modules?.tts?.id || null,
+                        vision_config_id: selectedEntity.modules?.vision?.id || null
                     };
                     await updateEntityMappings(newId, mappings);
 
@@ -426,20 +438,24 @@ const EntitySettingsView = ({ appName }) => {
     const hasUnsavedChanges = () => {
         if (!selectedEntity) return false;
         const currentBackend = selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '';
-        const currentTts = selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '';
-        const currentStt = selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '';
-        const currentRag = selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '';
-        const currentMovement = selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '';
         const currentCognition = selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '';
+        const currentImagination = selectedEntity.modules?.imagination?.id ? String(selectedEntity.modules.imagination.id) : '';
+        const currentMovement = selectedEntity.modules?.movement?.id ? String(selectedEntity.modules.movement.id) : '';
+        const currentRag = selectedEntity.modules?.rag?.id ? String(selectedEntity.modules.rag.id) : '';
+        const currentStt = selectedEntity.modules?.stt?.id ? String(selectedEntity.modules.stt.id) : '';
+        const currentTts = selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '';
+        const currentVision = selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : '';
         const currentProfile = selectedEntity.character_profile?.id || '';
 
         return (
             currentBackend != entityMappings.backend ||
-            currentTts != entityMappings.tts ||
-            currentStt != entityMappings.stt ||
-            currentRag != entityMappings.rag ||
-            currentMovement != entityMappings.movement ||
             currentCognition != entityMappings.cognition ||
+            currentImagination != entityMappings.imagination ||
+            currentMovement != entityMappings.movement ||
+            currentRag != entityMappings.rag ||
+            currentStt != entityMappings.stt ||
+            currentTts != entityMappings.tts ||
+            currentVision != entityMappings.vision ||
             currentProfile != (isProfileSupported ? selectedCharacterProfileId : '')
         );
     };
@@ -712,6 +728,24 @@ const EntitySettingsView = ({ appName }) => {
                                         selectedConfigId={entityMappings.cognition}
                                         onChange={(id) => setEntityMappings(prev => ({ ...prev, cognition: id }))}
                                         configs={getConfigs('cognition')}
+                                        isLoading={isModuleLoading}
+                                    />
+
+                                    <ModuleConfigSelector
+                                        label="Imagination"
+                                        moduleType="imagination"
+                                        selectedConfigId={entityMappings.imagination}
+                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, imagination: id }))}
+                                        configs={getConfigs('imagination')}
+                                        isLoading={isModuleLoading}
+                                    />
+
+                                    <ModuleConfigSelector
+                                        label="Vision"
+                                        moduleType="vision"
+                                        selectedConfigId={entityMappings.vision}
+                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, vision: id }))}
+                                        configs={getConfigs('vision')}
                                         isLoading={isModuleLoading}
                                     />
                                 </section>

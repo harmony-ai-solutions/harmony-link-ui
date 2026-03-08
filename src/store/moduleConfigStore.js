@@ -7,10 +7,12 @@ const useModuleConfigStore = create((set, get) => ({
     configs: {
         backend: [],
         cognition: [],
+        imagination: [],
         movement: [],
         rag: [],
         stt: [],
-        tts: []
+        tts: [],
+        vision: []
     },
     selectedModuleType: 'backend',
     selectedConfigId: null,

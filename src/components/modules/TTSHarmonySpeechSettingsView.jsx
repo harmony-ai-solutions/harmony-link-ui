@@ -21,7 +21,27 @@ const knownModelNames = {
     "harmonyspeech": "HarmonySpeech V1",
     "openvoice_v1": "OpenVoice V1",
     "openvoice_v2": "OpenVoice V2",
+    // KittenTTS variants
+    "kitten-tts-mini": "KittenTTS Mini",
+    "kitten-tts-micro": "KittenTTS Micro",
+    "kitten-tts-nano": "KittenTTS Nano",
+    "kitten-tts-nano-int8": "KittenTTS Nano (int8)",
+    // Chatterbox variants
+    "chatterbox": "Chatterbox TTS",
+    "chatterbox_turbo": "Chatterbox Turbo TTS",
+    "chatterbox_multilingual": "Chatterbox Multilingual TTS",
 }
+
+// Model family helper constants for conditional UI rendering
+const KITTENTTS_MODEL_IDS = ['kitten-tts-mini', 'kitten-tts-micro', 'kitten-tts-nano', 'kitten-tts-nano-int8'];
+const CHATTERBOX_TURBO_MODEL_IDS = ['chatterbox_turbo'];
+const CHATTERBOX_TTS_MODEL_IDS = ['chatterbox', 'chatterbox_multilingual'];
+const CHATTERBOX_ALL_MODEL_IDS = [...CHATTERBOX_TTS_MODEL_IDS, ...CHATTERBOX_TURBO_MODEL_IDS];
+
+const isKittenTTSModel = (modelId) => KITTENTTS_MODEL_IDS.includes(modelId);
+const isChatterboxTurboModel = (modelId) => CHATTERBOX_TURBO_MODEL_IDS.includes(modelId);
+const isChatterboxTTSModel = (modelId) => CHATTERBOX_TTS_MODEL_IDS.includes(modelId);
+const isChatterboxModel = (modelId) => CHATTERBOX_ALL_MODEL_IDS.includes(modelId);
 
 // Embedding Status values
 const embeddingStatusNone = "No embedding loaded.";
@@ -93,7 +113,33 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         'openvoice_v2': [
             {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
             {name: 'Voice Cloning', value: 'voice_cloning'},
-        ]
+        ],
+        // KittenTTS variants - single speaker only (no voice cloning support)
+        'kitten-tts-mini': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+        ],
+        'kitten-tts-micro': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+        ],
+        'kitten-tts-nano': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+        ],
+        'kitten-tts-nano-int8': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+        ],
+        // Chatterbox variants - both modes supported
+        'chatterbox': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+            {name: 'Voice Cloning', value: 'voice_cloning'},
+        ],
+        'chatterbox_turbo': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+            {name: 'Voice Cloning', value: 'voice_cloning'},
+        ],
+        'chatterbox_multilingual': [
+            {name: 'Single-Speaker TTS', value: 'single_speaker_tts'},
+            {name: 'Voice Cloning', value: 'voice_cloning'},
+        ],
     }
 
     // Internal State handling
@@ -111,7 +157,16 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
         seed: 42,
         // Embedding Data
         // source_embedding: "",
-        target_embedding: ""
+        target_embedding: "",
+        // Chatterbox-specific generation options
+        exaggeration: 0.5,
+        cfg_weight: 0.5,
+        temperature: 0.8,
+        repetition_penalty: 1.2,
+        top_p: 1.0,
+        min_p: 0.05,
+        top_k: 1000,
+        norm_loudness: true,
     });
 
     // Setting Fields
@@ -195,7 +250,16 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             pitch: 1.00,
             energy: 1.00,
             seed: 42,
-            target_embedding: ""
+            target_embedding: "",
+            // Chatterbox-specific generation options
+            exaggeration: 0.5,
+            cfg_weight: 0.5,
+            temperature: 0.8,
+            repetition_penalty: 1.2,
+            top_p: 1.0,
+            min_p: 0.05,
+            top_k: 1000,
+            norm_loudness: true,
         };
         setCurrentVoiceConfig(defaultConfig);
     };
@@ -274,7 +338,7 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
             const newModelLanguageOptions = {};
             const newModelVoiceOptions = {};
             result.data.forEach((model) => {
-                if (model.object === "toolchain") {
+                if (model.object === "toolchain" || model.id in knownModelNames) {
                     if (model.id in knownModelNames) {
                         newModelOptions.push({name: knownModelNames[model.id], value: model.id});
                     } else {
@@ -513,10 +577,11 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
     };
 
     const handleModelSelectionChange = (selectedModelId) => {
-        // Ensure selected OperationMode is valid
+        // Ensure selected OperationMode is valid - with null-safety for unknown models
         let operationMode = currentVoiceConfig.operation_mode;
-        if (!modelOperationModes[selectedModelId].some((mode) => mode.value === currentVoiceConfig.operation_mode)) {
-            operationMode = modelOperationModes[selectedModelId][0].value;
+        const availableModes = modelOperationModes[selectedModelId] || [{name: 'Default', value: 'single_speaker_tts'}];
+        if (!availableModes.some((mode) => mode.value === currentVoiceConfig.operation_mode)) {
+            operationMode = availableModes[0].value;
         }
 
         // Ensure selected language is valid
@@ -641,6 +706,22 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                     speed: currentVoiceConfig.speed,
                     pitch: currentVoiceConfig.pitch,
                     energy: currentVoiceConfig.energy,
+                    // Add Chatterbox-specific options when using a Chatterbox model
+                    ...(isChatterboxTTSModel(currentVoiceConfig.model) && {
+                        exaggeration: currentVoiceConfig.exaggeration,
+                        cfg_weight: currentVoiceConfig.cfg_weight,
+                        temperature: currentVoiceConfig.temperature,
+                        repetition_penalty: currentVoiceConfig.repetition_penalty,
+                        top_p: currentVoiceConfig.top_p,
+                        min_p: currentVoiceConfig.min_p,
+                    }),
+                    ...(isChatterboxTurboModel(currentVoiceConfig.model) && {
+                        temperature: currentVoiceConfig.temperature,
+                        repetition_penalty: currentVoiceConfig.repetition_penalty,
+                        top_p: currentVoiceConfig.top_p,
+                        top_k: currentVoiceConfig.top_k,
+                        norm_loudness: currentVoiceConfig.norm_loudness,
+                    }),
                 },
                 // TODO: Output Options
                 // TODO: Post generation filters
@@ -979,113 +1060,363 @@ const TTSHarmonySpeechSettingsView = ({initialSettings, saveSettingsFunc}) => {
                             />
                         </div>
                     </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
-                            Seed
-                        </label>
-                        <div className="w-1/2">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                name="seed"
-                                className="input-field mt-1 block w-full"
-                                placeholder="Seed"
-                                value={currentVoiceConfig.seed}
-                                onChange={(e) =>
-                                    setCurrentVoiceConfig({
-                                        ...currentVoiceConfig,
-                                        seed: parseInt(e.target.value)
-                                    })
-                                }
-                            />
+                    {/* Seed - hide for KittenTTS and Chatterbox (not supported) */}
+                    {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
+                        <div className="flex items-center mb-6 w-1/2">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                Seed
+                            </label>
+                            <div className="w-1/2">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    name="seed"
+                                    className="input-field mt-1 block w-full"
+                                    placeholder="Seed"
+                                    value={currentVoiceConfig.seed}
+                                    onChange={(e) =>
+                                        setCurrentVoiceConfig({
+                                            ...currentVoiceConfig,
+                                            seed: parseInt(e.target.value)
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
-                            Style
-                        </label>
-                        <div className="w-1/2">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                name="style"
-                                className="input-field mt-1 block w-full"
-                                placeholder="Style"
-                                value={currentVoiceConfig.style}
-                                onChange={(e) =>
-                                    setCurrentVoiceConfig({
-                                        ...currentVoiceConfig,
-                                        style: parseInt(e.target.value)
-                                    })
-                                }
-                            />
+                    )}
+                    {/* Style - hide for KittenTTS and Chatterbox (not supported) */}
+                    {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
+                        <div className="flex items-center mb-6 w-1/2">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                Style
+                            </label>
+                            <div className="w-1/2">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    name="style"
+                                    className="input-field mt-1 block w-full"
+                                    placeholder="Style"
+                                    value={currentVoiceConfig.style}
+                                    onChange={(e) =>
+                                        setCurrentVoiceConfig({
+                                            ...currentVoiceConfig,
+                                            style: parseInt(e.target.value)
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
-                            Speed
-                        </label>
-                        <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="speed"
-                                className="input-field mt-1 block w-full"
-                                placeholder="Speed"
-                                value={currentVoiceConfig.speed}
-                                onChange={(e) =>
-                                    setCurrentVoiceConfig({
-                                        ...currentVoiceConfig,
-                                        speed: parseFloat(e.target.value)
-                                    })
-                                }
-                            />
+                    )}
+                    {/* Speed - hide for Chatterbox (has its own parameters), keep for KittenTTS */}
+                    {!isChatterboxModel(currentVoiceConfig.model) && (
+                        <div className="flex items-center mb-6 w-1/2">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                Speed
+                            </label>
+                            <div className="w-1/2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="speed"
+                                    className="input-field mt-1 block w-full"
+                                    placeholder="Speed"
+                                    value={currentVoiceConfig.speed}
+                                    onChange={(e) =>
+                                        setCurrentVoiceConfig({
+                                            ...currentVoiceConfig,
+                                            speed: parseFloat(e.target.value)
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
-                            Pitch
-                        </label>
-                        <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="pitch"
-                                className="input-field mt-1 block w-full"
-                                placeholder="Pitch"
-                                value={currentVoiceConfig.pitch}
-                                onChange={(e) =>
-                                    setCurrentVoiceConfig({
-                                        ...currentVoiceConfig,
-                                        pitch: parseFloat(e.target.value)
-                                    })
-                                }
-                            />
+                    )}
+                    {/* Pitch - hide for KittenTTS and Chatterbox (not supported) */}
+                    {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
+                        <div className="flex items-center mb-6 w-1/2">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                Pitch
+                            </label>
+                            <div className="w-1/2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="pitch"
+                                    className="input-field mt-1 block w-full"
+                                    placeholder="Pitch"
+                                    value={currentVoiceConfig.pitch}
+                                    onChange={(e) =>
+                                        setCurrentVoiceConfig({
+                                            ...currentVoiceConfig,
+                                            pitch: parseFloat(e.target.value)
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
-                            Energy
-                        </label>
-                        <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
-                                name="energy"
-                                className="input-field mt-1 block w-full"
-                                placeholder="Energy"
-                                value={currentVoiceConfig.energy}
-                                onChange={(e) =>
-                                    setCurrentVoiceConfig({
-                                        ...currentVoiceConfig,
-                                        energy: parseFloat(e.target.value)
-                                    })
-                                }
-                            />
+                    )}
+                    {/* Energy - hide for KittenTTS and Chatterbox (not supported) */}
+                    {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
+                        <div className="flex items-center mb-6 w-1/2">
+                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                Energy
+                            </label>
+                            <div className="w-1/2">
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    name="energy"
+                                    className="input-field mt-1 block w-full"
+                                    placeholder="Energy"
+                                    value={currentVoiceConfig.energy}
+                                    onChange={(e) =>
+                                        setCurrentVoiceConfig({
+                                            ...currentVoiceConfig,
+                                            energy: parseFloat(e.target.value)
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
+                    {/* Chatterbox-specific generation parameters - only show for Chatterbox models */}
+                    {isChatterboxModel(currentVoiceConfig.model) && (
+                        <>
+                            <div className="flex items-center mb-2 w-full border-t border-neutral-500 mt-4">
+                                <h2 className="text-l font-bold text-text-secondary">
+                                    Chatterbox Parameters
+                                </h2>
+                            </div>
+                            {/* Exaggeration - show for Chatterbox/Chatterbox Multilingual, hide for Turbo */}
+                            {isChatterboxTTSModel(currentVoiceConfig.model) && (
+                                <div className="flex items-center mb-6 w-1/2">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                        Exaggeration
+                                        <SettingsTooltip tooltipIndex={13} tooltipVisible={() => tooltipVisible}
+                                                         setTooltipVisible={setTooltipVisible}>
+                                            Controls the exaggeration of prosody (0.0-1.0). Higher values make output more expressive.
+                                        </SettingsTooltip>
+                                    </label>
+                                    <div className="w-1/2">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="1"
+                                            name="exaggeration"
+                                            className="input-field mt-1 block w-full"
+                                            placeholder="Exaggeration"
+                                            value={currentVoiceConfig.exaggeration}
+                                            onChange={(e) =>
+                                                setCurrentVoiceConfig({
+                                                    ...currentVoiceConfig,
+                                                    exaggeration: parseFloat(e.target.value)
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {/* CFG Weight - show for Chatterbox/Chatterbox Multilingual, hide for Turbo */}
+                            {isChatterboxTTSModel(currentVoiceConfig.model) && (
+                                <div className="flex items-center mb-6 w-1/2">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                        CFG Weight
+                                        <SettingsTooltip tooltipIndex={14} tooltipVisible={() => tooltipVisible}
+                                                         setTooltipVisible={setTooltipVisible}>
+                                            Classifier-free guidance weight (0.0-1.0). Higher values increase adherence to reference voice.
+                                        </SettingsTooltip>
+                                    </label>
+                                    <div className="w-1/2">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="1"
+                                            name="cfg_weight"
+                                            className="input-field mt-1 block w-full"
+                                            placeholder="CFG Weight"
+                                            value={currentVoiceConfig.cfg_weight}
+                                            onChange={(e) =>
+                                                setCurrentVoiceConfig({
+                                                    ...currentVoiceConfig,
+                                                    cfg_weight: parseFloat(e.target.value)
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex items-center mb-6 w-1/2">
+                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                    Temperature
+                                    <SettingsTooltip tooltipIndex={15} tooltipVisible={() => tooltipVisible}
+                                                     setTooltipVisible={setTooltipVisible}>
+                                        Sampling temperature (0.0-1.0). Higher values increase randomness.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-1/2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="1"
+                                        name="temperature"
+                                        className="input-field mt-1 block w-full"
+                                        placeholder="Temperature"
+                                        value={currentVoiceConfig.temperature}
+                                        onChange={(e) =>
+                                            setCurrentVoiceConfig({
+                                                ...currentVoiceConfig,
+                                                temperature: parseFloat(e.target.value)
+                                            })
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center mb-6 w-1/2">
+                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                    Repetition Penalty
+                                    <SettingsTooltip tooltipIndex={16} tooltipVisible={() => tooltipVisible}
+                                                     setTooltipVisible={setTooltipVisible}>
+                                        Penalty for repeating tokens (greater than or equal to 1.0). Higher values reduce repetition.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-1/2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="1"
+                                        name="repetition_penalty"
+                                        className="input-field mt-1 block w-full"
+                                        placeholder="Repetition Penalty"
+                                        value={currentVoiceConfig.repetition_penalty}
+                                        onChange={(e) =>
+                                            setCurrentVoiceConfig({
+                                                ...currentVoiceConfig,
+                                                repetition_penalty: parseFloat(e.target.value)
+                                            })
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center mb-6 w-1/2">
+                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                    Top P
+                                    <SettingsTooltip tooltipIndex={17} tooltipVisible={() => tooltipVisible}
+                                                     setTooltipVisible={setTooltipVisible}>
+                                        Nucleus sampling threshold (0.0-1.0). Combined with temperature.
+                                    </SettingsTooltip>
+                                </label>
+                                <div className="w-1/2">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="1"
+                                        name="top_p"
+                                        className="input-field mt-1 block w-full"
+                                        placeholder="Top P"
+                                        value={currentVoiceConfig.top_p}
+                                        onChange={(e) =>
+                                            setCurrentVoiceConfig({
+                                                ...currentVoiceConfig,
+                                                top_p: parseFloat(e.target.value)
+                                            })
+                                        }
+                                    />
+                                </div>
+                            </div>
+                            {/* Min P - show for Chatterbox Turbo, hide for Chatterbox/Chatterbox Multilingual */}
+                            {isChatterboxTurboModel(currentVoiceConfig.model) && (
+                                <div className="flex items-center mb-6 w-1/2">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                        Min P
+                                        <SettingsTooltip tooltipIndex={18} tooltipVisible={() => tooltipVisible}
+                                                         setTooltipVisible={setTooltipVisible}>
+                                            Minimum token probability threshold (0.0-1.0). Filters unlikely tokens.
+                                        </SettingsTooltip>
+                                    </label>
+                                    <div className="w-1/2">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="1"
+                                            name="min_p"
+                                            className="input-field mt-1 block w-full"
+                                            placeholder="Min P"
+                                            value={currentVoiceConfig.min_p}
+                                            onChange={(e) =>
+                                                setCurrentVoiceConfig({
+                                                    ...currentVoiceConfig,
+                                                    min_p: parseFloat(e.target.value)
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {/* Top K - show for Chatterbox Turbo, hide for Chatterbox/Chatterbox Multilingual */}
+                            {isChatterboxTurboModel(currentVoiceConfig.model) && (
+                                <div className="flex items-center mb-6 w-1/2">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                        Top K
+                                        <SettingsTooltip tooltipIndex={19} tooltipVisible={() => tooltipVisible}
+                                                         setTooltipVisible={setTooltipVisible}>
+                                            Number of highest probability tokens to consider (integer).
+                                        </SettingsTooltip>
+                                    </label>
+                                    <div className="w-1/2">
+                                        <input
+                                            type="number"
+                                            step="1"
+                                            min="0"
+                                            name="top_k"
+                                            className="input-field mt-1 block w-full"
+                                            placeholder="Top K"
+                                            value={currentVoiceConfig.top_k}
+                                            onChange={(e) =>
+                                                setCurrentVoiceConfig({
+                                                    ...currentVoiceConfig,
+                                                    top_k: parseInt(e.target.value)
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {/* Normalize Loudness - show for Chatterbox Turbo, hide for Chatterbox/Chatterbox Multilingual */}
+                            {isChatterboxTurboModel(currentVoiceConfig.model) && (
+                                <div className="flex items-center mb-6 w-1/2">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                                        Normalize Loudness
+                                        <SettingsTooltip tooltipIndex={20} tooltipVisible={() => tooltipVisible}
+                                                         setTooltipVisible={setTooltipVisible}>
+                                            Whether to normalize the loudness of the output audio.
+                                        </SettingsTooltip>
+                                    </label>
+                                    <div className="w-1/2">
+                                        <input
+                                            type="checkbox"
+                                            name="norm_loudness"
+                                            className="input-field mt-1"
+                                            checked={currentVoiceConfig.norm_loudness}
+                                            onChange={(e) =>
+                                                setCurrentVoiceConfig({
+                                                    ...currentVoiceConfig,
+                                                    norm_loudness: e.target.checked
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                     <div className="flex items-center mb-2 w-full">
                         <h2 className="text-l font-bold text-text-secondary">
                             Generate Speech

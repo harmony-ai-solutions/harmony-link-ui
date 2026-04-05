@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import SettingsTooltip from "../settings/SettingsTooltip.jsx";
 import {LogDebug} from "../../utils/logger.js";
 import RAGCollectionManager from "./RAGCollectionManager.jsx";
+import ErrorDialog from "../modals/ErrorDialog.jsx";
 import { mergeConfigWithDefaults } from "../../utils/configUtils.js";
 import { MODULE_DEFAULTS } from "../../constants/moduleDefaults.js";
 import { MODULES } from "../../constants/modules.js";
@@ -102,35 +103,35 @@ const RAGGeneralSettingsView = ({initialSettings, saveSettingsFunc, entityId}) =
                                  onBlur={(e) => validateEmbeddingConcurrencyAndUpdate(e.target.value)}/>
                       </div>
                   </div>
-              </div>
-          </div>
-
-          {isModalVisible && (
-              <div className="fixed inset-0 bg-gray-600/50">
-                  <div
-                      className="relative top-10 mx-auto p-5 border border-neutral-800 w-96 shadow-lg rounded-md bg-neutral-900">
-                      <div className="mt-3 text-center">
-                          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-200">
-                              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24"
-                                   stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                              </svg>
-                          </div>
-                          <h3 className="text-lg leading-6 font-medium text-error mt-4">Invalid Input</h3>
-                          <div className="mt-2 px-7 py-3">
-                              <p className="text-sm text-gray-200">{modalMessage}</p>
-                          </div>
-                          <div className="items-center px-4 py-3">
-                              <button onClick={() => setIsModalVisible(false)}
-                                      className="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                  Close
-                              </button>
-                          </div>
+                  <div className="flex items-center w-1/2">
+                      <div className="w-1/3 px-3"></div>
+                      <div className="w-2/3 px-3">
+                          <button
+                              onClick={openCollectionsModal}
+                              disabled={!entityId}
+                              className="btn-accent-gradient text-sm py-1.5 px-4 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                              Manage Collections
+                          </button>
                       </div>
                   </div>
               </div>
-          )}
+          </div>
+
+          <RAGCollectionManager
+              entityId={entityId}
+              isOpen={showCollectionsModal}
+              onClose={closeCollectionsModal}
+              onError={(msg) => showModal(msg)}
+          />
+
+          <ErrorDialog
+              isOpen={isModalVisible}
+              title="Invalid Input"
+              message={modalMessage}
+              type="error"
+              onClose={() => setIsModalVisible(false)}
+          />
       </>
     );
 }

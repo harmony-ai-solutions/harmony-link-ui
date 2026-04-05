@@ -5,6 +5,14 @@ const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
 
+// Converts a #rrggbb hex colour to an "r, g, b" string for use in rgba().
+const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+        ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+        : '0, 0, 0';
+};
+
 export const ThemeProvider = ({ children }) => {
     const [currentTheme, setCurrentThemeState] = useState(null);
     const [themeConfig, setThemeConfig] = useState(null);
@@ -24,16 +32,19 @@ export const ThemeProvider = ({ children }) => {
 
         // Accents
         root.style.setProperty('--color-accent-primary', colors.accent.primary);
+        root.style.setProperty('--color-accent-primary-rgb', hexToRgb(colors.accent.primary));
         root.style.setProperty('--color-accent-primary-hover', colors.accent.primaryHover);
         root.style.setProperty('--color-accent-secondary', colors.accent.secondary);
         root.style.setProperty('--color-accent-secondary-hover', colors.accent.secondaryHover);
 
         // Status
         root.style.setProperty('--color-success', colors.status.success);
+        root.style.setProperty('--color-success-rgb', hexToRgb(colors.status.success));
         root.style.setProperty('--color-success-bg', colors.status.successBg);
         root.style.setProperty('--color-warning', colors.status.warning);
         root.style.setProperty('--color-warning-bg', colors.status.warningBg);
         root.style.setProperty('--color-error', colors.status.error);
+        root.style.setProperty('--color-error-rgb', hexToRgb(colors.status.error));
         root.style.setProperty('--color-error-bg', colors.status.errorBg);
         root.style.setProperty('--color-info', colors.status.info);
         root.style.setProperty('--color-info-bg', colors.status.infoBg);

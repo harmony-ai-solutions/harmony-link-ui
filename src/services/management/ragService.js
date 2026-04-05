@@ -45,7 +45,7 @@ export async function deleteEntityRAGDocument(entityId, collectionName, document
         headers: getAuthHeaders()
     });
     await handleResponse(resp, `Failed to delete document ${documentId} from collection ${collectionName} in entity ${entityId}`);
-    return await resp.json();
+    return resp.status === 204 ? {} : await resp.json();
 }
 
 export async function testEntityRAGSimilarityQuery(entityId, collectionName, query, limit = 10, archetype = '', category = '') {
@@ -109,5 +109,5 @@ export async function deleteEntityRAGGroup(entityId, collectionName, archetype, 
         headers: getAuthHeaders()
     });
     await handleResponse(resp, `Failed to delete group ${archetype}/${groupName} from collection ${collectionName} in entity ${entityId}`);
-    return await resp.json();
+    return resp.status === 204 ? {} : await resp.json();
 }

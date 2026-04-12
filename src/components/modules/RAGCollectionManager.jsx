@@ -398,6 +398,13 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{borderBottomColor: 'var(--color-accent-primary)'}}></div>
                                         <p className="text-text-secondary mt-2">Loading groups...</p>
                                     </div>
+                                ) : groupedView && !groupedView.supported ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-text-secondary">
+                                            Grouped view is not supported for the {selectedCollection} collection.
+                                            This collection uses a different document structure.
+                                        </p>
+                                    </div>
                                 ) : !groupedView || Object.keys(groupedView.groups || {}).length === 0 ? (
                                     <div className="text-center py-8">
                                         <p className="text-text-secondary">No groups found in this collection.</p>

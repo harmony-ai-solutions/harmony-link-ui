@@ -187,7 +187,7 @@ export default function ModuleConfigInlineEditor({ moduleType, mode, config, onS
             </div>
 
             {/* ── Editor Body ────────────────────────────────────────── */}
-            <div className="module-inline-editor-body">
+            <div className="module-inline-editor-body custom-scrollbar">
                 {/* Config Name */}
                 <div className="module-inline-editor-field">
                     <label className="module-inline-editor-label">Configuration Name</label>

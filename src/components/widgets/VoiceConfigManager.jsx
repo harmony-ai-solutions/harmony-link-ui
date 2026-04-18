@@ -550,61 +550,57 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
         <>
             <div className="flex flex-wrap w-full">
                 {/* Voice Config Selector */}
-                <div className="flex items-center mb-6 w-full">
-                    <div className="flex items-center mt-2 w-full">
-                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
-                            Voice Configuration
-                            <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
-                                setTooltipVisible={setTooltipVisible}>
-                                Select from existing voice configurations or manage your configurations
-                            </SettingsTooltip>
-                        </label>
-                        <select
-                            value={currentVoiceConfigFile}
-                            onChange={(e) => changeVoiceConfigAndUpdate(e.target.value)}
-                            className="input-field block w-1/3"
-                        >
-                            <option value={NEW_CONFIG_OPTION}>New Voice Config</option>
-                            {voiceConfigs && voiceConfigs.length > 0 && (
-                                voiceConfigs.map((config) => (
-                                    <option key={config} value={config}>
-                                        {config}
-                                    </option>
-                                ))
-                            )}
-                        </select>
-                        <button onClick={handleSaveConfig}
-                            className="btn-primary py-1 px-2 mx-1 text-sm">
-                            {currentVoiceConfigFile === NEW_CONFIG_OPTION ? 'Save' : 'Update'}
-                        </button>
-                        {currentVoiceConfigFile !== NEW_CONFIG_OPTION && (
-                            <button onClick={handleSaveAsNew}
-                                className="btn-secondary py-1 px-2 mx-1 text-sm">
-                                Save New
-                            </button>
+                <div className="flex items-center mb-3 w-full">
+                    <label className="block text-xs font-medium text-text-secondary w-1/3 px-3">
+                        Voice Configuration
+                        <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible}
+                            setTooltipVisible={setTooltipVisible}>
+                            Select from existing voice configurations or manage your configurations
+                        </SettingsTooltip>
+                    </label>
+                    <select
+                        value={currentVoiceConfigFile}
+                        onChange={(e) => changeVoiceConfigAndUpdate(e.target.value)}
+                        className="input-field block w-1/3"
+                    >
+                        <option value={NEW_CONFIG_OPTION}>New Voice Config</option>
+                        {voiceConfigs && voiceConfigs.length > 0 && (
+                            voiceConfigs.map((config) => (
+                                <option key={config} value={config}>
+                                    {config}
+                                </option>
+                            ))
                         )}
-                        <button onClick={handleRenameConfig}
-                            className={`btn-secondary font-semibold py-1 px-2 mx-1 text-sm ${!voiceConfigs || !voiceConfigs.includes(currentVoiceConfigFile) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={!voiceConfigs || !voiceConfigs.includes(currentVoiceConfigFile)}>
-                            Rename
+                    </select>
+                    <button onClick={handleSaveConfig}
+                        className="module-action-btn-save mx-1">
+                        {currentVoiceConfigFile === NEW_CONFIG_OPTION ? 'Save' : 'Update'}
+                    </button>
+                    {currentVoiceConfigFile !== NEW_CONFIG_OPTION && (
+                        <button onClick={handleSaveAsNew}
+                            className="module-action-btn mx-1">
+                            Save New
                         </button>
-                        <button onClick={handleDeleteConfig}
-                            className={`font-semibold py-1 px-2 mx-1 text-sm ${voiceConfigs && voiceConfigs.includes(currentVoiceConfigFile)
-                                ? 'bg-error hover:bg-error/80 text-white'
-                                : 'bg-surface-elevated text-text-muted cursor-not-allowed opacity-50'}`}
-                            disabled={!voiceConfigs || !voiceConfigs.includes(currentVoiceConfigFile)}>
-                            Delete
-                        </button>
-                    </div>
+                    )}
+                    <button onClick={handleRenameConfig}
+                        className="module-action-btn mx-1"
+                        disabled={!voiceConfigs || !voiceConfigs.includes(currentVoiceConfigFile)}>
+                        Rename
+                    </button>
+                    <button onClick={handleDeleteConfig}
+                        className="module-action-btn-danger mx-1"
+                        disabled={!voiceConfigs || !voiceConfigs.includes(currentVoiceConfigFile)}>
+                        Delete
+                    </button>
                 </div>
 
                 {/* Voice Config Editor - Basic Settings */}
-                <div className="flex items-center mb-6 w-full border-t border-neutral-500">
-                    <div className="flex items-center mt-2 mb-2 w-full">
-                        <h2 className="text-l font-bold text-text-secondary">Basic Settings</h2>
+                <div className="flex flex-wrap w-full border-t border-white/10 pt-2 mb-2">
+                    <div className="flex items-center w-full mb-2">
+                        <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">Basic Settings</h2>
                     </div>
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Model Selection
                             <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
                                 setTooltipVisible={setTooltipVisible}>
@@ -623,8 +619,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             />
                         </div>
                     </div>
-                    <div className="flex items-center w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Operation Mode
                             <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
                                 setTooltipVisible={setTooltipVisible}>
@@ -652,8 +648,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Voice Embedding Section */}
                 {currentVoiceConfig.operation_mode === "voice_cloning" && (
                     <div className="w-full">
-                        <div className="flex items-center mb-2 w-full">
-                            <h2 className="text-l font-bold text-text-secondary">
+                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                            <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Voice Embedding Settings
                                 <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
                                     setTooltipVisible={setTooltipVisible}>
@@ -667,9 +663,9 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 </SettingsTooltip>
                             </h2>
                         </div>
-                        <div className="flex items-center mb-6 w-full">
-                            <div className="flex items-center mt-2 w-2/3">
-                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                        <div className="flex items-center mb-3 w-full">
+                            <div className="flex items-center w-2/3">
+                                <label className="block text-xs font-medium text-text-secondary w-1/3 px-3">
                                     Voice File
                                     <SettingsTooltip tooltipIndex={5} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -685,25 +681,23 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     />
                                 </div>
                             </div>
-                            <div className="flex items-center mt-2 w-1/3">
+                            <div className="flex items-center w-1/3">
                                 <div className="w-full">
                                     <HarmonyAudioPlayer className="w-full" src={embeddingFileAudio} />
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center mb-6 w-full">
+                        <div className="flex items-center mb-3 w-full">
                             <div className="flex items-center w-2/3 px-3">
-                                <div className="flex items-center w-1/3">
-                                </div>
-                                <div className="flex items-center w-2/3 px-1">
-                                    <div className="w-full flex items-center">
-                                        <button
-                                            onClick={handleGenerateEmbedding}
-                                            className="btn-primary py-1 px-2 mx-1 text-sm"
-                                        >
-                                            Generate Embedding
-                                        </button>
-                                        <label className="text-sm font-medium text-text-secondary">
+                                <div className="flex items-center w-1/3" />
+                                <div className="flex items-center w-2/3 px-1 gap-2">
+                                    <button
+                                        onClick={handleGenerateEmbedding}
+                                        className="module-action-btn-save"
+                                    >
+                                        Generate Embedding
+                                    </button>
+                                    <label className="text-xs font-medium text-text-secondary">
                                             <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible}
                                                 setTooltipVisible={setTooltipVisible}>
                                                 This sends an embedding Request for the provided audio file to the
@@ -714,22 +708,19 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                                 <br /><span className="text-warning">CAUTION: Existing embedding data will be replaced.</span>
                                             </SettingsTooltip>
                                         </label>
-                                    </div>
                                 </div>
                             </div>
                             <div className="flex items-center w-1/3 px-3">
-                                <div className="w-full flex items-center">
-                                    <div className="w-1/2 px-3 flex items-center">
-                                        {currentVoiceConfig && currentVoiceConfig.target_embedding &&
-                                            <div style={{ width: '50px', height: '50px' }}>
-                                                <Heatmap data={currentVoiceConfig.target_embedding}
-                                                    colorRange={[0, 0.3]} />
-                                            </div>
-                                        }
-                                    </div>
-                                    <div className="w-1/2 px-3 flex items-center">
-                                        <span className="text-sm text-warning">{embeddingStatus}</span>
-                                    </div>
+                                <div className="w-1/2 px-3 flex items-center">
+                                    {currentVoiceConfig && currentVoiceConfig.target_embedding &&
+                                        <div style={{ width: '40px', height: '40px' }}>
+                                            <Heatmap data={currentVoiceConfig.target_embedding}
+                                                colorRange={[0, 0.3]} />
+                                        </div>
+                                    }
+                                </div>
+                                <div className="w-1/2 px-3 flex items-center">
+                                    <span className="text-xs text-warning">{embeddingStatus}</span>
                                 </div>
                             </div>
                         </div>
@@ -737,8 +728,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Voice Generation Settings */}
-                <div className="flex items-center mb-2 w-full">
-                    <h2 className="text-l font-bold text-text-secondary">
+                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                    <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Voice Generation Settings
                         <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
                             setTooltipVisible={setTooltipVisible}>
@@ -753,8 +744,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         </SettingsTooltip>
                     </h2>
                 </div>
-                <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                <div className="flex items-center mb-3 w-1/2">
+                    <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                         Language
                         <SettingsTooltip tooltipIndex={8} tooltipVisible={() => tooltipVisible}
                             setTooltipVisible={setTooltipVisible}>
@@ -777,8 +768,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         />
                     </div>
                 </div>
-                <div className="flex items-center mb-6 w-1/2">
-                    <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                <div className="flex items-center mb-3 w-1/2">
+                    <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                         Voice
                         <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible}
                             setTooltipVisible={setTooltipVisible}>
@@ -804,8 +795,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
 
                 {/* Seed - hide for KittenTTS and Chatterbox */}
                 {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Seed
                         </label>
                         <div className="w-1/2">
@@ -830,8 +821,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
 
                 {/* Style - hide for KittenTTS and Chatterbox */}
                 {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Style
                         </label>
                         <div className="w-1/2">
@@ -856,8 +847,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
 
                 {/* Speed - hide for Chatterbox */}
                 {!isChatterboxModel(currentVoiceConfig.model) && (
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Speed
                         </label>
                         <div className="w-1/2">
@@ -881,8 +872,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
 
                 {/* Pitch - hide for KittenTTS and Chatterbox */}
                 {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Pitch
                         </label>
                         <div className="w-1/2">
@@ -906,8 +897,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
 
                 {/* Energy - hide for KittenTTS and Chatterbox */}
                 {!isKittenTTSModel(currentVoiceConfig.model) && !isChatterboxModel(currentVoiceConfig.model) && (
-                    <div className="flex items-center mb-6 w-1/2">
-                        <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                    <div className="flex items-center mb-3 w-1/2">
+                        <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                             Energy
                         </label>
                         <div className="w-1/2">
@@ -932,15 +923,15 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Chatterbox-specific generation parameters */}
                 {isChatterboxModel(currentVoiceConfig.model) && (
                     <>
-                        <div className="flex items-center mb-2 w-full border-t border-neutral-500 mt-4">
-                            <h2 className="text-l font-bold text-text-secondary">
+                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                            <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Chatterbox Parameters
                             </h2>
                         </div>
                         {/* Exaggeration - show for Chatterbox/Chatterbox Multilingual, hide for Turbo */}
                         {isChatterboxTTSModel(currentVoiceConfig.model) && (
-                            <div className="flex items-center mb-6 w-1/2">
-                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                            <div className="flex items-center mb-3 w-1/2">
+                                <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                     Exaggeration
                                     <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -969,8 +960,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         )}
                         {/* CFG Weight - show for Chatterbox/Chatterbox Multilingual, hide for Turbo */}
                         {isChatterboxTTSModel(currentVoiceConfig.model) && (
-                            <div className="flex items-center mb-6 w-1/2">
-                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                            <div className="flex items-center mb-3 w-1/2">
+                                <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                     CFG Weight
                                     <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -997,8 +988,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 </div>
                             </div>
                         )}
-                        <div className="flex items-center mb-6 w-1/2">
-                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                        <div className="flex items-center mb-3 w-1/2">
+                            <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                 Temperature
                                 <SettingsTooltip tooltipIndex={12} tooltipVisible={() => tooltipVisible}
                                     setTooltipVisible={setTooltipVisible}>
@@ -1024,8 +1015,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center mb-6 w-1/2">
-                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                        <div className="flex items-center mb-3 w-1/2">
+                            <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                 Repetition Penalty
                                 <SettingsTooltip tooltipIndex={13} tooltipVisible={() => tooltipVisible}
                                     setTooltipVisible={setTooltipVisible}>
@@ -1050,8 +1041,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center mb-6 w-1/2">
-                            <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                        <div className="flex items-center mb-3 w-1/2">
+                            <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                 Top P
                                 <SettingsTooltip tooltipIndex={14} tooltipVisible={() => tooltipVisible}
                                     setTooltipVisible={setTooltipVisible}>
@@ -1079,8 +1070,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         </div>
                         {/* Min P - show for Chatterbox Turbo */}
                         {isChatterboxTurboModel(currentVoiceConfig.model) && (
-                            <div className="flex items-center mb-6 w-1/2">
-                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                            <div className="flex items-center mb-3 w-1/2">
+                                <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                     Min P
                                     <SettingsTooltip tooltipIndex={15} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -1109,8 +1100,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         )}
                         {/* Top K - show for Chatterbox Turbo */}
                         {isChatterboxTurboModel(currentVoiceConfig.model) && (
-                            <div className="flex items-center mb-6 w-1/2">
-                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                            <div className="flex items-center mb-3 w-1/2">
+                                <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                     Top K
                                     <SettingsTooltip tooltipIndex={16} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -1138,8 +1129,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                         )}
                         {/* Normalize Loudness - show for Chatterbox Turbo */}
                         {isChatterboxTurboModel(currentVoiceConfig.model) && (
-                            <div className="flex items-center mb-6 w-1/2">
-                                <label className="block text-sm font-medium text-text-secondary w-1/2 px-3">
+                            <div className="flex items-center mb-3 w-1/2">
+                                <label className="block text-xs font-medium text-text-secondary w-1/2 px-3">
                                     Normalize Loudness
                                     <SettingsTooltip tooltipIndex={17} tooltipVisible={() => tooltipVisible}
                                         setTooltipVisible={setTooltipVisible}>
@@ -1166,8 +1157,8 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Generate Speech Section */}
-                <div className="flex items-center mb-2 w-full">
-                    <h2 className="text-l font-bold text-text-secondary">
+                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                    <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Generate Speech
                         <SettingsTooltip tooltipIndex={18} tooltipVisible={() => tooltipVisible}
                             setTooltipVisible={setTooltipVisible}>
@@ -1180,7 +1171,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 </div>
                 <div className="flex items-center mb-2 w-full">
                     <div className="flex items-center w-2/3">
-                        <label className="block text-sm font-medium text-text-secondary w-1/4 px-3">
+                        <label className="block text-xs font-medium text-text-secondary w-1/4 px-3">
                             Input Text
                             <SettingsTooltip tooltipIndex={19} tooltipVisible={() => tooltipVisible}
                                 setTooltipVisible={setTooltipVisible}>
@@ -1201,7 +1192,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             <div className="w-full mb-2">
                                 <button
                                     onClick={handleSynthesizeVoice}
-                                    className="btn-primary py-1 px-2 text-sm w-full"
+                                    className="module-action-btn-save w-full justify-center"
                                 >
                                     Generate Speech
                                 </button>

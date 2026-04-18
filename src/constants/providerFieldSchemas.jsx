@@ -901,7 +901,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'maxcognitionevents',
                 label: 'Max Cognition Events',
                 type: 'number',
-                width: 'full',
+                width: '1/2',
                 labelWidth: '1/3',
                 tooltip: 'Maximum number of cognition events to include when building the system prompt.\nHigher values provide more context but increase token usage.',
                 validation: {

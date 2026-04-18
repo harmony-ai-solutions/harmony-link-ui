@@ -757,6 +757,48 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
 }
 
+/* ─── Scoped Compact Overrides inside Inline Editor ─────────── */
+
+/* Provider option pills — tighter padding and smaller text */
+.module-inline-editor .card-option,
+.module-inline-editor .card-option-selected {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+/* Provider option logos — scale down from w-6/h-6 (1.5rem) to 1rem */
+.module-inline-editor .card-option img,
+.module-inline-editor .card-option-selected img {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin-right: 0.375rem !important;
+}
+
+/* Provider option label text */
+.module-inline-editor .card-option span,
+.module-inline-editor .card-option-selected span {
+    font-size: 0.72rem;
+}
+
+/* Input fields — reduce vertical padding inside the inline editor */
+.module-inline-editor .input-field {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+    font-size: 0.8rem;
+}
+
+/* Verification section — reduce its overall footprint */
+.module-inline-editor .config-verification-section {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.module-inline-editor .config-verification-section .btn-primary,
+.module-inline-editor .config-verification-section .btn-secondary {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Instance Action Buttons — Compact XS pill-style buttons
    ═══════════════════════════════════════════════════════════════════ */

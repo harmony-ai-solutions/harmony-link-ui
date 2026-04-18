@@ -414,10 +414,9 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
         switch (field.type) {
             case 'text':
             case 'password':
-            case 'number':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -427,11 +426,38 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <input
                                 type={field.type}
                                 name={field.key}
-                                className="input-field w-full p-2 rounded"
+                                className="input-field w-full p-1.5 rounded text-sm"
+                                placeholder={field.placeholder}
+                                value={displayValue}
+                                onChange={(e) => handleFieldChange(field, e.target.value)}
+                                onBlur={(e) => handleFieldBlur(field, e.target.value)}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 'number':
+                return (
+                    <div key={field.key} className={`flex items-center mb-1.5 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
+                            {field.label}
+                            <SettingsTooltip
+                                tooltipIndex={tooltipIndex}
+                                tooltipVisible={() => tooltipVisible}
+                                setTooltipVisible={setTooltipVisible}
+                            >
+                                {field.tooltip}
+                            </SettingsTooltip>
+                        </label>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
+                            <input
+                                type="number"
+                                name={field.key}
+                                className="input-field w-full py-1 px-1.5 rounded text-sm"
                                 placeholder={field.placeholder}
                                 value={displayValue}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -444,8 +470,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'select':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -455,10 +481,10 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <select
                                 name={field.key}
-                                className="input-field w-full p-2 rounded custom-scrollbar"
+                                className="input-field w-full p-1.5 rounded text-sm custom-scrollbar"
                                 value={currentValue || ''}
                                 onChange={(e) => handleSelectChange(field, e.target.value)}
                             >
@@ -474,8 +500,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'model-select':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -485,10 +511,10 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3 relative`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2 relative`}>
                             <select
                                 name={field.key}
-                                className="input-field w-full p-2 rounded custom-scrollbar"
+                                className="input-field w-full p-1.5 rounded text-sm custom-scrollbar"
                                 value={currentValue || ''}
                                 onChange={(e) => handleSelectChange(field, e.target.value)}
                             >
@@ -512,8 +538,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'checkbox':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -523,7 +549,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <input
                                 type="checkbox"
                                 name={field.key}
@@ -537,8 +563,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'comma-list':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -548,11 +574,11 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <input
                                 type="text"
                                 name={field.key}
-                                className="input-field w-full p-2 rounded"
+                                className="input-field w-full p-1.5 rounded text-sm"
                                 placeholder={field.placeholder || 'Comma-separated values'}
                                 value={displayValue}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -564,8 +590,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'key-value-textarea':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -575,10 +601,10 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <textarea
                                 name={field.key}
-                                className="input-field w-full p-2 rounded custom-scrollbar"
+                                className="input-field w-full p-1.5 rounded text-sm custom-scrollbar"
                                 placeholder={field.placeholder || 'key: value\nkey2: value2'}
                                 value={displayValue}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -638,8 +664,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                 };
                 
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -649,11 +675,11 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3 flex items-center gap-2`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2 flex items-center gap-2`}>
                             <input
                                 type="number"
                                 name={`${field.key}_width`}
-                                className="input-field w-20 p-2 rounded"
+                                className="input-field w-20 p-1.5 rounded text-sm"
                                 placeholder="Width"
                                 value={currentWidth || ''}
                                 onChange={(e) => handleResolutionChange('width', e.target.value)}
@@ -665,7 +691,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             <input
                                 type="number"
                                 name={`${field.key}_height`}
-                                className="input-field w-20 p-2 rounded"
+                                className="input-field w-20 p-1.5 rounded text-sm"
                                 placeholder="Height"
                                 value={currentHeight || ''}
                                 onChange={(e) => handleResolutionChange('height', e.target.value)}
@@ -691,29 +717,33 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
             case 'voice-config-manager':
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
-                            {field.label}
-                            <SettingsTooltip
-                                tooltipIndex={tooltipIndex}
-                                tooltipVisible={() => tooltipVisible}
-                                setTooltipVisible={setTooltipVisible}
-                            >
-                                {field.tooltip}
-                            </SettingsTooltip>
-                        </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
-                            <VoiceConfigManager
-                                endpoint={getNestedValue(moduleSettings, 'endpoint')}
-                                voiceConfigFile={getNestedValue(moduleSettings, 'voiceconfigfile')}
-                                onSettingsChange={(updated) => {
-                                    const newSettings = { ...moduleSettings, ...updated };
-                                    setModuleSettings(newSettings);
-                                    saveSettingsFunc(newSettings);
-                                }}
-                                initialSettings={moduleSettings}
-                            />
-                        </div>
+                    <div key={field.key} className="flex flex-col w-full mb-2">
+                        {field.label && (
+                            <div className="flex items-center mb-1 px-2">
+                                <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                                    {field.label}
+                                </span>
+                                {field.tooltip && (
+                                    <SettingsTooltip
+                                        tooltipIndex={tooltipIndex}
+                                        tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}
+                                    >
+                                        {field.tooltip}
+                                    </SettingsTooltip>
+                                )}
+                            </div>
+                        )}
+                        <VoiceConfigManager
+                            endpoint={getNestedValue(moduleSettings, 'endpoint')}
+                            voiceConfigFile={getNestedValue(moduleSettings, 'voiceconfigfile')}
+                            onSettingsChange={(updated) => {
+                                const newSettings = { ...moduleSettings, ...updated };
+                                setModuleSettings(newSettings);
+                                saveSettingsFunc(newSettings);
+                            }}
+                            initialSettings={moduleSettings}
+                        />
                     </div>
                 );
 
@@ -721,8 +751,8 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                 const endpoint = getNestedValue(moduleSettings, 'endpoint');
                 const mode = schema.harmonySpeechMode || 'tts';
                 return (
-                    <div key={field.key} className={`flex items-center mb-4 ${getWidthClass(field.width)}`}>
-                        <label className={`block text-sm font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-3`}>
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
                             {field.label}
                             <SettingsTooltip
                                 tooltipIndex={tooltipIndex}
@@ -732,7 +762,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 {field.tooltip}
                             </SettingsTooltip>
                         </label>
-                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-3`}>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
                             <HarmonySpeechModelSelect
                                 endpoint={endpoint}
                                 mode={mode}
@@ -775,7 +805,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
     return (
         <>
-            <div className="flex flex-wrap w-full pt-2">
+            <div className="flex flex-wrap w-full pt-1">
                 {schema.hasVerification !== false && (
                     <ConfigVerificationSection
                         onValidate={handleValidateConfig}

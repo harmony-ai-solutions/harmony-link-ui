@@ -8,14 +8,14 @@ import logo_elevenlabs from '../assets/images/elevenlabs_50px.png';
 import logo_openrouter from '../assets/images/or_50px.png';
 
 export const MODULE_TYPE_OPTIONS = [
-    { id: 'backend', name: 'Backend / LLM', emoji: '🧠' },
-    { id: 'tts', name: 'Text-to-Speech', emoji: '🗣️' },
-    { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️' },
-    { id: 'rag', name: 'RAG', emoji: '📚' },
-    { id: 'movement', name: 'Movement', emoji: '💃' },
-    { id: 'cognition', name: 'Cognition', emoji: '🧩' },
-    { id: 'vision', name: 'Vision', emoji: '👁️' },
-    { id: 'imagination', name: 'Imagination', emoji: '🎨' }
+    { id: 'backend', name: 'Backend / LLM', emoji: '🧠', description: 'Core AI conversation engine powering character responses and dialogue' },
+    { id: 'tts', name: 'Text-to-Speech', emoji: '🗣️', description: 'Converts text responses into spoken audio output' },
+    { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️', description: 'Transcribes voice input into text for processing' },
+    { id: 'rag', name: 'RAG', emoji: '📚', description: 'Retrieval-Augmented Generation for context-aware knowledge retrieval' },
+    { id: 'movement', name: 'Movement', emoji: '💃', description: 'Controls character animations, gestures and physical expressions' },
+    { id: 'cognition', name: 'Cognition', emoji: '🧩', description: 'Advanced reasoning, memory consolidation and emotional processing' },
+    { id: 'vision', name: 'Vision', emoji: '👁️', description: 'Visual perception and image understanding capabilities' },
+    { id: 'imagination', name: 'Imagination', emoji: '🎨', description: 'AI-powered image generation and visual creativity' }
 ];
 
 export const MODULE_CONFIGS = {
@@ -36,18 +36,18 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    kajiwoto: 'BackendKajiwotoSettingsView',
-                    openaicompatible: 'BackendOpenAICompatibleSettingsView',
-                    characterai: 'BackendCharacterAISettingsView',
-                    kindroid: 'BackendKindroidSettingsView',
-                    openai: 'BackendOpenAISettingsView',
-                    openrouter: 'BackendOpenRouterSettingsView'
+                    kajiwoto: 'kajiwoto',
+                    openaicompatible: 'openaicompatible',
+                    characterai: 'characterai',
+                    kindroid: 'kindroid',
+                    openai: 'openai',
+                    openrouter: 'openrouter'
                 }
             }
         ]
     },
     cognition: {
-        generalSettingsComponent: 'CognitionGeneralSettingsView',
+        generalSettingsSchema: 'cognition_general',
         providers: [
             {
                 id: 'cognition',
@@ -60,15 +60,15 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'CognitionOpenAICompatibleSettingsView',
-                    openai: 'CognitionOpenAISettingsView',
-                    openrouter: 'CognitionOpenRouterSettingsView'
+                    openaicompatible: 'openaicompatible',
+                    openai: 'openai',
+                    openrouter: 'openrouter'
                 }
             }
         ]
     },
     movement: {
-        generalSettingsComponent: 'MovementGeneralSettingsView',
+        generalSettingsSchema: 'movement_general',
         providers: [
             {
                 id: 'movement',
@@ -81,15 +81,15 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openaicompatible: 'MovementOpenAICompatibleSettingsView',
-                    openai: 'MovementOpenAISettingsView',
-                    openrouter: 'MovementOpenRouterSettingsView'
+                    openaicompatible: 'openaicompatible',
+                    openai: 'openai',
+                    openrouter: 'openrouter'
                 }
             }
         ]
     },
     rag: {
-        generalSettingsComponent: 'RAGGeneralSettingsView',
+        generalSettingsSchema: 'rag_general',
         providers: [
             {
                 id: 'rag',
@@ -104,17 +104,17 @@ export const MODULE_CONFIGS = {
                     { id: 'ollama', name: 'Ollama', logo: logo_blank }
                 ],
                 components: {
-                    localai: 'RAGLocalAISettingsView',
-                    openai: 'RAGOpenAISettingsView',
-                    openaicompatible: 'RAGOpenAICompatibleSettingsView',
-                    mistral: 'RAGMistralSettingsView',
-                    ollama: 'RAGOllamaSettingsView'
+                    localai: 'rag_localai',
+                    openai: 'rag_openai',
+                    openaicompatible: 'rag_openaicompatible',
+                    mistral: 'rag_mistral',
+                    ollama: 'rag_ollama'
                 }
             }
         ]
     },
     stt: {
-        generalSettingsComponent: 'STTGeneralSettingsView',
+        generalSettingsSchema: 'stt_general',
         providers: [
             {
                 id: 'transcription',
@@ -126,8 +126,8 @@ export const MODULE_CONFIGS = {
                     { id: 'openai', name: 'OpenAI', logo: logo_openai }
                 ],
                 components: {
-                    harmonyspeech: 'STTHarmonySpeechSettingsView',
-                    openai: 'STTOpenAISettingsView'
+                    harmonyspeech: 'harmonyspeech_stt',
+                    openai: 'stt_openai'
                 }
             },
             {
@@ -140,14 +140,14 @@ export const MODULE_CONFIGS = {
                     { id: 'openai', name: 'OpenAI', logo: logo_openai }
                 ],
                 components: {
-                    harmonyspeech: 'VADHarmonySpeechSettingsView',
-                    openai: 'VADOpenAISettingsView'
+                    harmonyspeech: 'harmonyspeech_vad',
+                    openai: 'vad_openai'
                 }
             }
         ]
     },
     tts: {
-        generalSettingsComponent: 'TTSGeneralSettingsView',
+        generalSettingsSchema: 'tts_general',
         providers: [
             {
                 id: 'tts',
@@ -161,16 +161,16 @@ export const MODULE_CONFIGS = {
                     { id: 'kindroid', name: 'Kindroid AI', logo: logo_kindroid }
                 ],
                 components: {
-                    elevenlabs: 'TTSElevenlabsSettingsView',
-                    harmonyspeech: 'TTSHarmonySpeechSettingsView',
-                    openai: 'TTSOpenAISettingsView',
-                    kindroid: 'TTSKindroidSettingsView'
+                    elevenlabs: 'elevenlabs',
+                    harmonyspeech: 'harmonyspeech_tts',
+                    openai: 'tts_openai',
+                    kindroid: 'kindroid'
                 }
             }
         ]
     },
     imagination: {
-        generalSettingsComponent: null,
+        generalSettingsSchema: null,
         providers: [
             {
                 id: 'imagination',
@@ -181,13 +181,13 @@ export const MODULE_CONFIGS = {
                     { id: 'comfyui', name: 'ComfyUI', logo: logo_blank },
                 ],
                 components: {
-                    comfyui: 'ImaginationComfyUISettingsView',
+                    comfyui: 'comfyui',
                 }
             }
         ]
     },
     vision: {
-        generalSettingsComponent: 'VisionGeneralSettingsView',
+        generalSettingsSchema: 'vision_general',
         providers: [
             {
                 id: 'vision',
@@ -200,9 +200,9 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai }
                 ],
                 components: {
-                    openai: 'VisionOpenAISettingsView',
-                    openrouter: 'VisionOpenRouterSettingsView',
-                    openaicompatible: 'VisionOpenAICompatibleSettingsView'
+                    openai: 'openai',
+                    openrouter: 'openrouter',
+                    openaicompatible: 'openaicompatible'
                 }
             }
         ]

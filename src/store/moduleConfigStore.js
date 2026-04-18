@@ -14,16 +14,34 @@ const useModuleConfigStore = create((set, get) => ({
         tts: [],
         vision: []
     },
-    selectedModuleType: 'backend',
     selectedConfigId: null,
     isLoading: false,
     error: null,
-    
+
     // Actions
-    setModuleType: (moduleType) => {
-        set({ selectedModuleType: moduleType, selectedConfigId: null });
+    loadAllConfigs: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const moduleTypes = ['backend', 'cognition', 'imagination', 'movement', 'rag', 'stt', 'tts', 'vision'];
+            await Promise.all(
+                moduleTypes.map(async (moduleType) => {
+                    try {
+                        const configs = await moduleService.listModuleConfigs(moduleType);
+                        set(produce(state => {
+                            state.configs[moduleType] = configs;
+                        }));
+                    } catch (error) {
+                        console.error(`Failed to load ${moduleType} configs:`, error);
+                        // Don't fail the entire operation if one module type fails
+                    }
+                })
+            );
+            set({ isLoading: false });
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+        }
     },
-    
+
     loadConfigs: async (moduleType) => {
         set({ isLoading: true, error: null });
         try {
@@ -36,7 +54,7 @@ const useModuleConfigStore = create((set, get) => ({
             set({ error: error.message, isLoading: false });
         }
     },
-    
+
     createConfig: async (moduleType, name, config) => {
         set({ isLoading: true, error: null });
         try {
@@ -51,7 +69,7 @@ const useModuleConfigStore = create((set, get) => ({
             throw error;
         }
     },
-    
+
     updateConfig: async (moduleType, id, name, config) => {
         set({ isLoading: true, error: null });
         try {
@@ -63,7 +81,7 @@ const useModuleConfigStore = create((set, get) => ({
             throw error;
         }
     },
-    
+
     deleteConfig: async (moduleType, id) => {
         set({ isLoading: true, error: null });
         try {
@@ -80,13 +98,13 @@ const useModuleConfigStore = create((set, get) => ({
             throw error;
         }
     },
-    
+
     // Getters
     getConfigs: (moduleType) => {
         const state = get();
         return state.configs[moduleType] || [];
     },
-    
+
     getConfigById: (moduleType, id) => {
         const state = get();
         return state.configs[moduleType]?.find(c => c.id === id);

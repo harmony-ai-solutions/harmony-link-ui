@@ -428,6 +428,336 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   Module Row — Mirrors integration-row pattern for module type cards
+   ═══════════════════════════════════════════════════════════════════ */
+
+.module-row {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border-default);
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-row:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Prismatic tint overlay: accent-primary color bleeds from top-left */
+.module-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-primary) 0%,
+        transparent 55%
+    );
+    opacity: 0.09;
+}
+
+/* Left accent stripe */
+.module-row-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(
+        to bottom,
+        var(--color-accent-primary),
+        var(--color-accent-secondary)
+    );
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+/* Module name uses accent-primary color */
+.module-row-name {
+    color: var(--color-accent-primary);
+}
+
+/* Chevron button */
+.module-row-chevron {
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.module-row-chevron:hover {
+    color: var(--color-accent-primary);
+}
+
+/* Config count pill */
+.module-count-pill {
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+}
+
+/* ─── Module Config Sub-Rows ─────────────────────────────────── */
+
+/* Container that wraps all config sub-rows */
+.module-config-rows-container {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Individual config sub-row */
+.module-config-row {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background-color 0.15s ease;
+}
+
+.module-config-row:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+/* Subtle secondary accent tint overlay (dimmer than module row) */
+.module-config-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-secondary) 0%,
+        transparent 40%
+    );
+    opacity: 0.04;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Module Config Action Buttons — Compact XS pill-style buttons
+   Mirrors instance-action-btn* design for visual consistency
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Base button — neutral/elevated */
+.module-action-btn {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn:hover:not(:disabled) {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-border-hover);
+}
+
+.module-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Danger (delete) */
+.module-action-btn-danger {
+    background-color: var(--color-error);
+    border: 1px solid var(--color-error);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.module-action-btn-danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Icon-only button (chevron toggle) */
+.module-action-btn-icon {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-muted);
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.module-action-btn-icon:hover:not(:disabled) {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    background-color: var(--color-background-hover);
+}
+
+.module-action-btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Save button variant — accent primary color */
+.module-action-btn-save {
+    background-color: var(--color-accent-primary);
+    border: 1px solid var(--color-accent-primary);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn-save:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.module-action-btn-save:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ─── Module Inline Editor Panel ─────────────────────────────── */
+
+/* Outer container — sits inside the expansion area below a config row */
+.module-inline-editor {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border-default);
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-base) 100%);
+}
+
+/* Header bar — mode label */
+.module-inline-editor-header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(to right, var(--color-background-elevated), transparent);
+}
+
+/* Scrollable body */
+.module-inline-editor-body {
+    padding: 0.75rem;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+/* Individual field row */
+.module-inline-editor-field {
+    margin-bottom: 0.75rem;
+}
+
+/* Field label */
+.module-inline-editor-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.375rem;
+    color: var(--color-text-secondary);
+}
+
+/* Section (General Settings, Provider Settings) */
+.module-inline-editor-section {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.module-inline-editor-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Section title */
+.module-inline-editor-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Section body — contains the settings component */
+.module-inline-editor-section-body {
+    background: var(--color-background-base);
+    border: 1px solid var(--color-border-default);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+
+/* Provider section */
+.module-inline-editor-provider {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.module-inline-editor-provider:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Provider header — label + DynamicOptionsGroup */
+.module-inline-editor-provider-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.module-inline-editor-provider-header .module-inline-editor-label {
+    flex-shrink: 0;
+    width: 25%;
+    margin-bottom: 0;
+}
+
+/* Provider settings body */
+.module-inline-editor-provider-settings {
+    background: var(--color-background-base);
+    border: 1px solid var(--color-border-default);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-top: 0.375rem;
+}
+
+/* Footer — Save/Cancel */
+.module-inline-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Temporary "creating" row — dashed border to distinguish from existing configs */
+.module-config-row-creating {
+    border: 1px dashed var(--color-border-default);
+    border-radius: 0.375rem;
+    margin: 0.25rem 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Instance Action Buttons — Compact XS pill-style buttons
    ═══════════════════════════════════════════════════════════════════ */
 

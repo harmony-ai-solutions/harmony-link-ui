@@ -146,7 +146,11 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
     });
 
     // Voice Config File state
-    const [currentVoiceConfigFile, setCurrentVoiceConfigFile] = useState(voiceConfigFile || NEW_CONFIG_OPTION);
+    // Always start as NEW_CONFIG_OPTION so that refreshVoiceConfigs detects the mismatch
+    // and loads the actual config data from voiceConfigFile on mount.
+    // If initialized directly to voiceConfigFile, the equality check in refreshVoiceConfigs
+    // skips loading the config data, leaving the model select showing defaults.
+    const [currentVoiceConfigFile, setCurrentVoiceConfigFile] = useState(NEW_CONFIG_OPTION);
 
     // Voice Embedding States
     const [embeddingFile, setEmbeddingFile] = useState(null);
@@ -210,10 +214,10 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
         }
     };
 
-    // Initialize voice configs on mount
+    // Initialize voice configs on mount and when voiceConfigFile prop changes
     useEffect(() => {
         refreshVoiceConfigs(true, voiceConfigFile);
-    }, []);
+    }, [voiceConfigFile]);
 
     // Config Management Handlers
     const changeVoiceConfigAndUpdate = async (selectedConfig) => {

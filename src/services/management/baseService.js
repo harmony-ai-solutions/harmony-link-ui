@@ -60,13 +60,38 @@ export function getJsonHeaders() {
 
 /**
  * Handle fetch response errors
+ * Attempts to extract detailed error information from the response body
+ * before falling back to the provided generic message.
+ *
  * @param {Response} response - The fetch response
- * @param {string} errorMessage - Custom error message
- * @throws {Error} Throws error if response is not ok
+ * @param {string} errorMessage - Fallback error message when body cannot be parsed
+ * @throws {Error} Throws error if response is not ok, with backend detail attached
  */
 export async function handleResponse(response, errorMessage) {
     if (!response.ok) {
-        throw new Error(errorMessage);
+        let detail = null;
+        try {
+            const body = await response.json();
+            if (body.error) {
+                detail = body.error;
+            }
+            // Preserve structured metadata from DockerError responses
+            if (body.isDockerError) {
+                const err = new Error(detail || errorMessage);
+                err.isDockerError = true;
+                err.dockerAvailable = body.dockerAvailable;
+                throw err;
+            }
+        } catch (parseErr) {
+            // If we already built a structured error above, re-throw it
+            if (parseErr.isDockerError || (parseErr instanceof Error && parseErr.message !== errorMessage && detail === null)) {
+                throw parseErr;
+            }
+            // Otherwise body wasn't JSON — fall through to generic message
+        }
+
+        // Use the extracted detail when available, otherwise the generic message
+        throw new Error(detail || errorMessage);
     }
     return response;
 }

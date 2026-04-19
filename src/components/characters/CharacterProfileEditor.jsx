@@ -3,6 +3,7 @@ import useCharacterProfileStore from '../../store/characterProfileStore';
 import { listModuleConfigs } from '../../services/management/moduleService.js';
 import ImageGallery from './ImageGallery';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
+import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
 
 /**
  * Modal editor for character profiles
@@ -40,6 +41,21 @@ export default function CharacterProfileEditor({ profile, onClose }) {
     const [audioResponseChance, setAudioResponseChance] = useState('50');
     const [visionConfigs, setVisionConfigs] = useState([]);
     const [selectedVisionConfigId, setSelectedVisionConfigId] = useState(null);
+    const [lifecycleConfig, setLifecycleConfig] = useState({
+        autonomy_level: 1,
+        beat_interval: 1800,
+        beat_type_weights: { self_reflection: 0.35, curiosity: 0.30, relationship: 0.25, outreach: 0.10 },
+        sleep_threshold: 0.80,
+        wake_threshold: 0.20,
+        exhaustion_accumulation_per_beat: 0.10,
+        exhaustion_decay_per_tick: 0.02,
+        emotion_decay_tau: 3600.0,
+        emotion_high_threshold: 6.0,
+        emotion_low_threshold: 1.0,
+        emotion_crystallize_intensity: 7.0,
+        emotion_crystallize_min_hours: 2.0,
+        core_memories_k: 10,
+    });
 
     const setInitialValues = () => {
         if (profile) {
@@ -55,6 +71,17 @@ export default function CharacterProfileEditor({ profile, onClose }) {
             setTypingSpeedWPM(String(profile.typing_speed_wpm ?? 60));
             setAudioResponseChance(String(profile.audio_response_chance_percent ?? 50));
             setSelectedVisionConfigId(profile.vision_config_id || null);
+            // Parse lifecycle_config from profile
+            if (profile.lifecycle_config) {
+                try {
+                    const parsed = typeof profile.lifecycle_config === 'string'
+                        ? JSON.parse(profile.lifecycle_config)
+                        : profile.lifecycle_config;
+                    setLifecycleConfig(parsed);
+                } catch (e) {
+                    // Use defaults on parse error
+                }
+            }
         } else {
             setName('');
             setDescription('');
@@ -68,6 +95,22 @@ export default function CharacterProfileEditor({ profile, onClose }) {
             setTypingSpeedWPM('60');
             setAudioResponseChance('50');
             setSelectedVisionConfigId(null);
+            // Reset to defaults
+            setLifecycleConfig({
+                autonomy_level: 1,
+                beat_interval: 1800,
+                beat_type_weights: { self_reflection: 0.35, curiosity: 0.30, relationship: 0.25, outreach: 0.10 },
+                sleep_threshold: 0.80,
+                wake_threshold: 0.20,
+                exhaustion_accumulation_per_beat: 0.10,
+                exhaustion_decay_per_tick: 0.02,
+                emotion_decay_tau: 3600.0,
+                emotion_high_threshold: 6.0,
+                emotion_low_threshold: 1.0,
+                emotion_crystallize_intensity: 7.0,
+                emotion_crystallize_min_hours: 2.0,
+                core_memories_k: 10,
+            });
         }
     };
 
@@ -147,6 +190,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
             typing_speed_wpm: typingSpeedNum,
             audio_response_chance_percent: audioChanceNum,
             vision_config_id: selectedVisionConfigId || null,
+            lifecycle_config: JSON.stringify(lifecycleConfig),
         };
 
         try {
@@ -175,6 +219,10 @@ export default function CharacterProfileEditor({ profile, onClose }) {
         {
             id: 'advanced', label: 'Advanced',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+        },
+        {
+            id: 'lifecycle', label: 'Lifecycle',
+            icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
         },
         {
             id: 'images', label: 'Images', hidden: !profile,
@@ -367,6 +415,13 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                             </div>
                         </div>
                     </div>
+                );
+            case 'lifecycle':
+                return (
+                    <LifecycleConfigEditor
+                        config={lifecycleConfig}
+                        onChange={setLifecycleConfig}
+                    />
                 );
             case 'images':
                 return profile ? (

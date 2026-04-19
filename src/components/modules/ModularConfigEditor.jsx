@@ -615,6 +615,94 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     </div>
                 );
 
+            case 'key-value-list':
+                // Parse current value as object (stored as JSON or key:value pairs)
+                const kvPairs = (() => {
+                    try {
+                        const val = getNestedValue(moduleSettings, field.key);
+                        if (!val || typeof val !== 'object') return [];
+                        return Object.entries(val).map(([k, v]) => ({ key: k, value: String(v) }));
+                    } catch { return []; }
+                })();
+
+                const [kvRows, setKvRows] = useState(kvPairs.length > 0 ? kvPairs : []);
+
+                const addKvRow = () => setKvRows([...kvRows, { key: '', value: '' }]);
+                const removeKvRow = (index) => setKvRows(kvRows.filter((_, i) => i !== index));
+                const updateKvRow = (index, field_name, val) => {
+                    const updated = [...kvRows];
+                    updated[index][field_name] = val;
+                    setKvRows(updated);
+                    // Serialize back to object
+                    const obj = {};
+                    updated.forEach(row => { if (row.key.trim()) obj[row.key.trim()] = row.value; });
+                    handleFieldChange(field, obj);
+                };
+
+                // Handle blur to save
+                const handleKvBlur = () => {
+                    const obj = {};
+                    kvRows.forEach(row => { if (row.key.trim()) obj[row.key.trim()] = row.value; });
+                    const updatedSettings = { ...moduleSettings };
+                    setNestedValue(updatedSettings, field.key, obj);
+                    setModuleSettings(updatedSettings);
+                    saveSettingsFunc(updatedSettings);
+                };
+
+                return (
+                    <div key={field.key} className={`flex items-start mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2 pt-2`}>
+                            {field.label}
+                            <SettingsTooltip
+                                tooltipIndex={tooltipIndex}
+                                tooltipVisible={() => tooltipVisible}
+                                setTooltipVisible={setTooltipVisible}
+                            >
+                                {field.tooltip}
+                            </SettingsTooltip>
+                        </label>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2 space-y-2`}>
+                            {kvRows.map((row, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={row.key}
+                                        onChange={(e) => updateKvRow(index, 'key', e.target.value)}
+                                        onBlur={handleKvBlur}
+                                        placeholder="Key"
+                                        className="input-field flex-1 p-1.5 rounded text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={row.value}
+                                        onChange={(e) => updateKvRow(index, 'value', e.target.value)}
+                                        onBlur={handleKvBlur}
+                                        placeholder="Value"
+                                        className="input-field flex-1 p-1.5 rounded text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeKvRow(index)}
+                                        className="text-text-muted hover:text-error transition-colors p-1"
+                                        title="Remove"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={addKvRow}
+                                className="text-sm text-primary hover:text-primary-hover transition-colors"
+                            >
+                                + Add Entry
+                            </button>
+                        </div>
+                    </div>
+                );
+
             case 'resolution-input':
                 // Handle both object format ({width, height}) and separate field format (resolutionwidth, resolutionheight)
                 let widthValue, heightValue;

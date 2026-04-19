@@ -36,11 +36,18 @@ export async function createEntity(id, characterProfileId) {
     return await resp.json();
 }
 
-export async function updateEntity(id, characterProfileId) {
+export async function updateEntity(id, characterProfileId, lifecycleConfig) {
+    const body = {};
+    if (characterProfileId !== undefined && characterProfileId !== null) {
+        body.character_profile_id = characterProfileId;
+    }
+    if (lifecycleConfig !== undefined && lifecycleConfig !== null) {
+        body.lifecycle_config = lifecycleConfig;
+    }
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${id}`, {
         method: "PUT",
         headers: getJsonHeaders(),
-        body: JSON.stringify({ character_profile_id: characterProfileId })
+        body: JSON.stringify(body)
     });
     await handleResponse(resp, "Failed to update entity");
     return await resp.json();
@@ -71,5 +78,14 @@ export async function renameEntity(oldId, newId) {
         body: JSON.stringify({ new_id: newId })
     });
     await handleResponse(resp, "Failed to rename entity");
+    return await resp.json();
+}
+
+export async function resetEntityLifecycleConfig(entityId) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${entityId}/reset-lifecycle-config`, {
+        method: "POST",
+        headers: getJsonHeaders()
+    });
+    await handleResponse(resp, "Failed to reset entity lifecycle config");
     return await resp.json();
 }

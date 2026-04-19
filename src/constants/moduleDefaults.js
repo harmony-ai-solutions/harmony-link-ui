@@ -12,7 +12,19 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            reasoningeffort: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://localhost:8080/v1",
@@ -22,7 +34,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -31,7 +54,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.KAJIWOTO]: {
             username: "",
@@ -141,7 +175,19 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            reasoningeffort: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://127.0.0.1:5000",
@@ -151,7 +197,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -160,7 +217,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         general: {
             maxcognitionevents: 20,
@@ -175,7 +243,19 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            reasoningeffort: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://127.0.0.1:5000",
@@ -185,7 +265,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -194,7 +285,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: -1,
-            stoptokens: ["\\n"]
+            stoptokens: ["\\n"],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         general: {
             startupsynctimeout: 30,
@@ -235,7 +337,19 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: 1,
-            stoptokens: []
+            stoptokens: [],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            reasoningeffort: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -244,7 +358,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: 1,
-            stoptokens: []
+            stoptokens: [],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://localhost:8080/v1",
@@ -254,7 +379,18 @@ export const MODULE_DEFAULTS = {
             temperature: 0.7,
             topp: 1.0,
             n: 1,
-            stoptokens: []
+            stoptokens: [],
+            // New LLM params (Migration 20) - -1 to disable
+            frequencypenalty: -1,
+            presencepenalty: -1,
+            maxcompletiontokens: -1,
+            seed: -1,
+            responseformat: "",
+            topk: -1,
+            topa: -1,
+            minp: -1,
+            repetitionpenalty: -1,
+            chattemplatekwargs: ""
         }
     }
 };

@@ -159,7 +159,19 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            reasoningeffort: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
@@ -167,7 +179,18 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         characterai: {
             apitoken: [validationRules.required, validationRules.nonEmpty],
@@ -234,7 +257,19 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            reasoningeffort: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
@@ -242,14 +277,36 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         openrouter: {
             openrouterapikey: [validationRules.required, validationRules.nonEmpty],
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         maxcognitionevents: [validationRules.positiveNumber],
         generateexpressions: []
@@ -261,7 +318,19 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            reasoningeffort: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         openaicompatible: {
             baseurl: [validationRules.required, validationRules.url],
@@ -269,14 +338,36 @@ export const moduleValidationConfig = {
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         openrouter: {
             openrouterapikey: [validationRules.required, validationRules.nonEmpty],
             model: [validationRules.required, validationRules.nonEmpty],
             maxtokens: [validationRules.positiveNumber],
             temperature: [validationRules.range(-2, 2)],
-            topp: [validationRules.range(0, 1)]
+            topp: [validationRules.range(0, 1)],
+            // New LLM params (Migration 20)
+            frequencypenalty: [validationRules.range(-2, 2)],
+            presencepenalty: [validationRules.range(-2, 2)],
+            maxcompletiontokens: [validationRules.positiveNumber],
+            seed: [validationRules.number],
+            responseformat: [],
+            topk: [validationRules.positiveNumber],
+            topa: [validationRules.number],
+            minp: [validationRules.range(0, 1)],
+            repetitionpenalty: [validationRules.range(0, 2)],
+            chattemplatekwargs: []
         },
         startupsynctimeout: [validationRules.positiveNumber],
         executionthreshold: [validationRules.range(0, 1)]
@@ -460,7 +551,19 @@ export const fieldDisplayNames = {
     maxcognitionevents: 'Max Cognition Events',
     startupsynctimeout: 'Startup Sync Timeout',
     executionthreshold: 'Execution Threshold',
-    embeddingconcurrency: 'Embedding Concurrency'
+    embeddingconcurrency: 'Embedding Concurrency',
+    // New LLM params (Migration 20)
+    frequencypenalty: 'Frequency Penalty',
+    presencepenalty: 'Presence Penalty',
+    maxcompletiontokens: 'Max Completion Tokens',
+    seed: 'Seed',
+    responseformat: 'Response Format',
+    reasoningeffort: 'Reasoning Effort',
+    topk: 'Top K',
+    topa: 'Top A',
+    minp: 'Min P',
+    repetitionpenalty: 'Repetition Penalty',
+    chattemplatekwargs: 'Chat Template Kwargs'
 };
 
 /**

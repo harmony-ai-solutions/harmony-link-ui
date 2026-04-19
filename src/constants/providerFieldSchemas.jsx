@@ -278,6 +278,71 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 ]
             },
             {
+                key: 'topk',
+                label: 'Top K',
+                type: 'number',
+                placeholder: '(disabled)',
+                tooltip: 'Limits sampling to the K most likely tokens.\nLeave empty or set to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'topa',
+                label: 'Top A',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Leave empty to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    message: 'Top A must be between 0 and 1.'
+                }
+            },
+            {
+                key: 'minp',
+                label: 'Min P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Leave empty to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    message: 'Min P must be between 0 and 1.'
+                }
+            },
+            {
+                key: 'repetitionpenalty',
+                label: 'Repetition Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    message: 'Repetition Penalty must be between 0 and 2.'
+                }
+            },
+            {
+                key: 'chattemplatekwargs',
+                label: 'Chat Template Kwargs',
+                type: 'key-value-list',
+                tooltip: 'Additional keyword arguments passed to the chat template.\nUse for provider-specific features.\nExample: enable_thinking = true',
+                width: 'full',
+                labelWidth: '1/6'
+            },
+            {
                 key: 'n',
                 label: 'Number of Results',
                 type: 'number',
@@ -470,6 +535,63 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 tooltip: 'Additional keyword arguments passed to the chat template.\nUse for provider-specific features like thinking mode.\nExample: enable_thinking = true',
                 width: 'full',
                 labelWidth: '1/6'
+            },
+            {
+                key: 'topk',
+                label: 'Top K',
+                type: 'number',
+                placeholder: '(disabled)',
+                tooltip: 'Limits sampling to the K most likely tokens.\nLeave empty or set to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'topa',
+                label: 'Top A',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Leave empty to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    message: 'Top A must be between 0 and 1.'
+                }
+            },
+            {
+                key: 'minp',
+                label: 'Min P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Leave empty to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    message: 'Min P must be between 0 and 1.'
+                }
+            },
+            {
+                key: 'repetitionpenalty',
+                label: 'Repetition Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '(disabled)',
+                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    message: 'Repetition Penalty must be between 0 and 2.'
+                }
             },
             {
                 key: 'n',

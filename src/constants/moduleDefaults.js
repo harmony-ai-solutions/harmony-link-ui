@@ -24,7 +24,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://localhost:8080/v1",
@@ -45,7 +46,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -65,7 +67,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.KAJIWOTO]: {
             username: "",
@@ -187,7 +190,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://127.0.0.1:5000",
@@ -208,7 +212,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -228,7 +233,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         general: {
             maxcognitionevents: 20,
@@ -255,7 +261,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://127.0.0.1:5000",
@@ -276,7 +283,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -296,7 +304,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         general: {
             startupsynctimeout: 30,
@@ -349,7 +358,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
             openrouterapikey: "",
@@ -369,7 +379,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://localhost:8080/v1",
@@ -390,7 +401,8 @@ export const MODULE_DEFAULTS = {
             topa: -1,
             minp: -1,
             repetitionpenalty: -1,
-            chattemplatekwargs: ""
+            samplingpresetname: "",
+            extraparams: {}
         }
     }
 };

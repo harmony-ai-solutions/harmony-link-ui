@@ -13,7 +13,7 @@ import React from 'react';
  * {
  *     key: 'fieldKey',
  *     label: 'Field Label',
- *     type: 'text' | 'password' | 'number' | 'select' | 'model-select' | 'checkbox' | 'comma-list' | 'key-value-textarea' | 'resolution-input',
+ *     type: 'text' | 'password' | 'number' | 'select' | 'model-select' | 'checkbox' | 'comma-list' | 'key-value-textarea' | 'resolution-input' | 'preset-select' | 'preset-params',
  *     placeholder: 'Placeholder text',
  *     tooltip: 'Tooltip content',
  *     width: 'full' | '1/2',
@@ -151,6 +151,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
                 key: 'maxtokens',
                 label: 'Max Tokens',
                 type: 'number',
@@ -235,18 +244,30 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 label: 'Max Completion Tokens',
                 type: 'number',
                 placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty to use Max Tokens.',
+                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'seed',
                 label: 'Seed',
                 type: 'number',
                 placeholder: '(random)',
-                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty for random.',
+                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty or set to -1 for random.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    disableValue: -1,
+                    message: 'Seed must be a non-negative integer, or -1 for random.'
+                }
             },
             {
                 key: 'responseformat',
@@ -284,7 +305,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 placeholder: '(disabled)',
                 tooltip: 'Limits sampling to the K most likely tokens.\nLeave empty or set to -1 to disable.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Top K must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'topa',
@@ -292,14 +319,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Top A must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Top A must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -308,14 +336,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Min P must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Min P must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -324,23 +353,16 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition.',
+                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 2,
-                    message: 'Repetition Penalty must be between 0 and 2.'
+                    disableValue: -1,
+                    message: 'Repetition Penalty must be between 0 and 2, or -1 to disable.'
                 }
-            },
-            {
-                key: 'chattemplatekwargs',
-                label: 'Chat Template Kwargs',
-                type: 'key-value-list',
-                tooltip: 'Additional keyword arguments passed to the chat template.\nUse for provider-specific features.\nExample: enable_thinking = true',
-                width: 'full',
-                labelWidth: '1/6'
             },
             {
                 key: 'n',
@@ -371,6 +393,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     type: 'required',
                     message: 'Stop tokens cannot be empty.'
                 }
+            },
+            {
+                key: 'extraparams',
+                label: 'Advanced Sampling Parameters',
+                type: 'preset-params',
+                tooltip: 'Extended sampling parameters from the selected preset.\nThese are sent as additional API parameters.',
+                width: 'full',
+                labelWidth: '1/6'
             }
         ]
     },
@@ -417,6 +447,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
                 key: 'maxtokens',
                 label: 'Max Tokens',
                 type: 'number',
@@ -501,18 +540,30 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 label: 'Max Completion Tokens',
                 type: 'number',
                 placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty to use Max Tokens.',
+                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'seed',
                 label: 'Seed',
                 type: 'number',
                 placeholder: '(random)',
-                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty for random.',
+                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty or set to -1 for random.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    disableValue: -1,
+                    message: 'Seed must be a non-negative integer, or -1 for random.'
+                }
             },
             {
                 key: 'responseformat',
@@ -529,21 +580,19 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 ]
             },
             {
-                key: 'chattemplatekwargs',
-                label: 'Chat Template Kwargs',
-                type: 'key-value-list',
-                tooltip: 'Additional keyword arguments passed to the chat template.\nUse for provider-specific features like thinking mode.\nExample: enable_thinking = true',
-                width: 'full',
-                labelWidth: '1/6'
-            },
-            {
                 key: 'topk',
                 label: 'Top K',
                 type: 'number',
                 placeholder: '(disabled)',
                 tooltip: 'Limits sampling to the K most likely tokens.\nLeave empty or set to -1 to disable.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Top K must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'topa',
@@ -551,14 +600,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Top A must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Top A must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -567,14 +617,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Min P must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Min P must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -583,14 +634,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition.',
+                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 2,
-                    message: 'Repetition Penalty must be between 0 and 2.'
+                    disableValue: -1,
+                    message: 'Repetition Penalty must be between 0 and 2, or -1 to disable.'
                 }
             },
             {
@@ -622,6 +674,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     type: 'required',
                     message: 'Stop tokens cannot be empty.'
                 }
+            },
+            {
+                key: 'extraparams',
+                label: 'Advanced Sampling Parameters',
+                type: 'preset-params',
+                tooltip: 'Extended sampling parameters from the selected preset.\nThese are sent as additional API parameters.',
+                width: 'full',
+                labelWidth: '1/6'
             }
         ]
     },
@@ -658,6 +718,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
                 key: 'maxtokens',
                 label: 'Max Tokens',
                 type: 'number',
@@ -742,18 +811,30 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 label: 'Max Completion Tokens',
                 type: 'number',
                 placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty to use Max Tokens.',
+                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'seed',
                 label: 'Seed',
                 type: 'number',
                 placeholder: '(random)',
-                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty for random.',
+                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty or set to -1 for random.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    disableValue: -1,
+                    message: 'Seed must be a non-negative integer, or -1 for random.'
+                }
             },
             {
                 key: 'responseformat',
@@ -776,7 +857,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 placeholder: '(disabled)',
                 tooltip: 'Limits sampling to the K most likely tokens.\nLeave empty or set to -1 to disable.',
                 width: '1/2',
-                labelWidth: '1/3'
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Top K must be at least 1, or -1 to disable.'
+                }
             },
             {
                 key: 'topa',
@@ -784,14 +871,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Removes tokens with probability below threshold * max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Top A must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Top A must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -800,14 +888,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Leave empty to disable.',
+                tooltip: 'Minimum probability threshold relative to max probability.\nRange: 0 to 1. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 1,
-                    message: 'Min P must be between 0 and 1.'
+                    disableValue: -1,
+                    message: 'Min P must be between 0 and 1, or -1 to disable.'
                 }
             },
             {
@@ -816,23 +905,16 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 type: 'number',
                 step: 0.01,
                 placeholder: '(disabled)',
-                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition.',
+                tooltip: 'Penalizes repetition of any token regardless of frequency.\nRange: 0 to 2.0. Values > 1 reduce repetition. Set to -1 to disable.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 0,
                     max: 2,
-                    message: 'Repetition Penalty must be between 0 and 2.'
+                    disableValue: -1,
+                    message: 'Repetition Penalty must be between 0 and 2, or -1 to disable.'
                 }
-            },
-            {
-                key: 'chattemplatekwargs',
-                label: 'Chat Template Kwargs',
-                type: 'key-value-list',
-                tooltip: 'Additional keyword arguments passed to the chat template.\nUse for provider-specific features like thinking mode.\nExample: enable_thinking = true',
-                width: 'full',
-                labelWidth: '1/6'
             },
             {
                 key: 'n',
@@ -863,6 +945,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     type: 'required',
                     message: 'Stop tokens cannot be empty.'
                 }
+            },
+            {
+                key: 'extraparams',
+                label: 'Advanced Sampling Parameters',
+                type: 'preset-params',
+                tooltip: 'Extended sampling parameters from the selected preset.\nThese are sent as additional API parameters.',
+                width: 'full',
+                labelWidth: '1/6'
             }
         ]
     },

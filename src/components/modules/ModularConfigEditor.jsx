@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import SettingsTooltip from '../settings/SettingsTooltip.jsx';
-import { LogDebug, LogError } from '../../utils/logger.js';
+import { LogDebug } from '../../utils/logger.js';
 import { validateProviderConfig, listProviderModels } from '../../services/management/configService.js';
 import { HarmonySpeechEnginePlugin } from '@harmony-ai/harmonyspeech';
-import { getConfig } from '../../services/management/configService.js';
 import { isHarmonyLinkMode } from '../../config/appMode.js';
 import IntegrationDisplay from '../integrations/IntegrationDisplay.jsx';
 import ConfigVerificationSection from '../widgets/ConfigVerificationSection.jsx';
-import { MODULES } from '../../constants/modules.js';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
@@ -17,6 +15,9 @@ import VoiceConfigManager from '../widgets/VoiceConfigManager.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import WorkflowProfileEditor, { EMPTY_PROFILE } from '../widgets/WorkflowProfileEditor.jsx';
 import useHarmonySpeechClient from '../../hooks/useHarmonySpeechClient.js';
+import PresetSelector from '../widgets/PresetSelector.jsx';
+import AdvancedSamplingParams from '../widgets/AdvancedSamplingParams.jsx';
+import usePresetStore from '../../store/presetStore.js';
 
 /**
  * HarmonySpeech Model Select component
@@ -167,7 +168,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
     // Handle field blur with validation
     const handleFieldBlur = (field, value) => {
         // Get current value to check if previously had a value
-        const currentValue = getNestedValue(moduleSettings, field.key);
+        //const currentValue = getNestedValue(moduleSettings, field.key);
         
         // Run validation
         const validationResult = validateField(value, field.validation, moduleSettings, field.key);
@@ -249,13 +250,60 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
         saveSettingsFunc(updatedSettings);
     };
 
+    // Handle preset selection — pre-fill standard params and set extended params
+    const handlePresetSelect = (fieldKey, presetName, presetParams) => {
+        const updated = { ...moduleSettings };
+        updated[fieldKey] = presetName;
+
+        // Map preset param names to our field keys
+        const PRESET_TO_FIELD_KEY = {
+            'temperature': 'temperature',
+            'top_p': 'topp',
+            'max_tokens': 'maxtokens',
+            'frequency_penalty': 'frequencypenalty',
+            'presence_penalty': 'presencepenalty',
+            'seed': 'seed',
+            'top_k': 'topk',
+            'min_p': 'minp',
+            'repetition_penalty': 'repetitionpenalty',
+            'top_a': 'topa',
+        };
+
+        // Reset ALL standard fields to defaults first, then overlay preset values.
+        // This ensures params NOT in the preset go back to disabled/default
+        // instead of mixing with whatever was set before.
+        for (const [, fieldKey] of Object.entries(PRESET_TO_FIELD_KEY)) {
+            updated[fieldKey] = defaults[fieldKey] ?? -1;
+        }
+
+        // Now overlay preset values on top of the reset defaults
+        for (const [presetKey, value] of Object.entries(presetParams)) {
+            const mappedFieldKey = PRESET_TO_FIELD_KEY[presetKey];
+            if (mappedFieldKey && value !== undefined && value !== null) {
+                updated[mappedFieldKey] = value;
+            }
+        }
+
+        // Extended params go into extraparams (not standard fields)
+        const standardKeys = Object.keys(PRESET_TO_FIELD_KEY);
+        const extraParams = {};
+        for (const [key, value] of Object.entries(presetParams)) {
+            if (!standardKeys.includes(key)) {
+                extraParams[key] = value;
+            }
+        }
+        updated['extraparams'] = extraParams;
+
+        setModuleSettings(updated);
+        saveSettingsFunc(updated);
+    };
+
     // Handle integration apply
     const handleUseIntegration = (integrationOption, urlIndex) => {
         const apiURL = integrationOption.apiURLs[urlIndex];
         if (apiURL) {
-            // Parse the URL to extract config values
+            // extract config values
             try {
-                const url = new URL(apiURL);
                 const updatedSettings = { ...moduleSettings };
                 
                 // Update settings based on integration
@@ -743,8 +791,6 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                         setNestedValue(updatedSettings, 'resolutionwidth', size);
                         setNestedValue(updatedSettings, 'resolutionheight', size);
                     } else if (field.key.includes('.')) {
-                        const pathParts = field.key.split('.');
-                        const parent = getNestedValue(updatedSettings, pathParts[0]) || {};
                         setNestedValue(updatedSettings, field.key, { width: size, height: size });
                     }
                     setModuleSettings(updatedSettings);
@@ -879,6 +925,58 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 saveSettingsFunc(newSettings);
                             }}
                         />
+                    </div>
+                );
+
+            case 'preset-select':
+                return (
+                    <div key={field.key} className={`flex items-center mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2`}>
+                            {field.label}
+                            <SettingsTooltip
+                                tooltipIndex={tooltipIndex}
+                                tooltipVisible={() => tooltipVisible}
+                                setTooltipVisible={setTooltipVisible}
+                            >
+                                {field.tooltip}
+                            </SettingsTooltip>
+                        </label>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
+                            <PresetSelector
+                                value={currentValue}
+                                onChange={(presetName, presetParams) => handlePresetSelect(field.key, presetName, presetParams)}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 'preset-params':
+                const presetName = moduleSettings['samplingpresetname'];
+                const presetDetail = usePresetStore(s => s.presetDetails[presetName]) || {};
+                return (
+                    <div key={field.key} className={`flex items-start mb-2 ${getWidthClass(field.width)}`}>
+                        <label className={`block text-xs font-medium text-text-secondary ${getLabelWidthClass(field.labelWidth)} px-2 pt-2`}>
+                            {field.label}
+                            <SettingsTooltip
+                                tooltipIndex={tooltipIndex}
+                                tooltipVisible={() => tooltipVisible}
+                                setTooltipVisible={setTooltipVisible}
+                            >
+                                {field.tooltip}
+                            </SettingsTooltip>
+                        </label>
+                        <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
+                            <AdvancedSamplingParams
+                                extraParams={currentValue || {}}
+                                onChange={(params) => {
+                                    const updatedSettings = { ...moduleSettings };
+                                    setNestedValue(updatedSettings, field.key, params);
+                                    setModuleSettings(updatedSettings);
+                                    saveSettingsFunc(updatedSettings);
+                                }}
+                                presetParams={presetDetail}
+                            />
+                        </div>
                     </div>
                 );
 

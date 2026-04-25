@@ -1165,3 +1165,214 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     background-color: var(--color-background-elevated);
     flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Log Viewer Components — Dev Tab
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Log Entry Row */
+.log-entry {
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background-color 0.15s ease;
+    padding: 0.375rem 0.75rem;
+}
+
+.log-entry:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+.log-entry-error {
+    background-color: rgba(239, 68, 68, 0.04);
+    border-left: 2px solid rgb(248, 113, 113);
+}
+
+.log-entry-warn {
+    border-left: 2px solid rgb(250, 204, 21);
+}
+
+.log-entry-expanded {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry-prompt {
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.04) 0%,
+        transparent 40%
+    );
+    border-left: 2px solid var(--color-accent-primary, #6366f1);
+}
+
+/* Log Level Badges */
+.log-level-badge {
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.log-level-debug {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: rgb(96, 165, 250);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.log-level-info {
+    background-color: rgba(6, 182, 212, 0.15);
+    color: rgb(34, 211, 238);
+    border-color: rgba(6, 182, 212, 0.2);
+}
+
+.log-level-warn {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: rgb(250, 204, 21);
+    border-color: rgba(234, 179, 8, 0.2);
+}
+
+.log-level-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: rgb(248, 113, 113);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.log-level-fatal {
+    background-color: rgba(220, 38, 38, 0.2);
+    color: rgb(252, 165, 165);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+.log-level-prompt {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+    color: var(--color-accent-primary, #6366f1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Filter Toolbar */
+.log-filter-toolbar {
+    flex-shrink: 0;
+    background-color: var(--color-background-surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+/* Log Viewer Bottom Control Bar */
+.log-control-bar {
+    flex-shrink: 0;
+    background-color: var(--color-background-surface);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Live Indicator Dot */
+.log-live-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.log-live-dot-active {
+    background-color: var(--color-success, #22c55e);
+    animation: log-live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.log-live-dot-paused {
+    background-color: var(--color-warning, #eab308);
+}
+
+.log-live-dot-offline {
+    background-color: var(--color-text-muted, #9ca3af);
+}
+
+@keyframes log-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Prompt Content Syntax Highlighting */
+.log-prompt-content {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-prompt-heading {
+    color: var(--color-accent-primary, #6366f1);
+    font-weight: 700;
+}
+
+.log-prompt-subheading {
+    color: var(--color-accent-secondary, #a855f7);
+    font-weight: 600;
+}
+
+.log-prompt-warning {
+    color: var(--color-warning, #eab308);
+}
+
+/* Component and Entity Tags */
+.log-tag {
+    font-size: 0.625rem;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.log-tag-component {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--color-accent-primary, #6366f1);
+}
+
+.log-tag-entity {
+    background-color: rgba(168, 85, 247, 0.1);
+    color: var(--color-accent-secondary, #a855f7);
+}
+
+.log-tag-subsystem {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-muted, #9ca3af);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Log Level Settings Panel */
+.log-settings-panel {
+    background: linear-gradient(135deg, var(--color-background-elevated, #1e1b4b) 0%, var(--color-background-surface, #0f0d1a) 100%);
+    border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Log viewer scrollbar */
+.log-viewer-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

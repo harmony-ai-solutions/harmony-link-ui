@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
+import ErrorDialog from '../modals/ErrorDialog';
 import InstanceList from './InstanceList';
 
 const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInstance }) => {
     const [instances, setInstances] = useState({});
     const [loadingInstances, setLoadingInstances] = useState(true);
     const [showInstances, setShowInstances] = useState(false);
+    const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
 
     const fetchInstances = useCallback(async () => {
         setLoadingInstances(true);
@@ -33,14 +35,72 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
         } catch (error) {
             console.error(`Failed to perform ${action} on ${integrationName}/${instanceName}:`, error);
             const errorMessage = error.message || error.toString();
-            if (isDockerRelatedError(errorMessage)) {
+
+            // If the backend flagged this as a Docker error, refresh the Docker status indicator
+            if (error.isDockerError || isDockerRelatedError(errorMessage)) {
                 try { await getDockerStatus(); } catch (dockerError) {
                     console.error('Failed to check Docker status:', dockerError);
                 }
             }
-            alert(`Error: ${getFriendlyErrorMessage(errorMessage)}`);
+
+            // Determine the title and friendly message based on error type
+            const actionLabel = action.charAt(0).toUpperCase() + action.slice(1);
+            const { title, message, type } = buildErrorDialogProps(actionLabel, errorMessage, error);
+
+            setErrorDialog({ isOpen: true, title, message, type });
             fetchInstances();
         }
+    };
+
+    const buildErrorDialogProps = (actionLabel, rawMessage, error) => {
+        // Docker unavailable
+        if (error.isDockerError && error.dockerAvailable === false) {
+            return {
+                title: `${actionLabel} Failed`,
+                message: 'Docker is not available. Please ensure Docker is running and try again.',
+                type: 'error'
+            };
+        }
+
+        // Other Docker-related errors (network issues, compose failures, etc.)
+        if (error.isDockerError || isDockerRelatedError(rawMessage)) {
+            return {
+                title: `${actionLabel} Failed`,
+                message: 'A Docker error occurred while processing your request.\n\n' +
+                    'Technical details:\n' + cleanBackendMessage(rawMessage),
+                type: 'error'
+            };
+        }
+
+        // Image pull failures
+        if (rawMessage.toLowerCase().includes('pull')) {
+            return {
+                title: `${actionLabel} Failed`,
+                message: 'Failed to pull Docker images. Please check your internet connection and try again.\n\n' +
+                    'Technical details:\n' + cleanBackendMessage(rawMessage),
+                type: 'error'
+            };
+        }
+
+        // Generic error — still show the backend detail so the user isn't left guessing
+        return {
+            title: `${actionLabel} Failed`,
+            message: cleanBackendMessage(rawMessage),
+            type: 'error'
+        };
+    };
+
+    /**
+     * Clean up backend error messages for display.
+     * Removes the generic "Failed to perform ..." prefix that baseService adds
+     * when it can't parse the body, and strips common noise.
+     */
+    const cleanBackendMessage = (msg) => {
+        // If the backend detail was preserved by handleResponse, use it as-is
+        // (it already contains the real error). Only clean the generic prefix.
+        return msg
+            .replace(/^Failed to perform \w+ on instance .+?:\s*/, '')
+            .trim();
     };
 
     const isDockerRelatedError = (errorMessage) => {
@@ -51,11 +111,8 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
         return dockerKeywords.some(keyword => errorMessage.toLowerCase().includes(keyword));
     };
 
-    const getFriendlyErrorMessage = (errorMessage) => {
-        if (isDockerRelatedError(errorMessage)) return 'Docker is not available. Please ensure Docker is running and try again.';
-        if (errorMessage.includes('pulling')) return 'Failed to pull Docker images. Please check your internet connection and try again.';
-        if (errorMessage.includes('network')) return 'Network error occurred. Please check your connection and try again.';
-        return errorMessage;
+    const handleCloseErrorDialog = () => {
+        setErrorDialog(prev => ({ ...prev, isOpen: false }));
     };
 
     const handleRenameInstance = async (integrationName, instanceName, newInstanceName) => {
@@ -160,6 +217,15 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
                     onRename={handleRenameInstance}
                 />
             )}
+
+            {/* ── Error Dialog ────────────────────────────────────────── */}
+            <ErrorDialog
+                isOpen={errorDialog.isOpen}
+                title={errorDialog.title}
+                message={errorDialog.message}
+                type={errorDialog.type}
+                onClose={handleCloseErrorDialog}
+            />
         </div>
     );
 };

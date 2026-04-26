@@ -326,8 +326,96 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Integration Row — Modern full-width row design with gradient
-   ═══════════════════════════════════════════════════════════════════ */
+    Integration Display Compact Rows — Inline editor style
+    Used inside ModularConfigEditor for compact integration selection
+    ═══════════════════════════════════════════════════════════════════ */
+
+/* Container for compact integration rows */
+.integration-display-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+/* Individual compact integration row */
+.integration-display-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+    background-color: var(--color-background-surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.15s ease;
+    flex: 1 1 calc(50% - 0.375rem);
+    min-width: 280px;
+}
+
+.integration-display-row:hover {
+    border-color: var(--color-border-hover);
+    background-color: var(--color-background-hover);
+}
+
+/* Status indicator dot */
+.integration-display-status {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.integration-display-status-available {
+    background-color: var(--color-success);
+}
+
+.integration-display-status-unavailable {
+    background-color: var(--color-error);
+}
+
+/* Instance name */
+.integration-display-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Device type badge */
+.integration-display-badge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+    background-color: var(--color-background-elevated);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-default);
+    flex-shrink: 0;
+}
+
+/* Button group */
+.integration-display-actions {
+    display: flex;
+    gap: 0.375rem;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Empty state */
+.integration-display-empty {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    padding: 0.375rem 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+    Integration Row — Modern full-width row design with gradient
+    ═══════════════════════════════════════════════════════════════════ */
 
 .integration-row {
     position: relative;
@@ -425,6 +513,378 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         transparent 40%
     );
     opacity: 0.04;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Module Row — Mirrors integration-row pattern for module type cards
+   ═══════════════════════════════════════════════════════════════════ */
+
+.module-row {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border-default);
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-row:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.35);
+}
+
+/* Prismatic tint overlay: accent-primary color bleeds from top-left */
+.module-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-primary) 0%,
+        transparent 55%
+    );
+    opacity: 0.09;
+}
+
+/* Left accent stripe */
+.module-row-stripe {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(
+        to bottom,
+        var(--color-accent-primary),
+        var(--color-accent-secondary)
+    );
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+/* Module name uses accent-primary color */
+.module-row-name {
+    color: var(--color-accent-primary);
+}
+
+/* Chevron button */
+.module-row-chevron {
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.module-row-chevron:hover {
+    color: var(--color-accent-primary);
+}
+
+/* Config count pill */
+.module-count-pill {
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+}
+
+/* ─── Module Config Sub-Rows ─────────────────────────────────── */
+
+/* Container that wraps all config sub-rows */
+.module-config-rows-container {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Individual config sub-row */
+.module-config-row {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background-color 0.15s ease;
+}
+
+.module-config-row:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+/* Subtle secondary accent tint overlay (dimmer than module row) */
+.module-config-row-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-secondary) 0%,
+        transparent 40%
+    );
+    opacity: 0.04;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Module Config Action Buttons — Compact XS pill-style buttons
+   Mirrors instance-action-btn* design for visual consistency
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Base button — neutral/elevated */
+.module-action-btn {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn:hover:not(:disabled) {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-border-hover);
+}
+
+.module-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Danger (delete) */
+.module-action-btn-danger {
+    background-color: var(--color-error);
+    border: 1px solid var(--color-error);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.module-action-btn-danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Icon-only button (chevron toggle) */
+.module-action-btn-icon {
+    background-color: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-muted);
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.module-action-btn-icon:hover:not(:disabled) {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    background-color: var(--color-background-hover);
+}
+
+.module-action-btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Save button variant — accent primary color */
+.module-action-btn-save {
+    background-color: var(--color-accent-primary);
+    border: 1px solid var(--color-accent-primary);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.module-action-btn-save:hover:not(:disabled) {
+    filter: brightness(1.12);
+}
+
+.module-action-btn-save:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ─── Module Inline Editor Panel ─────────────────────────────── */
+
+/* Outer container — sits inside the expansion area below a config row */
+.module-inline-editor {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border-default);
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-base) 100%);
+}
+
+/* Header bar — mode label */
+.module-inline-editor-header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(to right, var(--color-background-elevated), transparent);
+}
+
+/* Scrollable body */
+.module-inline-editor-body {
+    padding: 0.75rem;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+/* Individual field row */
+.module-inline-editor-field {
+    margin-bottom: 0.75rem;
+}
+
+/* Field label */
+.module-inline-editor-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.375rem;
+    color: var(--color-text-secondary);
+}
+
+/* Section (General Settings, Provider Settings) */
+.module-inline-editor-section {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.module-inline-editor-section:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Section title */
+.module-inline-editor-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Section body — contains the settings component */
+.module-inline-editor-section-body {
+    background: var(--color-background-base);
+    border: 1px solid var(--color-border-default);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+}
+
+/* Provider section */
+.module-inline-editor-provider {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.module-inline-editor-provider:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Provider header — label + DynamicOptionsGroup */
+.module-inline-editor-provider-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.module-inline-editor-provider-header .module-inline-editor-label {
+    flex-shrink: 0;
+    width: 25%;
+    margin-bottom: 0;
+}
+
+/* Provider settings body */
+.module-inline-editor-provider-settings {
+    background: var(--color-background-base);
+    border: 1px solid var(--color-border-default);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-top: 0.375rem;
+}
+
+/* Footer — Save/Cancel */
+.module-inline-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Temporary "creating" row — dashed border to distinguish from existing configs */
+.module-config-row-creating {
+    border: 1px dashed var(--color-border-default);
+    border-radius: 0.375rem;
+    margin: 0.25rem 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+}
+
+/* ─── Scoped Compact Overrides inside Inline Editor ─────────── */
+
+/* Provider option pills — tighter padding and smaller text */
+.module-inline-editor .card-option,
+.module-inline-editor .card-option-selected {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+/* Provider option logos — scale down from w-6/h-6 (1.5rem) to 1rem */
+.module-inline-editor .card-option img,
+.module-inline-editor .card-option-selected img {
+    width: 1rem !important;
+    height: 1rem !important;
+    margin-right: 0.375rem !important;
+}
+
+/* Provider option label text */
+.module-inline-editor .card-option span,
+.module-inline-editor .card-option-selected span {
+    font-size: 0.72rem;
+}
+
+/* Input fields — reduce vertical padding inside the inline editor */
+.module-inline-editor .input-field {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+    font-size: 0.8rem;
+}
+
+/* Verification section — reduce its overall footprint */
+.module-inline-editor .config-verification-section {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.module-inline-editor .config-verification-section .btn-primary,
+.module-inline-editor .config-verification-section .btn-secondary {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -792,4 +1252,215 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     border-top: 1px solid rgba(255, 255, 255, 0.07);
     background-color: var(--color-background-elevated);
     flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Log Viewer Components — Dev Tab
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Log Entry Row */
+.log-entry {
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background-color 0.15s ease;
+    padding: 0.375rem 0.75rem;
+}
+
+.log-entry:hover {
+    background-color: rgba(255, 255, 255, 0.025);
+}
+
+.log-entry-error {
+    background-color: rgba(239, 68, 68, 0.04);
+    border-left: 2px solid rgb(248, 113, 113);
+}
+
+.log-entry-warn {
+    border-left: 2px solid rgb(250, 204, 21);
+}
+
+.log-entry-expanded {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry-prompt {
+    background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.04) 0%,
+        transparent 40%
+    );
+    border-left: 2px solid var(--color-accent-primary, #6366f1);
+}
+
+/* Log Level Badges */
+.log-level-badge {
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.log-level-debug {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: rgb(96, 165, 250);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.log-level-info {
+    background-color: rgba(6, 182, 212, 0.15);
+    color: rgb(34, 211, 238);
+    border-color: rgba(6, 182, 212, 0.2);
+}
+
+.log-level-warn {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: rgb(250, 204, 21);
+    border-color: rgba(234, 179, 8, 0.2);
+}
+
+.log-level-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: rgb(248, 113, 113);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.log-level-fatal {
+    background-color: rgba(220, 38, 38, 0.2);
+    color: rgb(252, 165, 165);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+.log-level-prompt {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+    color: var(--color-accent-primary, #6366f1);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Filter Toolbar */
+.log-filter-toolbar {
+    flex-shrink: 0;
+    background-color: var(--color-background-surface);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+/* Log Viewer Bottom Control Bar */
+.log-control-bar {
+    flex-shrink: 0;
+    background-color: var(--color-background-surface);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Live Indicator Dot */
+.log-live-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.log-live-dot-active {
+    background-color: var(--color-success, #22c55e);
+    animation: log-live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.log-live-dot-paused {
+    background-color: var(--color-warning, #eab308);
+}
+
+.log-live-dot-offline {
+    background-color: var(--color-text-muted, #9ca3af);
+}
+
+@keyframes log-live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Prompt Content Syntax Highlighting */
+.log-prompt-content {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-prompt-heading {
+    color: var(--color-accent-primary, #6366f1);
+    font-weight: 700;
+}
+
+.log-prompt-subheading {
+    color: var(--color-accent-secondary, #a855f7);
+    font-weight: 600;
+}
+
+.log-prompt-warning {
+    color: var(--color-warning, #eab308);
+}
+
+/* Component and Entity Tags */
+.log-tag {
+    font-size: 0.625rem;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.log-tag-component {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--color-accent-primary, #6366f1);
+}
+
+.log-tag-entity {
+    background-color: rgba(168, 85, 247, 0.1);
+    color: var(--color-accent-secondary, #a855f7);
+}
+
+.log-tag-subsystem {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-muted, #9ca3af);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Log Level Settings Panel */
+.log-settings-panel {
+    background: linear-gradient(135deg, var(--color-background-elevated, #1e1b4b) 0%, var(--color-background-surface, #0f0d1a) 100%);
+    border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Log viewer scrollbar */
+.log-viewer-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.log-viewer-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }

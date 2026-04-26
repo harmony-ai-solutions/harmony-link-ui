@@ -67,7 +67,7 @@ const ErrorDialog = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="modal-content max-w-sm w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="modal-content max-w-lg w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-8 text-center">
                     <div className={`mx-auto flex items-center justify-center h-16 w-16 rounded-full ${currentConfig.iconBg} mb-6`}>
                         <div className={currentConfig.iconColor}>
@@ -77,8 +77,8 @@ const ErrorDialog = ({
                     <h3 className="text-xl font-extrabold text-text-primary mb-3 tracking-tight">
                         {displayTitle}
                     </h3>
-                    <div className="mb-8 px-2">
-                        <p className="text-[15px] leading-relaxed text-text-secondary whitespace-pre-line font-medium">
+                    <div className="mb-8 px-2 max-h-[40vh] overflow-y-auto">
+                        <p className="text-[15px] leading-relaxed text-text-secondary whitespace-pre-line font-medium text-left">
                             {message}
                         </p>
                     </div>

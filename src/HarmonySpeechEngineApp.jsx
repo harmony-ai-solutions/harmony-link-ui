@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import logo from './assets/images/harmony-link-icon-256.png';
-import TTSHarmonySpeechSettingsView from "./components/modules/TTSHarmonySpeechSettingsView.jsx";
-import STTHarmonySpeechSettingsView from "./components/modules/STTHarmonySpeechSettingsView.jsx";
-import VADHarmonySpeechSettingsView from "./components/modules/VADHarmonySpeechSettingsView.jsx";
+import ModularConfigEditor from "./components/modules/ModularConfigEditor.jsx";
 import { LogDebug, LogError } from "./utils/logger.js";
 
 const TABS = {
@@ -60,19 +58,28 @@ function HarmonySpeechEngineApp() {
         </ul>
         <div className="bg-neutral-900 border-t-2 border-b border-neutral-500 p-4">
           {activeTab === TABS.TTS && (
-            <TTSHarmonySpeechSettingsView
+            <ModularConfigEditor
+              schemaId="harmonyspeech_tts"
+              moduleType="tts"
+              providerId="harmonyspeech"
               initialSettings={ttsSettings}
               saveSettingsFunc={setTtsSettings}
             />
           )}
           {activeTab === TABS.STT && (
-            <STTHarmonySpeechSettingsView
+            <ModularConfigEditor
+              schemaId="harmonyspeech_stt"
+              moduleType="stt"
+              providerId="harmonyspeech"
               initialSettings={sttSettings}
               saveSettingsFunc={setSttSettings}
             />
           )}
           {activeTab === TABS.VAD && (
-            <VADHarmonySpeechSettingsView
+            <ModularConfigEditor
+              schemaId="harmonyspeech_vad"
+              moduleType="stt"
+              providerId="harmonyspeech"
               initialSettings={vadSettings}
               saveSettingsFunc={setVadSettings}
             />

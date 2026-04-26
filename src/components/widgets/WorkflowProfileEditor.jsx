@@ -1,13 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
-import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
-import { MODULES, PROVIDERS } from '../../constants/modules.js';
-import { parseImaginationWorkflow, validateProviderConfig, testImaginationGeneration } from '../../services/management/configService.js';
-import IntegrationDisplay from '../integrations/IntegrationDisplay.jsx';
-import ConfigVerificationSection from '../widgets/ConfigVerificationSection.jsx';
+import { parseImaginationWorkflow, testImaginationGeneration } from '../../services/management/configService.js';
 import SettingsTooltip from '../settings/SettingsTooltip.jsx';
 
-const EMPTY_PROFILE = {
+export const EMPTY_PROFILE = {
     workflowjson: '',
     promptnodeid: '',
     promptfieldname: 'text',
@@ -23,25 +18,23 @@ const EMPTY_PROFILE = {
     systempromphint: '',
 };
 
-export default function ImaginationComfyUISettingsView({ initialSettings, saveSettingsFunc }) {
-    const defaults = MODULE_DEFAULTS[MODULES.IMAGINATION][PROVIDERS.COMFYUI];
-    const merged = mergeConfigWithDefaults(initialSettings, defaults);
-
+export default function WorkflowProfileEditor({
+    baseURL,
+    apiKey,
+    workflowProfiles,
+    onProfilesChange,
+    onConnectionChange
+}) {
     // Tooltip visibility (shared index pattern used by SettingsTooltip)
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Ref to suppress useEffect re-initialisation when the save came from us
     const isSelfSave = useRef(false);
 
-    // Connection settings
-    const [baseURL, setBaseURL] = useState(merged.baseurl || '');
-    const [apiKey, setAPIKey] = useState(merged.apikey || '');
-    const [validationState, setValidationState] = useState({ status: 'idle', message: '' });
-
     // Workflow profiles
-    const [profiles, setProfiles] = useState(merged.workflowprofiles || { default: { ...EMPTY_PROFILE } });
+    const [profiles, setProfiles] = useState(workflowProfiles || { default: { ...EMPTY_PROFILE } });
     const [selectedProfile, setSelectedProfile] = useState(
-        Object.keys(merged.workflowprofiles || { default: EMPTY_PROFILE })[0] || 'default'
+        Object.keys(workflowProfiles || { default: EMPTY_PROFILE })[0] || 'default'
     );
     const [newProfileName, setNewProfileName] = useState('');
 
@@ -66,42 +59,9 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
 
     // Persist all settings upward.
     // Sets isSelfSave so the useEffect skips re-initialisation for our own saves.
-    const save = (updatedBaseURL, updatedAPIKey, updatedProfiles) => {
+    const save = (updatedProfiles) => {
         isSelfSave.current = true;
-        saveSettingsFunc({
-            ...merged,
-            baseurl: updatedBaseURL,
-            apikey: updatedAPIKey,
-            workflowprofiles: updatedProfiles,
-        });
-    };
-
-    // Test connection to the ComfyUI API
-    const handleValidateConfig = async () => {
-        setValidationState({ status: 'loading', message: 'Testing connection...' });
-        try {
-            const result = await validateProviderConfig(MODULES.IMAGINATION, PROVIDERS.COMFYUI, {
-                baseurl: baseURL,
-                apikey: apiKey,
-            });
-            setValidationState({
-                status: result.valid ? 'success' : 'error',
-                message: result.valid
-                    ? 'Connection successful! ComfyUI API is reachable.'
-                    : result.error || 'Connection test failed.',
-            });
-        } catch (err) {
-            setValidationState({ status: 'error', message: 'Connection test failed: ' + err.message });
-        }
-    };
-
-    // Called when user clicks "Use" on an integration instance in IntegrationDisplay
-    const handleUseIntegration = (integration, urlIndex = 0) => {
-        const selectedURL = integration.apiURLs[urlIndex];
-        setBaseURL(selectedURL);
-        save(selectedURL, apiKey, profiles);
-        // Reset validation state after changing URL
-        setValidationState({ status: 'idle', message: '' });
+        onProfilesChange(updatedProfiles);
     };
 
     // Update a single field in the current profile
@@ -111,7 +71,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
             [selectedProfile]: { ...currentProfile, [field]: value },
         };
         setProfiles(updatedProfiles);
-        save(baseURL, apiKey, updatedProfiles);
+        save(updatedProfiles);
     };
 
     // Add a new profile
@@ -124,7 +84,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setNewProfileName('');
         setConfirmRemove(false);
         setParsedNodes([]);
-        save(baseURL, apiKey, updatedProfiles);
+        save(updatedProfiles);
     };
 
     // Remove the selected profile (must keep at least one)
@@ -138,7 +98,7 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
         setSelectedProfile(nextProfile);
         setParsedNodes([]);
         setConfirmRemove(false);
-        save(baseURL, apiKey, updatedProfiles);
+        save(updatedProfiles);
     };
 
     // Parse the workflow JSON via the management API
@@ -240,57 +200,19 @@ export default function ImaginationComfyUISettingsView({ initialSettings, saveSe
             return;
         }
         // External update (e.g. switching config in parent) — full re-init
-        const remerged = mergeConfigWithDefaults(initialSettings, defaults);
-        setBaseURL(remerged.baseurl || '');
-        setAPIKey(remerged.apikey || '');
-        setProfiles(remerged.workflowprofiles || { default: { ...EMPTY_PROFILE } });
-        const firstProfile = Object.keys(remerged.workflowprofiles || { default: EMPTY_PROFILE })[0] || 'default';
+        setProfiles(workflowProfiles || { default: { ...EMPTY_PROFILE } });
+        const firstProfile = Object.keys(workflowProfiles || { default: EMPTY_PROFILE })[0] || 'default';
         setSelectedProfile(firstProfile);
         setParsedNodes([]);
         // Auto-parse so node dropdowns are immediately available for saved configs
-        const firstWorkflowJson = remerged.workflowprofiles?.[firstProfile]?.workflowjson;
+        const firstWorkflowJson = workflowProfiles?.[firstProfile]?.workflowjson;
         if (firstWorkflowJson) {
             parseWorkflowForProfile(firstWorkflowJson);
         }
-    }, [initialSettings, parseWorkflowForProfile]);
+    }, [workflowProfiles, parseWorkflowForProfile]);
 
     return (
         <div className="flex flex-col w-full gap-4 pt-2">
-
-            {/* ── Connection Settings ── */}
-            <div className="border border-border-default rounded p-3 mb-1">
-                <h4 className="text-sm font-semibold text-accent-primary mb-3">Connection</h4>
-
-                {/* Config verification and integration auto-discovery */}
-                <ConfigVerificationSection
-                    onValidate={handleValidateConfig}
-                    validationState={validationState}
-                />
-                <IntegrationDisplay
-                    moduleName={MODULES.IMAGINATION}
-                    providerName={PROVIDERS.COMFYUI}
-                    useIntegration={handleUseIntegration}
-                />
-
-                <div className="flex flex-wrap gap-4 mt-2">
-                    <div className="flex items-center w-full">
-                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2">Base URL</label>
-                        <input type="text" className="input-field w-3/4"
-                            value={baseURL}
-                            onChange={e => setBaseURL(e.target.value)}
-                            onBlur={e => { save(e.target.value, apiKey, profiles); setValidationState({ status: 'idle', message: '' }); }}
-                            placeholder="http://localhost:3000" />
-                    </div>
-                    <div className="flex items-center w-full">
-                        <label className="text-sm font-medium text-text-secondary w-1/4 px-2">API Key</label>
-                        <input type="password" className="input-field w-3/4"
-                            value={apiKey}
-                            onChange={e => setAPIKey(e.target.value)}
-                            onBlur={e => { save(baseURL, e.target.value, profiles); setValidationState({ status: 'idle', message: '' }); }}
-                            placeholder="(optional)" />
-                    </div>
-                </div>
-            </div>
 
             {/* ── Workflow Profile Selector ── */}
             <div className="border border-border-default rounded p-3 mb-1">

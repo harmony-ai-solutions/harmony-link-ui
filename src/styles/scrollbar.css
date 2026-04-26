@@ -9,18 +9,18 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: var(--color-background-elevated);
+    background: var(--color-accent-primary);
     border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--color-background-hover);
+    background: var(--color-accent-secondary);
 }
 
 /* For Firefox */
 .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-background-elevated) var(--color-background-base);
+    scrollbar-color: var(--color-accent-primary) var(--color-background-base);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

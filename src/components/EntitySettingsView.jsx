@@ -6,11 +6,12 @@ import ThemedSelect from './widgets/ThemedSelect';
 import CharacterProfilePreview from './widgets/CharacterProfilePreview';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
-import { updateEntity, renameEntity } from '../services/management/entityService';
+import { updateEntity, renameEntity, resetEntityLifecycleConfig } from '../services/management/entityService';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
 import InputDialog from "./modals/InputDialog.jsx";
+import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
 
 
 
@@ -82,6 +83,13 @@ const EntitySettingsView = ({ appName }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
+    // Alias state
+    const [entityAlias, setEntityAlias] = useState('');
+
+    // Lifecycle config state
+    const [entityLifecycleConfig, setEntityLifecycleConfig] = useState(null);
+    const [isLifecycleLoaded, setIsLifecycleLoaded] = useState(false);
+
     // Modal states
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
@@ -129,12 +137,31 @@ const EntitySettingsView = ({ appName }) => {
             });
             // Extract character profile ID from nested structure
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
+            // Extract alias
+            setEntityAlias(selectedEntity.alias || '');
+            // Parse lifecycle_config from entity
+            if (selectedEntity.lifecycle_config) {
+                try {
+                    const parsed = typeof selectedEntity.lifecycle_config === 'string'
+                        ? JSON.parse(selectedEntity.lifecycle_config)
+                        : selectedEntity.lifecycle_config;
+                    setEntityLifecycleConfig(parsed);
+                } catch (e) {
+                    setEntityLifecycleConfig(null);
+                }
+            } else {
+                setEntityLifecycleConfig(null);
+            }
+            setIsLifecycleLoaded(true);
             setError(null);
         } else {
             setEntityMappings({
                 backend: '', cognition: '', imagination: '', movement: '', rag: '', stt: '', tts: '', vision: ''
             });
             setSelectedCharacterProfileId('');
+            setEntityAlias('');
+            setEntityLifecycleConfig(null);
+            setIsLifecycleLoaded(false);
         }
     }, [selectedEntity]);
 
@@ -191,11 +218,12 @@ const EntitySettingsView = ({ appName }) => {
                 return;
             }
 
-            // Update character profile if changed
+            // Update character profile and/or alias if changed
             const currentProfileId = selectedEntity.character_profile_id || '';
+            const currentAlias = selectedEntity.alias || '';
             const newProfileId = isProfileSupported ? (selectedCharacterProfileId || null) : null;
-            if (currentProfileId !== (newProfileId || '')) {
-                await updateEntity(selectedEntityId, newProfileId);
+            if (currentProfileId !== (newProfileId || '') || currentAlias !== entityAlias) {
+                await updateEntity(selectedEntityId, newProfileId, null, entityAlias);
             }
 
             // Update module mappings
@@ -238,8 +266,62 @@ const EntitySettingsView = ({ appName }) => {
                 vision: selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : ''
             });
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
+            setEntityAlias(selectedEntity.alias || '');
+            // Reset lifecycle config
+            if (selectedEntity.lifecycle_config) {
+                try {
+                    const parsed = typeof selectedEntity.lifecycle_config === 'string'
+                        ? JSON.parse(selectedEntity.lifecycle_config)
+                        : selectedEntity.lifecycle_config;
+                    setEntityLifecycleConfig(parsed);
+                } catch (e) {
+                    setEntityLifecycleConfig(null);
+                }
+            } else {
+                setEntityLifecycleConfig(null);
+            }
             setError(null);
         }
+    };
+
+    // Handle reset to character defaults
+    const handleResetToCharacterDefaults = async () => {
+        if (!selectedEntityId) return;
+        try {
+            const result = await resetEntityLifecycleConfig(selectedEntityId);
+            if (result.lifecycle_config) {
+                try {
+                    const parsed = typeof result.lifecycle_config === 'string'
+                        ? JSON.parse(result.lifecycle_config)
+                        : result.lifecycle_config;
+                    setEntityLifecycleConfig(parsed);
+                } catch (e) {
+                    setEntityLifecycleConfig(null);
+                }
+            }
+            setSuccessMessage('Lifecycle config reset to character defaults');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            setError(`Failed to reset lifecycle config: ${error.message}`);
+        }
+    };
+
+    // Handle lifecycle config save
+    const handleSaveLifecycleConfig = async () => {
+        if (!selectedEntityId || !entityLifecycleConfig) return;
+        try {
+            await updateEntity(selectedEntityId, null, JSON.stringify(entityLifecycleConfig));
+            await loadEntities();
+            setSuccessMessage('Lifecycle config saved successfully');
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            setError(`Failed to save lifecycle config: ${error.message}`);
+        }
+    };
+
+    // Handle lifecycle config change
+    const handleLifecycleConfigChange = (newConfig) => {
+        setEntityLifecycleConfig(newConfig);
     };
 
     // Validation helper
@@ -362,6 +444,12 @@ const EntitySettingsView = ({ appName }) => {
                     };
                     await updateEntityMappings(newId, mappings);
 
+                    // Copy alias from the source entity
+                    const sourceAlias = selectedEntity.alias || '';
+                    if (sourceAlias) {
+                        await updateEntity(newId, null, null, sourceAlias);
+                    }
+
                     // Reload entities to get the updated list
                     await loadEntities();
 
@@ -446,6 +534,7 @@ const EntitySettingsView = ({ appName }) => {
         const currentTts = selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '';
         const currentVision = selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : '';
         const currentProfile = selectedEntity.character_profile?.id || '';
+        const currentAlias = selectedEntity.alias || '';
 
         return (
             currentBackend != entityMappings.backend ||
@@ -456,7 +545,8 @@ const EntitySettingsView = ({ appName }) => {
             currentStt != entityMappings.stt ||
             currentTts != entityMappings.tts ||
             currentVision != entityMappings.vision ||
-            currentProfile != (isProfileSupported ? selectedCharacterProfileId : '')
+            currentProfile != (isProfileSupported ? selectedCharacterProfileId : '') ||
+            currentAlias != entityAlias
         );
     };
 
@@ -544,6 +634,9 @@ const EntitySettingsView = ({ appName }) => {
                                                 <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent-primary rounded-r-full" />
                                             )}
                                             <span className="truncate">{entity.id}</span>
+                                            {entity.alias && (
+                                                <span className="text-xs text-text-muted truncate ml-1">({entity.alias})</span>
+                                            )}
                                         </div>
                                         {selectedEntityId === entity.id && (
                                             <svg className="w-4 h-4 text-accent-primary" fill="currentColor" viewBox="0 0 20 20">
@@ -607,6 +700,24 @@ const EntitySettingsView = ({ appName }) => {
                                             Configure the character identity for this entity.
                                         </SettingsTooltip>
                                     </h3>
+
+                                    <div className="flex items-center mb-4 w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
+                                            Entity Alias
+                                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                                A human-friendly display name for this entity. Shown in the entity list and used as a label in conversations.
+                                            </SettingsTooltip>
+                                        </label>
+                                        <div className="w-4/5 px-3">
+                                            <input
+                                                type="text"
+                                                value={entityAlias}
+                                                onChange={(e) => setEntityAlias(e.target.value)}
+                                                className="input-field w-full p-2 rounded text-sm"
+                                                placeholder="Optional display name"
+                                            />
+                                        </div>
+                                    </div>
 
                                     <div className="flex items-center mb-4 w-full">
                                         <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
@@ -748,6 +859,57 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('vision')}
                                         isLoading={isModuleLoading}
                                     />
+                                </section>
+
+                                {/* Lifecycle Settings Section */}
+                                <section className="space-y-4">
+                                    <h3 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                        <span className="text-gradient-primary">Lifecycle Settings</span>
+                                        <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                            Per-entity lifecycle configuration overrides.
+                                        </SettingsTooltip>
+                                    </h3>
+
+                                    {selectedCharacterProfileId && (
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <button
+                                                onClick={handleResetToCharacterDefaults}
+                                                className="btn-secondary text-sm py-1.5 px-3"
+                                                title="Reset to character profile defaults"
+                                            >
+                                                Reset to Character Defaults
+                                            </button>
+                                            <p className="text-xs text-text-muted italic">
+                                                Copies lifecycle config from the character profile
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {entityLifecycleConfig ? (
+                                        <div className="space-y-4">
+                                            <LifecycleConfigEditor
+                                                config={entityLifecycleConfig}
+                                                onChange={handleLifecycleConfigChange}
+                                            />
+                                            <div className="flex justify-end pt-4">
+                                                <button
+                                                    onClick={handleSaveLifecycleConfig}
+                                                    className="btn-primary px-5 py-2 text-sm font-semibold"
+                                                >
+                                                    Save Lifecycle Config
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-text-muted">
+                                            <p>No lifecycle configuration set.</p>
+                                            <p className="text-sm mt-2">
+                                                {selectedCharacterProfileId 
+                                                    ? "Click 'Reset to Character Defaults' to copy from character profile, or save manually after editing."
+                                                    : "Assign a character profile to configure lifecycle settings."}
+                                            </p>
+                                        </div>
+                                    )}
                                 </section>
                             </div>
                         )}

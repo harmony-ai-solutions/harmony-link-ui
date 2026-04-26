@@ -36,13 +36,16 @@ export async function createEntity(id, characterProfileId) {
     return await resp.json();
 }
 
-export async function updateEntity(id, characterProfileId, lifecycleConfig) {
+export async function updateEntity(id, characterProfileId, lifecycleConfig, alias) {
     const body = {};
     if (characterProfileId !== undefined && characterProfileId !== null) {
         body.character_profile_id = characterProfileId;
     }
     if (lifecycleConfig !== undefined && lifecycleConfig !== null) {
         body.lifecycle_config = lifecycleConfig;
+    }
+    if (alias !== undefined && alias !== null) {
+        body.alias = alias;
     }
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${id}`, {
         method: "PUT",

@@ -6,6 +6,7 @@ import { openSystemUrl } from "../../services/management/systemService.js";
 const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
     const [availableIntegrations, setAvailableIntegrations] = useState([]);
+    const [appliedStates, setAppliedStates] = useState({});
 
     useEffect(() => {
         let interval;
@@ -34,6 +35,15 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
 
     const handleUseIntegration = (integrationOption, urlIndex) => {
         useIntegration(integrationOption, urlIndex);
+
+        // Set "Applied" state for visual feedback
+        const key = `${integrationOption.instanceName}-${urlIndex}`;
+        setAppliedStates(prev => ({ ...prev, [key]: true }));
+
+        // Revert after 1.5 seconds
+        setTimeout(() => {
+            setAppliedStates(prev => ({ ...prev, [key]: false }));
+        }, 1500);
     };
 
     const handleOpenWebInterface = async (integrationOption, urlIndex) => {
@@ -62,7 +72,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
     };
 
     return (
-        <div className="flex flex-wrap w-full">
+        <div className="flex flex-wrap w-full mb-3">
             <div className="flex items-center mb-2 w-full">
                 <label className="text-sm font-medium text-text-secondary px-3">
                     Available Integrations
@@ -74,52 +84,65 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                 </label>
             </div>
             <div className="w-full px-3">
-                {availableIntegrations.map(integrationOption => (
-                    <div key={`${integrationOption.name}-${integrationOption.instanceName}`} className="integration-card mb-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <span className={`px-2 py-1 text-xs rounded-full mr-2 font-semibold ${
-                                    integrationOption.available ? 'bg-green-600 text-white' : 'bg-red-600 text-white' // Use Available from IntegrationOption
-                                }`}>
-                                    {integrationOption.status.toUpperCase()}
-                                </span>
-                                <span className="text-lg font-semibold text-text-primary">
+                <div className="integration-display-container">
+                    {availableIntegrations.map(integrationOption => (
+                        <div
+                            key={`${integrationOption.name}-${integrationOption.instanceName}`}
+                            className="integration-display-row"
+                        >
+                            {/* Left side: status + name + device badge */}
+                            <div className="flex items-center flex-1 min-w-0">
+                                <span className={`integration-display-status ${
+                                    integrationOption.available
+                                        ? 'integration-display-status-available'
+                                        : 'integration-display-status-unavailable'
+                                }`} />
+                                <span className="integration-display-name">
                                     {integrationOption.instanceName}
-                                    {integrationOption.deviceType && (
-                                        <span className="ml-2 text-sm text-text-secondary">
-                                            ({getDeviceIcon(integrationOption.deviceType)} {integrationOption.deviceType.toUpperCase()})
-                                        </span>
-                                    )}
                                 </span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                {integrationOption.apiURLs && integrationOption.apiURLs.length > 0 && ( // Use ApiURLs
-                                    integrationOption.apiURLs.map((url, index) => (
-                                        <button
-                                            key={`api-${index}`}
-                                            onClick={() => handleUseIntegration(integrationOption, index)}
-                                            className="btn-primary px-2 rounded text-sm">
-                                            Apply API config
-                                        </button>
-                                    ))
+                                {integrationOption.deviceType && (
+                                    <span className="integration-display-badge">
+                                        {getDeviceIcon(integrationOption.deviceType)} {integrationOption.deviceType.toUpperCase()}
+                                    </span>
                                 )}
-                                {integrationOption.webURLs && integrationOption.webURLs.length > 0 && ( // Use WebURLs
+                            </div>
+
+                            {/* Right side: action buttons */}
+                            <div className="integration-display-actions">
+                                {integrationOption.apiURLs && integrationOption.apiURLs.length > 0 && (
+                                    integrationOption.apiURLs.map((url, index) => {
+                                        const key = `${integrationOption.instanceName}-${index}`;
+                                        const isApplied = appliedStates[key];
+                                        return (
+                                            <button
+                                                key={`api-${index}`}
+                                                onClick={() => handleUseIntegration(integrationOption, index)}
+                                                className={isApplied ? 'module-action-btn-save' : 'module-action-btn'}
+                                                disabled={isApplied}
+                                            >
+                                                {isApplied ? 'Applied ✓' : 'Apply Config'}
+                                            </button>
+                                        );
+                                    })
+                                )}
+                                {integrationOption.webURLs && integrationOption.webURLs.length > 0 && (
                                     integrationOption.webURLs.map((url, index) => (
                                         <button
                                             key={`web-${index}`}
                                             onClick={() => handleOpenWebInterface(integrationOption, index)}
-                                            className="btn-secondary py-1 px-2 rounded text-sm">
+                                            className="module-action-btn"
+                                        >
                                             Open Web UI
                                         </button>
                                     ))
                                 )}
                                 {!integrationOption.available && (!integrationOption.apiURLs || integrationOption.apiURLs.length === 0) && (!integrationOption.webURLs || integrationOption.webURLs.length === 0) && (
-                                    <span className="text-sm text-text-muted">No available endpoints or not running.</span>
+                                    <span className="integration-display-empty">No endpoints</span>
                                 )}
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     );

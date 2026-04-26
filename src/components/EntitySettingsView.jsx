@@ -83,6 +83,9 @@ const EntitySettingsView = ({ appName }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
+    // Alias state
+    const [entityAlias, setEntityAlias] = useState('');
+
     // Lifecycle config state
     const [entityLifecycleConfig, setEntityLifecycleConfig] = useState(null);
     const [isLifecycleLoaded, setIsLifecycleLoaded] = useState(false);
@@ -134,6 +137,8 @@ const EntitySettingsView = ({ appName }) => {
             });
             // Extract character profile ID from nested structure
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
+            // Extract alias
+            setEntityAlias(selectedEntity.alias || '');
             // Parse lifecycle_config from entity
             if (selectedEntity.lifecycle_config) {
                 try {
@@ -154,6 +159,7 @@ const EntitySettingsView = ({ appName }) => {
                 backend: '', cognition: '', imagination: '', movement: '', rag: '', stt: '', tts: '', vision: ''
             });
             setSelectedCharacterProfileId('');
+            setEntityAlias('');
             setEntityLifecycleConfig(null);
             setIsLifecycleLoaded(false);
         }
@@ -212,11 +218,12 @@ const EntitySettingsView = ({ appName }) => {
                 return;
             }
 
-            // Update character profile if changed
+            // Update character profile and/or alias if changed
             const currentProfileId = selectedEntity.character_profile_id || '';
+            const currentAlias = selectedEntity.alias || '';
             const newProfileId = isProfileSupported ? (selectedCharacterProfileId || null) : null;
-            if (currentProfileId !== (newProfileId || '')) {
-                await updateEntity(selectedEntityId, newProfileId);
+            if (currentProfileId !== (newProfileId || '') || currentAlias !== entityAlias) {
+                await updateEntity(selectedEntityId, newProfileId, null, entityAlias);
             }
 
             // Update module mappings
@@ -259,6 +266,7 @@ const EntitySettingsView = ({ appName }) => {
                 vision: selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : ''
             });
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
+            setEntityAlias(selectedEntity.alias || '');
             // Reset lifecycle config
             if (selectedEntity.lifecycle_config) {
                 try {
@@ -436,6 +444,12 @@ const EntitySettingsView = ({ appName }) => {
                     };
                     await updateEntityMappings(newId, mappings);
 
+                    // Copy alias from the source entity
+                    const sourceAlias = selectedEntity.alias || '';
+                    if (sourceAlias) {
+                        await updateEntity(newId, null, null, sourceAlias);
+                    }
+
                     // Reload entities to get the updated list
                     await loadEntities();
 
@@ -520,6 +534,7 @@ const EntitySettingsView = ({ appName }) => {
         const currentTts = selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '';
         const currentVision = selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : '';
         const currentProfile = selectedEntity.character_profile?.id || '';
+        const currentAlias = selectedEntity.alias || '';
 
         return (
             currentBackend != entityMappings.backend ||
@@ -530,7 +545,8 @@ const EntitySettingsView = ({ appName }) => {
             currentStt != entityMappings.stt ||
             currentTts != entityMappings.tts ||
             currentVision != entityMappings.vision ||
-            currentProfile != (isProfileSupported ? selectedCharacterProfileId : '')
+            currentProfile != (isProfileSupported ? selectedCharacterProfileId : '') ||
+            currentAlias != entityAlias
         );
     };
 
@@ -618,6 +634,9 @@ const EntitySettingsView = ({ appName }) => {
                                                 <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent-primary rounded-r-full" />
                                             )}
                                             <span className="truncate">{entity.id}</span>
+                                            {entity.alias && (
+                                                <span className="text-xs text-text-muted truncate ml-1">({entity.alias})</span>
+                                            )}
                                         </div>
                                         {selectedEntityId === entity.id && (
                                             <svg className="w-4 h-4 text-accent-primary" fill="currentColor" viewBox="0 0 20 20">
@@ -681,6 +700,24 @@ const EntitySettingsView = ({ appName }) => {
                                             Configure the character identity for this entity.
                                         </SettingsTooltip>
                                     </h3>
+
+                                    <div className="flex items-center mb-4 w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
+                                            Entity Alias
+                                            <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
+                                                A human-friendly display name for this entity. Shown in the entity list and used as a label in conversations.
+                                            </SettingsTooltip>
+                                        </label>
+                                        <div className="w-4/5 px-3">
+                                            <input
+                                                type="text"
+                                                value={entityAlias}
+                                                onChange={(e) => setEntityAlias(e.target.value)}
+                                                className="input-field w-full p-2 rounded text-sm"
+                                                placeholder="Optional display name"
+                                            />
+                                        </div>
+                                    </div>
 
                                     <div className="flex items-center mb-4 w-full">
                                         <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">

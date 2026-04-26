@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { MODULE_CONFIGS } from '../../constants/moduleConfiguration.js';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
+import {
+    getConfigUrl,
+    findMatchingInstances,
+    isLocalProvider
+} from '../../utils/integrationMatcher.js';
+import { controlIntegrationInstance } from '../../services/management/integrationsService.js';
 
 // Helper: format provider display text for a config
 const getProviderDisplay = (config, moduleType) => {
@@ -34,9 +40,99 @@ const getProviderLogos = (config, moduleType) => {
     return logo ? [logo] : [];
 };
 
-export default function ModuleConfigRow({ config, moduleType, onEdit, onCopy, onDelete, isEditorOpen, onToggleEditor }) {
+// Helper: check if config has any local provider that could be matched
+const hasLocalProvider = (config, moduleType) => {
+    if (moduleType === 'stt') {
+        const transProvider = config.transcription?.provider;
+        const vadProvider = config.vad?.provider;
+        return (transProvider && isLocalProvider(transProvider)) ||
+               (vadProvider && isLocalProvider(vadProvider));
+    }
+    return config.provider && isLocalProvider(config.provider);
+};
+
+export default function ModuleConfigRow({
+    config,
+    moduleType,
+    onEdit,
+    onCopy,
+    onDelete,
+    isEditorOpen,
+    onToggleEditor,
+    allInstances,
+    onInstancesRefresh
+}) {
     const providerDisplay = getProviderDisplay(config, moduleType);
     const providerLogos = getProviderLogos(config, moduleType);
+
+    // Find matching integration instances for this config
+    const matchingInstances = useMemo(() => {
+        if (!allInstances || !Array.isArray(allInstances) || allInstances.length === 0) {
+            return [];
+        }
+
+        // Skip if config doesn't have a local provider
+        if (!hasLocalProvider(config, moduleType)) {
+            return [];
+        }
+
+        const configUrl = getConfigUrl(config, moduleType);
+        if (!configUrl) return [];
+
+        return findMatchingInstances(configUrl, allInstances);
+    }, [config, moduleType, allInstances]);
+
+    // Determine status based on matching instances
+    const statusInfo = useMemo(() => {
+        if (matchingInstances.length === 0) {
+            return { type: 'none', message: '' };
+        }
+
+        // Check if any instance is fully running
+        const runningInstance = matchingInstances.find(m => m.isRunning);
+        if (runningInstance) {
+            return { type: 'running', message: 'Integration running' };
+        }
+
+        // Check if any instance is partially running
+        const partialInstance = matchingInstances.find(
+            m => m.instance?.status === 'partially_running'
+        );
+        if (partialInstance) {
+            return {
+                type: 'partial',
+                message: 'Integration partially running',
+                instances: matchingInstances
+            };
+        }
+
+        // All matched instances are inactive
+        return {
+            type: 'inactive',
+            message: 'Integration offline',
+            instances: matchingInstances
+        };
+    }, [matchingInstances]);
+
+    // Handle start/restart button click
+    const handleStart = useCallback(async () => {
+        if ((statusInfo.type !== 'inactive' && statusInfo.type !== 'partial') || !statusInfo.instances) {
+            return;
+        }
+
+        for (const item of statusInfo.instances) {
+            try {
+                await controlIntegrationInstance(item.integrationName, item.instanceName, 'start');
+            } catch (e) {
+                console.error(`Failed to start ${item.integrationName}/${item.instanceName}:`, e);
+            }
+        }
+
+        // Refresh after starting
+        if (onInstancesRefresh) {
+            onInstancesRefresh();
+        }
+    }, [statusInfo, onInstancesRefresh]);
 
     const handleDelete = () => {
         if (window.confirm(`Are you sure you want to delete the configuration "${config.name}"?`)) {
@@ -74,6 +170,67 @@ export default function ModuleConfigRow({ config, moduleType, onEdit, onCopy, on
                     ))}
                     {providerDisplay}
                 </span>
+
+                {/* [Integration Status Indicator] */}
+                {statusInfo.type === 'running' && (
+                    <span
+                        className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                        style={{
+                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                            color: 'var(--color-success)'
+                        }}
+                        title={statusInfo.message}
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
+                        Running
+                    </span>
+                )}
+
+                {statusInfo.type === 'inactive' && (
+                    <span className="flex-shrink-0 inline-flex items-center gap-2">
+                        <span
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                            style={{
+                                backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                                color: 'var(--color-warning)'
+                            }}
+                            title={statusInfo.message}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                            Offline
+                        </span>
+                        <button
+                            onClick={handleStart}
+                            className="instance-action-btn-success text-xs py-0.5 px-2"
+                            title="Start integration"
+                        >
+                            Start
+                        </button>
+                    </span>
+                )}
+
+                {statusInfo.type === 'partial' && (
+                    <span className="flex-shrink-0 inline-flex items-center gap-2">
+                        <span
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                            style={{
+                                backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                                color: 'var(--color-warning)'
+                            }}
+                            title={statusInfo.message}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                            Partial
+                        </span>
+                        <button
+                            onClick={handleStart}
+                            className="instance-action-btn-success text-xs py-0.5 px-2"
+                            title="Restart integration"
+                        >
+                            Restart
+                        </button>
+                    </span>
+                )}
 
                 {/* [3] Spacer */}
                 <div className="flex-1" />

@@ -12,6 +12,8 @@ import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
 import InputDialog from "./modals/InputDialog.jsx";
 import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
+import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
+import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 
 
 
@@ -65,6 +67,8 @@ const EntitySettingsView = ({ appName }) => {
         getConfigById,
         isLoading: isModuleLoading
     } = useModuleConfigStore();
+
+    const { allInstances, refresh: refreshInstances } = useAllIntegrationInstances();
 
     const [entityMappings, setEntityMappings] = useState({
         backend: '',
@@ -756,6 +760,14 @@ const EntitySettingsView = ({ appName }) => {
                                         </div>
                                     )}
                                 </section>
+
+                                {/* Integration Status Banner */}
+                                <IntegrationStatusBanner
+                                    entityMappings={entityMappings}
+                                    getConfigById={getConfigById}
+                                    allInstances={allInstances}
+                                    onRefresh={refreshInstances}
+                                />
 
                                 <section className="space-y-4">
                                     <h3 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">

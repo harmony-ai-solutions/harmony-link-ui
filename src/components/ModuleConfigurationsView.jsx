@@ -2,9 +2,11 @@ import React, { useEffect } from 'react';
 import useModuleConfigStore from '../store/moduleConfigStore.js';
 import ModuleCard from './modules/ModuleCard.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
+import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances.js';
 
 export default function ModuleConfigurationsView() {
     const { loadAllConfigs, getConfigs, isLoading } = useModuleConfigStore();
+    const { allInstances, refresh: refreshInstances } = useAllIntegrationInstances();
 
     useEffect(() => {
         loadAllConfigs();
@@ -46,6 +48,8 @@ export default function ModuleConfigurationsView() {
                         isLoading={isLoading}
                         onDelete={(id, name) => handleDelete(moduleInfo.id, id, name)}
                         onSaveNew={handleSaveNew}
+                        allInstances={allInstances}
+                        onInstancesRefresh={refreshInstances}
                     />
                 ))}
             </div>

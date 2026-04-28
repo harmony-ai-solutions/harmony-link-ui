@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { listIntegrations, getQuickstartRepoPath } from '../services/management/integrationsService.js';
+import { listIntegrations, getQuickstartRepoPath, controlIntegrationInstance } from '../services/management/integrationsService.js';
 import useDockerStatus from '../hooks/useDockerStatus.js';
+import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import IntegrationCard from './integrations/IntegrationCard';
 import QuickstartRepoSettings from './integrations/QuickstartRepoSettings';
 import DockerStatusIndicator from './integrations/DockerStatusIndicator';
 import YAMLConfigEditor from './integrations/YAMLConfigEditor';
 import ConfigFilesModal from './integrations/ConfigFilesModal';
 import CreateInstanceModal from './integrations/CreateInstanceModal';
+import ConfirmDialog from './modals/ConfirmDialog';
 
 const IntegrationsView = () => {
   const [integrations, setIntegrations] = useState([]);
@@ -21,6 +23,76 @@ const IntegrationsView = () => {
 
   // Shared Docker status hook — single poller, stable refresh callback
   const { dockerStatus, refresh: refreshDockerStatus, prevAvailable } = useDockerStatus(10000);
+
+  // Shared integration instances from aggregated endpoint (single poll source)
+  const { allInstances, refresh: refreshAllInstances, isLoading: instancesLoading } = useAllIntegrationInstances(10000);
+
+  // Group instances by integration name for passing to IntegrationCard
+  const instancesByIntegration = React.useMemo(() => {
+    const map = {};
+    for (const item of allInstances) {
+      if (!map[item.integrationName]) {
+        map[item.integrationName] = {};
+      }
+      map[item.integrationName][item.instanceName] = item.instance;
+    }
+    return map;
+  }, [allInstances]);
+
+  // Running instances for Stop All feature
+  const runningInstances = React.useMemo(() => {
+    return allInstances.filter(
+      ({ instance }) => instance.status === 'running' || instance.status === 'partially_running'
+    );
+  }, [allInstances]);
+
+  // Stop All dialog state and handlers
+  const [showStopAllDialog, setShowStopAllDialog] = useState(false);
+  const [stoppingAll, setStoppingAll] = useState(false);
+
+  const handleStopAllClick = () => {
+    if (runningInstances.length === 0) return;
+    setShowStopAllDialog(true);
+  };
+
+  const handleStopAllConfirm = async () => {
+    setStoppingAll(true);
+    const errors = [];
+
+    for (const { integrationName, instanceName } of runningInstances) {
+      try {
+        await controlIntegrationInstance(integrationName, instanceName, 'stop');
+      } catch (error) {
+        console.error(`Failed to stop ${integrationName}/${instanceName}:`, error);
+        errors.push({ integrationName, instanceName, error: error.message });
+      }
+    }
+
+    setShowStopAllDialog(false);
+    setStoppingAll(false);
+    refreshAllInstances();
+
+    if (errors.length > 0) {
+      console.warn('[Stop All] Some instances failed to stop:', errors);
+    }
+  };
+
+  const handleStopAllCancel = () => {
+    setShowStopAllDialog(false);
+  };
+
+  const stopAllMessage = React.useMemo(() => {
+    if (runningInstances.length === 0) return '';
+
+    const lines = runningInstances.map(({ integrationName, instanceName, instance }) => {
+      const deviceLabel = instance.deviceType ? ` (${instance.deviceType.toUpperCase()})` : '';
+      return `  \u2022 ${integrationName} / ${instanceName}${deviceLabel}`;
+    });
+
+    return `This will stop ${runningInstances.length} running instance${runningInstances.length !== 1 ? 's' : ''}:\n\n` +
+      lines.join('\n') +
+      '\n\nAre you sure you want to proceed?';
+  }, [runningInstances]);
 
   const fetchIntegrations = useCallback(async () => {
     if (!quickstartPathConfigured) return;
@@ -157,11 +229,18 @@ const IntegrationsView = () => {
           <div className="flex flex-col items-center gap-2 flex-shrink-0 ml-auto">
             <DockerStatusIndicator dockerStatus={dockerStatus} />
             <button
-              onClick={() => { refreshDockerStatus(); fetchIntegrations(); }}
+              onClick={() => { refreshDockerStatus(); fetchIntegrations(); refreshAllInstances(); }}
               disabled={refreshing}
-              className="btn-secondary"
+              className="btn-secondary py-1.5 px-3 text-xs"
             >
               {refreshing ? 'Refreshing...' : 'Refresh All'}
+            </button>
+            <button
+              onClick={handleStopAllClick}
+              disabled={runningInstances.length === 0 || stoppingAll}
+              className="btn-danger py-1.5 px-3 text-xs"
+            >
+              {stoppingAll ? 'Stopping All...' : `Stop All (${runningInstances.length})`}
             </button>
           </div>
 
@@ -172,9 +251,11 @@ const IntegrationsView = () => {
           <IntegrationCard
             key={integration.name}
             integration={integration}
+            instances={instancesByIntegration[integration.name] || {}}
             onConfigure={handleConfigureClick}
             onConfigFiles={handleConfigFilesClick}
             onCreateInstance={handleCreateInstanceClick}
+            onRefreshInstances={refreshAllInstances}
           />
         ))}
         </div>
@@ -208,6 +289,16 @@ const IntegrationsView = () => {
           onCreate={handleCreateInstanceModalClose}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={showStopAllDialog}
+        title="Stop All Running Instances"
+        message={stopAllMessage}
+        onConfirm={handleStopAllConfirm}
+        onCancel={handleStopAllCancel}
+        confirmText={stoppingAll ? 'Stopping...' : 'Stop All'}
+        cancelText="Cancel"
+      />
     </div>
   );
 };

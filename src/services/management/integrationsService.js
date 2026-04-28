@@ -26,6 +26,14 @@ export async function refreshIntegrationStatuses() {
     return await resp.json();
 }
 
+export async function getAllIntegrationStatuses() {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/status`, {
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to fetch integration statuses");
+    return await resp.json();
+}
+
 export async function getQuickstartRepoPath() {
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/integrations/repo-path`, {
         headers: getAuthHeaders()

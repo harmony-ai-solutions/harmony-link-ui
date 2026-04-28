@@ -1,37 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { getIntegrationInstances, controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
+import React, { useState, useCallback } from 'react';
+import { controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
 import ErrorDialog from '../modals/ErrorDialog';
 import InstanceList from './InstanceList';
 
-const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInstance }) => {
-    const [instances, setInstances] = useState({});
-    const [loadingInstances, setLoadingInstances] = useState(true);
+const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, onCreateInstance, onRefreshInstances }) => {
     const [showInstances, setShowInstances] = useState(false);
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
-
-    const fetchInstances = useCallback(async () => {
-        setLoadingInstances(true);
-        try {
-            const fetchedInstances = await getIntegrationInstances(integration.name);
-            setInstances(fetchedInstances);
-        } catch (error) {
-            console.error(`Failed to fetch instances for ${integration.name}:`, error);
-            setInstances({});
-        } finally {
-            setLoadingInstances(false);
-        }
-    }, [integration.name]);
-
-    useEffect(() => {
-        fetchInstances();
-        const interval = setInterval(fetchInstances, 5000);
-        return () => clearInterval(interval);
-    }, [fetchInstances]);
 
     const handleControlClick = async (integrationName, instanceName, action) => {
         try {
             await controlIntegrationInstance(integrationName, instanceName, action);
-            fetchInstances();
+            onRefreshInstances();
         } catch (error) {
             console.error(`Failed to perform ${action} on ${integrationName}/${instanceName}:`, error);
             const errorMessage = error.message || error.toString();
@@ -48,7 +27,7 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
             const { title, message, type } = buildErrorDialogProps(actionLabel, errorMessage, error);
 
             setErrorDialog({ isOpen: true, title, message, type });
-            fetchInstances();
+            onRefreshInstances();
         }
     };
 
@@ -118,7 +97,7 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
     const handleRenameInstance = async (integrationName, instanceName, newInstanceName) => {
         try {
             await renameIntegrationInstance(integrationName, instanceName, newInstanceName);
-            await fetchInstances();
+            await onRefreshInstances();
         } catch (error) {
             console.error(`Failed to rename instance ${integrationName}/${instanceName}:`, error);
             throw error;
@@ -175,17 +154,11 @@ const IntegrationCard = ({ integration, onConfigure, onConfigFiles, onCreateInst
 
                 {/* [3] Instance count pill — centered in its own fixed-width zone */}
                 <div className="flex items-center justify-center flex-shrink-0 w-48">
-                    {loadingInstances ? (
-                        <span className="text-xs italic" style={{ color: 'var(--color-text-muted)' }}>
-                            Loading…
-                        </span>
-                    ) : (
-                        <span className="integration-count-pill text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">
-                            {instanceCount === 0
-                                ? 'No instances'
-                                : `${instanceCount} instance${instanceCount !== 1 ? 's' : ''} · ${runningCount} running`}
-                        </span>
-                    )}
+                    <span className="integration-count-pill text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">
+                        {instanceCount === 0
+                            ? 'No instances'
+                            : `${instanceCount} instance${instanceCount !== 1 ? 's' : ''} · ${runningCount} running`}
+                    </span>
                 </div>
 
                 {/* [4] Action buttons — inline, left-anchored in their group */}

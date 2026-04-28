@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ModuleConfigRow from './ModuleConfigRow.jsx';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
 
-export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading, onCreate, onEdit, onCopy, onDelete, onSaveNew, allInstances, onInstancesRefresh }) {
+export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading, onCreate, onEdit, onCopy, onDelete, onSaveNew, allInstances, onInstancesRefresh, dockerStatus }) {
     const [showConfigs, setShowConfigs] = useState(false);
     const [expandedConfigIds, setExpandedConfigIds] = useState(new Set());
     const [creatingConfig, setCreatingConfig] = useState(null);
@@ -161,6 +161,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                                     onToggleEditor={() => toggleEditor(config.id)}
                                     allInstances={allInstances}
                                     onInstancesRefresh={onInstancesRefresh}
+                                    dockerStatus={dockerStatus}
                                 />
                             ))}
                         </div>

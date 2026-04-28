@@ -3,10 +3,12 @@ import useModuleConfigStore from '../store/moduleConfigStore.js';
 import ModuleCard from './modules/ModuleCard.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances.js';
+import useDockerStatus from '../hooks/useDockerStatus.js';
 
 export default function ModuleConfigurationsView() {
     const { loadAllConfigs, getConfigs, isLoading } = useModuleConfigStore();
     const { allInstances, refresh: refreshInstances } = useAllIntegrationInstances();
+    const { dockerStatus } = useDockerStatus();
 
     useEffect(() => {
         loadAllConfigs();
@@ -50,6 +52,7 @@ export default function ModuleConfigurationsView() {
                         onSaveNew={handleSaveNew}
                         allInstances={allInstances}
                         onInstancesRefresh={refreshInstances}
+                        dockerStatus={dockerStatus}
                     />
                 ))}
             </div>

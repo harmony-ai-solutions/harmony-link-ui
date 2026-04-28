@@ -60,7 +60,8 @@ export default function ModuleConfigRow({
     isEditorOpen,
     onToggleEditor,
     allInstances,
-    onInstancesRefresh
+    onInstancesRefresh,
+    dockerStatus
 }) {
     const providerDisplay = getProviderDisplay(config, moduleType);
     const providerLogos = getProviderLogos(config, moduleType);
@@ -82,8 +83,19 @@ export default function ModuleConfigRow({
         return findMatchingInstances(configUrl, allInstances);
     }, [config, moduleType, allInstances]);
 
-    // Determine status based on matching instances
+    // Determine status based on matching instances and Docker availability
     const statusInfo = useMemo(() => {
+        // Check if this config uses a local provider that needs Docker
+        const isLocal = hasLocalProvider(config, moduleType);
+
+        // If Docker is unavailable and this config has a local provider with no running matches
+        if (isLocal && dockerStatus && !dockerStatus.available && matchingInstances.length === 0) {
+            return {
+                type: 'docker-down',
+                message: dockerStatus.hasClient ? 'Docker daemon not running' : 'Docker not available'
+            };
+        }
+
         if (matchingInstances.length === 0) {
             return { type: 'none', message: '' };
         }
@@ -112,7 +124,7 @@ export default function ModuleConfigRow({
             message: 'Integration offline',
             instances: matchingInstances
         };
-    }, [matchingInstances]);
+    }, [matchingInstances, dockerStatus, config, moduleType]);
 
     // Handle start/restart button click
     const handleStart = useCallback(async () => {
@@ -172,6 +184,20 @@ export default function ModuleConfigRow({
                 </span>
 
                 {/* [Integration Status Indicator] */}
+                {statusInfo.type === 'docker-down' && (
+                    <span
+                        className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                        style={{
+                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                            color: 'var(--color-status-error)'
+                        }}
+                        title={statusInfo.message}
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-status-error)' }} />
+                        Docker Unavailable
+                    </span>
+                )}
+
                 {statusInfo.type === 'running' && (
                     <span
                         className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"

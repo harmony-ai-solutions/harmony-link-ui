@@ -13,6 +13,7 @@ import ConfirmDialog from "./modals/ConfirmDialog.jsx";
 import InputDialog from "./modals/InputDialog.jsx";
 import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
+import useDockerStatus from '../hooks/useDockerStatus';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 
 
@@ -69,6 +70,7 @@ const EntitySettingsView = ({ appName }) => {
     } = useModuleConfigStore();
 
     const { allInstances, refresh: refreshInstances } = useAllIntegrationInstances();
+    const { dockerStatus } = useDockerStatus();
 
     const [entityMappings, setEntityMappings] = useState({
         backend: '',
@@ -767,6 +769,7 @@ const EntitySettingsView = ({ appName }) => {
                                     getConfigById={getConfigById}
                                     allInstances={allInstances}
                                     onRefresh={refreshInstances}
+                                    dockerStatus={dockerStatus}
                                 />
 
                                 <section className="space-y-4">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import useLogStream from '../../hooks/useLogStream.js';
-import { fetchLogs, fetchLogComponents, fetchLogEntities, getLogStreamUrl } from '../../services/management/logService.js';
+import { fetchLogs, fetchLogComponents, fetchLogEntities, fetchLogPromptTypes, getLogStreamUrl } from '../../services/management/logService.js';
 import LogEntry from './LogEntry.jsx';
 import FilterToolbar from './FilterToolbar.jsx';
 import LogLevelSettings from './LogLevelSettings.jsx';
@@ -21,6 +21,8 @@ export default function LogViewer() {
         entityId: '',
         minLevel: 'debug',
         search: '',
+        isPrompt: null,    // null = no filter, true = prompts only, false = non-prompts only
+        promptType: '',
     });
 
     // ── UI state ──
@@ -36,6 +38,7 @@ export default function LogViewer() {
     const [historyEntries, setHistoryEntries] = useState([]);
     const [components, setComponents] = useState([]);
     const [entities, setEntities] = useState([]);
+    const [promptTypes, setPromptTypes] = useState([]);
 
     // ── WebSocket streaming ──
     const wsUrl = getLogStreamUrl();
@@ -93,6 +96,12 @@ export default function LogViewer() {
                 if (apiEnts.length > 0) setEntities(apiEnts);
             })
             .catch(err => console.error('Failed to load entities:', err));
+        fetchLogPromptTypes()
+            .then(data => {
+                const apiTypes = data.promptTypes || [];
+                if (apiTypes.length > 0) setPromptTypes(apiTypes);
+            })
+            .catch(err => console.error('Failed to load prompt types:', err));
     }, []);
 
     // ── Merge history + live entries, dedup by ID ──
@@ -118,6 +127,9 @@ export default function LogViewer() {
             const entrySeverity = levelSeverity[e.level] ?? 5;
             if (entrySeverity > minSeverity) return false;
             if (filters.search && (!e.message || !e.message.toLowerCase().includes(filters.search.toLowerCase()))) return false;
+            // Prompt filter: only show prompt entries when toggled on
+            if (filters.isPrompt === true && !e.isPrompt) return false;
+            if (filters.promptType && e.promptType !== filters.promptType) return false;
             return true;
         });
     })();
@@ -227,6 +239,12 @@ export default function LogViewer() {
                 }
             })
             .catch(err => console.error('Failed to load entities:', err));
+        fetchLogPromptTypes()
+            .then(data => {
+                const apiTypes = data.promptTypes || [];
+                if (apiTypes.length > 0) setPromptTypes(apiTypes);
+            })
+            .catch(err => console.error('Failed to load prompt types:', err));
         if (!isLive) reconnect();
     }, [isLive, reconnect, allEntries, extractMeta]);
 
@@ -267,6 +285,7 @@ export default function LogViewer() {
                 onFilterChange={setFilters}
                 components={components}
                 entities={entities}
+                promptTypes={promptTypes}
                 sortOrder={sortOrder}
                 onSortOrderChange={setSortOrder}
                 pageSize={pageSize}

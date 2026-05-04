@@ -44,6 +44,7 @@ export default function FilterToolbar({
     onFilterChange,
     components,
     entities,
+    promptTypes,
     sortOrder,
     onSortOrderChange,
     pageSize,
@@ -79,6 +80,39 @@ export default function FilterToolbar({
                         <option key={e} value={e}>{e}</option>
                     ))}
                 </select>
+
+                {/* Divider */}
+                <div className="w-px h-6 bg-white/10" />
+
+                {/* Prompt Toggle — binary: null (all) ↔ true (prompts only) */}
+                <button
+                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                        filters.isPrompt === true
+                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                            : 'bg-background-surface text-text-muted border-white/10'
+                    }`}
+                    onClick={() => {
+                        const next = filters.isPrompt === true ? null : true;
+                        onFilterChange({ ...filters, isPrompt: next, promptType: next !== true ? '' : filters.promptType });
+                    }}
+                    title={filters.isPrompt === true ? 'Showing prompts only — click to show all' : 'Showing all entries — click to show prompts only'}
+                >
+                    PROMPT{filters.isPrompt === true ? ' ✓' : ''}
+                </button>
+
+                {/* Prompt Type Dropdown — only visible when isPrompt is toggled active (true) */}
+                {filters.isPrompt === true && (
+                    <select
+                        value={filters.promptType}
+                        onChange={(e) => onFilterChange({ ...filters, promptType: e.target.value })}
+                        className="input-field text-sm py-1.5 w-28"
+                    >
+                        <option value="">All Types</option>
+                        {promptTypes && promptTypes.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                        ))}
+                    </select>
+                )}
 
                 {/* Divider */}
                 <div className="w-px h-6 bg-white/10" />

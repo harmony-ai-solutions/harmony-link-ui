@@ -10,6 +10,8 @@ export async function fetchLogs(params = {}) {
     if (params.minLevel) query.set('minLevel', params.minLevel);
     if (params.search) query.set('search', params.search);
     if (params.since) query.set('since', params.since);
+    if (params.isPrompt !== undefined && params.isPrompt !== null) query.set('isPrompt', String(params.isPrompt));
+    if (params.promptType) query.set('promptType', params.promptType);
     if (params.limit) query.set('limit', String(params.limit));
     if (params.offset) query.set('offset', String(params.offset));
 
@@ -86,6 +88,17 @@ export async function fetchLogEntities() {
         headers: getAuthHeaders(),
     });
     await handleResponse(response, "Failed to fetch entities");
+    return await response.json();
+}
+
+/**
+ * Get list of known prompt types from log entries.
+ */
+export async function fetchLogPromptTypes() {
+    const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/development/logs/prompt-types`, {
+        headers: getAuthHeaders(),
+    });
+    await handleResponse(response, "Failed to fetch prompt types");
     return await response.json();
 }
 

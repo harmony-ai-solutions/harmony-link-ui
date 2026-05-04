@@ -62,9 +62,11 @@ export default function LogViewer() {
     }, []);
 
     // ── Load historical entries on mount ──
+    // Fetch the full ring buffer (10K cap) so that after a tab switch remount
+    // the user sees exactly what was there before — no entries silently lost.
     useEffect(() => {
         setIsLoadingHistory(true);
-        fetchLogs({ limit: 500 })
+        fetchLogs({ limit: 10000 })
             .then(data => {
                 const historical = data.entries || [];
                 historical.forEach(e => seenIdsRef.current.add(e.id));

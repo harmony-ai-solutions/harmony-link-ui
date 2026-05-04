@@ -35,7 +35,25 @@ export default function useLogStream({ wsUrl, filters, isPaused, maxEntries = 20
             if (bufferRef.current.length > 0) {
                 const batch = bufferRef.current.splice(0);
                 setEntries(prev => {
-                    const next = [...prev, ...batch];
+                    // Separate adds and removes
+                    const toAdd = [];
+                    const toRemove = new Set();
+                    for (const item of batch) {
+                        if (item.action === 'remove') {
+                            toRemove.add(item.id);
+                        } else {
+                            toAdd.push(item.entry);
+                        }
+                    }
+
+                    // Apply removes + adds
+                    let next = toRemove.size > 0
+                        ? prev.filter(e => !toRemove.has(e.id))
+                        : prev;
+                    if (toAdd.length > 0) {
+                        next = [...next, ...toAdd];
+                    }
+
                     return next.length > maxEntries ? next.slice(-maxEntries) : next;
                 });
             }
@@ -70,8 +88,11 @@ export default function useLogStream({ wsUrl, filters, isPaused, maxEntries = 20
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'entry') {
                             if (!isPausedRef.current) {
-                                bufferRef.current.push(msg.data);
+                                bufferRef.current.push({ action: 'add', entry: msg.data });
                             }
+                        } else if (msg.type === 'remove') {
+                            // Dedup eviction — always process, even when paused
+                            bufferRef.current.push({ action: 'remove', id: msg.removeId });
                         }
                         // Ignore 'ping' messages
                     } catch (e) {

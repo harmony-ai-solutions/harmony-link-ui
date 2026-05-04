@@ -3,13 +3,14 @@
  */
 function LevelToggles({ minLevel, onChange }) {
     const levels = [
+        { key: 'trace',  label: 'TRACE', activeClass: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
         { key: 'debug',  label: 'DEBUG', activeClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
         { key: 'info',   label: 'INFO',  activeClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
         { key: 'warn',   label: 'WARN',  activeClass: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
         { key: 'error',  label: 'ERROR', activeClass: 'bg-red-500/20 text-red-400 border-red-500/30' },
     ];
 
-    const levelOrder = ['debug', 'info', 'warn', 'error'];
+    const levelOrder = ['trace', 'debug', 'info', 'warn', 'error'];
     const minIndex = levelOrder.indexOf(minLevel);
 
     return (

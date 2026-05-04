@@ -97,6 +97,7 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                     onChange={(e) => setConfig({ ...config, defaultLevel: e.target.value })}
                     className="input-field text-sm py-1 w-32"
                 >
+                    <option value="trace">TRACE</option>
                     <option value="debug">DEBUG</option>
                     <option value="info">INFO</option>
                     <option value="warn">WARN</option>
@@ -118,6 +119,7 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                             })}
                             className="input-field text-xs py-1 w-24"
                         >
+                            <option value="trace">TRACE</option>
                             <option value="debug">DEBUG</option>
                             <option value="info">INFO</option>
                             <option value="warn">WARN</option>

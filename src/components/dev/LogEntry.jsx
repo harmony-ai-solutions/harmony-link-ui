@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
  * Level color configuration using theme-aware colors.
  */
 const levelConfig = {
+    trace:    { className: 'log-level-badge log-level-trace', icon: '🔎' },
     debug:    { className: 'log-level-badge log-level-debug', icon: '🔍' },
     info:     { className: 'log-level-badge log-level-info', icon: 'ℹ️' },
     warn:     { className: 'log-level-badge log-level-warn', icon: '⚠️' },

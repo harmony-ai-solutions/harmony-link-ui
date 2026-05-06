@@ -121,15 +121,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI provider schema
-     * 7 fields: openaiapikey, model, maxtokens, temperature, topp, n, stoptokens
+     * 7 fields: apikey, model, maxtokens, temperature, topp, n, stoptokens
      */
     openai: {
         hasModelFetch: true,
-        modelFetchTriggerField: 'openaiapikey',
+        modelFetchTriggerField: 'apikey',
         modelFetchProviderField: 'model',
         fields: [
             {
-                key: 'openaiapikey',
+                key: 'apikey',
                 label: 'API Key',
                 type: 'password',
                 placeholder: 'sk-...',
@@ -688,15 +688,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenRouter provider schema
-     * 7 fields: openrouterapikey, model, maxtokens, temperature, topp, n, stoptokens
+     * 7 fields: apikey, model, maxtokens, temperature, topp, n, stoptokens
      */
     openrouter: {
         hasModelFetch: true,
-        modelFetchTriggerField: 'openrouterapikey',
+        modelFetchTriggerField: 'apikey',
         modelFetchProviderField: 'model',
         fields: [
             {
-                key: 'openrouterapikey',
+                key: 'apikey',
                 label: 'API Key',
                 type: 'password',
                 placeholder: 'sk-or-...',
@@ -995,13 +995,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * Elevenlabs TTS provider schema
-     * 7 fields: elevenlabsapikey, modelid, voiceid, stability, similarityboost, style, speakerboost
+     * 7 fields: apikey, modelid, voiceid, stability, similarityboost, style, speakerboost
      */
     elevenlabs: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'elevenlabsapikey',
+                key: 'apikey',
                 label: 'API Key',
                 type: 'password',
                 placeholder: 'Your Elevenlabs API Key',
@@ -1100,13 +1100,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI TTS provider schema
-     * 5 fields: openaiapikey, model, voice, speed, format
+     * 5 fields: apikey, model, voice, speed, format
      */
     tts_openai: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'openaiapikey',
+                key: 'apikey',
                 label: 'API Key',
                 type: 'password',
                 placeholder: 'sk-...',
@@ -1174,13 +1174,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI STT provider schema
-     * 1 field: openaiapikey
+     * 1 field: apikey
      */
     stt_openai: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'openaiapikey',
+                key: 'apikey',
                 label: 'API Key',
                 type: 'password',
                 placeholder: 'sk-...',
@@ -1197,13 +1197,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI VAD provider schema
-     * 1 field: openaiapikey
+     * 1 field: apikey
      */
     vad_openai: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'openaiapikey',
+                key: 'apikey',
                 label: 'OpenAI API Key',
                 type: 'password',
                 placeholder: 'sk-...',
@@ -1216,13 +1216,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI RAG provider schema
-     * 2 fields: openaiapikey, embeddingmodel
+     * 2 fields: apikey, embeddingmodel
      */
     rag_openai: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'openaiapikey',
+                key: 'apikey',
                 label: 'OpenAI API Key',
                 type: 'password',
                 placeholder: 'sk-...',

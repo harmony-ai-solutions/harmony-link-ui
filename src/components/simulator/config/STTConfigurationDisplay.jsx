@@ -93,11 +93,11 @@ function STTConfigurationDisplay({ config, loading, error }) {
                                     </div>
                                 )}
                                 
-                                {providerConfig.openaiapikey && (
+                                {providerConfig.apikey && (
                                     <div>
                                         <span className="text-gray-400">OpenAI API Key:</span>
                                         <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.openaiapikey.slice(-4)}
+                                            {'*'.repeat(8)}...{providerConfig.apikey.slice(-4)}
                                         </span>
                                     </div>
                                 )}

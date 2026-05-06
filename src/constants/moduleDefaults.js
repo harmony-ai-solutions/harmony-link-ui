@@ -6,7 +6,7 @@ import { PROVIDERS } from "./modules.js";
 export const MODULE_DEFAULTS = {
     backend: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 200,
             temperature: 0.7,
@@ -50,7 +50,7 @@ export const MODULE_DEFAULTS = {
             extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
-            openrouterapikey: "",
+            apikey: "",
             model: "google/gemini-flash-2.5",
             maxtokens: 200,
             temperature: 0.7,
@@ -86,7 +86,7 @@ export const MODULE_DEFAULTS = {
     },
     tts: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             model: "tts-1",
             voice: "alloy",
             speed: 1.0,
@@ -100,7 +100,7 @@ export const MODULE_DEFAULTS = {
             stream: false
         },
         [PROVIDERS.ELEVENLABS]: {
-            elevenlabsapikey: "",
+            apikey: "",
             voiceid: "",
             modelid: "eleven_monolingual_v1",
             stability: 0.0,
@@ -120,7 +120,7 @@ export const MODULE_DEFAULTS = {
     },
     stt: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: ""
+            apikey: ""
         },
         [PROVIDERS.HARMONYSPEECH]: {
             endpoint: "https://speech.project-harmony.ai",
@@ -136,7 +136,7 @@ export const MODULE_DEFAULTS = {
     },
     vad: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: ""
+            apikey: ""
         },
         [PROVIDERS.HARMONYSPEECH]: {
             endpoint: "https://speech.project-harmony.ai",
@@ -145,7 +145,7 @@ export const MODULE_DEFAULTS = {
     },
     rag: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             embeddingmodel: "text-embedding-3-small"
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
@@ -172,7 +172,7 @@ export const MODULE_DEFAULTS = {
     },
     cognition: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 100,
             temperature: 0.7,
@@ -216,7 +216,7 @@ export const MODULE_DEFAULTS = {
             extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
-            openrouterapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 100,
             temperature: 0.7,
@@ -243,7 +243,7 @@ export const MODULE_DEFAULTS = {
     },
     movement: {
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 200,
             temperature: 0.7,
@@ -287,7 +287,7 @@ export const MODULE_DEFAULTS = {
             extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
-            openrouterapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 200,
             temperature: 0.7,
@@ -340,7 +340,7 @@ export const MODULE_DEFAULTS = {
         resolution_width: 640,
         resolution_height: 480,
         [PROVIDERS.OPENAI]: {
-            openaiapikey: "",
+            apikey: "",
             model: "gpt-4o",
             maxtokens: 500,
             temperature: 0.7,
@@ -362,7 +362,7 @@ export const MODULE_DEFAULTS = {
             extraparams: {}
         },
         [PROVIDERS.OPENROUTER]: {
-            openrouterapikey: "",
+            apikey: "",
             model: "google/gemini-2.0-flash-exp",
             maxtokens: 500,
             temperature: 0.7,

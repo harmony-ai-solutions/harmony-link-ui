@@ -45,6 +45,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [logFile, setLogFile] = useState(false);
     const [port, setPort] = useState(28080);
     const [clientConnectionBuffer, setClientConnectionBuffer] = useState(8192);
+    const [singlePort, setSinglePort] = useState(false);
+    const [wssPort, setWssPort] = useState(28443);
 
     // Validation Functions
     const validateWorkingDir = (value) => {
@@ -96,6 +98,14 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         }
         return true;
     };
+    const validateWssPort = (value) => {
+        if (isNaN(value) || value < 1 || value > 65535) {
+            showModal("WSS Port must be a number between 1 and 65535.");
+            setWssPort(generalSettings.wssport);
+            return false;
+        }
+        return true;
+    };
     const validateClientConnectionBuffer = (value) => {
         if (isNaN(value) || value <= 0) {
             showModal("Client Connection Buffer must be a positive number.");
@@ -116,6 +126,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setLogFile(generalSettings.logfile);
         setPort(generalSettings.port);
         setClientConnectionBuffer(generalSettings.clientconnectionbuffer);
+        setSinglePort(generalSettings.singleport || false);
+        setWssPort(generalSettings.wssport || 28443);
     };
 
     const saveSettingsWithBackup = () => {
@@ -136,6 +148,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.logfile = logFile;
         generalSettings.port = port;
         generalSettings.clientconnectionbuffer = clientConnectionBuffer;
+        generalSettings.singleport = singlePort;
+        generalSettings.wssport = wssPort;
         generalSettings.currenttheme = currentTheme;
         // Configure Modal Dialog whether a backup should be made
         setConfirmModalYes(() => saveSettingsWithBackup);
@@ -331,6 +345,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         <span className="text-gradient-primary">Network & Infrastructure</span>
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        {/* Row 1, Col 1: Connection Port */}
                         <div className="flex items-center w-full">
                             <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                                 Connection Port
@@ -347,6 +362,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     onBlur={(e) => validatePort(parseInt(e.target.value) || -1)} />
                             </div>
                         </div>
+                        {/* Row 1, Col 2: WebSocket Buffer */}
                         <div className="flex items-center w-full">
                             <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
                                 WebSocket Buffer (Bytes)
@@ -364,6 +380,46 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     onBlur={(e) => validateClientConnectionBuffer(parseInt(e.target.value) || -1)} />
                             </div>
                         </div>
+                        {/* Row 2, Col 1: WSS Port */}
+                        <div className="flex items-center w-full">
+                            <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                WSS Port
+                                <SettingsTooltip tooltipIndex={9} tooltipVisible={() => tooltipVisible}
+                                    setTooltipVisible={setTooltipVisible}>
+                                    The port used for secure WebSocket (WSS) connections.
+                                    Disabled when Single Port Mode is active.
+                                </SettingsTooltip>
+                            </label>
+                            <div className="w-2/3 px-3">
+                                <input type="number" name="wssPort"
+                                    className="input-field w-full"
+                                    placeholder="Enter WSS port number" value={wssPort}
+                                    disabled={singlePort}
+                                    onChange={(e) => setWssPort(parseInt(e.target.value) || -1)}
+                                    onBlur={(e) => validateWssPort(parseInt(e.target.value) || -1)} />
+                            </div>
+                        </div>
+                        {/* Row 2, Col 2: Single Port Mode Toggle */}
+                        <label className="flex items-center gap-3 px-3 cursor-pointer group">
+                            <input type="checkbox" name="singlePort"
+                                className="rounded text-accent-primary focus:ring-accent-primary"
+                                checked={singlePort} onChange={(e) => setSinglePort(e.target.checked)} />
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">Single Port Mode</span>
+                                    <SettingsTooltip tooltipIndex={10} tooltipVisible={() => tooltipVisible}
+                                        setTooltipVisible={setTooltipVisible}>
+                                        When enabled, both plain WebSocket (WS) and secure WebSocket (WSS) connections are served on the same port.
+                                        The server automatically detects TLS connections and handles them accordingly.
+                                        <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">
+                                            Useful when using TCP tunnels (e.g. ngrok) for remote debugging — only one tunnel needed.
+                                            (Requires restart to apply)
+                                        </span>
+                                    </SettingsTooltip>
+                                </div>
+                                <span className="text-xs text-text-muted">Serve WS and WSS on the same port (requires restart)</span>
+                            </div>
+                        </label>
                     </div>
                 </section>
 

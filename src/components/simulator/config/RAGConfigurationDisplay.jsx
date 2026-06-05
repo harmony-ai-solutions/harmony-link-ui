@@ -84,11 +84,11 @@ function RAGConfigurationDisplay({ config, loading, error }) {
                                     </div>
                                 )}
                                 
-                                {providerConfig.embeddingmodel && (
+                                {providerConfig.model && (
                                     <div>
                                         <span className="text-gray-400">Embedding Model:</span>
                                         <span className="ml-2 text-gray-300">
-                                            {providerConfig.embeddingmodel}
+                                            {providerConfig.model}
                                         </span>
                                     </div>
                                 )}

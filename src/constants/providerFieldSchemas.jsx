@@ -1216,7 +1216,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI RAG provider schema
-     * 2 fields: apikey, embeddingmodel
+     * 2 fields: apikey, model
      */
     rag_openai: {
         hasModelFetch: false,
@@ -1235,7 +1235,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 }
             },
             {
-                key: 'embeddingmodel',
+                key: 'model',
                 label: 'Embedding Model',
                 type: 'text',
                 placeholder: 'text-embedding-3-small',
@@ -1252,7 +1252,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI Compatible RAG provider schema
-     * 3 fields: baseurl, apikey, embeddingmodel
+     * 3 fields: baseurl, apikey, model
      */
     rag_openaicompatible: {
         hasModelFetch: false,
@@ -1281,7 +1281,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
-                key: 'embeddingmodel',
+                key: 'model',
                 label: 'Embedding Model',
                 type: 'text',
                 placeholder: 'embedding-model-name',
@@ -1298,7 +1298,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * Ollama RAG provider schema
-     * 2 fields: baseurl, embeddingmodel
+     * 2 fields: baseurl, model
      */
     rag_ollama: {
         hasModelFetch: false,
@@ -1317,7 +1317,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 }
             },
             {
-                key: 'embeddingmodel',
+                key: 'model',
                 label: 'Embedding Model',
                 type: 'text',
                 placeholder: 'nomic-embed-text',
@@ -1357,13 +1357,13 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * LocalAI RAG provider schema
-     * 1 field: embeddingmodel
+     * 1 field: model
      */
     rag_localai: {
         hasModelFetch: false,
         fields: [
             {
-                key: 'embeddingmodel',
+                key: 'model',
                 label: 'Embedding Model',
                 type: 'text',
                 placeholder: 'embedding-model-name',
@@ -1722,6 +1722,966 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'workflowprofiles',
                 label: 'Workflow Profiles',
                 type: 'workflow-profile-editor',
+                tooltip: '',
+                width: 'full'
+            }
+        ]
+    },
+
+    // ============================================================
+    // Provider Expansion Schemas (Phase 12)
+    // ============================================================
+
+    /**
+     * Google Gemini provider schema (Backend / Cognition / Vision)
+     * Fields: apikey, model, maxoutputtokens, temperature, topp, topk, stoptokens, responsemimetype, samplingpresetname, extraparams
+     */
+    google: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        modelFetchProviderField: 'model',
+        hasVerification: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'AIza...',
+                tooltip: 'Your Google Gemini API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model...',
+                tooltip: 'Google Gemini model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'maxoutputtokens',
+                label: 'Max Output Tokens',
+                type: 'number',
+                placeholder: '8192',
+                tooltip: 'Maximum number of tokens that can be generated in the response.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    message: 'Max Output Tokens must be at least 1.'
+                }
+            },
+            {
+                key: 'temperature',
+                label: 'Temperature',
+                type: 'number',
+                step: 0.1,
+                placeholder: '1.0',
+                tooltip: 'Controls the randomness of the output. Higher values produce more creative responses.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    message: 'Temperature must be between 0 and 2.'
+                }
+            },
+            {
+                key: 'topp',
+                label: 'Top P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0.95',
+                tooltip: 'If specified, only the tokens with the top probability mass are considered. Set to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    disableValue: -1,
+                    message: 'Top P must be between 0 and 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'topk',
+                label: 'Top K',
+                type: 'number',
+                placeholder: '40',
+                tooltip: 'The maximum number of tokens to consider when sampling. Set to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Top K must be at least 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'stoptokens',
+                label: 'Stop Tokens',
+                type: 'comma-list',
+                placeholder: 'token1, token2',
+                tooltip: 'List of stop sequences, comma separated.',
+                width: 'full',
+                labelWidth: '1/6'
+            },
+            {
+                key: 'responsemimetype',
+                label: 'Response MIME Type',
+                type: 'select',
+                placeholder: 'text/plain',
+                tooltip: 'The MIME type of the response.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'text/plain', name: 'Text' },
+                    { id: 'application/json', name: 'JSON' }
+                ]
+            },
+            {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill parameters.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'extraparams',
+                label: 'Extra Parameters',
+                type: 'json',
+                placeholder: '{}',
+                tooltip: 'Additional parameters to send to the API.',
+                width: 'full',
+                labelWidth: '1/6'
+            }
+        ]
+    },
+
+    /**
+     * Google Gemini Imagination provider schema
+     * Fields: apikey, model, numberofimages, aspectratio
+     */
+    google_imagination: {
+        hasModelFetch: false,
+        hasVerification: true,
+        hasTestGeneration: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'AIza...',
+                tooltip: 'Your Google Gemini API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'select',
+                placeholder: 'Select a model',
+                tooltip: 'Google Gemini image generation model.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'gemini-2.0-flash-exp-image-generation', name: 'Gemini 2.0 Flash (Image Generation)' },
+                    { id: 'gemini-2.5-flash-preview-image-generation', name: 'Gemini 2.5 Flash Preview (Image Generation)' }
+                ]
+            },
+            {
+                key: 'numberofimages',
+                label: 'Number of Images',
+                type: 'number',
+                placeholder: '1',
+                tooltip: 'Number of images to generate (1-4).',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    max: 4,
+                    message: 'Number of images must be between 1 and 4.'
+                }
+            },
+            {
+                key: 'aspectratio',
+                label: 'Aspect Ratio',
+                type: 'select',
+                placeholder: '1:1',
+                tooltip: 'Aspect ratio for the generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1:1', name: '1:1' },
+                    { id: '3:4', name: '3:4' },
+                    { id: '4:3', name: '4:3' },
+                    { id: '9:16', name: '9:16' },
+                    { id: '16:9', name: '16:9' }
+                ]
+            },
+            {
+                key: 'test_generation',
+                label: 'Test Generation',
+                type: 'test-generation',
+                tooltip: '',
+                width: 'full'
+            }
+        ]
+    },
+
+    /**
+     * xAI (Grok) provider schema (Backend / Cognition / Vision)
+     * Fields: apikey, model, maxtokens, maxcompletiontokens, temperature, topp, frequencypenalty, presencepenalty, reasoningeffort, seed, responseformat, stoptokens, samplingpresetname
+     */
+    xai: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        modelFetchProviderField: 'model',
+        hasVerification: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'xai-...',
+                tooltip: 'Your xAI API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model...',
+                tooltip: 'xAI model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'maxtokens',
+                label: 'Max Tokens',
+                type: 'number',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens to generate per request.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    message: 'Max tokens must be at least 1.'
+                }
+            },
+            {
+                key: 'maxcompletiontokens',
+                label: 'Max Completion Tokens',
+                type: 'number',
+                placeholder: '(use Max Tokens)',
+                tooltip: 'Upper bound for total completion tokens. Leave empty or set to -1 to use Max Tokens.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'temperature',
+                label: 'Temperature',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0.7',
+                tooltip: 'Controls randomness in the output. Higher values produce more creative responses.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    disableValue: -1,
+                    message: 'Temperature must be between 0 and 2, or -1 to disable.'
+                }
+            },
+            {
+                key: 'topp',
+                label: 'Top P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '1.0',
+                tooltip: 'Top P defines the probability of the model choosing the most likely next word.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    disableValue: -1,
+                    message: 'Top P must be between 0 and 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'frequencypenalty',
+                label: 'Frequency Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0',
+                tooltip: 'Penalizes tokens based on how frequently they have appeared.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: -2,
+                    max: 2,
+                    message: 'Frequency Penalty must be between -2 and 2.'
+                }
+            },
+            {
+                key: 'presencepenalty',
+                label: 'Presence Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0',
+                tooltip: 'Penalizes tokens that have already appeared in the text.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: -2,
+                    max: 2,
+                    message: 'Presence Penalty must be between -2 and 2.'
+                }
+            },
+            {
+                key: 'reasoningeffort',
+                label: 'Reasoning Effort',
+                type: 'select',
+                placeholder: 'Default',
+                tooltip: 'Controls reasoning effort for reasoning models.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '', name: 'Default' },
+                    { id: 'low', name: 'Low' },
+                    { id: 'high', name: 'High' }
+                ]
+            },
+            {
+                key: 'seed',
+                label: 'Seed',
+                type: 'number',
+                placeholder: '(random)',
+                tooltip: 'Sets a deterministic seed for sampling. Leave empty or set to -1 for random.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    disableValue: -1,
+                    message: 'Seed must be a non-negative integer, or -1 for random.'
+                }
+            },
+            {
+                key: 'responseformat',
+                label: 'Response Format',
+                type: 'select',
+                placeholder: 'Default',
+                tooltip: 'Force the model to output a specific format.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '', name: 'Default (text)' },
+                    { id: 'json_object', name: 'JSON Object' },
+                    { id: 'text', name: 'Text' }
+                ]
+            },
+            {
+                key: 'stoptokens',
+                label: 'Stop Tokens',
+                type: 'comma-list',
+                placeholder: 'token1, token2',
+                tooltip: 'List of stop sequences, comma separated.',
+                width: 'full',
+                labelWidth: '1/6'
+            },
+            {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill parameters.',
+                width: '1/2',
+                labelWidth: '1/3'
+            }
+        ]
+    },
+
+    /**
+     * xAI (Grok) Imagination provider schema
+     * Fields: apikey, model, imageaspectratio, imageresolution
+     */
+    xai_imagination: {
+        hasModelFetch: false,
+        hasVerification: true,
+        hasTestGeneration: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'xai-...',
+                tooltip: 'Your xAI API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Image Model',
+                type: 'select',
+                placeholder: 'Select a model',
+                tooltip: 'xAI image generation model.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'grok-imagine-image-quality', name: 'Grok Imagine (Quality)' },
+                    { id: 'grok-imagine-image', name: 'Grok Imagine (Standard)' }
+                ]
+            },
+            {
+                key: 'imageaspectratio',
+                label: 'Aspect Ratio',
+                type: 'select',
+                placeholder: 'auto',
+                tooltip: 'Aspect ratio for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'auto', name: 'Auto' },
+                    { id: '1:1', name: '1:1' },
+                    { id: '16:9', name: '16:9' },
+                    { id: '9:16', name: '9:16' },
+                    { id: '4:3', name: '4:3' },
+                    { id: '3:2', name: '3:2' }
+                ]
+            },
+            {
+                key: 'imageresolution',
+                label: 'Resolution',
+                type: 'select',
+                placeholder: '1k',
+                tooltip: 'Resolution for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1k', name: '1K' },
+                    { id: '2k', name: '2K' }
+                ]
+            },
+            {
+                key: 'test_generation',
+                label: 'Test Generation',
+                type: 'test-generation',
+                tooltip: '',
+                width: 'full'
+            }
+        ]
+    },
+
+    /**
+     * Anthropic (Claude) provider schema (Backend / Cognition / Vision)
+     * Fields: apikey, model, maxtokens, temperature, topp, topk, stopsequences, samplingpresetname, extraparams
+     */
+    anthropic: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        modelFetchProviderField: 'model',
+        hasVerification: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-ant-...',
+                tooltip: 'Your Anthropic API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model...',
+                tooltip: 'Anthropic model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'maxtokens',
+                label: 'Max Tokens',
+                type: 'number',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens to generate per request.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    message: 'Max tokens must be at least 1.'
+                }
+            },
+            {
+                key: 'temperature',
+                label: 'Temperature',
+                type: 'number',
+                step: 0.1,
+                placeholder: '1.0',
+                tooltip: 'Controls the randomness of the output.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    message: 'Temperature must be between 0 and 1.'
+                }
+            },
+            {
+                key: 'topp',
+                label: 'Top P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0.9',
+                tooltip: 'Only tokens with the top probability mass are considered. Set to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    disableValue: -1,
+                    message: 'Top P must be between 0 and 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'topk',
+                label: 'Top K',
+                type: 'number',
+                placeholder: '0',
+                tooltip: 'The maximum number of tokens to consider when sampling. 0 disables top-k.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    message: 'Top K must be at least 0.'
+                }
+            },
+            {
+                key: 'stopsequences',
+                label: 'Stop Sequences',
+                type: 'text',
+                placeholder: '["stop"]',
+                tooltip: 'Sequences that will stop the model from generating further tokens.',
+                width: 'full',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill parameters.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'extraparams',
+                label: 'Extra Parameters',
+                type: 'json',
+                placeholder: '{}',
+                tooltip: 'Additional parameters to send to the API.',
+                width: 'full',
+                labelWidth: '1/6'
+            }
+        ]
+    },
+
+    /**
+     * OpenRouter TTS provider schema
+     * Fields: apikey, model, voice, speed, format
+     */
+    tts_openrouter: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-or-...',
+                tooltip: 'Your OpenRouter API Key',
+                width: 'full',
+                labelWidth: '1/6',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model',
+                tooltip: 'OpenRouter TTS model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'voice',
+                label: 'Voice',
+                type: 'text',
+                placeholder: 'alloy',
+                tooltip: 'Voice ID or name for TTS output.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'Voice cannot be empty.'
+                }
+            },
+            {
+                key: 'speed',
+                label: 'Speed',
+                type: 'number',
+                step: 0.01,
+                placeholder: '1.0',
+                tooltip: 'Speed of the TTS output (0.25 to 4.0).',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0.25,
+                    max: 4.0,
+                    message: 'Speed must be between 0.25 and 4.0.'
+                }
+            },
+            {
+                key: 'format',
+                label: 'Output Format',
+                type: 'select',
+                placeholder: 'mp3',
+                tooltip: 'Output audio format.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'mp3', name: 'MP3' },
+                    { id: 'opus', name: 'Opus' },
+                    { id: 'aac', name: 'AAC' },
+                    { id: 'flac', name: 'FLAC' },
+                    { id: 'pcm', name: 'PCM' }
+                ]
+            }
+        ]
+    },
+
+    /**
+     * OpenRouter STT transcription provider schema
+     * Fields: apikey, model
+     */
+    stt_openrouter: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-or-...',
+                tooltip: 'Your OpenRouter API Key',
+                width: 'full',
+                labelWidth: '1/6',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model',
+                tooltip: 'OpenRouter STT model. Models are automatically loaded when you provide a valid API key.',
+                width: 'full',
+                labelWidth: '1/6'
+            }
+        ]
+    },
+
+    /**
+     * OpenRouter VAD provider schema
+     * Fields: apikey, model
+     */
+    vad_openrouter: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-or-...',
+                tooltip: 'Your OpenRouter API Key for Voice Activity Detection.',
+                width: 'full',
+                labelWidth: '1/6',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model',
+                tooltip: 'OpenRouter VAD model. Models are automatically loaded when you provide a valid API key.',
+                width: 'full',
+                labelWidth: '1/6'
+            }
+        ]
+    },
+
+    /**
+     * OpenRouter Imagination provider schema
+     * Fields: apikey, model, imageaspectratio, imagesize, maxtokens, temperature
+     */
+    imagination_openrouter: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        hasTestGeneration: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-or-...',
+                tooltip: 'Your OpenRouter API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model',
+                tooltip: 'OpenRouter image generation model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'imageaspectratio',
+                label: 'Aspect Ratio',
+                type: 'select',
+                placeholder: '1:1',
+                tooltip: 'Aspect ratio for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1:1', name: '1:1' },
+                    { id: '16:9', name: '16:9' },
+                    { id: '9:16', name: '9:16' },
+                    { id: '4:3', name: '4:3' },
+                    { id: '3:4', name: '3:4' },
+                    { id: '3:2', name: '3:2' },
+                    { id: '2:3', name: '2:3' }
+                ]
+            },
+            {
+                key: 'imagesize',
+                label: 'Image Size',
+                type: 'select',
+                placeholder: '1024x1024',
+                tooltip: 'Size of generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1024x1024', name: '1024x1024' },
+                    { id: '1792x1024', name: '1792x1024' },
+                    { id: '1024x1792', name: '1024x1792' },
+                    { id: '768x768', name: '768x768' },
+                    { id: '512x512', name: '512x512' }
+                ]
+            },
+            {
+                key: 'maxtokens',
+                label: 'Max Tokens',
+                type: 'number',
+                placeholder: '4096',
+                tooltip: 'Maximum tokens for the image generation prompt.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    message: 'Max tokens must be at least 1.'
+                }
+            },
+            {
+                key: 'temperature',
+                label: 'Temperature',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0.7',
+                tooltip: 'Controls randomness in the prompt interpretation.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    message: 'Temperature must be between 0 and 2.'
+                }
+            },
+            {
+                key: 'test_generation',
+                label: 'Test Generation',
+                type: 'test-generation',
+                tooltip: '',
+                width: 'full'
+            }
+        ]
+    },
+
+    /**
+     * OpenAI Imagination provider schema
+     * Fields: apikey, model, extraparams.size, extraparams.quality, extraparams.output_format, extraparams.background
+     */
+    openai_imagination: {
+        hasVerification: true,
+        hasModelFetch: false,
+        hasTestGeneration: true,
+        fields: [
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sk-...',
+                tooltip: 'Your OpenAI API Key',
+                width: 'full',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'select',
+                placeholder: 'Select a model',
+                tooltip: 'OpenAI image generation model.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'gpt-image-1', name: 'GPT Image 1' },
+                    { id: 'gpt-image-1-mini', name: 'GPT Image 1 Mini' },
+                    { id: 'dall-e-3', name: 'DALL-E 3' },
+                    { id: 'dall-e-2', name: 'DALL-E 2' }
+                ]
+            },
+            {
+                key: 'extraparams.size',
+                label: 'Size',
+                type: 'select',
+                placeholder: 'auto',
+                tooltip: 'Size of the generated image.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'auto', name: 'Auto' },
+                    { id: '1024x1024', name: '1024x1024' },
+                    { id: '1536x1024', name: '1536x1024' },
+                    { id: '1024x1536', name: '1024x1536' }
+                ]
+            },
+            {
+                key: 'extraparams.quality',
+                label: 'Quality',
+                type: 'select',
+                placeholder: 'auto',
+                tooltip: 'Quality setting for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'auto', name: 'Auto' },
+                    { id: 'high', name: 'High' },
+                    { id: 'medium', name: 'Medium' },
+                    { id: 'low', name: 'Low' }
+                ]
+            },
+            {
+                key: 'extraparams.output_format',
+                label: 'Output Format',
+                type: 'select',
+                placeholder: 'png',
+                tooltip: 'Output format for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'png', name: 'PNG' },
+                    { id: 'jpeg', name: 'JPEG' },
+                    { id: 'webp', name: 'WebP' }
+                ]
+            },
+            {
+                key: 'extraparams.background',
+                label: 'Background',
+                type: 'select',
+                placeholder: 'auto',
+                tooltip: 'Background setting for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'auto', name: 'Auto' },
+                    { id: 'opaque', name: 'Opaque' },
+                    { id: 'transparent', name: 'Transparent' }
+                ]
+            },
+            {
+                key: 'test_generation',
+                label: 'Test Generation',
+                type: 'test-generation',
                 tooltip: '',
                 width: 'full'
             }

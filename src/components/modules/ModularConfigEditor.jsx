@@ -14,6 +14,7 @@ import { getNestedValue, setNestedValue } from '../../constants/moduleConfigurat
 import VoiceConfigManager from '../widgets/VoiceConfigManager.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import WorkflowProfileEditor, { EMPTY_PROFILE } from '../widgets/WorkflowProfileEditor.jsx';
+import TestGenerationWidget from '../widgets/TestGenerationWidget.jsx';
 import useHarmonySpeechClient from '../../hooks/useHarmonySpeechClient.js';
 import PresetSelector from '../widgets/PresetSelector.jsx';
 import AdvancedSamplingParams from '../widgets/AdvancedSamplingParams.jsx';
@@ -924,6 +925,17 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 setModuleSettings(newSettings);
                                 saveSettingsFunc(newSettings);
                             }}
+                        />
+                    </div>
+                );
+
+            case 'test-generation':
+                return (
+                    <div key={field.key} className={`flex flex-col w-full ${getWidthClass(field.width)}`}>
+                        <TestGenerationWidget
+                            provider={providerId}
+                            config={moduleSettings}
+                            apiKey={getNestedValue(moduleSettings, 'apikey')}
                         />
                     </div>
                 );

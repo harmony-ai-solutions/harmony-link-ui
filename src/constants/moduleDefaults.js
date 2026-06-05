@@ -82,6 +82,29 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.CHARACTERAI]: {
             apitoken: "",
             chatroomurl: ""
+        },
+        [PROVIDERS.GOOGLE]: {
+            model: 'gemini-2.0-flash',
+            temperature: 1.0,
+            topp: 0.95,
+            topk: 40,
+            maxoutputtokens: 8192,
+            responsemimetype: 'text/plain',
+        },
+        [PROVIDERS.XAI]: {
+            model: 'grok-3-mini',
+            temperature: 0.7,
+            topp: 1.0,
+            maxtokens: 4096,
+            frequencypenalty: 0,
+            presencepenalty: 0,
+            reasoningeffort: '',
+        },
+        [PROVIDERS.ANTHROPIC]: {
+            model: 'claude-sonnet-4-6',
+            temperature: 0.7,
+            topp: 0.9,
+            maxtokens: 4096,
         }
     },
     tts: {
@@ -112,6 +135,12 @@ export const MODULE_DEFAULTS = {
             apikey: "",
             kindroidid: ""
         },
+        [PROVIDERS.OPENROUTER]: {
+            model: 'openai/tts-1',
+            voice: 'alloy',
+            speed: 1.0,
+            format: 'mp3',
+        },
         general: {
             outputtype: "file",
             wordstoreplace: {},
@@ -125,6 +154,9 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.HARMONYSPEECH]: {
             endpoint: "https://speech.project-harmony.ai",
             model: "faster-whisper-large-v3-turbo"
+        },
+        [PROVIDERS.OPENROUTER]: {
+            model: 'openai/whisper-1',
         },
         general: {
             streamrecording: {
@@ -141,27 +173,30 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.HARMONYSPEECH]: {
             endpoint: "https://speech.project-harmony.ai",
             model: "silero_vad"
+        },
+        [PROVIDERS.OPENROUTER]: {
+            model: 'openai/whisper-1',
         }
     },
     rag: {
         [PROVIDERS.OPENAI]: {
             apikey: "",
-            embeddingmodel: "text-embedding-3-small"
+            model: "text-embedding-3-small"
         },
         [PROVIDERS.OPENAI_COMPATIBLE]: {
             baseurl: "http://localhost:8080/v1",
             apikey: "",
-            embeddingmodel: "default"
+            model: "default"
         },
         [PROVIDERS.OLLAMA]: {
             baseurl: "http://localhost:11434",
-            embeddingmodel: "mxbai-embed-large"
+            model: "mxbai-embed-large"
         },
         [PROVIDERS.MISTRAL]: {
             mistralapikey: ""
         },
         [PROVIDERS.LOCALAI]: {
-            embeddingmodel: "default"
+            model: "default"
         },
         chromem: {
             embeddingconcurrency: 4
@@ -236,6 +271,29 @@ export const MODULE_DEFAULTS = {
             samplingpresetname: "",
             extraparams: {}
         },
+        [PROVIDERS.GOOGLE]: {
+            model: 'gemini-2.0-flash',
+            temperature: 0.7,
+            topp: 0.95,
+            topk: 40,
+            maxoutputtokens: 4096,
+            responsemimetype: 'text/plain',
+        },
+        [PROVIDERS.XAI]: {
+            model: 'grok-3-mini',
+            temperature: 0.7,
+            topp: 1.0,
+            maxtokens: 4096,
+            frequencypenalty: 0,
+            presencepenalty: 0,
+            reasoningeffort: '',
+        },
+        [PROVIDERS.ANTHROPIC]: {
+            model: 'claude-sonnet-4-6',
+            temperature: 0.7,
+            topp: 0.9,
+            maxtokens: 2048,
+        },
         general: {
             maxcognitionevents: 20,
             generateexpressions: true
@@ -307,6 +365,29 @@ export const MODULE_DEFAULTS = {
             samplingpresetname: "",
             extraparams: {}
         },
+        [PROVIDERS.GOOGLE]: {
+            model: 'gemini-2.0-flash',
+            temperature: 1.0,
+            topp: 0.95,
+            topk: 40,
+            maxoutputtokens: 200,
+            responsemimetype: 'text/plain',
+        },
+        [PROVIDERS.XAI]: {
+            model: 'grok-3-mini',
+            temperature: 0.7,
+            topp: 1.0,
+            maxtokens: 200,
+            frequencypenalty: 0,
+            presencepenalty: 0,
+            reasoningeffort: '',
+        },
+        [PROVIDERS.ANTHROPIC]: {
+            model: 'claude-sonnet-4-6',
+            temperature: 0.7,
+            topp: 0.9,
+            maxtokens: 200,
+        },
         general: {
             startupsynctimeout: 30,
             executionthreshold: 0.5
@@ -333,6 +414,32 @@ export const MODULE_DEFAULTS = {
                     systempromphint: ""
                 }
             }
+        },
+        [PROVIDERS.OPENAI]: {
+            model: 'gpt-image-1',
+            extraparams: {
+                size: 'auto',
+                quality: 'auto',
+                output_format: 'png',
+                background: 'opaque',
+            },
+        },
+        [PROVIDERS.OPENROUTER]: {
+            model: 'openai/dall-e-3',
+            imageaspectratio: '1:1',
+            imagesize: '1024x1024',
+            maxtokens: 4096,
+            temperature: 0.7,
+        },
+        [PROVIDERS.GOOGLE]: {
+            model: 'gemini-2.0-flash-exp-image-generation',
+            numberofimages: 1,
+            aspectratio: '1:1',
+        },
+        [PROVIDERS.XAI]: {
+            model: 'grok-imagine-image-quality',
+            imageaspectratio: 'auto',
+            imageresolution: '1k',
         }
     },
     vision: {
@@ -403,6 +510,29 @@ export const MODULE_DEFAULTS = {
             repetitionpenalty: -1,
             samplingpresetname: "",
             extraparams: {}
+        },
+        [PROVIDERS.GOOGLE]: {
+            model: 'gemini-2.0-flash',
+            temperature: 0.4,
+            topp: 0.95,
+            topk: 40,
+            maxoutputtokens: 4096,
+            responsemimetype: 'text/plain',
+        },
+        [PROVIDERS.XAI]: {
+            model: 'grok-3-mini',
+            temperature: 0.4,
+            topp: 1.0,
+            maxtokens: 4096,
+            frequencypenalty: 0,
+            presencepenalty: 0,
+            reasoningeffort: '',
+        },
+        [PROVIDERS.ANTHROPIC]: {
+            model: 'claude-sonnet-4-6',
+            temperature: 0.4,
+            topp: 0.9,
+            maxtokens: 1024,
         }
     }
 };

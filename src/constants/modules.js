@@ -24,5 +24,8 @@ export const PROVIDERS = {
     KAJIWOTO: 'kajiwoto',
     CHARACTERAI: 'characterai',
     OPENROUTER: 'openrouter',
-    COMFYUI: 'comfyui'
+    COMFYUI: 'comfyui',
+    GOOGLE: 'google',
+    XAI: 'xai',
+    ANTHROPIC: 'anthropic'
 };

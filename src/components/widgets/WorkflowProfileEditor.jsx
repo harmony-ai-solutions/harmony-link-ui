@@ -181,6 +181,7 @@ export default function WorkflowProfileEditor({
                 workflowprofiles: profiles,
             };
             const result = await testImaginationGeneration(
+                'comfyui',
                 comfyConfig, selectedProfile,
                 effectivePositive, effectiveNegative,
                 testSeed

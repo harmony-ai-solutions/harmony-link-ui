@@ -128,24 +128,26 @@ export async function parseImaginationWorkflow(workflowJSON) {
 }
 
 /**
- * Performs a stateless test image generation directly against the ComfyUI API.
+ * Performs a stateless test image generation against an imagination provider API.
  * No entity or running module is required. A temporary client is instantiated
  * server-side for the duration of the call.
  *
- * @param {object} config  - The ImaginationComfyUIConfig (baseurl, apikey, workflowprofiles)
- * @param {string} profile - Workflow profile name to use
+ * @param {string} provider - Provider ID ('comfyui', 'xai', 'google', 'openai', 'openrouter')
+ * @param {object} config   - Provider config object
+ * @param {string} profile  - Workflow profile name (ComfyUI only, ignored for others)
  * @param {string} positivePrompt - Positive image prompt
  * @param {string} negativePrompt - Negative image prompt (optional, pass "" to omit)
- * @param {number} seed    - Seed value; 0 = random seed chosen by server
+ * @param {number} seed     - Seed value; 0 = random seed chosen by server
  * @returns {Promise<{images: string[], seed_used: number}>}
  */
-export async function testImaginationGeneration(config, profile, positivePrompt, negativePrompt, seed = 0) {
+export async function testImaginationGeneration(provider, config, profile, positivePrompt, negativePrompt, seed = 0) {
     const resp = await fetch(
         `${getManagementApiUrl()}${getApiPath()}/module-configs/imagination/test-generation`,
         {
             method: 'POST',
             headers: getJsonHeaders(),
             body: JSON.stringify({
+                provider,
                 config,
                 profile,
                 positive_prompt: positivePrompt,

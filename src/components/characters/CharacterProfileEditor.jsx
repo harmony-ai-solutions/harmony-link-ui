@@ -492,6 +492,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                         </div>
                         <button
                             onClick={onClose}
+                            data-tutorial-id="char-editor-close-btn"
                             className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5"
                             title="Close"
                         >
@@ -507,6 +508,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                     {tabs.map(tab => !tab.hidden && (
                         <button
                             key={tab.id}
+                            data-tutorial-id={`char-editor-tab-${tab.id}`}
                             onClick={() => setActiveTab(tab.id)}
                             className={`character-editor-tab ${activeTab === tab.id ? 'character-editor-tab-active' : 'character-editor-tab-inactive'}`}
                         >
@@ -551,6 +553,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                             <button
                                 type="submit"
                                 form="character-profile-form"
+                                data-tutorial-id="char-editor-save-btn"
                                 disabled={saving}
                                 className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -560,6 +563,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                             <button
                                 type="button"
                                 onClick={(e) => handleSubmit(e)}
+                                data-tutorial-id="char-editor-save-btn"
                                 disabled={saving}
                                 className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >

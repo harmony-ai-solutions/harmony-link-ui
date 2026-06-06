@@ -39,6 +39,7 @@ export default function CharacterCardImport({ onSuccess }) {
     return (
         <div className="space-y-4">
             <div
+                data-tutorial-id="char-import-dropzone"
                 {...getRootProps()}
                 className={`
                     border-2 border-dashed rounded-lg p-8 text-center cursor-pointer

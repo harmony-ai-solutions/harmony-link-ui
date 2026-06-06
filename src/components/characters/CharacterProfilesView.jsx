@@ -104,6 +104,7 @@ export default function CharacterProfilesView() {
                     
                     <div className="flex gap-3">
                         <button
+                            data-tutorial-id="char-import-btn"
                             onClick={() => setShowImport(true)}
                             className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors"
                         >
@@ -113,6 +114,7 @@ export default function CharacterProfilesView() {
                             Import Card
                         </button>
                         <button
+                            data-tutorial-id="char-create-btn"
                             onClick={() => {
                                 setEditingProfile(null);
                                 setShowEditor(true);
@@ -201,7 +203,7 @@ export default function CharacterProfilesView() {
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
                     </div>
                 ) : filteredProfiles.length > 0 ? (
-                    <div className={`grid ${getGridClasses()} gap-6`}>
+                    <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
                         {filteredProfiles.map(profile => (
                             <CharacterProfileCard
                                 key={profile.id}

@@ -31,7 +31,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
     };
 
     return (
-        <div className="module-row">
+        <div data-tutorial-id={`module-card-${moduleType}`} className="module-row">
             {/* Accent tint overlay — top-left to transparent */}
             <div className="module-row-tint" />
 
@@ -43,6 +43,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
 
                 {/* [1] Chevron toggle */}
                 <button
+                    data-tutorial-id={`module-card-expand-${moduleType}`}
                     onClick={() => setShowConfigs(!showConfigs)}
                     className="module-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
                     title={showConfigs ? 'Hide Configurations' : 'Show Configurations'}
@@ -89,6 +90,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                 {/* [4] Action buttons — inline, left-anchored in their group */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                     <button
+                        data-tutorial-id={`module-card-add-btn-${moduleType}`}
                         onClick={handleAddConfig}
                         className="btn-primary py-1 px-3 text-xs"
                     >

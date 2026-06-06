@@ -13,6 +13,8 @@ import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
+import TutorialController from './components/tutorial/TutorialController.jsx';
+import useTutorialStore from './store/tutorialStore';
 
 function HarmonyLinkApp() {
     const [appName, setAppName] = useState('Harmony Link');
@@ -54,6 +56,12 @@ function HarmonyLinkApp() {
         setApplicationConfig(newCompleteSettings);
     }
 
+    const handleRestartTutorial = () => {
+        useTutorialStore.getState().resetTutorial();
+        setTimeout(() => {
+            useTutorialStore.getState().startTutorial();
+        }, 300);
+    };
 
     // On Application Loaded
     useEffect(() => {
@@ -61,7 +69,16 @@ function HarmonyLinkApp() {
         try {
             getAppName().then((result) => setAppName(result));
             getAppVersion().then((result) => setAppVersion(result));
-            getConfig().then((result) => setApplicationConfig(result));
+            getConfig().then((result) => {
+                setApplicationConfig(result);
+
+                // Auto-launch tutorial if not completed
+                if (!result.general?.skiptutorial) {
+                    setTimeout(() => {
+                        useTutorialStore.getState().startTutorial();
+                    }, 1500);
+                }
+            });
             LogDebug(JSON.stringify(applicationConfig));
         } catch (error) {
             LogError("Unable to Load Application Config");
@@ -154,6 +171,7 @@ function HarmonyLinkApp() {
                             ].map((tab) => (
                                 <li key={tab.id} className="h-full flex items-center">
                                     <button
+                                        data-tutorial-id={`nav-tab-${tab.id}`}
                                         onClick={() => setSettingsTab(tab.id)}
                                         className="px-4 h-full text-base font-bold transition-all duration-200 relative whitespace-nowrap flex items-center"
                                         style={{
@@ -193,6 +211,21 @@ function HarmonyLinkApp() {
                         </ul>
                     </div>
 
+                    {/* Tutorial restart button */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            data-tutorial-id="tutorial-restart-btn"
+                            className="tutorial-restart-btn"
+                            onClick={handleRestartTutorial}
+                            title="Help / Restart Tutorial"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </button>
+                    </div>
+
                 </div>
             </nav>
 
@@ -222,6 +255,9 @@ function HarmonyLinkApp() {
                     <SimulatorView></SimulatorView>
                 }
             </div>
+
+            {/* Tutorial Controller */}
+            <TutorialController setSettingsTab={setSettingsTab} settingsTab={settingsTab} />
 
             {/* Device Approval Modal */}
             <DeviceApprovalModal

@@ -613,7 +613,7 @@ const EntitySettingsView = ({ appName }) => {
                     {/* Left Panel: Entity List */}
                     <div className="w-1/4 p-4 space-y-4 border-r border-white/10 min-h-[600px]">
                         <div className="grid grid-cols-2 gap-2">
-                            <button onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">Add</button>
+                            <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">Add</button>
                             <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Rename</button>
                             <button onClick={handleCopy} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Copy</button>
                             <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-accent-gradient text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">Delete</button>
@@ -625,7 +625,7 @@ const EntitySettingsView = ({ appName }) => {
                                     Total Entities: <span className="text-accent-primary">{entities && Array.isArray(entities) ? entities.length : 0}</span>
                                 </label>
                             </div>
-                            <div className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1 space-y-0.5">
+                            <div data-tutorial-id="entity-list" className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1 space-y-0.5">
                                 {entities && Array.isArray(entities) && entities.map((entity) => (
                                     <div
                                         key={entity.id}
@@ -661,6 +661,7 @@ const EntitySettingsView = ({ appName }) => {
 
                         <div className="flex items-center justify-center space-x-2">
                             <button
+                                data-tutorial-id="entity-save-btn"
                                 onClick={handleSave}
                                 disabled={isSaving || !hasUnsavedChanges()}
                                 className={`btn-primary ${isSaving || !hasUnsavedChanges() ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -700,7 +701,7 @@ const EntitySettingsView = ({ appName }) => {
                                 )}
 
                                 <section className="space-y-4">
-                                    <h3 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6">
+                                    <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6">
                                         <span className="text-gradient-primary">Identity Settings</span>
                                         <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Configure the character identity for this entity.
@@ -729,7 +730,7 @@ const EntitySettingsView = ({ appName }) => {
                                         <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
                                             Character Profile
                                         </label>
-                                        <div className="w-4/5 px-3">
+                                        <div className="w-4/5 px-3" data-tutorial-id="entity-char-profile-select">
                                             <ThemedSelect
                                                 value={selectedCharacterProfileId || ''}
                                                 onChange={(val) => setSelectedCharacterProfileId(val)}
@@ -773,13 +774,14 @@ const EntitySettingsView = ({ appName }) => {
                                 />
 
                                 <section className="space-y-4">
-                                    <h3 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                    <h3 data-tutorial-id="entity-module-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">Module Configurations</span>
                                         <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Select pre-configured module settings for this entity.
                                         </SettingsTooltip>
                                     </h3>
 
+                                    <div data-tutorial-id="entity-module-backend">
                                     <ModuleConfigSelector
                                         label="AI Backend / LLM"
                                         moduleType="backend"
@@ -788,7 +790,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('backend')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
+                                    <div data-tutorial-id="entity-module-tts">
                                     <ModuleConfigSelector
                                         label="Text-to-Speech"
                                         moduleType="tts"
@@ -797,7 +801,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('tts')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
+                                    <div data-tutorial-id="entity-module-stt">
                                     <ModuleConfigSelector
                                         label="Speech-to-Text"
                                         moduleType="stt"
@@ -806,8 +812,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('stt')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
-                                    <div className="flex flex-wrap items-center w-full">
+                                    <div data-tutorial-id="entity-module-rag" className="flex flex-wrap items-center w-full">
                                         <ModuleConfigSelector
                                             label="RAG Settings"
                                             moduleType="rag"
@@ -839,6 +846,7 @@ const EntitySettingsView = ({ appName }) => {
                                         })}
                                     />
 
+                                    <div data-tutorial-id="entity-module-movement">
                                     <ModuleConfigSelector
                                         label="Movement"
                                         moduleType="movement"
@@ -847,7 +855,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('movement')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
+                                    <div data-tutorial-id="entity-module-cognition">
                                     <ModuleConfigSelector
                                         label="Cognition"
                                         moduleType="cognition"
@@ -856,7 +866,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('cognition')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
+                                    <div data-tutorial-id="entity-module-imagination">
                                     <ModuleConfigSelector
                                         label="Imagination"
                                         moduleType="imagination"
@@ -865,7 +877,9 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('imagination')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
 
+                                    <div data-tutorial-id="entity-module-vision">
                                     <ModuleConfigSelector
                                         label="Vision"
                                         moduleType="vision"
@@ -874,11 +888,12 @@ const EntitySettingsView = ({ appName }) => {
                                         configs={getConfigs('vision')}
                                         isLoading={isModuleLoading}
                                     />
+                                    </div>
                                 </section>
 
                                 {/* Lifecycle Settings Section */}
-                                <section className="space-y-4">
-                                    <h3 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">
+                                    <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">Lifecycle Settings</span>
                                         <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Per-entity lifecycle configuration overrides.

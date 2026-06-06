@@ -177,7 +177,7 @@ export default function ModuleConfigInlineEditor({ moduleType, mode, config, onS
     };
 
     return (
-        <div className="module-inline-editor">
+        <div data-tutorial-id={`module-editor-${moduleType}`} className="module-inline-editor">
             {/* ── Editor Header ──────────────────────────────────────── */}
             <div className="module-inline-editor-header">
                 <span className="text-xs font-semibold uppercase tracking-wide"
@@ -192,6 +192,7 @@ export default function ModuleConfigInlineEditor({ moduleType, mode, config, onS
                 <div className="module-inline-editor-field">
                     <label className="module-inline-editor-label">Configuration Name</label>
                     <input
+                        data-tutorial-id="module-editor-name"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -229,6 +230,7 @@ export default function ModuleConfigInlineEditor({ moduleType, mode, config, onS
                     Cancel
                 </button>
                 <button
+                    data-tutorial-id="module-editor-save-btn"
                     onClick={handleSave}
                     disabled={isLoading || !name.trim()}
                     className="module-action-btn-save"

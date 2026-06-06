@@ -199,7 +199,9 @@ const IntegrationsView = () => {
         </div>
 
         <div className="flex-1 p-6">
-          <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
+          <div data-tutorial-id="integration-quickstart">
+            <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
+          </div>
         </div>
       </div>
     );
@@ -221,13 +223,15 @@ const IntegrationsView = () => {
         <div className="flex items-start gap-3">
 
           {/* Quickstart repo settings — capped at half the screen width */}
-          <div className="flex-1 min-w-0 max-w-[50%]">
+          <div data-tutorial-id="integration-quickstart" className="flex-1 min-w-0 max-w-[50%]">
             <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} currentPath={quickstartRepoPath} />
           </div>
 
           {/* Docker status badge + Refresh All — stacked at far right, button centered below badge */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0 ml-auto">
-            <DockerStatusIndicator dockerStatus={dockerStatus} />
+            <div data-tutorial-id="integration-docker-status">
+              <DockerStatusIndicator dockerStatus={dockerStatus} />
+            </div>
             <button
               onClick={() => { refreshDockerStatus(); fetchIntegrations(); refreshAllInstances(); }}
               disabled={refreshing}
@@ -246,7 +250,7 @@ const IntegrationsView = () => {
 
         </div>
         
-        <div className="flex flex-col gap-3">
+        <div data-tutorial-id="integration-cards" className="flex flex-col gap-3">
         {integrations.map((integration) => (
           <IntegrationCard
             key={integration.name}

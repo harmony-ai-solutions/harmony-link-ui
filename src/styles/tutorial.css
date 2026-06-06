@@ -1,0 +1,137 @@
+/* ============================================
+   Tutorial Overlay Styles
+   ============================================ */
+
+/* Spotlight cutout — a transparent rectangle positioned over the target.
+   The massive box-shadow creates the dimming effect everywhere EXCEPT
+   inside this element, producing the "hole in the darkness" effect. */
+.tutorial-spotlight {
+    position: fixed;
+    z-index: 9998;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+    border-radius: 6px;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+/* Highlight ring around the spotlight target */
+.tutorial-spotlight-ring {
+    position: fixed;
+    z-index: 9999;
+    border: 2px solid var(--color-accent-primary);
+    border-radius: 8px;
+    pointer-events: none;
+    box-shadow:
+        0 0 0 4px rgba(99, 102, 241, 0.15),
+        0 0 20px rgba(99, 102, 241, 0.2);
+    transition: all 0.2s ease;
+}
+
+/* Tutorial tooltip card */
+.tutorial-tooltip {
+    position: fixed;
+    z-index: 10000;
+    width: 480px;
+    max-width: calc(100vw - 48px);
+    padding: 20px 24px;
+    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    border: 1px solid var(--color-border-default);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
+    animation: tutorial-tooltip-enter 0.25s ease-out;
+    pointer-events: auto;
+}
+
+.tutorial-tooltip-content {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+/* Tooltip arrow */
+.tutorial-tooltip-arrow {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-default);
+    transform: rotate(45deg);
+    z-index: -1;
+}
+
+.tutorial-tooltip-arrow[data-placement="bottom"] {
+    top: -7px;
+    left: 50%;
+    margin-left: -6px;
+    border-bottom: none;
+    border-right: none;
+}
+
+.tutorial-tooltip-arrow[data-placement="top"] {
+    bottom: -7px;
+    left: 50%;
+    margin-left: -6px;
+    border-top: none;
+    border-left: none;
+}
+
+.tutorial-tooltip-arrow[data-placement="right"] {
+    left: -7px;
+    top: 50%;
+    margin-top: -6px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.tutorial-tooltip-arrow[data-placement="left"] {
+    right: -7px;
+    top: 50%;
+    margin-top: -6px;
+    border-right: none;
+    border-top: none;
+}
+
+/* Animations */
+@keyframes tutorial-tooltip-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes tutorial-tooltip-exit {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+}
+
+/* Nav bar tutorial restart button */
+.tutorial-restart-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tutorial-restart-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+}

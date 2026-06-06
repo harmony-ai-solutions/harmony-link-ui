@@ -40,7 +40,7 @@ export default function ModuleConfigurationsView() {
             </div>
 
             {/* Module Cards — vertical list */}
-            <div className="flex-1 p-6 space-y-3">
+            <div data-tutorial-id="module-cards-container" className="flex-1 p-6 space-y-3">
                 {MODULE_TYPE_OPTIONS.map((moduleInfo) => (
                     <ModuleCard
                         key={moduleInfo.id}

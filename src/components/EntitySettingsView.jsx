@@ -173,7 +173,7 @@ const EntitySettingsView = ({ appName }) => {
 
     const backendProvider = useMemo(() => {
         if (!entityMappings.backend) return null;
-        const config = getConfigById('backend', parseInt(entityMappings.backend));
+        const config = getConfigById('backend', entityMappings.backend);
         return config?.provider;
     }, [entityMappings.backend, getConfigById]);
 
@@ -234,14 +234,14 @@ const EntitySettingsView = ({ appName }) => {
 
             // Update module mappings
             const mappings = {
-                backend_config_id: entityMappings.backend ? parseInt(entityMappings.backend) : null,
-                cognition_config_id: entityMappings.cognition ? parseInt(entityMappings.cognition) : null,
-                imagination_config_id: entityMappings.imagination ? parseInt(entityMappings.imagination) : null,
-                movement_config_id: entityMappings.movement ? parseInt(entityMappings.movement) : null,
-                rag_config_id: entityMappings.rag ? parseInt(entityMappings.rag) : null,
-                stt_config_id: entityMappings.stt ? parseInt(entityMappings.stt) : null,
-                tts_config_id: entityMappings.tts ? parseInt(entityMappings.tts) : null,
-                vision_config_id: entityMappings.vision ? parseInt(entityMappings.vision) : null
+                backend_config_id: entityMappings.backend || null,
+                cognition_config_id: entityMappings.cognition || null,
+                imagination_config_id: entityMappings.imagination || null,
+                movement_config_id: entityMappings.movement || null,
+                rag_config_id: entityMappings.rag || null,
+                stt_config_id: entityMappings.stt || null,
+                tts_config_id: entityMappings.tts || null,
+                vision_config_id: entityMappings.vision || null
             };
 
             await updateEntityMappings(selectedEntityId, mappings);

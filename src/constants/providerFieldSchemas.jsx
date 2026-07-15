@@ -2686,6 +2686,294 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 width: 'full'
             }
         ]
+    },
+
+    /**
+     * Soulbits Cloud provider schema
+     * Unified schema covering Backend, Cognition, Movement, Vision, TTS, and Imagination.
+     * Field keys match SoulbitsCloudProviderConfig mapstructure/json tags.
+     */
+    soulbitscloud: {
+        hasModelFetch: true,
+        modelFetchTriggerField: 'apikey',
+        modelFetchProviderField: 'model',
+        fields: [
+            {
+                key: 'baseurl',
+                label: 'Base URL',
+                type: 'text',
+                placeholder: 'https://api.soulbits.app',
+                tooltip: 'The base URL for the Soulbits Cloud API.',
+                width: 'full',
+                labelWidth: '1/6',
+                validation: {
+                    type: 'url',
+                    message: 'Base URL must be a valid URL.'
+                }
+            },
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'sb_cloud_...',
+                tooltip: 'Your Soulbits Cloud API Key.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'required',
+                    message: 'API Key cannot be empty.'
+                }
+            },
+            {
+                key: 'model',
+                label: 'Model',
+                type: 'model-select',
+                placeholder: 'Select a model',
+                tooltip: 'Soulbits Cloud model. Models are automatically loaded when you provide a valid API key.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'samplingpresetname',
+                label: 'Sampling Preset',
+                type: 'preset-select',
+                placeholder: 'None (Manual)',
+                tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'maxtokens',
+                label: 'Max Tokens',
+                type: 'number',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens to generate per request.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    message: 'Max tokens must be at least 1.'
+                }
+            },
+            {
+                key: 'temperature',
+                label: 'Temperature',
+                type: 'number',
+                step: 0.01,
+                placeholder: '1.0',
+                tooltip: 'Temperature defines the likelihood of the model choosing tokens that are outside the context.\nThe higher the temperature, the more likely the model will produce creative or unexpected results.\nSet to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 2,
+                    disableValue: -1,
+                    message: 'Temperature must be between 0 and 2, or -1 to disable.'
+                }
+            },
+            {
+                key: 'topp',
+                label: 'Top P',
+                type: 'number',
+                step: 0.01,
+                placeholder: '1.0',
+                tooltip: 'Top P defines the probability of the model choosing the most likely next word.\nA higher value means the model is more deterministic, but it also can lead to repetition.\nSet to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    max: 1,
+                    disableValue: -1,
+                    message: 'Top P must be between 0 and 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'frequencypenalty',
+                label: 'Frequency Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0',
+                tooltip: 'Penalizes tokens based on how frequently they have appeared.\nPositive values reduce repetition of frequent tokens.\nRange: -2.0 to 2.0.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: -2,
+                    max: 2,
+                    message: 'Frequency Penalty must be between -2 and 2.'
+                }
+            },
+            {
+                key: 'presencepenalty',
+                label: 'Presence Penalty',
+                type: 'number',
+                step: 0.01,
+                placeholder: '0',
+                tooltip: 'Penalizes tokens that have already appeared in the text.\nPositive values increase the likelihood of new topics.\nRange: -2.0 to 2.0.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: -2,
+                    max: 2,
+                    message: 'Presence Penalty must be between -2 and 2.'
+                }
+            },
+            {
+                key: 'maxcompletiontokens',
+                label: 'Max Completion Tokens',
+                type: 'number',
+                placeholder: '(use Max Tokens)',
+                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 1,
+                    disableValue: -1,
+                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'seed',
+                label: 'Seed',
+                type: 'number',
+                placeholder: '(random)',
+                tooltip: 'Sets a deterministic seed for sampling.\nUse the same seed and inputs to get reproducible results.\nLeave empty or set to -1 for random.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0,
+                    disableValue: -1,
+                    message: 'Seed must be a non-negative integer, or -1 for random.'
+                }
+            },
+            {
+                key: 'responseformat',
+                label: 'Response Format',
+                type: 'select',
+                placeholder: 'Default',
+                tooltip: 'Force the model to output a specific format.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '', name: 'Default (text)' },
+                    { id: '{"type":"json_object"}', name: 'JSON Object' },
+                    { id: '{"type":"text"}', name: 'Text' }
+                ]
+            },
+            {
+                key: 'n',
+                label: 'Number of Results',
+                type: 'number',
+                step: 1,
+                placeholder: '1',
+                tooltip: 'How many chat completion choices / results to generate per request.\nSet to -1 to disable.',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: -1,
+                    disableValue: -1,
+                    noZero: true,
+                    message: 'Number of results must be at least 1, or -1 to disable.'
+                }
+            },
+            {
+                key: 'stoptokens',
+                label: 'Stop Tokens',
+                type: 'comma-list',
+                placeholder: 'token1, token2',
+                tooltip: 'List of Stop tokens, comma separated.\nIf the model encounters a stop token during generation, it will end the current generation.',
+                width: 'full',
+                labelWidth: '1/6',
+                validation: {
+                    type: 'required',
+                    message: 'Stop tokens cannot be empty.'
+                }
+            },
+            {
+                key: 'extraparams',
+                label: 'Advanced Sampling Parameters',
+                type: 'preset-params',
+                tooltip: 'Extended sampling parameters from the selected preset.\nThese are sent as additional API parameters.',
+                width: 'full',
+                labelWidth: '1/6'
+            },
+            // TTS fields
+            {
+                key: 'voice',
+                label: 'Voice',
+                type: 'text',
+                placeholder: 'alloy',
+                tooltip: 'Voice ID or name for TTS output.',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
+            {
+                key: 'speed',
+                label: 'Speed',
+                type: 'number',
+                step: 0.01,
+                placeholder: '1.0',
+                tooltip: 'Speed of the TTS output (0.25 to 4.0).',
+                width: '1/2',
+                labelWidth: '1/3',
+                validation: {
+                    type: 'range',
+                    min: 0.25,
+                    max: 4.0,
+                    message: 'Speed must be between 0.25 and 4.0.'
+                }
+            },
+            {
+                key: 'format',
+                label: 'Output Format',
+                type: 'select',
+                placeholder: 'mp3',
+                tooltip: 'Output audio format for TTS.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: 'mp3', name: 'MP3' },
+                    { id: 'opus', name: 'Opus' },
+                    { id: 'aac', name: 'AAC' },
+                    { id: 'flac', name: 'FLAC' }
+                ]
+            },
+            // Imagination fields
+            {
+                key: 'imageaspectratio',
+                label: 'Aspect Ratio',
+                type: 'select',
+                placeholder: '1:1',
+                tooltip: 'Aspect ratio for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1:1', name: '1:1' },
+                    { id: '16:9', name: '16:9' },
+                    { id: '9:16', name: '9:16' }
+                ]
+            },
+            {
+                key: 'imagesize',
+                label: 'Image Size',
+                type: 'select',
+                placeholder: '1k',
+                tooltip: 'Resolution for generated images.',
+                width: '1/2',
+                labelWidth: '1/3',
+                options: [
+                    { id: '1k', name: '1K' },
+                    { id: '2k', name: '2K' }
+                ]
+            }
+        ]
     }
 };
 

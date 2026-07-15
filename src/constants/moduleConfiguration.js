@@ -39,7 +39,8 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai },
                     { id: 'google', name: 'Google Gemini', logo: logo_google },
                     { id: 'xai', name: 'xAI (Grok)', logo: logo_xai },
-                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic }
+                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     kajiwoto: 'kajiwoto',
@@ -50,7 +51,8 @@ export const MODULE_CONFIGS = {
                     openrouter: 'openrouter',
                     google: 'google',
                     xai: 'xai',
-                    anthropic: 'anthropic'
+                    anthropic: 'anthropic',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]
@@ -69,7 +71,8 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai },
                     { id: 'google', name: 'Google Gemini', logo: logo_google },
                     { id: 'xai', name: 'xAI (Grok)', logo: logo_xai },
-                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic }
+                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     openaicompatible: 'openaicompatible',
@@ -77,7 +80,8 @@ export const MODULE_CONFIGS = {
                     openrouter: 'openrouter',
                     google: 'google',
                     xai: 'xai',
-                    anthropic: 'anthropic'
+                    anthropic: 'anthropic',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]
@@ -96,7 +100,8 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai },
                     { id: 'google', name: 'Google Gemini', logo: logo_google },
                     { id: 'xai', name: 'xAI (Grok)', logo: logo_xai },
-                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic }
+                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     openaicompatible: 'openaicompatible',
@@ -104,7 +109,8 @@ export const MODULE_CONFIGS = {
                     openrouter: 'openrouter',
                     google: 'google',
                     xai: 'xai',
-                    anthropic: 'anthropic'
+                    anthropic: 'anthropic',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]
@@ -184,14 +190,16 @@ export const MODULE_CONFIGS = {
                     { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_harmony },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'kindroid', name: 'Kindroid AI', logo: logo_kindroid },
-                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter }
+                    { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     elevenlabs: 'elevenlabs',
                     harmonyspeech: 'harmonyspeech_tts',
                     openai: 'tts_openai',
                     kindroid: 'kindroid',
-                    openrouter: 'tts_openrouter'
+                    openrouter: 'tts_openrouter',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]
@@ -210,6 +218,7 @@ export const MODULE_CONFIGS = {
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
                     { id: 'google', name: 'Google Gemini', logo: logo_google },
                     { id: 'xai', name: 'xAI (Grok Imagine)', logo: logo_xai },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     comfyui: 'comfyui',
@@ -217,6 +226,7 @@ export const MODULE_CONFIGS = {
                     openrouter: 'imagination_openrouter',
                     google: 'google_imagination',
                     xai: 'xai_imagination',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]
@@ -235,7 +245,8 @@ export const MODULE_CONFIGS = {
                     { id: 'openaicompatible', name: 'OpenAI Compatible', logo: logo_openai },
                     { id: 'google', name: 'Google Gemini', logo: logo_google },
                     { id: 'xai', name: 'xAI (Grok)', logo: logo_xai },
-                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic }
+                    { id: 'anthropic', name: 'Anthropic (Claude)', logo: logo_anthropic },
+                    { id: 'soulbitscloud', name: 'Soulbits Cloud', logo: logo_blank }
                 ],
                 components: {
                     openai: 'openai',
@@ -243,7 +254,8 @@ export const MODULE_CONFIGS = {
                     openaicompatible: 'openaicompatible',
                     google: 'google',
                     xai: 'xai',
-                    anthropic: 'anthropic'
+                    anthropic: 'anthropic',
+                    soulbitscloud: 'soulbitscloud'
                 }
             }
         ]

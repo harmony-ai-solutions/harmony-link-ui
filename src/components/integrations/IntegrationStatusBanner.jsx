@@ -37,7 +37,7 @@ export default function IntegrationStatusBanner({
         for (const [moduleType, configId] of Object.entries(entityMappings)) {
             if (!configId) continue;
 
-            const config = getConfigById(moduleType, parseInt(configId));
+            const config = getConfigById(moduleType, configId);
             if (!config) continue;
 
             const configUrl = getConfigUrl(config, moduleType);
@@ -74,7 +74,7 @@ export default function IntegrationStatusBanner({
         for (const [moduleType, configId] of Object.entries(entityMappings)) {
             if (!configId) continue;
 
-            const config = getConfigById(moduleType, parseInt(configId));
+            const config = getConfigById(moduleType, configId);
             if (!config) continue;
 
             const configUrl = getConfigUrl(config, moduleType);

@@ -14,7 +14,7 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * @property {string} [example_dialogues] - Example conversations
  * @property {number} typing_speed_wpm - Typing speed in words per minute for chat simulation
  * @property {number} audio_response_chance_percent - Percentage chance (0-100) character responds with audio
- * @property {number|null} [vision_config_id] - ID of the Vision module config for image analysis
+ * @property {string|null} [vision_config_id] - UUID of the Vision module config for image analysis
  * @property {string} created_at
  * @property {string} updated_at
  */

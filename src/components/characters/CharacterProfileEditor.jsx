@@ -440,7 +440,7 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                     value={selectedVisionConfigId ?? ''}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        setSelectedVisionConfigId(val ? Number(val) : null);
+                                        setSelectedVisionConfigId(val || null);
                                     }}
                                     className="input-field flex-1 max-w-xs"
                                 >

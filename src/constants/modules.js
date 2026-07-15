@@ -27,5 +27,6 @@ export const PROVIDERS = {
     COMFYUI: 'comfyui',
     GOOGLE: 'google',
     XAI: 'xai',
-    ANTHROPIC: 'anthropic'
+    ANTHROPIC: 'anthropic',
+    SOULBITS_CLOUD: 'soulbitscloud'
 };

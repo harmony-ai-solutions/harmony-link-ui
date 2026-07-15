@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@harmony-ai-solutions/soulbits-api-client": "github:harmony-ai-solutions/soulbits-api-client-js#1717da5a5116eca230d5c3946b376e0802fb0c96",
     "@harmony-ai/harmonyspeech": "^0.1.1",
     "@headlessui/react": "^2.2.7",
     "@monaco-editor/react": "^4.7.0",

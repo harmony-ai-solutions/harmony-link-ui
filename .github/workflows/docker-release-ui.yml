@@ -1,4 +1,4 @@
-name: Build and Push Harmony Link UI Docker Image
+name: Build and Push Soulbits Engine UI Docker Image
 
 on:
   push:
@@ -40,11 +40,11 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-      - name: Build and push harmony-link-ui image
+      - name: Build and push soulbits-engine-ui image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            harmonyai/harmony-link-ui:${{ env.VERSION }}
-            harmonyai/harmony-link-ui:latest
+            soulbitsai/soulbits-engine-ui:${{ env.VERSION }}
+            soulbitsai/soulbits-engine-ui:latest

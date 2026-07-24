@@ -184,9 +184,9 @@ docker run -p 8080:80 harmonyspeech-ui
 ### Using Pre-built Images
 
 ```bash
-# Pull and run the latest Harmony Link UI image
-docker pull harmonyai/harmony-link-ui:latest
-docker run -p 8080:80 harmonyai/harmony-link-ui:latest
+# Pull and run the latest Soulbits Engine UI image
+docker pull soulbitsai/soulbits-engine-ui:latest
+docker run -p 8080:80 soulbitsai/soulbits-engine-ui:latest
 
 # Pull and run the latest Harmony Speech Engine UI image
 docker pull harmonyai/harmonyspeech-ui:latest

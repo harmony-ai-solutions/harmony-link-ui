@@ -13,6 +13,57 @@ const hexToRgb = (hex) => {
         : '0, 0, 0';
 };
 
+// Derive glassmorphism tokens from the core theme colors.
+// This means ALL existing themes get glassmorphism for free — no backend changes needed.
+const applyDerivedTokens = (root, colors) => {
+    const bgBase = colors.background.base;
+    const bgSurface = colors.background.surface;
+    const bgElevated = colors.background.elevated;
+    const bgHover = colors.background.hover;
+    const accentPrimary = colors.accent.primary;
+    const accentRgb = hexToRgb(accentPrimary);
+    const accentSecondary = colors.accent.secondary;
+    const accentRgb2 = hexToRgb(accentSecondary);
+    const borderDefault = colors.border.default;
+    const borderHover = colors.border.hover;
+    const statusError = colors.status.error;
+    const statusWarning = colors.status.warning;
+    const statusSuccess = colors.status.success;
+    const statusInfo = colors.status.info;
+
+    // ── Glass Background Tokens ──────────────────────────────────────────
+    root.style.setProperty('--color-background-glass', `rgba(${hexToRgb(bgBase)}, 0.4)`);
+    root.style.setProperty('--color-background-surface-translucent', `rgba(${hexToRgb(bgSurface)}, 0.35)`);
+    root.style.setProperty('--color-background-nav', `rgba(${hexToRgb(bgBase)}, 0.55)`);
+    root.style.setProperty('--color-background-hover-glass', `rgba(${hexToRgb(bgHover)}, 0.45)`);
+
+    // ── Glass Border Tokens ──────────────────────────────────────────────
+    root.style.setProperty('--color-border-glass', `rgba(${accentRgb}, 0.12)`);
+    root.style.setProperty('--color-border-glow', `rgba(${accentRgb}, 0.35)`);
+
+    // ── Glow Tokens ──────────────────────────────────────────────────────
+    root.style.setProperty('--color-glow-accent-soft', `rgba(${accentRgb}, 0.2)`);
+    root.style.setProperty('--color-glow-accent-strong', `rgba(${accentRgb}, 0.4)`);
+
+    // ── Shadow Tokens ────────────────────────────────────────────────────
+    root.style.setProperty('--shadow-sm', '0 1px 2px rgba(0, 0, 0, 0.35)');
+    root.style.setProperty('--shadow-md', '0 6px 18px -4px rgba(0, 0, 0, 0.45)');
+    root.style.setProperty('--shadow-lg', '0 14px 40px -8px rgba(0, 0, 0, 0.55)');
+    root.style.setProperty('--shadow-xl', '0 28px 60px -12px rgba(0, 0, 0, 0.65)');
+    root.style.setProperty('--shadow-glass', '0 8px 32px rgba(0, 0, 0, 0.5)');
+    root.style.setProperty('--glow-accent', `0 0 40px -4px rgba(${accentRgb}, 0.45)`);
+
+    // ── Border Radius Tokens ─────────────────────────────────────────────
+    root.style.setProperty('--radius-sm', '0.375rem');
+    root.style.setProperty('--radius-md', '0.5rem');
+    root.style.setProperty('--radius-lg', '0.75rem');
+    root.style.setProperty('--radius-xl', '1rem');
+    root.style.setProperty('--radius-full', '9999px');
+
+    // ── Transition Curve (portal's signature ease) ───────────────────────
+    root.style.setProperty('--ease-spring', 'cubic-bezier(0.16, 1, 0.3, 1)');
+};
+
 export const ThemeProvider = ({ children }) => {
     const [currentTheme, setCurrentThemeState] = useState(null);
     const [themeConfig, setThemeConfig] = useState(null);
@@ -35,6 +86,7 @@ export const ThemeProvider = ({ children }) => {
         root.style.setProperty('--color-accent-primary-rgb', hexToRgb(colors.accent.primary));
         root.style.setProperty('--color-accent-primary-hover', colors.accent.primaryHover);
         root.style.setProperty('--color-accent-secondary', colors.accent.secondary);
+        root.style.setProperty('--color-accent-secondary-rgb', hexToRgb(colors.accent.secondary));
         root.style.setProperty('--color-accent-secondary-hover', colors.accent.secondaryHover);
 
         // Status
@@ -76,13 +128,7 @@ export const ThemeProvider = ({ children }) => {
             root.style.setProperty('--color-nuance-simulator', colors.nuances.simulator);
             root.style.setProperty('--color-nuance-development', colors.nuances.development);
         } else {
-            // Dynamic Generation Bridge: 
-            // If the theme doesn't provide nuances, we derive them from the primary accent 
-            // to ensure they "change with the style changes" as requested.
             const primary = colors.accent.primary;
-
-            // We'll use color-mix in CSS to vary these if needed, 
-            // but for now setting them to primary ensures they are at least themed.
             root.style.setProperty('--color-nuance-general', primary);
             root.style.setProperty('--color-nuance-entities', colors.accent.secondary || primary);
             root.style.setProperty('--color-nuance-modules', primary);
@@ -91,6 +137,9 @@ export const ThemeProvider = ({ children }) => {
             root.style.setProperty('--color-nuance-simulator', colors.accent.secondary || primary);
             root.style.setProperty('--color-nuance-development', primary);
         }
+
+        // ── Derive glassmorphism + radius + shadow tokens ──────────────
+        applyDerivedTokens(root, colors);
     };
 
     const loadTheme = async () => {
@@ -101,15 +150,48 @@ export const ThemeProvider = ({ children }) => {
             applyTheme(theme);
         } catch (error) {
             console.error('Failed to load theme:', error);
-            // Fallback to Midnight Rose if failed
+            // Fallback to SoulBits Dark (portal Haute Goth palette)
             const fallbackTheme = {
                 colors: {
-                    background: { base: '#0f172a', surface: '#1e293b', elevated: '#334155', hover: '#475569' },
-                    accent: { primary: '#ec4899', primaryHover: '#f472b6', secondary: '#a78bfa', secondaryHover: '#c4b5fd' },
-                    status: { success: '#10b981', successBg: 'rgba(16, 185, 129, 0.1)', warning: '#f59e0b', warningBg: 'rgba(245, 158, 11, 0.1)', error: '#ef4444', errorBg: 'rgba(239, 68, 68, 0.1)', info: '#3b82f6', infoBg: 'rgba(59, 130, 246, 0.1)' },
-                    text: { primary: '#f1f5f9', secondary: '#cbd5e1', muted: '#94a3b8', disabled: '#64748b' },
-                    border: { default: '#334155', focus: '#ec4899', hover: '#475569', accent: '#ec4899' },
-                    gradients: { primary: 'linear-gradient(135deg, #ec4899 0%, #a78bfa 100%)', secondary: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', surface: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(167, 139, 250, 0.05) 100%)' }
+                    background: {
+                        base: '#0b0f19',
+                        surface: '#0f1525',
+                        elevated: '#1a1f2e',
+                        hover: '#282f42'
+                    },
+                    accent: {
+                        primary: '#8f3ba7',
+                        primaryHover: '#b04fce',
+                        secondary: '#22318e',
+                        secondaryHover: '#3a3d99'
+                    },
+                    status: {
+                        success: '#4caf82',
+                        successBg: 'rgba(76, 175, 130, 0.12)',
+                        warning: '#f0a23b',
+                        warningBg: 'rgba(240, 162, 59, 0.12)',
+                        error: '#ef5350',
+                        errorBg: 'rgba(239, 83, 80, 0.12)',
+                        info: '#4d9bf0',
+                        infoBg: 'rgba(77, 155, 240, 0.12)'
+                    },
+                    text: {
+                        primary: '#e8e6f0',
+                        secondary: '#c8c3dc',
+                        muted: '#8c87a8',
+                        disabled: '#5a5578'
+                    },
+                    border: {
+                        default: '#2a2147',
+                        focus: '#8f3ba7',
+                        hover: '#3a2159',
+                        accent: '#8f3ba7'
+                    },
+                    gradients: {
+                        primary: 'linear-gradient(to right, #8f3ba7, #22318e, #2d2370)',
+                        secondary: 'linear-gradient(135deg, #0b0f19 0%, #0f1525 100%)',
+                        surface: 'linear-gradient(135deg, rgba(143, 59, 167, 0.08) 0%, rgba(34, 49, 142, 0.08) 100%)'
+                    }
                 }
             };
             applyTheme(fallbackTheme);

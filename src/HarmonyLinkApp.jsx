@@ -145,8 +145,8 @@ function HarmonyLinkApp() {
 
     return (
         <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
-            {/* Top Navigation Bar */}
-            <nav className="sticky top-0 z-50 bg-background-base/90 backdrop-blur-md border-b border-white/10 h-16 overflow-hidden">
+            {/* Top Navigation Bar — Glassmorphism Dock */}
+            <nav className="sticky top-0 z-50 bg-background-nav backdrop-blur-[24px] saturate-[1.4] border-b border-border-glass h-16 overflow-hidden">
                 <div className="flex items-center justify-between h-full px-6 max-w-[1920px] mx-auto">
                     <div className="flex items-center gap-10 h-full">
                         {/* Original Logo */}
@@ -267,7 +267,7 @@ function HarmonyLinkApp() {
                 show={currentDevice !== null}
             />
 
-            <footer className="flex items-center justify-center bg-background-base border-t border-white/5">
+            <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3] border-t border-border-glass">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
                     <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
                         {appName} {appVersion} - &copy;2023-2026 Project Harmony.AI

@@ -1,45 +1,85 @@
-/* Base Layout */
+/* ═══════════════════════════════════════════════════════════════════
+   Harmony Link — Haute Goth / Dark Academia Glassmorphism Design System
+   Derived from SoulBits Portal design DNA
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Transition curve: portal's signature ease-out-expo-like spring */
+:root {
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Base Layout ─────────────────────────────────────────────────── */
+
 body {
     background-color: var(--color-background-base);
     color: var(--color-text-primary);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.6s ease, color 0.6s ease;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Common Components */
+/* ── Cards (Glassmorphism) ────────────────────────────────────────── */
+
 .card {
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    transition: all 0.2s ease;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1.25rem;
+    transition: all 0.35s var(--ease-spring);
 }
 
 .card:hover {
-    border-color: var(--color-border-hover);
-    background-color: var(--color-background-hover);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 8px 40px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px);
+    background: var(--color-background-hover-glass);
 }
 
 .card-elevated {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-glass);
+    padding: 1.5rem 1.25rem;
+    transition: all 0.35s var(--ease-spring);
+}
+
+.card-elevated:hover {
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                var(--shadow-glass);
 }
 
 .integration-card {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.75rem;
-    padding: 1.25rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1.25rem;
+    box-shadow: var(--shadow-glass);
+    transition: all 0.35s var(--ease-spring);
+}
+
+.integration-card:hover {
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 8px 40px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px);
 }
 
 .modal-content {
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.5rem;
-    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+    background: var(--color-background-nav);
+    backdrop-filter: blur(28px) saturate(1.5);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 0 50px var(--color-glow-accent-soft),
+                var(--shadow-glass);
     padding: 1.5rem;
     position: relative;
 }
@@ -53,7 +93,7 @@ body {
     bottom: 0;
     background: var(--gradient-surface);
     opacity: 0.3;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-xl);
     pointer-events: none;
     z-index: 0;
 }
@@ -64,138 +104,175 @@ body {
 }
 
 .character-profile-card {
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.5rem;
-    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
-    transition: all 0.2s ease;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-glass);
+    transition: all 0.35s var(--ease-spring);
 }
 
 .character-profile-card:hover {
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 8px 40px rgba(0, 0, 0, 0.2);
+    transform: translateY(-4px);
 }
 
 .card-surface {
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.75rem;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
     padding: 1.25rem;
-    transition: all 0.2s ease;
+    transition: all 0.3s var(--ease-spring);
+}
+
+.card-surface:hover {
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
 }
 
 .card-compact {
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.75rem;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(8px) saturate(1.15);
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
 }
 
 .card-compact:hover {
-    border-color: var(--color-border-hover);
-    background-color: var(--color-background-hover);
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
 }
 
 .card-compact-success {
-    background: linear-gradient(135deg, var(--color-success-bg), var(--color-background-surface));
-    border: 1px solid var(--color-success);
-    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--color-success-bg), var(--color-background-glass));
+    backdrop-filter: blur(8px) saturate(1.15);
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+    border: 1px solid rgba(76, 175, 130, 0.3);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
 }
 
 .card-compact-error {
-    background: linear-gradient(135deg, var(--color-error-bg), var(--color-background-surface));
-    border: 1px solid var(--color-error);
-    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--color-error-bg), var(--color-background-glass));
+    backdrop-filter: blur(8px) saturate(1.15);
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+    border: 1px solid rgba(239, 83, 80, 0.3);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
 }
 
 .card-compact-info {
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.75rem;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(8px) saturate(1.15);
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
 }
 
 .card-option {
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.5rem;
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-md);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
     cursor: pointer;
 }
 
 .card-option:hover {
-    border-color: var(--color-border-hover);
-    background-color: var(--color-background-hover);
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
 .card-option-selected {
-    background-color: var(--color-background-surface);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid var(--color-accent-primary);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
-/* Buttons */
+/* ── Buttons ─────────────────────────────────────────────────────── */
+
 .btn-primary {
     background: var(--gradient-primary);
     color: #ffffff;
-    padding: 0.6rem 1.25rem;
-    border-radius: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    transition: all 0.35s var(--ease-spring);
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
     filter: brightness(1.15);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 0 60px var(--color-glow-accent-soft);
+    letter-spacing: 0.06em;
 }
 
 .btn-secondary {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-primary);
-    padding: 0.6rem 1.25rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    transition: all 0.2s ease;
+    padding: 0.75rem 1.5rem;
+    border-radius: 14px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.35s var(--ease-spring);
     cursor: pointer;
 }
 
 .btn-secondary:hover {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-border-hover);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 20px var(--color-glow-accent-soft),
+                inset 0 0 20px var(--color-glow-accent-soft);
+    letter-spacing: 0.06em;
+    transform: translateY(-2px);
 }
 
 .btn-danger {
-    background-color: var(--color-error);
+    background: var(--color-error);
     border: 1px solid var(--color-error);
     color: #ffffff;
-    padding: 0.6rem 1.25rem;
-    border-radius: 0.5rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    transition: all 0.35s var(--ease-spring);
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .btn-danger:hover:not(:disabled) {
     filter: brightness(1.15);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(239, 83, 80, 0.3),
+                0 0 60px rgba(239, 83, 80, 0.2);
 }
 
 .btn-danger:disabled {
@@ -204,45 +281,53 @@ body {
     transform: none;
 }
 
-/* Inputs */
+/* ── Inputs ──────────────────────────────────────────────────────── */
+
 .input-field {
-    background-color: var(--color-background-surface);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-primary);
-    padding: 0.6rem 0.8rem;
-    border-radius: 0.5rem;
-    transition: all 0.2s ease;
+    padding: 0.75rem 0.875rem;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.3s var(--ease-spring);
 }
 
 .input-field:focus {
     outline: none;
     border-color: var(--color-accent-primary);
-    box-shadow: 0 0 0 2px rgba(var(--color-accent-primary-rgb), 0.2);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft),
+                0 0 0 3px var(--color-glow-accent-soft);
 }
 
-/* Status badges */
+/* ── Status badges ───────────────────────────────────────────────── */
+
 .status-badge {
     padding: 0.25rem 0.6rem;
-    border-radius: 0.5rem;
-    font-size: 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 
 .status-success {
     background-color: var(--color-success-bg);
     color: var(--color-success);
-    border: 1px solid rgba(var(--color-success-rgb), 0.2);
+    border: 1px solid rgba(76, 175, 130, 0.25);
 }
 
 .status-error {
     background-color: var(--color-error-bg);
     color: var(--color-error);
-    border: 1px solid rgba(var(--color-error-rgb), 0.2);
+    border: 1px solid rgba(239, 83, 80, 0.25);
 }
 
-/* Gradient Text & Header Utilities */
+/* ── Gradient Text & Header Utilities ────────────────────────────── */
+
 .text-gradient-primary {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
@@ -268,27 +353,32 @@ body {
     position: absolute;
     bottom: 0;
     left: 0;
-    width: 2rem;
-    height: 2px;
+    width: 2.5rem;
+    height: 3px;
     background: var(--gradient-primary);
     border-radius: 99px;
 }
 
-/* Gradient Button Utility */
+/* ── Gradient Button Utility ─────────────────────────────────────── */
+
 .btn-accent-gradient {
     background: linear-gradient(to right, var(--color-accent-primary), var(--color-accent-secondary)) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: white !important;
     border: none !important;
-    transition: all 0.2s ease;
-    border-radius: 0.5rem;
+    transition: all 0.35s var(--ease-spring);
+    border-radius: 14px;
 }
 
 .btn-accent-gradient:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft);
 }
 
-/* File Input Styling */
+/* ── File Input Styling ──────────────────────────────────────────── */
+
 input[type="file"].input-file {
     display: block;
     width: 100%;
@@ -298,19 +388,23 @@ input[type="file"].input-file {
 
 input[type="file"].input-file::file-selector-button {
     margin-right: 1rem;
-    padding: 0.25rem 1rem;
-    border: 0;
+    padding: 0.375rem 1.25rem;
+    border: 1px solid var(--color-border-glass);
     font-size: 0.875rem;
     font-weight: 600;
-    background-color: var(--color-background-elevated);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--color-accent-primary);
     cursor: pointer;
-    border-radius: 0.375rem;
-    transition: all 0.2s ease;
+    border-radius: 12px;
+    transition: all 0.25s var(--ease-spring);
 }
 
 input[type="file"].input-file::file-selector-button:hover {
-    background-color: var(--color-background-hover);
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
 /* Custom Select Option Styling */
@@ -320,7 +414,7 @@ input[type="file"].input-file::file-selector-button:hover {
 }
 
 .input-field option:hover {
-    background-color: var(--color-background-elevated) !important;
+    background-color: var(--color-background-hover-glass) !important;
 }
 
 /* Ensure select scrollbar tracks don't show when inactive/themed */
@@ -333,54 +427,55 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     background-color: var(--color-background-surface);
     color: var(--color-text-primary);
     padding: 8px;
-    /* Note: browsers may ignore this */
 }
 
-/* Website Link Button */
+/* ── Website Link Button ─────────────────────────────────────────── */
+
 .btn-website-link {
     background: var(--gradient-primary);
     color: #ffffff;
     border: none !important;
-    transition: all 0.2s ease;
+    transition: all 0.35s var(--ease-spring);
+    border-radius: 14px;
 }
 
 .btn-website-link:hover {
     filter: brightness(1.15);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-    Integration Display Compact Rows — Inline editor style
-    Used inside ModularConfigEditor for compact integration selection
-    ═══════════════════════════════════════════════════════════════════ */
+   Integration Display Compact Rows — Inline editor style
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* Container for compact integration rows */
 .integration-display-container {
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
 }
 
-/* Individual compact integration row */
 .integration-display-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.375rem 0.5rem;
-    border-radius: 0.375rem;
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.15s ease;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    transition: all 0.2s var(--ease-spring);
     flex: 1 1 calc(50% - 0.375rem);
     min-width: 280px;
 }
 
 .integration-display-row:hover {
-    border-color: var(--color-border-hover);
-    background-color: var(--color-background-hover);
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
-/* Status indicator dot */
 .integration-display-status {
     width: 0.5rem;
     height: 0.5rem;
@@ -391,13 +486,14 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .integration-display-status-available {
     background-color: var(--color-success);
+    box-shadow: 0 0 8px rgba(76, 175, 130, 0.4);
 }
 
 .integration-display-status-unavailable {
     background-color: var(--color-error);
+    box-shadow: 0 0 8px rgba(239, 83, 80, 0.4);
 }
 
-/* Instance name */
 .integration-display-name {
     font-size: 0.8rem;
     font-weight: 600;
@@ -409,20 +505,20 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     white-space: nowrap;
 }
 
-/* Device type badge */
 .integration-display-badge {
     font-size: 0.625rem;
     font-weight: 600;
     padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
+    border-radius: 12px;
     margin-left: 0.5rem;
-    background-color: var(--color-background-elevated);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--color-text-secondary);
-    border: 1px solid var(--color-border-default);
+    border: 1px solid var(--color-border-glass);
     flex-shrink: 0;
 }
 
-/* Button group */
 .integration-display-actions {
     display: flex;
     gap: 0.375rem;
@@ -430,7 +526,6 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     flex-shrink: 0;
 }
 
-/* Empty state */
 .integration-display-empty {
     font-size: 0.75rem;
     color: var(--color-text-muted);
@@ -438,29 +533,32 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-    Integration Row — Modern full-width row design with gradient
-    ═══════════════════════════════════════════════════════════════════ */
+   Integration Row — Glassmorphism row with accent stripe
+   ═══════════════════════════════════════════════════════════════════ */
 
 .integration-row {
     position: relative;
     overflow: hidden;
-    border-radius: 0.5rem;
-    border: 1px solid var(--color-border-default);
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    transition: border-color 0.3s var(--ease-spring),
+                box-shadow 0.3s var(--ease-spring);
 }
 
 .integration-row:hover {
-    border-color: var(--color-border-hover);
-    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.35);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 8px 40px rgba(0, 0, 0, 0.2);
 }
 
-/* Prismatic tint overlay: accent-primary color bleeds from top-left */
 .integration-row-tint {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-xl);
     background: linear-gradient(
         135deg,
         var(--color-accent-primary) 0%,
@@ -469,7 +567,6 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     opacity: 0.09;
 }
 
-/* Left accent stripe */
 .integration-row-stripe {
     position: absolute;
     left: 0;
@@ -481,28 +578,27 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         var(--color-accent-primary),
         var(--color-accent-secondary)
     );
-    border-radius: 0.5rem 0 0 0.5rem;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
 }
 
-/* Integration name uses accent-primary color */
 .integration-row-name {
     color: var(--color-accent-primary);
 }
 
-/* Chevron button */
 .integration-row-chevron {
     color: var(--color-text-muted);
-    transition: color 0.15s ease;
+    transition: color 0.2s var(--ease-spring);
 }
 
 .integration-row-chevron:hover {
     color: var(--color-accent-primary);
 }
 
-/* Instance count pill */
 .integration-count-pill {
-    background-color: var(--color-background-surface);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-secondary);
 }
 
@@ -510,23 +606,20 @@ select.custom-scrollbar::-webkit-scrollbar-track {
    Instance Rows — Inset sub-rows nested under integration rows
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Container that wraps all instance sub-rows */
 .instance-rows-container {
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 1px solid var(--color-border-glass);
 }
 
-/* Individual instance row */
 .instance-row {
     position: relative;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    transition: background-color 0.15s ease;
+    border-top: 1px solid var(--color-border-glass);
+    transition: background-color 0.2s var(--ease-spring);
 }
 
 .instance-row:hover {
-    background-color: rgba(255, 255, 255, 0.025);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
-/* Subtle secondary accent tint overlay (dimmer than integration row) */
 .instance-row-tint {
     position: absolute;
     inset: 0;
@@ -540,29 +633,32 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Module Row — Mirrors integration-row pattern for module type cards
+   Module Row — Mirrors integration-row pattern
    ═══════════════════════════════════════════════════════════════════ */
 
 .module-row {
     position: relative;
     overflow: hidden;
-    border-radius: 0.5rem;
-    border: 1px solid var(--color-border-default);
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    transition: border-color 0.3s var(--ease-spring),
+                box-shadow 0.3s var(--ease-spring);
 }
 
 .module-row:hover {
-    border-color: var(--color-border-hover);
-    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.35);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 8px 40px rgba(0, 0, 0, 0.2);
 }
 
-/* Prismatic tint overlay: accent-primary color bleeds from top-left */
 .module-row-tint {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-xl);
     background: linear-gradient(
         135deg,
         var(--color-accent-primary) 0%,
@@ -571,7 +667,6 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     opacity: 0.09;
 }
 
-/* Left accent stripe */
 .module-row-stripe {
     position: absolute;
     left: 0;
@@ -583,51 +678,46 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         var(--color-accent-primary),
         var(--color-accent-secondary)
     );
-    border-radius: 0.5rem 0 0 0.5rem;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
 }
 
-/* Module name uses accent-primary color */
 .module-row-name {
     color: var(--color-accent-primary);
 }
 
-/* Chevron button */
 .module-row-chevron {
     color: var(--color-text-muted);
-    transition: color 0.15s ease;
+    transition: color 0.2s var(--ease-spring);
 }
 
 .module-row-chevron:hover {
     color: var(--color-accent-primary);
 }
 
-/* Config count pill */
 .module-count-pill {
-    background: var(--color-background-surface);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-secondary);
 }
 
-/* ─── Module Config Sub-Rows ─────────────────────────────────── */
-
-/* Container that wraps all config sub-rows */
+/* config sub-rows */
 .module-config-rows-container {
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 1px solid var(--color-border-glass);
 }
 
-/* Individual config sub-row */
 .module-config-row {
     position: relative;
     overflow: hidden;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
-    transition: background-color 0.15s ease;
+    border-top: 1px solid var(--color-border-glass);
+    transition: background-color 0.2s var(--ease-spring);
 }
 
 .module-config-row:hover {
-    background-color: rgba(255, 255, 255, 0.025);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
-/* Subtle secondary accent tint overlay (dimmer than module row) */
 .module-config-row-tint {
     position: absolute;
     inset: 0;
@@ -642,29 +732,30 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 /* ═══════════════════════════════════════════════════════════════════
    Module Config Action Buttons — Compact XS pill-style buttons
-   Mirrors instance-action-btn* design for visual consistency
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Base button — neutral/elevated */
 .module-action-btn {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-primary);
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
 }
 
 .module-action-btn:hover:not(:disabled) {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-border-hover);
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
 }
 
 .module-action-btn:disabled {
@@ -672,18 +763,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Danger (delete) */
 .module-action-btn-danger {
-    background-color: var(--color-error);
+    background: var(--color-error);
     border: 1px solid var(--color-error);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -691,6 +781,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .module-action-btn-danger:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px rgba(239, 83, 80, 0.3);
 }
 
 .module-action-btn-danger:disabled {
@@ -698,15 +789,16 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Icon-only button (chevron toggle) */
 .module-action-btn-icon {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-muted);
     padding: 0.2rem 0.3rem;
-    border-radius: 0.375rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -715,7 +807,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 .module-action-btn-icon:hover:not(:disabled) {
     color: var(--color-accent-primary);
     border-color: var(--color-accent-primary);
-    background-color: var(--color-background-hover);
+    background: var(--color-background-hover-glass);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
 }
 
 .module-action-btn-icon:disabled {
@@ -723,18 +816,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Save button variant — accent primary color */
 .module-action-btn-save {
-    background-color: var(--color-accent-primary);
+    background: var(--color-accent-primary);
     border: 1px solid var(--color-accent-primary);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -742,6 +834,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .module-action-btn-save:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
 .module-action-btn-save:disabled {
@@ -749,36 +842,33 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* ─── Module Inline Editor Panel ─────────────────────────────── */
+/* ─── Module Inline Editor Panel ─────────────────────────────────── */
 
-/* Outer container — sits inside the expansion area below a config row */
 .module-inline-editor {
-    border-radius: 0.5rem;
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    border: 1px solid var(--color-border-default);
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-base) 100%);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
 }
 
-/* Header bar — mode label */
 .module-inline-editor-header {
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: linear-gradient(to right, var(--color-background-elevated), transparent);
+    border-bottom: 1px solid var(--color-border-glass);
+    background: linear-gradient(to right, var(--color-background-surface-translucent), transparent);
 }
 
-/* Scrollable body */
 .module-inline-editor-body {
     padding: 0.75rem;
     overflow-y: auto;
     max-height: 60vh;
 }
 
-/* Individual field row */
 .module-inline-editor-field {
     margin-bottom: 0.75rem;
 }
 
-/* Field label */
 .module-inline-editor-label {
     display: block;
     font-size: 0.75rem;
@@ -787,11 +877,10 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     color: var(--color-text-secondary);
 }
 
-/* Section (General Settings, Provider Settings) */
 .module-inline-editor-section {
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--color-border-glass);
 }
 
 .module-inline-editor-section:last-child {
@@ -799,29 +888,28 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     padding-bottom: 0;
 }
 
-/* Section title */
 .module-inline-editor-section-title {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--color-accent-primary);
     margin-bottom: 0.5rem;
     padding-bottom: 0.375rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--color-border-glass);
 }
 
-/* Section body — contains the settings component */
 .module-inline-editor-section-body {
-    background: var(--color-background-base);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.375rem;
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
     padding: 0.75rem;
 }
 
-/* Provider section */
 .module-inline-editor-provider {
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--color-border-glass);
 }
 
 .module-inline-editor-provider:last-child {
@@ -829,7 +917,6 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     padding-bottom: 0;
 }
 
-/* Provider header — label + DynamicOptionsGroup */
 .module-inline-editor-provider-header {
     display: flex;
     align-items: center;
@@ -843,42 +930,38 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     margin-bottom: 0;
 }
 
-/* Provider settings body */
 .module-inline-editor-provider-settings {
-    background: var(--color-background-base);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.375rem;
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
     padding: 0.75rem;
     margin-top: 0.375rem;
 }
 
-/* Footer — Save/Cancel */
 .module-inline-editor-footer {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--color-border-glass);
 }
 
-/* Temporary "creating" row — dashed border to distinguish from existing configs */
 .module-config-row-creating {
-    border: 1px dashed var(--color-border-default);
-    border-radius: 0.375rem;
+    border: 1px dashed var(--color-border-glass);
+    border-radius: var(--radius-lg);
     margin: 0.25rem 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
 }
 
-/* ─── Scoped Compact Overrides inside Inline Editor ─────────── */
-
-/* Provider option pills — tighter padding and smaller text */
+/* Scoped Compact Overrides inside Inline Editor */
 .module-inline-editor .card-option,
 .module-inline-editor .card-option-selected {
     padding: 0.25rem 0.5rem;
     font-size: 0.7rem;
 }
 
-/* Provider option logos — scale down from w-6/h-6 (1.5rem) to 1rem */
 .module-inline-editor .card-option img,
 .module-inline-editor .card-option-selected img {
     width: 1rem !important;
@@ -886,20 +969,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     margin-right: 0.375rem !important;
 }
 
-/* Provider option label text */
 .module-inline-editor .card-option span,
 .module-inline-editor .card-option-selected span {
     font-size: 0.72rem;
 }
 
-/* Input fields — reduce vertical padding inside the inline editor */
 .module-inline-editor .input-field {
-    padding-top: 0.375rem;
-    padding-bottom: 0.375rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
     font-size: 0.8rem;
 }
 
-/* Verification section — reduce its overall footprint */
 .module-inline-editor .config-verification-section {
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.5rem;
@@ -907,7 +987,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .module-inline-editor .config-verification-section .btn-primary,
 .module-inline-editor .config-verification-section .btn-secondary {
-    padding: 0.25rem 0.75rem;
+    padding: 0.3rem 0.875rem;
     font-size: 0.75rem;
 }
 
@@ -915,26 +995,28 @@ select.custom-scrollbar::-webkit-scrollbar-track {
    Instance Action Buttons — Compact XS pill-style buttons
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Base button — neutral/elevated */
 .instance-action-btn {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-primary);
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
 }
 
 .instance-action-btn:hover:not(:disabled) {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-border-hover);
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
 }
 
 .instance-action-btn:disabled {
@@ -942,18 +1024,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Success (start) */
 .instance-action-btn-success {
-    background-color: var(--color-success);
+    background: var(--color-success);
     border: 1px solid var(--color-success);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -961,6 +1042,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-success:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px rgba(76, 175, 130, 0.3);
 }
 
 .instance-action-btn-success:disabled {
@@ -968,18 +1050,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Danger (stop) */
 .instance-action-btn-danger {
-    background-color: var(--color-error);
+    background: var(--color-error);
     border: 1px solid var(--color-error);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -987,6 +1068,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-danger:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px rgba(239, 83, 80, 0.3);
 }
 
 .instance-action-btn-danger:disabled {
@@ -994,18 +1076,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Warning (restart) */
 .instance-action-btn-warning {
-    background-color: var(--color-warning);
+    background: var(--color-warning);
     border: 1px solid var(--color-warning);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -1013,6 +1094,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-warning:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px rgba(240, 162, 59, 0.3);
 }
 
 .instance-action-btn-warning:disabled {
@@ -1020,18 +1102,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Info (config files) */
 .instance-action-btn-info {
-    background-color: var(--color-info);
+    background: var(--color-info);
     border: 1px solid var(--color-info);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -1039,6 +1120,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-info:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px rgba(77, 155, 240, 0.3);
 }
 
 .instance-action-btn-info:disabled {
@@ -1046,18 +1128,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Accent/secondary (open web UI) */
 .instance-action-btn-accent {
-    background-color: var(--color-accent-secondary);
+    background: var(--color-accent-secondary);
     border: 1px solid var(--color-accent-secondary);
     color: #ffffff;
     font-weight: 600;
     font-size: 0.7rem;
     line-height: 1.4;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.375rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -1065,6 +1146,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-accent:hover:not(:disabled) {
     filter: brightness(1.12);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
 }
 
 .instance-action-btn-accent:disabled {
@@ -1072,15 +1154,16 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     cursor: not-allowed;
 }
 
-/* Icon-only button (logs, container toggle) */
 .instance-action-btn-icon {
-    background-color: var(--color-background-elevated);
-    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
     color: var(--color-text-muted);
     padding: 0.2rem 0.3rem;
-    border-radius: 0.375rem;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1089,7 +1172,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 .instance-action-btn-icon:hover:not(:disabled) {
     color: var(--color-accent-primary);
     border-color: var(--color-accent-primary);
-    background-color: var(--color-background-hover);
+    background: var(--color-background-hover-glass);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
 }
 
 .instance-action-btn-icon:disabled {
@@ -1098,28 +1182,32 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Character Profile Editor — Modal chrome and form panels
+   Character Profile Editor — Glassmorphism modal chrome
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Modal wrapper — slight gradient lift over modal-content base */
 .character-editor-modal {
-    background: linear-gradient(160deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.75rem;
-    box-shadow: 0 28px 60px -12px rgba(0, 0, 0, 0.65);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 0 50px var(--color-glow-accent-soft),
+                var(--shadow-glass);
     position: relative;
     overflow: hidden;
 }
 
-/* Header chrome — contains tint + stripe + content */
 .character-editor-modal-header {
     position: relative;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    border-bottom: 1px solid var(--color-border-glass);
+    background: linear-gradient(
+        135deg,
+        var(--color-background-surface-translucent) 0%,
+        var(--color-background-glass) 100%
+    );
     flex-shrink: 0;
 }
 
-/* Prismatic accent tint (top-left bleed, matching integration-row) */
 .character-editor-modal-tint {
     position: absolute;
     inset: 0;
@@ -1132,7 +1220,6 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     opacity: 0.08;
 }
 
-/* Left accent stripe */
 .character-editor-modal-stripe {
     position: absolute;
     left: 0;
@@ -1146,12 +1233,15 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     );
 }
 
-/* Small icon badge in header */
 .character-editor-icon-badge {
     width: 2rem;
     height: 2rem;
-    border-radius: 0.375rem;
-    background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+    border-radius: var(--radius-md);
+    background: linear-gradient(
+        135deg,
+        var(--color-accent-primary),
+        var(--color-accent-secondary)
+    );
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1159,15 +1249,15 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     opacity: 0.9;
 }
 
-/* Tab bar */
 .character-editor-tab-bar {
     display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    background-color: var(--color-background-surface);
+    border-bottom: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     flex-shrink: 0;
 }
 
-/* Tab button — shared base */
 .character-editor-tab {
     display: inline-flex;
     align-items: center;
@@ -1177,39 +1267,38 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     font-weight: 600;
     border: none;
     cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease;
+    transition: color 0.2s var(--ease-spring),
+                background-color 0.2s var(--ease-spring);
     white-space: nowrap;
     position: relative;
 }
 
-/* Active tab */
 .character-editor-tab-active {
     color: var(--color-accent-primary);
-    background-color: var(--color-background-elevated);
+    background: var(--color-background-glass);
     box-shadow: inset 0 -2px 0 var(--color-accent-primary);
 }
 
-/* Inactive tab */
 .character-editor-tab-inactive {
     color: var(--color-text-muted);
-    background-color: transparent;
+    background: transparent;
 }
 
 .character-editor-tab-inactive:hover {
     color: var(--color-text-primary);
-    background-color: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.04);
 }
 
-/* Section panel — groups related fields (like container details panel) */
 .character-editor-section {
     position: relative;
     overflow: hidden;
-    border-radius: 0.5rem;
-    border: 1px solid var(--color-border-default);
-    background: linear-gradient(135deg, var(--color-background-elevated) 0%, var(--color-background-surface) 100%);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
-/* Section panel header bar */
 .character-editor-section-header {
     display: flex;
     align-items: center;
@@ -1220,18 +1309,20 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--color-text-secondary);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: linear-gradient(to right, var(--color-background-elevated), transparent);
+    border-bottom: 1px solid var(--color-border-glass);
+    background: linear-gradient(
+        to right,
+        var(--color-background-surface-translucent),
+        transparent
+    );
 }
 
-/* Field group wrapper */
 .character-editor-field-group {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-/* Field label */
 .character-editor-label {
     display: flex;
     align-items: center;
@@ -1241,25 +1332,24 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     color: var(--color-text-secondary);
 }
 
-/* Required asterisk */
 .character-editor-label-required {
     color: var(--color-error);
     font-size: 0.75rem;
 }
 
-/* Unit badge next to label */
 .character-editor-label-unit {
     font-size: 0.7rem;
     font-weight: 500;
     color: var(--color-text-muted);
-    background-color: var(--color-background-surface);
-    border: 1px solid var(--color-border-default);
-    border-radius: 0.25rem;
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-sm);
     padding: 0 0.35rem;
     line-height: 1.4;
 }
 
-/* Hint text below labels */
 .character-editor-hint {
     font-size: 0.7rem;
     color: var(--color-text-muted);
@@ -1267,14 +1357,13 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     margin-bottom: 0.125rem;
 }
 
-/* Modal footer */
 .character-editor-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.875rem 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    background-color: var(--color-background-elevated);
+    border-top: 1px solid var(--color-border-glass);
+    background: var(--color-background-glass);
     flex-shrink: 0;
 }
 
@@ -1282,20 +1371,19 @@ select.custom-scrollbar::-webkit-scrollbar-track {
    Log Viewer Components — Dev Tab
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Log Entry Row */
 .log-entry {
     position: relative;
     border-top: 1px solid rgba(255, 255, 255, 0.03);
-    transition: background-color 0.15s ease;
+    transition: background-color 0.2s var(--ease-spring);
     padding: 0.375rem 0.75rem;
 }
 
 .log-entry:hover {
-    background-color: rgba(255, 255, 255, 0.025);
+    background-color: rgba(255, 255, 255, 0.03);
 }
 
 .log-entry-error {
-    background-color: rgba(239, 68, 68, 0.04);
+    background-color: rgba(239, 83, 80, 0.06);
     border-left: 2px solid rgb(248, 113, 113);
 }
 
@@ -1304,24 +1392,24 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .log-entry-expanded {
-    background-color: rgba(255, 255, 255, 0.02);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--color-border-glass);
+    border-bottom: 1px solid var(--color-border-glass);
 }
 
 .log-entry-prompt {
     background: linear-gradient(
         135deg,
-        rgba(99, 102, 241, 0.04) 0%,
+        rgba(143, 59, 167, 0.06) 0%,
         transparent 40%
     );
-    border-left: 2px solid var(--color-accent-primary, #6366f1);
+    border-left: 2px solid var(--color-accent-primary);
 }
 
 /* Log Level Badges */
 .log-level-badge {
     padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
+    border-radius: 10px;
     font-size: 0.625rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1368,25 +1456,33 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .log-level-prompt {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
-    color: var(--color-accent-primary, #6366f1);
-    border-color: rgba(99, 102, 241, 0.2);
+    background: linear-gradient(
+        135deg,
+        rgba(143, 59, 167, 0.15),
+        rgba(34, 49, 142, 0.15)
+    );
+    color: var(--color-accent-primary);
+    border-color: rgba(143, 59, 167, 0.2);
 }
 
 /* Filter Toolbar */
 .log-filter-toolbar {
     flex-shrink: 0;
-    background-color: var(--color-background-surface);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.5rem;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
     padding: 0.75rem 1rem;
 }
 
 /* Log Viewer Bottom Control Bar */
 .log-control-bar {
     flex-shrink: 0;
-    background-color: var(--color-background-surface);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--color-background-glass);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border-top: 1px solid var(--color-border-glass);
     padding: 0.5rem 1rem;
     display: flex;
     align-items: center;
@@ -1398,30 +1494,30 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s var(--ease-spring);
 }
 
 .log-live-dot-active {
-    background-color: var(--color-success, #22c55e);
-    animation: log-live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background-color: var(--color-success);
+    animation: log-live-pulse 2s var(--ease-spring) infinite;
 }
 
 .log-live-dot-paused {
-    background-color: var(--color-warning, #eab308);
+    background-color: var(--color-warning);
 }
 
 .log-live-dot-offline {
-    background-color: var(--color-text-muted, #9ca3af);
+    background-color: var(--color-text-muted);
 }
 
 @keyframes log-live-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--color-success); }
+    50% { opacity: 0.5; box-shadow: 0 0 2px var(--color-success); }
 }
 
 /* Prompt Content Syntax Highlighting */
 .log-prompt-content {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 0.75rem;
     line-height: 1.5;
     white-space: pre-wrap;
@@ -1429,52 +1525,56 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .log-prompt-heading {
-    color: var(--color-accent-primary, #6366f1);
+    color: var(--color-accent-primary);
     font-weight: 700;
 }
 
 .log-prompt-subheading {
-    color: var(--color-accent-secondary, #a855f7);
+    color: var(--color-accent-secondary);
     font-weight: 600;
 }
 
 .log-prompt-warning {
-    color: var(--color-warning, #eab308);
+    color: var(--color-warning);
 }
 
 /* Component and Entity Tags */
 .log-tag {
     font-size: 0.625rem;
     padding: 0.0625rem 0.375rem;
-    border-radius: 0.25rem;
+    border-radius: 10px;
     font-weight: 600;
     white-space: nowrap;
     line-height: 1.4;
 }
 
 .log-tag-component {
-    background-color: rgba(99, 102, 241, 0.1);
-    color: var(--color-accent-primary, #6366f1);
+    background-color: rgba(143, 59, 167, 0.12);
+    color: var(--color-accent-primary);
+    border: 1px solid rgba(143, 59, 167, 0.2);
 }
 
 .log-tag-entity {
-    background-color: rgba(168, 85, 247, 0.1);
-    color: var(--color-accent-secondary, #a855f7);
+    background-color: rgba(34, 49, 142, 0.12);
+    color: var(--color-accent-secondary);
+    border: 1px solid rgba(34, 49, 142, 0.2);
 }
 
 .log-tag-subsystem {
     background-color: rgba(255, 255, 255, 0.05);
-    color: var(--color-text-muted, #9ca3af);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border-glass);
 }
 
 /* Log Level Settings Panel */
 .log-settings-panel {
-    background: linear-gradient(135deg, var(--color-background-elevated, #1e1b4b) 0%, var(--color-background-surface, #0f0d1a) 100%);
-    border: 1px solid var(--color-border-default, rgba(255,255,255,0.08));
-    border-radius: 0.5rem;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(18px) saturate(1.35);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-xl);
     padding: 1rem 1.25rem;
-    box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-glass);
 }
 
 /* Log viewer scrollbar */

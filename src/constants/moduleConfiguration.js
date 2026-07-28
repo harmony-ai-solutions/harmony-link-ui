@@ -1,4 +1,3 @@
-import logo_harmony from '../assets/images/harmony-link-icon-256.png';
 import logo_cai from '../assets/images/cai_50px.png';
 import logo_openai from '../assets/images/ChatGPT_50px.png';
 import logo_kajiwoto from '../assets/images/Kajiwoto_106px.png';
@@ -149,7 +148,7 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'transcription.provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_harmony },
+                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter }
                 ],
@@ -165,7 +164,7 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'vad.provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_harmony },
+                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter }
                 ],
@@ -187,7 +186,7 @@ export const MODULE_CONFIGS = {
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
                     { id: 'elevenlabs', name: 'Elevenlabs', logo: logo_elevenlabs },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_harmony },
+                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'kindroid', name: 'Kindroid AI', logo: logo_kindroid },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },

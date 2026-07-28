@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import logo from './assets/images/harmony-link-icon-256.png';
 import { getConfig, updateConfig, getAppName, getAppVersion } from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
@@ -149,9 +148,8 @@ function HarmonyLinkApp() {
             <nav className="sticky top-0 z-50 bg-background-nav backdrop-blur-[24px] saturate-[1.4] border-b border-border-glass h-16 overflow-hidden">
                 <div className="flex items-center justify-between h-full px-6 max-w-[1920px] mx-auto">
                     <div className="flex items-center gap-10 h-full">
-                        {/* Original Logo */}
+                        {/* Brand Name */}
                         <div className="flex items-center gap-4 flex-shrink-0">
-                            <img src={logo} className="h-9 w-auto drop-shadow-md" alt="Harmony AI" />
                             <div className="flex flex-col leading-none">
                                 <span className="text-sm font-black tracking-widest text-white uppercase">Harmony</span>
                                 <span className="text-[11px] font-bold tracking-[0.12em] text-accent-primary opacity-90 uppercase">Link</span>

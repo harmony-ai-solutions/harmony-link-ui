@@ -144,78 +144,59 @@ function HarmonyLinkApp() {
 
     return (
         <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
-            {/* Top Navigation Bar — Glassmorphism Dock */}
-            <nav className="sticky top-0 z-50 bg-background-nav backdrop-blur-[24px] saturate-[1.4] border-b border-border-glass h-16 overflow-hidden">
-                <div className="flex items-center justify-between h-full px-6 max-w-[1920px] mx-auto">
-                    <div className="flex items-center gap-10 h-full">
-                        {/* Brand Name */}
-                        <div className="flex items-center gap-4 flex-shrink-0">
-                            <div className="flex flex-col leading-none">
-                                <span className="text-sm font-black tracking-widest text-white uppercase">Harmony</span>
-                                <span className="text-[11px] font-bold tracking-[0.12em] text-accent-primary opacity-90 uppercase">Link</span>
-                            </div>
-                        </div>
+            {/* Top Navigation Bar — Ultra Glassmorphic Floating Dock */}
+            <nav className="sticky top-0 z-50 nav-glass-bar">
+                {/* Top-edge glass light catch */}
+                <div className="nav-top-edge" />
 
-                        {/* Theme-Aware Tab Panel */}
-                        <ul className="flex items-center h-full gap-3 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: SettingsTabGeneral, label: 'General', var: '--color-nuance-general' },
-                                { id: SettingsTabEntities, label: 'Entities', var: '--color-nuance-entities' },
-                                { id: SettingsTabModules, label: 'Modules', var: '--color-nuance-modules' },
-                                { id: SettingsTabCharacters, label: 'Characters', var: '--color-nuance-characters' },
-                                { id: SettingsTabIntegrations, label: 'Integrations', var: '--color-nuance-integrations' },
-                                { id: SettingsTabSimulator, label: 'Simulator', var: '--color-nuance-simulator' },
-                                { id: SettingsTabDevelopment, label: 'Dev', var: '--color-nuance-development' },
-                            ].map((tab) => (
-                                <li key={tab.id} className="h-full flex items-center">
-                                    <button
-                                        data-tutorial-id={`nav-tab-${tab.id}`}
-                                        onClick={() => setSettingsTab(tab.id)}
-                                        className="px-4 h-full text-base font-bold transition-all duration-200 relative whitespace-nowrap flex items-center"
-                                        style={{
-                                            color: settingsTab === tab.id ? `var(${tab.var})` : 'var(--color-text-muted)',
-                                            backgroundColor: settingsTab === tab.id ? `color-mix(in srgb, var(${tab.var}), transparent 88%)` : 'transparent'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (settingsTab !== tab.id) {
-                                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                                e.currentTarget.style.color = 'var(--color-text-primary)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (settingsTab !== tab.id) {
-                                                e.currentTarget.style.backgroundColor = 'transparent';
-                                                e.currentTarget.style.color = 'var(--color-text-muted)';
-                                            }
-                                        }}
-                                    >
-                                        <div
-                                            className={`px-3 py-1.5 rounded-md transition-all duration-200 ${settingsTab === tab.id ? 'bg-opacity-10' : ''}`}
-                                            style={{
-                                                backgroundColor: settingsTab === tab.id ? `color-mix(in srgb, var(${tab.var}), transparent 85%)` : 'transparent'
-                                            }}
-                                        >
-                                            {tab.label}
-                                        </div>
-                                        {settingsTab === tab.id && (
-                                            <span
-                                                className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full shadow-[0_-2px_12px_rgba(0,0,0,0.5)]"
-                                                style={{ backgroundColor: `var(${tab.var})` }}
-                                            />
-                                        )}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                <div className="relative flex items-center h-full px-8 max-w-[1920px] mx-auto">
+                    {/* Brand — fixed left */}
+                    <div className="flex items-center gap-4 flex-shrink-0 z-10">
+                        {/* Brand logo dot — small glowing accent orb */}
+                        <div className="relative flex-shrink-0 mr-1">
+                            <div className="w-2.5 h-2.5 rounded-full bg-gradient-primary shadow-[0_0_10px_var(--color-glow-accent-soft),0_0_24px_var(--color-glow-accent-strong)] animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite]" />
+                            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-gradient-primary blur-[6px] opacity-60 animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite_0.5s]" />
+                        </div>
+                        <div className="flex items-baseline gap-1.5 leading-none">
+                            <span className="text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">Harmony</span>
+                            <span className="text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">Link</span>
+                        </div>
                     </div>
 
-                    {/* Tutorial restart button */}
-                    <div className="flex items-center gap-3">
+                    {/* Pill Dock — absolutely centered */}
+                    <div className="absolute left-1/2 -translate-x-1/2 nav-pill-dock z-0">
+                        {[
+                            { id: SettingsTabGeneral, label: 'General' },
+                            { id: SettingsTabEntities, label: 'Entities' },
+                            { id: SettingsTabModules, label: 'Modules' },
+                            { id: SettingsTabCharacters, label: 'Characters' },
+                            { id: SettingsTabIntegrations, label: 'Integrations' },
+                            { id: SettingsTabSimulator, label: 'Simulator' },
+                            { id: SettingsTabDevelopment, label: 'Dev' },
+                        ].map((tab) => {
+                            const isActive = settingsTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    data-tutorial-id={`nav-tab-${tab.id}`}
+                                    onClick={() => setSettingsTab(tab.id)}
+                                    className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
+                                >
+                                    <span className="nav-pill-label">{tab.label}</span>
+                                    {isActive && <span className="nav-pill-glow" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Help button — fixed right */}
+                    <div className="flex items-center gap-4 flex-shrink-0 ml-auto z-10">
                         <button
                             data-tutorial-id="tutorial-restart-btn"
-                            className="tutorial-restart-btn"
+                            className="nav-help-btn"
                             onClick={handleRestartTutorial}
                             title="Help / Restart Tutorial"
+                            aria-label="Help"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -223,7 +204,6 @@ function HarmonyLinkApp() {
                             </svg>
                         </button>
                     </div>
-
                 </div>
             </nav>
 

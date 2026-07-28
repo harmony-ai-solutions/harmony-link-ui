@@ -39,7 +39,7 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                             e.stopPropagation();
                             onDelete(profile.id);
                         }}
-                        className="absolute top-2 right-2 p-1.5 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                        className="absolute top-2 right-2 p-1.5 module-action-btn-danger rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                         title="Delete profile"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

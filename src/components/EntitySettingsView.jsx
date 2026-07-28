@@ -616,7 +616,7 @@ const EntitySettingsView = ({ appName }) => {
                             <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">Add</button>
                             <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Rename</button>
                             <button onClick={handleCopy} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Copy</button>
-                            <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-accent-gradient text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">Delete</button>
+                            <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-danger text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">Delete</button>
                         </div>
 
                         <div className="flex flex-col space-y-2">

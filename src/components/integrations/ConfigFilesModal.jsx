@@ -233,7 +233,7 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
                                             Revert to Default
                                         </button>
                                     )}
-                                    <button type="button" className={`font-bold py-1 px-2 mx-1 text-orange-400 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-neutral-700 hover:bg-neutral-500'}`} onClick={handleSave} disabled={loading || !selectedFile || isRunning}>
+                                    <button type="button" className={`font-bold py-1 px-2 mx-1 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'btn-primary'}`} onClick={handleSave} disabled={loading || !selectedFile || isRunning}>
                                         {loading ? 'Saving...' : 'Save Changes'}
                                     </button>
                                 </div>

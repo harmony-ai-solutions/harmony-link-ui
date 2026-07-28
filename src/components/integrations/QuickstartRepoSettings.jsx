@@ -114,7 +114,7 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
                   data-tutorial-id="quickstart-save-btn"
                   onClick={handleSave}
                   disabled={loading || !path}
-                  className="instance-action-btn-success flex-shrink-0 disabled:opacity-50"
+                  className="btn-primary text-xs py-1 px-3 flex-shrink-0 disabled:opacity-50"
                 >
                   {loading ? 'Saving…' : 'Save'}
                 </button>

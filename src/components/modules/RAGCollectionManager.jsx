@@ -446,8 +446,8 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                                                         </div>
                                                                         <button
                                                                             onClick={() => handleDeleteGroup(archetype, group.name)}
-                                                                            className="hover:opacity-75 ml-2"
-                                                                            style={{color: 'var(--color-error)'}}
+                                                                            className="hover:opacity-75 ml-2 rounded-lg px-2 py-0.5 text-white font-bold"
+                                                                            style={{background: 'linear-gradient(to right, #f87171, #ef4444, #b91c1c)'}}
                                                                             title="Delete entire group"
                                                                         >
                                                                             🗑️
@@ -549,8 +549,8 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                                                                                 await loadGroupDocuments(selectedCollection, selectedGroup.archetype, selectedGroup.name);
                                                                                             }
                                                                                         }}
-                                                                                        className="hover:opacity-75"
-                                                                                        style={{color: 'var(--color-error)'}}
+                                                                                        className="hover:opacity-75 rounded-lg px-1.5 py-0.5 text-white font-bold"
+                                                                                        style={{background: 'linear-gradient(to right, #f87171, #ef4444, #b91c1c)'}}
                                                                                         title="Delete document"
                                                                                     >
                                                                                         🗑️

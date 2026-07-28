@@ -180,7 +180,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                     <div>
                                         <button
                                             type="button"
-                                            className={`font-bold py-1 px-2 mx-1 text-white ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-700 hover:bg-red-500'}`}
+                                            className={`font-bold py-1 px-2 mx-1 text-white rounded-lg ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'btn-danger'}`}
                                             onClick={handleDelete}
                                             disabled={loading || isRunning}
                                         >
@@ -197,7 +197,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                         </button>
                                         <button
                                             type="button"
-                                            className={`font-bold py-1 px-2 mx-1 text-orange-400 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-neutral-700 hover:bg-neutral-500'}`}
+                                            className={`font-bold py-1 px-2 mx-1 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'btn-primary'}`}
                                             onClick={handleSave}
                                             disabled={loading || isRunning}
                                         >

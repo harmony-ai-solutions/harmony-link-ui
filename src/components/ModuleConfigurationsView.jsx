@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import useModuleConfigStore from '../store/moduleConfigStore.js';
 import ModuleCard from './modules/ModuleCard.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
@@ -6,6 +7,7 @@ import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances.js';
 import useDockerStatus from '../hooks/useDockerStatus.js';
 
 export default function ModuleConfigurationsView() {
+    const { t } = useTranslation();
     const { loadAllConfigs, getConfigs, isLoading } = useModuleConfigStore();
     const { allInstances, refresh: refreshInstances } = useAllIntegrationInstances();
     const { dockerStatus } = useDockerStatus();
@@ -19,7 +21,7 @@ export default function ModuleConfigurationsView() {
         try {
             await deleteConfig(moduleType, id);
         } catch (error) {
-            alert(`Failed to delete configuration: ${error.message}`);
+            alert(t('moduleConfig:deleteFailed', { message: error.message }));
         }
     };
 
@@ -29,17 +31,15 @@ export default function ModuleConfigurationsView() {
 
     return (
         <div className="flex flex-col min-h-full bg-background-base">
-            {/* View Header */}
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
-                    <span className="text-gradient-primary">Module</span> Configurations
+                    <Trans i18nKey="header.title" ns="moduleConfig" components={{ 0: <span className="text-gradient-primary" /> }} />
                 </h1>
                 <p className="text-xs text-text-muted mt-0.5 font-medium">
-                    Manage AI module configurations and provider settings
+                    {t('moduleConfig:header.subtitle')}
                 </p>
             </div>
 
-            {/* Module Cards — vertical list */}
             <div data-tutorial-id="module-cards-container" className="flex-1 p-6 space-y-3">
                 {MODULE_TYPE_OPTIONS.map((moduleInfo) => (
                     <ModuleCard

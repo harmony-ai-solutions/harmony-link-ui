@@ -1,0 +1,16 @@
+{
+  "header": {
+    "title": "Integrations",
+    "subtitle": "Manage and deploy containerized AI services"
+  },
+  "buttons": {
+    "refreshAll": "Refresh All",
+    "refreshing": "Refreshing...",
+    "stopAll": "Stop All ({{count}})",
+    "stoppingAll": "Stopping All..."
+  },
+  "stopAll": {
+    "title": "Stop All Running Instances",
+    "message": "This will stop {{count}} running instance(s):\n\n{{instances}}\n\nAre you sure you want to proceed?"
+  }
+}

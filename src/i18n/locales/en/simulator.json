@@ -1,0 +1,43 @@
+{
+  "header": {
+    "title": "Entity Simulator",
+    "subtitle": "Test and debug AI entity modules in a controlled environment"
+  },
+  "entityLabel": "Entity",
+  "tabs": {
+    "connection": "Connection",
+    "eventMonitor": "Event Monitor",
+    "backend": "Backend",
+    "movement": "Movement",
+    "tts": "TTS",
+    "stt": "STT",
+    "rag": "RAG",
+    "cognition": "Cognition"
+  },
+  "status": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting...",
+    "disconnecting": "Disconnecting..."
+  },
+  "messages": {
+    "selectEntity": "Please select an entity to simulate.",
+    "noEntityDisconnect": "No entity selected to disconnect.",
+    "noConnection": "No active simulator connection.",
+    "connectionFailed": "Connection failed: {{message}}",
+    "disconnectFailed": "Disconnect failed: {{message}}",
+    "tabNotFound": "Tab not found",
+    "connectionRestored": "Restored connection to simulated entity: {{entity}}",
+    "connectionLost": "Connection lost for entity: {{entity}}",
+    "autoRestored": "Auto-restored connection to simulated entity: {{entity}}",
+    "alreadySimulated": "Selected already simulated entity: {{entity}}",
+    "notCurrentlySimulated": "(not currently simulated)",
+    "connectedSuccessfully": "Successfully connected to simulated entity: {{entity}}",
+    "disconnectedSuccessfully": "Successfully disconnected from simulated entity",
+    "errorLoadingEntities": "Error loading entities: {{message}}",
+    "selectedEntity": "Selected entity: {{entity}}",
+    "noConfigFound": "No {{module}} configuration found for this entity",
+    "entityConfigNotFound": "Entity configuration not found",
+    "failedToLoadConfig": "Failed to load configuration: {{message}}"
+  }
+}

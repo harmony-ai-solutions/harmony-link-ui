@@ -1,0 +1,104 @@
+{
+  "nav": {
+    "brand": "Harmony",
+    "brandSub": "Link",
+    "tabs": {
+      "general": "General",
+      "entities": "Entities",
+      "modules": "Modules",
+      "characters": "Characters",
+      "integrations": "Integrations",
+      "simulator": "Simulator",
+      "dev": "Dev"
+    },
+    "help": "Help / Restart Tutorial"
+  },
+  "footer": {
+    "copyright": "©2023-2026 Project Harmony.AI"
+  },
+  "buttons": {
+    "save": "Save",
+    "saving": "Saving...",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "add": "Add",
+    "rename": "Rename",
+    "copy": "Copy",
+    "close": "Close",
+    "back": "Back",
+    "refresh": "Refresh All",
+    "refreshing": "Refreshing...",
+    "stopAll": "Stop All",
+    "stoppingAll": "Stopping...",
+    "export": "Export Settings",
+    "import": "Import Settings",
+    "reportBug": "Report a Bug",
+    "resetChanges": "Reset Changes",
+    "saveSettings": "Save Settings"
+  },
+  "status": {
+    "loading": "Loading...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connecting": "Connecting...",
+    "disconnecting": "Disconnecting...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "validation": {
+    "required": "{{field}} cannot be empty.",
+    "mustBeNumber": "{{field}} must be a number.",
+    "mustBePositive": "{{field}} must be a positive number.",
+    "invalidUrl": "{{field}} must be a valid URL.",
+    "portRange": "Port must be a number between {{min}} and {{max}}."
+  },
+  "notifications": {
+    "exportSuccess": "Settings exported successfully!",
+    "exportFailed": "Failed to export settings: {{message}}",
+    "importSuccess": "Settings imported successfully! Reloading settings...",
+    "importFailed": "Failed to import settings: {{message}}",
+    "invalidSettingsFile": "Invalid settings file: missing \"general\" section.",
+    "reloadFailed": "Reload after import failed: {{message}}",
+    "bugTrackerFailed": "Failed to open bug tracker URL."
+  },
+  "deviceApproval": {
+    "title": "New Device Connection Request",
+    "deviceName": "Device Name",
+    "deviceType": "Device Type",
+    "platform": "Platform",
+    "requestedAt": "Requested At",
+    "allowQuestion": "Do you want to allow this device to connect and sync data with Harmony Link?",
+    "willHaveAccess": "This device will be able to read and write to your Harmony Link database.",
+    "reject": "Reject",
+    "approve": "Approve",
+    "failed": "Failed to approve device. Please try again.",
+    "rejected": "Failed to reject device. Please try again."
+  },
+  "deviceManagement": {
+    "syncedPrefix": "Synced",
+    "devices": "Devices",
+    "subtitle": "Manage devices that can sync with this Harmony Link instance",
+    "loadFailed": "Failed to load devices",
+    "revokeConfirm": "Are you sure you want to revoke access for this device?",
+    "revokeFailed": "Failed to revoke device access",
+    "loadingDevices": "Loading devices...",
+    "noDevices": "No devices have requested sync access yet.",
+    "noDevicesHint": "When devices request to connect, they will appear here.",
+    "revoke": "Revoke",
+    "status": {
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "pending": "Pending"
+    },
+    "columns": {
+      "deviceName": "Device Name",
+      "type": "Type",
+      "platform": "Platform",
+      "status": "Status",
+      "lastSync": "Last Sync",
+      "actions": "Actions"
+    }
+  }
+}

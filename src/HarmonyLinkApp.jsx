@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getConfig, updateConfig, getAppName, getAppVersion } from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
@@ -14,8 +15,15 @@ import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCh
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
+import { I18nProvider } from './contexts/I18nContext.jsx';
 
-function HarmonyLinkApp() {
+/**
+ * Inner component that has access to the useTranslation hook.
+ * Separated so I18nProvider sits above it in the tree.
+ */
+function HarmonyLinkAppInner() {
+    const { t } = useTranslation();
+
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
     const [settingsTab, setSettingsTab] = useState(SettingsTabGeneral);
@@ -121,7 +129,7 @@ function HarmonyLinkApp() {
             setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
         } catch (error) {
             LogError('Failed to approve device:', error);
-            alert('Failed to approve device. Please try again.');
+            alert(t('deviceApproval.failed'));
         }
     };
 
@@ -138,9 +146,20 @@ function HarmonyLinkApp() {
             setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
         } catch (error) {
             LogError('Failed to reject device:', error);
-            alert('Failed to reject device. Please try again.');
+            alert(t('deviceApproval.rejected'));
         }
     };
+
+    // Tab definitions
+    const navTabs = [
+        { id: SettingsTabGeneral, label: t('nav.tabs.general') },
+        { id: SettingsTabEntities, label: t('nav.tabs.entities') },
+        { id: SettingsTabModules, label: t('nav.tabs.modules') },
+        { id: SettingsTabCharacters, label: t('nav.tabs.characters') },
+        { id: SettingsTabIntegrations, label: t('nav.tabs.integrations') },
+        { id: SettingsTabSimulator, label: t('nav.tabs.simulator') },
+        { id: SettingsTabDevelopment, label: t('nav.tabs.dev') },
+    ];
 
     return (
         <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
@@ -158,22 +177,14 @@ function HarmonyLinkApp() {
                             <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-gradient-primary blur-[6px] opacity-60 animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite_0.5s]" />
                         </div>
                         <div className="flex items-baseline gap-1.5 leading-none">
-                            <span className="text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">Harmony</span>
-                            <span className="text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">Link</span>
+                            <span className="text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">{t('nav.brand')}</span>
+                            <span className="text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">{t('nav.brandSub')}</span>
                         </div>
                     </div>
 
                     {/* Pill Dock — absolutely centered */}
                     <div className="absolute left-1/2 -translate-x-1/2 nav-pill-dock z-0">
-                        {[
-                            { id: SettingsTabGeneral, label: 'General' },
-                            { id: SettingsTabEntities, label: 'Entities' },
-                            { id: SettingsTabModules, label: 'Modules' },
-                            { id: SettingsTabCharacters, label: 'Characters' },
-                            { id: SettingsTabIntegrations, label: 'Integrations' },
-                            { id: SettingsTabSimulator, label: 'Simulator' },
-                            { id: SettingsTabDevelopment, label: 'Dev' },
-                        ].map((tab) => {
+                        {navTabs.map((tab) => {
                             const isActive = settingsTab === tab.id;
                             return (
                                 <button
@@ -195,7 +206,7 @@ function HarmonyLinkApp() {
                             data-tutorial-id="tutorial-restart-btn"
                             className="nav-help-btn"
                             onClick={handleRestartTutorial}
-                            title="Help / Restart Tutorial"
+                            title={t('nav.help')}
                             aria-label="Help"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -248,11 +259,46 @@ function HarmonyLinkApp() {
             <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3]">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
                     <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
-                        {appName} {appVersion} - &copy;2023-2026 Project Harmony.AI
+                        {appName} {appVersion} - {t('footer.copyright')}
                     </a>
                 </p>
             </footer>
         </div>
+    );
+}
+
+function HarmonyLinkApp() {
+    const [appLanguage, setAppLanguage] = useState(null);
+
+    // Load language from config on mount
+    useEffect(() => {
+        getConfig().then((config) => {
+            if (config?.general?.applanguage) {
+                setAppLanguage(config.general.applanguage);
+            }
+        }).catch(() => {
+            // Use default - i18n will fall back to browser detection
+        });
+    }, []);
+
+    const handleLanguageChange = (lang) => {
+        setAppLanguage(lang);
+        // Persist to app config
+        getConfig().then((config) => {
+            const updated = {
+                ...config,
+                general: { ...config.general, applanguage: lang },
+            };
+            updateConfig(updated, false)
+                .then(() => LogDebug(`Language changed to: ${lang}`))
+                .catch((err) => LogError(`Failed to persist language: ${err}`));
+        }).catch(() => {});
+    };
+
+    return (
+        <I18nProvider appLanguage={appLanguage} onLanguageChange={handleLanguageChange}>
+            <HarmonyLinkAppInner />
+        </I18nProvider>
     );
 }
 

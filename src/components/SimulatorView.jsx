@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     getSimulatorEntities,
     connectSimulator,
@@ -10,7 +11,6 @@ import {
 import {getConfig} from '../services/management/configService.js';
 import {getEntityRAGCollections} from '../services/management/ragService.js';
 
-// Import all the new tab components
 import ConnectionTab from './simulator/tabs/ConnectionTab';
 import EventMonitorTab from './simulator/tabs/EventMonitorTab';
 import BackendTab from './simulator/tabs/BackendTab';
@@ -21,31 +21,25 @@ import RAGTab from './simulator/tabs/RAGTab';
 import CognitionTab from './simulator/tabs/CognitionTab';
 
 function SimulatorView() {
-    // Connection state
+    const { t } = useTranslation();
+    const ts = (key, opts) => t(`simulator:${key}`, opts);
+
     const [entities, setEntities] = useState([]);
     const [selectedEntity, setSelectedEntity] = useState('');
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [feedback, setFeedback] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Event history state
     const [eventHistory, setEventHistory] = useState([]);
     const [groupedEventHistory, setGroupedEventHistory] = useState([]);
     const [useGroupedView, setUseGroupedView] = useState(true);
 
-    // Module configurations state
     const [moduleConfigs, setModuleConfigs] = useState({
-        backend: null,
-        movement: null,
-        tts: null,
-        stt: null,
-        rag: null,
-        cognition: null
+        backend: null, movement: null, tts: null, stt: null, rag: null, cognition: null
     });
     const [moduleConfigsLoading, setModuleConfigsLoading] = useState(false);
     const [moduleConfigErrors, setModuleConfigErrors] = useState({});
 
-    // Form responses state
     const [formResponses, setFormResponses] = useState({
         backend: { loading: false, response: null, error: null },
         movement: { loading: false, response: null, error: null },
@@ -55,32 +49,20 @@ function SimulatorView() {
         cognition: { loading: false, response: null, error: null }
     });
 
-    // RAG collections state
     const [ragCollections, setRagCollections] = useState([]);
     const [ragCollectionsLoading, setRagCollectionsLoading] = useState(false);
-
-    // Active tab state
     const [activeTab, setActiveTab] = useState('connection');
 
-    // Load entities on component mount
-    useEffect(() => {
-        loadEntities();
-    }, []);
+    useEffect(() => { loadEntities(); }, []);
 
-    // Load module configurations when entity is connected and load RAG collections when RAG tab is active
     useEffect(() => {
         if (selectedEntity && connectionStatus === 'connected') {
             console.log("Loading module configurations for entity:", selectedEntity);
             loadModuleConfigurations();
-
-            // Load RAG collections specifically when RAG tab is active
-            if (activeTab === 'rag') {
-                loadRAGCollections();
-            }
+            if (activeTab === 'rag') loadRAGCollections();
         }
     }, [selectedEntity, connectionStatus, activeTab]);
 
-    // Load entities from management API with sophisticated connection state restoration
     const loadEntities = async () => {
         try {
             setIsLoading(true);
@@ -88,13 +70,11 @@ function SimulatorView() {
             setEntities(entityList.entities || []);
             console.log("Loaded entities for simulator:", entityList);
 
-            // Check if currently selected entity is simulated and restore connection state
             if (selectedEntity) {
                 const currentEntity = entityList.entities?.find(entity => entity.id === selectedEntity);
                 if (currentEntity?.is_simulated && connectionStatus !== 'connected') {
                     setConnectionStatus('connected');
-                    setFeedback(`✅ Restored connection to simulated entity: ${selectedEntity}`);
-                    // Load event history for the restored entity
+                    setFeedback(ts('messages.connectionRestored', { entity: selectedEntity }));
                     try {
                         const [history, groupedHistory] = await Promise.all([
                             getSimulatorEventHistory(selectedEntity, 50),
@@ -106,20 +86,17 @@ function SimulatorView() {
                         console.error("Failed to load event history for restored entity:", historyError);
                     }
                 } else if (!currentEntity?.is_simulated && connectionStatus === 'connected') {
-                    // Entity is no longer simulated, disconnect
                     setConnectionStatus('disconnected');
                     setEventHistory([]);
                     setGroupedEventHistory([]);
-                    setFeedback(`Connection lost for entity: ${selectedEntity}`);
+                    setFeedback(ts('messages.connectionLost', { entity: selectedEntity }));
                 }
             } else {
-                // No entity selected, check if any entity is simulated and auto-select it
                 const simulatedEntity = entityList.entities?.find(entity => entity.is_simulated);
                 if (simulatedEntity && connectionStatus === 'disconnected') {
                     setSelectedEntity(simulatedEntity.id);
                     setConnectionStatus('connected');
-                    setFeedback(`✅ Auto-restored connection to simulated entity: ${simulatedEntity.id}`);
-                    // Load event history for the restored entity
+                    setFeedback(ts('messages.autoRestored', { entity: simulatedEntity.id }));
                     try {
                         const [history, groupedHistory] = await Promise.all([
                             getSimulatorEventHistory(simulatedEntity.id, 50),
@@ -134,13 +111,12 @@ function SimulatorView() {
             }
         } catch (error) {
             console.error("Failed to load entities for simulator:", error);
-            setFeedback(`Error loading entities: ${error.message}`);
+            setFeedback(ts('messages.errorLoadingEntities', { message: error.message }));
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Sync entity state when selected entity changes
     const syncEntityState = useCallback(async (entityId) => {
         if (!entityId) {
             setConnectionStatus('disconnected');
@@ -148,23 +124,14 @@ function SimulatorView() {
             setGroupedEventHistory([]);
             setFeedback('');
             clearAllFormResponses();
-            setModuleConfigs({
-                backend: null,
-                movement: null,
-                tts: null,
-                stt: null,
-                rag: null,
-                cognition: null
-            });
+            setModuleConfigs({ backend: null, movement: null, tts: null, stt: null, rag: null, cognition: null });
             setRagCollections([]);
             return;
         }
-
         const entity = entities.find(e => e.id === entityId);
         if (entity?.is_simulated) {
             setConnectionStatus('connected');
-            setFeedback(`✅ Selected already simulated entity: ${entityId}`);
-            // Load event history for the selected entity
+            setFeedback(ts('messages.alreadySimulated', { entity: entityId }));
             try {
                 const [history, groupedHistory] = await Promise.all([
                     getSimulatorEventHistory(entityId, 50),
@@ -175,116 +142,83 @@ function SimulatorView() {
             } catch (error) {
                 console.error("Failed to load event history:", error);
             }
-            // Load module configurations for the selected entity
             await loadModuleConfigurations();
         } else {
             setConnectionStatus('disconnected');
             setEventHistory([]);
             setGroupedEventHistory([]);
-            setFeedback(`Selected entity: ${entityId} (not currently simulated)`);
+            setFeedback(ts('messages.selectedEntity', { entity: entityId }) + ' ' + ts('messages.notCurrentlySimulated'));
             clearAllFormResponses();
-            setModuleConfigs({
-                backend: null,
-                movement: null,
-                tts: null,
-                stt: null,
-                rag: null,
-                cognition: null
-            });
+            setModuleConfigs({ backend: null, movement: null, tts: null, stt: null, rag: null, cognition: null });
             setRagCollections([]);
         }
-    }, [entities]);
+    }, [entities, ts]);
 
-    // Connect to entity
     const handleConnect = async () => {
         if (!selectedEntity) {
-            setFeedback('Please select an entity to simulate.');
+            setFeedback(ts('messages.selectEntity'));
             return;
         }
-
-        // Check if entity is already simulated
         const entity = entities.find(e => e.id === selectedEntity);
         if (entity?.is_simulated) {
             setConnectionStatus('connected');
-            setFeedback(`✅ Restored connection to already simulated entity: ${selectedEntity}`);
+            setFeedback(ts('messages.connectionRestored', { entity: selectedEntity }));
             await loadEventHistory();
             return;
         }
-
         try {
             setIsLoading(true);
             setConnectionStatus('connecting');
-            setFeedback('Connecting...');
-
+            setFeedback(t('common:status.connecting'));
             const response = await connectSimulator(selectedEntity);
-
             setConnectionStatus('connected');
-            setFeedback(`✅ Successfully connected to simulated entity: ${selectedEntity}`);
+            setFeedback(ts('messages.connectedSuccessfully', { entity: selectedEntity }));
             console.log("Simulator connected:", response);
             await loadModuleConfigurations();
             await loadEventHistory();
             await loadRAGCollections();
-            await loadEntities(); // Refresh entities to update simulation status
+            await loadEntities();
         } catch (error) {
             setConnectionStatus('disconnected');
-            setFeedback(`❌ Connection failed: ${error.message}`);
+            setFeedback(ts('messages.connectionFailed', { message: error.message }));
             console.error("Simulator connection failed:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Disconnect from entity
     const handleDisconnect = async () => {
         if (!selectedEntity) {
-            setFeedback('No entity selected to disconnect.');
+            setFeedback(ts('messages.noEntityDisconnect'));
             return;
         }
-
         try {
             setIsLoading(true);
             setConnectionStatus('disconnecting');
-            setFeedback('Disconnecting...');
-
+            setFeedback(t('common:status.disconnecting'));
             await disconnectSimulator(selectedEntity);
-
             setConnectionStatus('disconnected');
-            setFeedback('✅ Successfully disconnected from simulated entity');
+            setFeedback(ts('messages.disconnectedSuccessfully'));
             setEventHistory([]);
             setGroupedEventHistory([]);
-            setModuleConfigs({
-                backend: null,
-                movement: null,
-                tts: null,
-                stt: null,
-                rag: null
-            });
+            setModuleConfigs({ backend: null, movement: null, tts: null, stt: null, rag: null, cognition: null });
             clearAllFormResponses();
-            await loadEntities(); // Refresh entities to update simulation status
+            await loadEntities();
         } catch (error) {
-            setFeedback(`❌ Disconnect failed: ${error.message}`);
+            setFeedback(ts('messages.disconnectFailed', { message: error.message }));
             console.error("Simulator disconnection failed:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Load module configurations
     const loadModuleConfigurations = async () => {
         if (!selectedEntity) return;
-
         setModuleConfigsLoading(true);
         setModuleConfigErrors({});
-
         try {
             const config = await getConfig();
-            console.log("Full config loaded:", config);
-            console.log("Looking for entity:", selectedEntity);
-            console.log("Available entities:", Object.keys(config.entities || {}));
-
             const entityConfig = config.entities?.[selectedEntity];
-            console.log("Entity config:", entityConfig);
-
             if (entityConfig) {
                 const newModuleConfigs = {
                     backend: entityConfig.backend || null,
@@ -294,50 +228,34 @@ function SimulatorView() {
                     rag: entityConfig.rag || null,
                     cognition: entityConfig.cognition || null
                 };
-
                 setModuleConfigs(newModuleConfigs);
-                console.log("Module configurations loaded:", newModuleConfigs);
-
-                // Set individual errors for missing configurations
                 const errors = {};
-                Object.entries(newModuleConfigs).forEach(([module, config]) => {
-                    if (!config) {
-                        errors[module] = `No ${module} configuration found for this entity`;
-                    }
+                Object.entries(newModuleConfigs).forEach(([module, cfg]) => {
+                    if (!cfg) errors[module] = ts('messages.noConfigFound', { module });
                 });
                 setModuleConfigErrors(errors);
             } else {
-                console.log("No entity config found for:", selectedEntity);
                 setModuleConfigErrors({
-                    backend: 'Entity configuration not found',
-                    movement: 'Entity configuration not found',
-                    tts: 'Entity configuration not found',
-                    stt: 'Entity configuration not found',
-                    rag: 'Entity configuration not found',
-                    cognition: 'Entity configuration not found'
+                    backend: ts('messages.entityConfigNotFound'),
+                    movement: ts('messages.entityConfigNotFound'),
+                    tts: ts('messages.entityConfigNotFound'),
+                    stt: ts('messages.entityConfigNotFound'),
+                    rag: ts('messages.entityConfigNotFound'),
+                    cognition: ts('messages.entityConfigNotFound')
                 });
             }
         } catch (error) {
             console.error('Failed to load module configurations:', error);
-            const errorMessage = 'Failed to load configuration: ' + error.message;
-            setModuleConfigErrors({
-                backend: errorMessage,
-                movement: errorMessage,
-                tts: errorMessage,
-                stt: errorMessage,
-                rag: errorMessage,
-                cognition: errorMessage
-            });
+            const errMsg = ts('messages.failedToLoadConfig', { message: error.message });
+            setModuleConfigErrors({ backend: errMsg, movement: errMsg, tts: errMsg, stt: errMsg, rag: errMsg, cognition: errMsg });
         } finally {
             setModuleConfigsLoading(false);
         }
     };
 
-    // Load event history
     const loadEventHistory = async () => {
         if (!selectedEntity || connectionStatus !== 'connected') return;
         try {
-            // Load both regular and grouped event history
             const [history, groupedHistory] = await Promise.all([
                 getSimulatorEventHistory(selectedEntity, 50),
                 getSimulatorGroupedEventHistory(selectedEntity, 50)
@@ -349,7 +267,6 @@ function SimulatorView() {
         }
     };
 
-    // Load RAG collections
     const loadRAGCollections = async () => {
         if (!selectedEntity) return;
         setRagCollectionsLoading(true);
@@ -358,47 +275,32 @@ function SimulatorView() {
             setRagCollections(response.collections || []);
         } catch (error) {
             console.error('Failed to load RAG collections:', error);
-            // Don't set error for collections as they might not exist yet
         } finally {
             setRagCollectionsLoading(false);
         }
     };
 
-    // Send event to module
     const handleSendEvent = async (event, module) => {
         if (!selectedEntity || connectionStatus !== 'connected') {
             setFormResponses(prev => ({
                 ...prev,
-                [module]: { loading: false, response: null, error: 'No active simulator connection.' }
+                [module]: { loading: false, response: null, error: ts('messages.noConnection') }
             }));
             return;
         }
-
-        setFormResponses(prev => ({
-            ...prev,
-            [module]: { loading: true, response: null, error: null }
-        }));
-
+        setFormResponses(prev => ({ ...prev, [module]: { loading: true, response: null, error: null } }));
         try {
             const eventId = event.event_id || `${event.event_type}-${Date.now()}`;
             const eventWithId = { ...event, event_id: eventId };
-
             await sendSimulatorEvent(selectedEntity, eventWithId);
-
-            // Wait a bit for response, then check event history for result
             setTimeout(async () => {
                 try {
                     const history = await getSimulatorEventHistory(selectedEntity, 50);
                     const relatedEvents = history.events?.filter(e =>
-                        e.event?.event_id === eventId ||
-                        e.event?.event_type === event.event_type
-                    ) || [];
-
-                    // Find the most recent response event
+                        e.event?.event_id === eventId || e.event?.event_type === event.event_type) || [];
                     const responseEvent = relatedEvents
                         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                         .find(e => e.event?.status === 'SUCCESS' || e.event?.status === 'ERROR');
-
                     setFormResponses(prev => ({
                         ...prev,
                         [module]: {
@@ -407,8 +309,6 @@ function SimulatorView() {
                             error: responseEvent?.event?.status === 'ERROR' ? responseEvent.event.payload : null
                         }
                     }));
-
-                    // Refresh event history
                     loadEventHistory();
                 } catch (error) {
                     setFormResponses(prev => ({
@@ -417,7 +317,6 @@ function SimulatorView() {
                     }));
                 }
             }, 1000);
-
         } catch (error) {
             console.error('Failed to send simulator event:', error);
             setFormResponses(prev => ({
@@ -427,15 +326,10 @@ function SimulatorView() {
         }
     };
 
-    // Clear form response
     const handleClearFormResponse = (module) => {
-        setFormResponses(prev => ({
-            ...prev,
-            [module]: { loading: false, response: null, error: null }
-        }));
+        setFormResponses(prev => ({ ...prev, [module]: { loading: false, response: null, error: null } }));
     };
 
-    // Clear all form responses
     const clearAllFormResponses = () => {
         setFormResponses({
             backend: { loading: false, response: null, error: null },
@@ -447,98 +341,65 @@ function SimulatorView() {
         });
     };
 
-    // Open collection manager
     const handleOpenCollectionManager = () => {
-        // This would open a modal or navigate to collection manager
         console.log('Opening collection manager...');
     };
 
-    // Tab configuration
     const tabs = [
-        { id: 'connection', label: 'Connection', icon: '🔗' },
-        { id: 'events', label: 'Event Monitor', icon: '📊' },
-        { id: 'backend', label: 'Backend', icon: '🧠' },
-        { id: 'movement', label: 'Movement', icon: '🎯' },
-        { id: 'tts', label: 'TTS', icon: '🔊' },
-        { id: 'stt', label: 'STT', icon: '🎤' },
-        { id: 'rag', label: 'RAG', icon: '💡' },
-        { id: 'cognition', label: 'Cognition', icon: '😊' }
+        { id: 'connection', label: ts('tabs.connection'), icon: '🔗' },
+        { id: 'events', label: ts('tabs.eventMonitor'), icon: '📊' },
+        { id: 'backend', label: ts('tabs.backend'), icon: '🧠' },
+        { id: 'movement', label: ts('tabs.movement'), icon: '🎯' },
+        { id: 'tts', label: ts('tabs.tts'), icon: '🔊' },
+        { id: 'stt', label: ts('tabs.stt'), icon: '🎤' },
+        { id: 'rag', label: ts('tabs.rag'), icon: '💡' },
+        { id: 'cognition', label: ts('tabs.cognition'), icon: '😊' }
     ];
 
-    // Render tab content
     const renderTabContent = () => {
         const commonProps = {
-            connectionStatus,
-            moduleConfigs,
-            moduleConfigsLoading,
-            moduleConfigErrors,
-            formResponses,
-            onSendEvent: handleSendEvent,
-            onClearFormResponse: handleClearFormResponse
+            connectionStatus, moduleConfigs, moduleConfigsLoading, moduleConfigErrors,
+            formResponses, onSendEvent: handleSendEvent, onClearFormResponse: handleClearFormResponse
         };
-
         switch (activeTab) {
             case 'connection':
-                return (
-                    <ConnectionTab
-                        entities={entities}
-                        selectedEntity={selectedEntity}
-                        setSelectedEntity={setSelectedEntity}
-                        connectionStatus={connectionStatus}
-                        feedback={feedback}
-                        isLoading={isLoading}
-                        onConnect={handleConnect}
-                        onDisconnect={handleDisconnect}
-                        onLoadEntities={loadEntities}
-                        onSyncEntityState={syncEntityState}
-                    />
-                );
+                return <ConnectionTab entities={entities} selectedEntity={selectedEntity}
+                    setSelectedEntity={setSelectedEntity} connectionStatus={connectionStatus}
+                    feedback={feedback} isLoading={isLoading}
+                    onConnect={handleConnect} onDisconnect={handleDisconnect}
+                    onLoadEntities={loadEntities} onSyncEntityState={syncEntityState} />;
             case 'events':
-                return (
-                    <EventMonitorTab
-                        connectionStatus={connectionStatus}
-                        eventHistory={eventHistory}
-                        groupedEventHistory={groupedEventHistory}
-                        useGroupedView={useGroupedView}
-                        setUseGroupedView={setUseGroupedView}
-                        onLoadEventHistory={loadEventHistory}
-                    />
-                );
-            case 'backend':
-                return <BackendTab {...commonProps} />;
-            case 'movement':
-                return <MovementTab {...commonProps} />;
-            case 'tts':
-                return <TTSTab {...commonProps} />;
-            case 'stt':
-                return <STTTab {...commonProps} />;
+                return <EventMonitorTab connectionStatus={connectionStatus} eventHistory={eventHistory}
+                    groupedEventHistory={groupedEventHistory} useGroupedView={useGroupedView}
+                    setUseGroupedView={setUseGroupedView} onLoadEventHistory={loadEventHistory} />;
+            case 'backend': return <BackendTab {...commonProps} />;
+            case 'movement': return <MovementTab {...commonProps} />;
+            case 'tts': return <TTSTab {...commonProps} />;
+            case 'stt': return <STTTab {...commonProps} />;
             case 'rag':
-                return (
-                    <RAGTab
-                        {...commonProps}
-                        ragCollections={ragCollections}
-                        ragCollectionsLoading={ragCollectionsLoading}
-                        onOpenCollectionManager={handleOpenCollectionManager}
-                        onRefreshCollections={loadRAGCollections}
-                    />
-                );
-            case 'cognition':
-                return <CognitionTab {...commonProps} />;
-            default:
-                return <div>Tab not found</div>;
+                return <RAGTab {...commonProps} ragCollections={ragCollections}
+                    ragCollectionsLoading={ragCollectionsLoading}
+                    onOpenCollectionManager={handleOpenCollectionManager}
+                    onRefreshCollections={loadRAGCollections} />;
+            case 'cognition': return <CognitionTab {...commonProps} />;
+            default: return <div>{ts('messages.tabNotFound')}</div>;
         }
+    };
+
+    const statusLabels = {
+        connected: t('common:status.connected'),
+        disconnected: t('common:status.disconnected'),
+        connecting: t('common:status.connecting'),
+        disconnecting: t('common:status.disconnecting'),
     };
 
     return (
         <div className="bg-neutral-900 text-neutral-100">
-            {/* Header */}
             <div className="bg-neutral-800 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-orange-400">Entity Simulator</h1>
-                        <p className="text-sm text-gray-400 mt-1">
-                            Test and debug AI entity modules in a controlled environment
-                        </p>
+                        <h1 className="text-2xl font-bold text-orange-400">{ts('header.title')}</h1>
+                        <p className="text-sm text-gray-400 mt-1">{ts('header.subtitle')}</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -546,30 +407,26 @@ function SimulatorView() {
                             connectionStatus === 'disconnected' ? 'bg-red-500/20 text-red-400' :
                             'bg-yellow-500/20 text-yellow-400'
                         }`}>
-                            {connectionStatus.toUpperCase()}
+                            {(statusLabels[connectionStatus] || connectionStatus).toUpperCase()}
                         </div>
                         {selectedEntity && (
                             <div className="text-sm text-gray-300">
-                                Entity: <span className="text-orange-400 font-medium">{selectedEntity}</span>
+                                {ts('entityLabel')}: <span className="text-orange-400 font-medium">{selectedEntity}</span>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Tab Navigation */}
             <div className="bg-neutral-800">
                 <div className="flex overflow-x-auto">
                     {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                                 activeTab === tab.id
                                     ? 'border-orange-400 text-orange-400 bg-neutral-700/50'
                                     : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-neutral-700/30'
-                            }`}
-                        >
+                            }`}>
                             <span className="text-sm">{tab.icon}</span>
                             {tab.label}
                         </button>
@@ -577,7 +434,6 @@ function SimulatorView() {
                 </div>
             </div>
 
-            {/* Tab Content */}
             <div className="flex-1">
                 {renderTabContent()}
             </div>

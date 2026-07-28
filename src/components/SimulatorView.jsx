@@ -532,7 +532,7 @@ function SimulatorView() {
     return (
         <div className="bg-neutral-900 text-neutral-100">
             {/* Header */}
-            <div className="bg-neutral-800 border-b border-neutral-700 px-6 py-4">
+            <div className="bg-neutral-800 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-orange-400">Entity Simulator</h1>
@@ -558,7 +558,7 @@ function SimulatorView() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="bg-neutral-800 border-b border-neutral-700">
+            <div className="bg-neutral-800">
                 <div className="flex overflow-x-auto">
                     {tabs.map((tab) => (
                         <button

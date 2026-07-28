@@ -89,7 +89,6 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
         {/* ── Path Configuration Area ─────────────────────────────────── */}
         <div
           className="relative px-5 py-3"
-          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.07)' }}
         >
           {isEditing ? (
             /* Editing state */

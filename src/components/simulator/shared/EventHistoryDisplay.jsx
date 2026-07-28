@@ -69,7 +69,7 @@ function EventHistoryDisplay({ events }) {
 
                         {/* Inline Payload */}
                         {event.event.payload && (
-                            <div className="mt-1 pt-1 border-t border-neutral-700/50">
+                            <div className="mt-1 pt-1">
                                 <details className="group">
                                     <summary className="cursor-pointer text-orange-400 text-xs font-medium flex items-center gap-1 hover:text-orange-300">
                                         <svg className="w-3 h-3 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

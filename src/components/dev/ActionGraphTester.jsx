@@ -258,7 +258,6 @@ export default function ActionGraphTester() {
                                                 type="checkbox"
                                                 checked={lookAtTarget}
                                                 onChange={(e) => setLookAtTarget(e.target.checked)}
-                                                className="accent-accent-primary"
                                                 disabled={isLoading}
                                             />
                                             Look at target
@@ -268,7 +267,6 @@ export default function ActionGraphTester() {
                                                 type="checkbox"
                                                 checked={requiresConsent}
                                                 onChange={(e) => setRequiresConsent(e.target.checked)}
-                                                className="accent-accent-primary"
                                                 disabled={isLoading}
                                             />
                                             Requires consent

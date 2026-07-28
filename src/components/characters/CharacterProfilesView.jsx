@@ -91,7 +91,7 @@ export default function CharacterProfilesView() {
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold tracking-tight">
@@ -131,7 +131,7 @@ export default function CharacterProfilesView() {
             </div>
 
             {/* Search Bar & Card Size Selector */}
-            <div className="bg-background-surface/50 border-b border-white/5 px-6 py-4 backdrop-blur-md">
+            <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
                 <div className="flex items-center gap-4 justify-between">
                     <div className="relative flex-1 max-w-md">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -259,7 +259,7 @@ export default function CharacterProfilesView() {
             {showImport && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="modal-content w-full max-w-xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-border-default flex justify-between items-center">
+                        <div className="px-6 py-4 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-accent-primary">Import Character Card</h2>
                             <button onClick={() => setShowImport(false)} className="text-text-muted hover:text-text-primary transition-colors">
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -270,7 +270,7 @@ export default function CharacterProfilesView() {
                         <div className="p-6">
                             <CharacterCardImport onSuccess={handleImportSuccess} />
                         </div>
-                        <div className="px-6 py-4 border-t border-border-default flex justify-end">
+                        <div className="px-6 py-4 flex justify-end">
                             <button
                                 onClick={() => setShowImport(false)}
                                 className="btn-secondary px-4 py-2 rounded-md text-sm font-medium transition-colors"

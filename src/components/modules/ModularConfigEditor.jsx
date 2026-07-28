@@ -602,7 +602,6 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             <input
                                 type="checkbox"
                                 name={field.key}
-                                className="h-4 w-4 rounded text-accent-primary focus:ring-accent-primary focus:ring-offset-0"
                                 checked={!!currentValue}
                                 onChange={(e) => handleCheckboxChange(field, e.target.checked)}
                             />

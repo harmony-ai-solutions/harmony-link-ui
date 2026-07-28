@@ -245,7 +245,7 @@ function HarmonyLinkApp() {
                 show={currentDevice !== null}
             />
 
-            <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3] border-t border-border-glass">
+            <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3]">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
                     <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
                         {appName} {appVersion} - &copy;2023-2026 Project Harmony.AI

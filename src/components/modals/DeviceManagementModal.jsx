@@ -81,7 +81,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="modal-content max-w-4xl w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
                 {/* Modal Header */}
-                <div className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
+                <div className="px-6 py-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold">
                             <span className="text-gradient-primary">Synced</span> Devices
@@ -125,7 +125,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                                     <div className="overflow-x-auto rounded-lg border border-white/10">
                                         <table className="w-full">
                                             <thead>
-                                                <tr className="border-b border-white/10 bg-background-elevated/50">
+                                                <tr className="bg-background-elevated/50">
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Device Name</th>
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Type</th>
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Platform</th>
@@ -136,7 +136,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                                             </thead>
                                             <tbody>
                                                 {devices.map(device => (
-                                                    <tr key={device.device_id} className="border-b border-white/5 hover:bg-background-elevated/50 transition-colors">
+                                                    <tr key={device.device_id} className="hover:bg-background-elevated/50 transition-colors">
                                                         <td className="px-6 py-4 text-sm text-text-primary font-medium">{getSafeValue(device.device_name)}</td>
                                                         <td className="px-6 py-4 text-sm text-text-muted">{getSafeValue(device.device_type)}</td>
                                                         <td className="px-6 py-4 text-sm text-text-muted">{getSafeValue(device.device_platform)}</td>
@@ -168,7 +168,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="border-t border-white/10 px-6 py-4 bg-background-base/50 flex justify-end">
+                <div className="px-6 py-4 bg-background-base/50 flex justify-end">
                     <button
                         onClick={onClose}
                         className="btn-secondary"

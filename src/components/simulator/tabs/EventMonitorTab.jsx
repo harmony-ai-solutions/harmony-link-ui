@@ -75,7 +75,7 @@ function EventMonitorTab({
                 <div className="space-y-3">
                     {/* Event History with Controls */}
                     <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700/50 overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-b border-blue-500/20 p-2">
+                        <div className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 p-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <div className="w-5 h-5 bg-blue-500/20 rounded flex items-center justify-center">

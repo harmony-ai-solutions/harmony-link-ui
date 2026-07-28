@@ -118,7 +118,7 @@ function ConnectionTab({
                 {/* Entity Information Section */}
                 {selectedEntity && entities.find(e => e.id === selectedEntity) && (
                     <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700/50 overflow-hidden">
-                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/10 border-b border-orange-500/20 p-2">
+                        <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/10 p-2">
                             <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 bg-orange-500/20 rounded flex items-center justify-center">
                                     <svg className="w-3 h-3 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +163,7 @@ function ConnectionTab({
                 {/* Feedback Section */}
                 {feedback && (
                     <div className="bg-neutral-800/50 backdrop-blur-sm rounded-lg border border-neutral-700/50 overflow-hidden">
-                        <div className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-b border-purple-500/20 p-2">
+                        <div className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 p-2">
                             <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 bg-purple-500/20 rounded flex items-center justify-center">
                                     <svg className="w-3 h-3 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -183,7 +183,7 @@ export default function LogLevelSettings({ isOpen, onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
+            <div className="flex justify-end gap-2 pt-2">
                 <button className="btn-secondary text-sm py-1.5" onClick={handleReset}>
                     Reset to Defaults
                 </button>

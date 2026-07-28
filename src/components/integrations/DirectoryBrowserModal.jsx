@@ -254,7 +254,7 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="mx-auto w-full max-w-4xl max-h-[90vh] bg-neutral-900 rounded-lg shadow-xl border border-neutral-700 flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-neutral-700">
+          <div className="flex items-center justify-between p-6">
             <Dialog.Title className="text-lg font-semibold text-orange-400">
               Browse Directory
             </Dialog.Title>
@@ -367,7 +367,7 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 p-6 border-t border-neutral-700">
+          <div className="flex items-center justify-end space-x-3 p-6">
             <button
               onClick={handleCancel}
               className="bg-neutral-700 hover:bg-neutral-600 text-neutral-300 px-4 py-2 rounded"

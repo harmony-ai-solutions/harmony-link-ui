@@ -359,7 +359,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             {showContainers && instance.containers && instance.containers.length > 0 && (
                 <div
                     className="pl-14 pr-4 pb-3"
-                    style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
                 >
                     <div
                         className="mt-1.5 rounded-lg overflow-hidden"
@@ -372,7 +371,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         <div
                             className="px-3 py-1.5"
                             style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.06)',
                                 background: 'linear-gradient(to right, var(--color-background-elevated), transparent)',
                             }}
                         >
@@ -391,7 +389,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                                 className="flex items-center gap-3 px-3 py-1.5 text-xs"
                                 style={{
                                     color: 'var(--color-text-muted)',
-                                    borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                                 }}
                             >
                                 <span
@@ -443,7 +440,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         <div
                             className="flex items-center justify-between px-4 py-3 flex-shrink-0"
                             style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.08)',
                                 background: 'linear-gradient(135deg, var(--color-nuance-integrations), transparent 60%)',
                                 backgroundSize: '100% 100%',
                             }}
@@ -487,7 +483,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {currentOperation.progress && (
                             <div
                                 className="px-4 py-2.5 flex-shrink-0"
-                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                             >
                                 <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
                                     <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
@@ -517,7 +512,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {imagePullKeys.length > 0 && (
                             <div
                                 className="px-4 py-2 flex-shrink-0"
-                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                             >
                                 <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
                                     Image Pulls:
@@ -579,7 +573,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {/* Footer */}
                         <div
                             className="flex justify-between items-center px-4 py-2.5 flex-shrink-0"
-                            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                                 {currentOperation.inProgress ? 'Operation in progress…' : 'Operation complete.'}

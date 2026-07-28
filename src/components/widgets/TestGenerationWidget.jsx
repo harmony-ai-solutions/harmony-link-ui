@@ -44,7 +44,7 @@ export default function TestGenerationWidget({
     };
 
     return (
-        <div className="border-t border-border-default pt-4 mt-2">
+        <div className="pt-4 mt-2">
             <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                 Test Generation
             </h5>

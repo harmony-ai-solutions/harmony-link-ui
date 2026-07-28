@@ -127,7 +127,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                             </div>
 
                             {/* Inline editor — immediately expanded */}
-                            <div className="pl-14 pr-4 pb-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="pl-14 pr-4 pb-3">
                                 <div className="mt-1.5">
                                     <ModuleConfigInlineEditor
                                         moduleType={moduleType}

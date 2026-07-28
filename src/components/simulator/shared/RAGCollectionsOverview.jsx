@@ -67,7 +67,7 @@ function RAGCollectionsOverview({ collections, loading, onOpenManager, onRefresh
             )}
 
             {collections.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-neutral-600">
+                <div className="mt-4 pt-3">
                     <div className="text-xs text-gray-400">
                         💡 Use the Collection Manager to view, edit, and organize your vector embeddings
                     </div>

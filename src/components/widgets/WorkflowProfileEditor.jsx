@@ -478,7 +478,7 @@ export default function WorkflowProfileEditor({
                 </div>
 
                 {/* Generation Settings */}
-                <div className="border-t border-border-default pt-4">
+                <div className="pt-4">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
                         Generation Settings
                         <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
@@ -557,7 +557,7 @@ export default function WorkflowProfileEditor({
                 </div>
 
                 {/* ── Test Generation ── */}
-                <div className="border-t border-border-default pt-4 mt-2">
+                <div className="pt-4 mt-2">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                         Test Generation
                         <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>

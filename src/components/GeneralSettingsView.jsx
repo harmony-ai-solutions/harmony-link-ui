@@ -170,7 +170,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4 flex items-start justify-between">
+            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         <span className="text-gradient-primary">General</span> Settings
@@ -192,7 +192,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             <div className="flex-1 p-6 space-y-8 max-w-7xl">
                 {/* Connection Settings Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">Application & Cloud</span>
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
@@ -289,7 +289,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         <div className="space-y-4">
                             <label className="flex items-center gap-3 px-3 cursor-pointer group">
                                 <input type="checkbox" name="useHarmonyCloud"
-                                    className="rounded text-accent-primary focus:ring-accent-primary"
                                     checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
@@ -305,7 +304,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </label>
                             <label className="flex items-center gap-3 px-3 cursor-pointer group">
                                 <input type="checkbox" name="confirmEvents"
-                                    className="rounded text-accent-primary focus:ring-accent-primary"
                                     checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
@@ -321,7 +319,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </label>
                             <label className="flex items-center gap-3 px-3 cursor-pointer group">
                                 <input type="checkbox" name="logFile"
-                                    className="rounded text-accent-primary focus:ring-accent-primary"
                                     checked={logFile} onChange={(e) => setLogFile(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
@@ -341,7 +338,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
                 {/* Network & Infrastructure Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
-                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">Network & Infrastructure</span>
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
@@ -402,7 +399,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         {/* Row 2, Col 2: Single Port Mode Toggle */}
                         <label className="flex items-center gap-3 px-3 cursor-pointer group">
                             <input type="checkbox" name="singlePort"
-                                className="rounded text-accent-primary focus:ring-accent-primary"
                                 checked={singlePort} onChange={(e) => setSinglePort(e.target.checked)} />
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
@@ -425,7 +421,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
                 {/* Theme Selector Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
-                    <h2 className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 mb-6 flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">Appearance & Personalization</span>
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -469,7 +465,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 </section>
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-6 border-t border-white/10">
+                <div className="flex items-center justify-end gap-3 pt-6">
                     <button
                         onClick={setInitialValues}
                         className="btn-secondary">

@@ -600,7 +600,7 @@ const EntitySettingsView = ({ appName }) => {
 
             <div className="flex flex-col min-h-full bg-background-base">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         <span className="text-gradient-primary">Entity</span> Settings
                     </h1>
@@ -701,7 +701,7 @@ const EntitySettingsView = ({ appName }) => {
                                 )}
 
                                 <section className="space-y-4">
-                                    <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6">
+                                    <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6">
                                         <span className="text-gradient-primary">Identity Settings</span>
                                         <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Configure the character identity for this entity.
@@ -774,7 +774,7 @@ const EntitySettingsView = ({ appName }) => {
                                 />
 
                                 <section className="space-y-4">
-                                    <h3 data-tutorial-id="entity-module-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                    <h3 data-tutorial-id="entity-module-section" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">Module Configurations</span>
                                         <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Select pre-configured module settings for this entity.
@@ -893,7 +893,7 @@ const EntitySettingsView = ({ appName }) => {
 
                                 {/* Lifecycle Settings Section */}
                                 <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">
-                                    <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                    <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">Lifecycle Settings</span>
                                         <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             Per-entity lifecycle configuration overrides.

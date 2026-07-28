@@ -599,7 +599,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 </div>
 
                 {/* Voice Config Editor - Basic Settings */}
-                <div className="flex flex-wrap w-full border-t border-white/10 pt-2 mb-2">
+                <div className="flex flex-wrap w-full pt-2 mb-2">
                     <div className="flex items-center w-full mb-2">
                         <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">Basic Settings</h2>
                     </div>
@@ -652,7 +652,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Voice Embedding Section */}
                 {currentVoiceConfig.operation_mode === "voice_cloning" && (
                     <div className="w-full">
-                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                        <div className="flex items-center mb-2 w-full pt-2">
                             <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Voice Embedding Settings
                                 <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
@@ -732,7 +732,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Voice Generation Settings */}
-                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                <div className="flex items-center mb-2 w-full pt-2">
                     <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Voice Generation Settings
                         <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
@@ -927,7 +927,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Chatterbox-specific generation parameters */}
                 {isChatterboxModel(currentVoiceConfig.model) && (
                     <>
-                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                        <div className="flex items-center mb-2 w-full pt-2">
                             <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Chatterbox Parameters
                             </h2>
@@ -1145,7 +1145,6 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     <input
                                         type="checkbox"
                                         name="norm_loudness"
-                                        className="input-field mt-1"
                                         checked={currentVoiceConfig.norm_loudness}
                                         onChange={(e) =>
                                             setCurrentVoiceConfig({
@@ -1161,7 +1160,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Generate Speech Section */}
-                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                <div className="flex items-center mb-2 w-full pt-2">
                     <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Generate Speech
                         <SettingsTooltip tooltipIndex={18} tooltipVisible={() => tooltipVisible}

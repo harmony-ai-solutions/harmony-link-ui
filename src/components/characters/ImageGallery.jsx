@@ -245,7 +245,6 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                     </svg>
                                     Edit Description
                                 </button>
-                                <div className="border-t border-white/10 my-0.5"></div>
                                 <button
                                     onClick={() => handleDelete(image.id)}
                                     className="w-full px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors rounded-lg"

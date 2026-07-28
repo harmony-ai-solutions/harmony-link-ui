@@ -189,7 +189,7 @@ const IntegrationsView = () => {
     return (
       <div className="flex flex-col min-h-full bg-background-base">
         {/* View Header */}
-        <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+        <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
           <h1 className="text-2xl font-extrabold tracking-tight">
             <span className="text-gradient-primary">Integrations</span>
           </h1>
@@ -210,7 +210,7 @@ const IntegrationsView = () => {
   return (
     <div className="flex flex-col min-h-full bg-background-base">
       {/* View Header */}
-      <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+      <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
         <h1 className="text-2xl font-extrabold tracking-tight">
           <span className="text-gradient-primary">Integrations</span>
         </h1>

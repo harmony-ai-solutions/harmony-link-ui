@@ -130,7 +130,6 @@ const AdvancedSamplingParams = ({ extraParams = {}, onChange, presetParams = {} 
                                         type="checkbox"
                                         checked={!!currentValue}
                                         onChange={(e) => handleParamChange(key, e.target.checked)}
-                                        className="h-4 w-4 rounded text-accent-primary"
                                     />
                                 ) : inputType === 'number' ? (
                                     <input

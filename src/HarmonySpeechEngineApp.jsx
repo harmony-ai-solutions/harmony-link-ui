@@ -37,7 +37,7 @@ function HarmonySpeechEngineApp() {
 
   return (
     <div id="App">
-      <div className="border-b-2 border-neutral-500">
+      <div>
         <ul className="flex cursor-pointer">
           <li className="mr-1 h-10 bg-neutral-900">
             <a className="inline-block py-2 px-4 text-orange-400 hover:text-orange-300 font-semibold"
@@ -52,7 +52,7 @@ function HarmonySpeechEngineApp() {
                href="#vad" onClick={() => setActiveTab(TABS.VAD)}>Voice Activity Detection</a>
           </li>
         </ul>
-        <div className="bg-neutral-900 border-t-2 border-b border-neutral-500 p-4">
+        <div className="bg-neutral-900 p-4">
           {activeTab === TABS.TTS && (
             <ModularConfigEditor
               schemaId="harmonyspeech_tts"

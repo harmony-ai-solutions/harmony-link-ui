@@ -14,7 +14,7 @@ function DevelopmentView() {
             className="flex flex-col bg-background-base"
             style={{ height: 'calc(100vh - 6rem)' }}
         >            {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
                     <span className="text-gradient-primary">Development</span> Tools
                 </h1>

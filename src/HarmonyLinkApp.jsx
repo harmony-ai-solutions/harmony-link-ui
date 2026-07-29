@@ -8,11 +8,13 @@ import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
+import DynamicBackground from "./components/DynamicBackground.jsx";
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
+import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
@@ -78,6 +80,9 @@ function HarmonyLinkAppInner() {
             getAppVersion().then((result) => setAppVersion(result));
             getConfig().then((result) => {
                 setApplicationConfig(result);
+
+                // Sync dynamic background store with loaded config
+                useDynamicBackgroundStore.getState().syncFromConfig(result);
 
                 // Auto-launch tutorial if not completed
                 if (!result.general?.skiptutorial) {
@@ -162,7 +167,11 @@ function HarmonyLinkAppInner() {
     ];
 
     return (
-        <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
+        <>
+            {/* Theme-adaptive dynamic background — controlled by Zustand store for instant toggle */}
+            <DynamicBackground />
+
+            <div id="App" className="relative z-[1] min-h-screen text-text-primary selection:bg-accent-primary/20">
             {/* Top Navigation Bar — Ultra Glassmorphic Floating Dock */}
             <nav className="sticky top-0 z-50 nav-glass-bar">
                 {/* Top-edge glass light catch */}
@@ -218,7 +227,7 @@ function HarmonyLinkAppInner() {
                 </div>
             </nav>
 
-            <div className="flex-1 bg-background-base min-h-[calc(100vh-6rem)]">
+            <div className="flex-1 min-h-[calc(100vh-6rem)]">
                 {applicationConfig && settingsTab === SettingsTabGeneral &&
                     <GeneralSettingsView 
                         generalSettings={applicationConfig.general} 
@@ -263,7 +272,8 @@ function HarmonyLinkAppInner() {
                     </a>
                 </p>
             </footer>
-        </div>
+            </div>
+        </>
     );
 }
 

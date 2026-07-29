@@ -10,6 +10,7 @@ import { openSystemUrl } from '../services/management/systemService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
+import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
 
 const FONT_SCALE_OPTIONS = [
     { value: 'compact', labelKey: 'generalSettings:fields.fontScale.options.compact' },
@@ -46,6 +47,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [confirmModalMessage, setConfirmModalMessage] = useState('');
     const [confirmModalYes, setConfirmModalYes] = useState(() => { });
     const [confirmModalNo, setConfirmModalNo] = useState(() => { });
+
+    // Zustand store — sync dynamic background toggle instantly across the app
+    const { setEnabled: setBgEnabled } = useDynamicBackgroundStore();
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -95,7 +99,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [fontScale, setFontScale] = useState("default");
     const [appLanguage, setAppLanguage] = useState("en");
     const [numberFormat, setNumberFormat] = useState("en");
-    const [animatedBackground, setAnimatedBackground] = useState(true);
+    const [dynamicBackground, setDynamicBackground] = useState(true);
     const [autoUpdate, setAutoUpdate] = useState("notify");
     const [desktopNotifications, setDesktopNotifications] = useState(true);
     const [notificationBadges, setNotificationBadges] = useState(true);
@@ -190,7 +194,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setFontScale(generalSettings.fontscale || "default");
         setAppLanguage(generalSettings.applanguage || "en");
         setNumberFormat(generalSettings.numberformat || "en");
-        setAnimatedBackground(generalSettings.animatedbackground !== false);
+        setDynamicBackground(generalSettings.animatedbackground !== false);
         setAutoUpdate(generalSettings.autoupdate || "notify");
         setDesktopNotifications(generalSettings.desktopnotifications !== false);
         setNotificationBadges(generalSettings.notificationbadges !== false);
@@ -227,7 +231,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.fontscale = fontScale;
         generalSettings.applanguage = appLanguage;
         generalSettings.numberformat = numberFormat;
-        generalSettings.animatedbackground = animatedBackground;
+        generalSettings.animatedbackground = dynamicBackground;
         generalSettings.autoupdate = autoUpdate;
         generalSettings.desktopnotifications = desktopNotifications;
         generalSettings.notificationbadges = notificationBadges;
@@ -371,7 +375,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-background-base">
+        <div className="flex flex-col min-h-full">
             {/* View Header */}
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
                 <div>
@@ -744,17 +748,17 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </select>
                             </div>
                         </div>
-                        <div className="card p-4 cursor-pointer group" onClick={() => setAnimatedBackground(!animatedBackground)}>
+                        <div className="card p-4 cursor-pointer group" onClick={() => { const next = !dynamicBackground; setDynamicBackground(next); setBgEnabled(next); }}>
                             <div className="flex items-start justify-between mb-2">
                                 <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
                                     <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <input type="checkbox" checked={animatedBackground} onChange={(e) => { e.stopPropagation(); setAnimatedBackground(e.target.checked); }} className="mt-0.5" />
+                                <input type="checkbox" checked={dynamicBackground} onChange={(e) => { e.stopPropagation(); const val = e.target.checked; setDynamicBackground(val); setBgEnabled(val); }} className="mt-0.5" />
                             </div>
-                            <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.animatedBackground.label')}</h3>
-                            <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.animatedBackground.description')} <span className="opacity-60">{tgs('fields.animatedBackground.performance')}</span></p>
+                            <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.label')}</h3>
+                            <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.dynamicBackground.description')} <span className="opacity-60">{tgs('fields.dynamicBackground.performance')}</span></p>
                         </div>
                     </div>
                 </section>

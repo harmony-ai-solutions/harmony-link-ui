@@ -11,7 +11,6 @@
 /* ── Base Layout ─────────────────────────────────────────────────── */
 
 body {
-    background-color: var(--color-background-base);
     color: var(--color-text-primary);
     transition: background-color 0.6s ease, color 0.6s ease;
     -webkit-font-smoothing: antialiased;
@@ -2167,4 +2166,181 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     border: 1px solid var(--color-border-glass);
     color: var(--color-text-muted);
     line-height: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dynamic Background — Theme-Adaptive Animated Backdrop
+   Multi-layered animated background that shifts with theme accent colors.
+   Layers: dot-grid → gradient orbs → noise overlay.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dynamic-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* ── Layer 1: Base Fill — theme background colour ────────────────── */
+.dynamic-bg-base {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-background-base);
+}
+
+/* ── Layer 2: Dot Grid — subtle repeating texture ────────────────── */
+.dynamic-bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+        circle at 1px 1px,
+        var(--color-accent-primary) 1px,
+        transparent 1px
+    );
+    background-size: 48px 48px;
+    opacity: 0.06;
+    mask-image: radial-gradient(
+        ellipse 80% 80% at 50% 50%,
+        black 35%,
+        transparent 100%
+    );
+    -webkit-mask-image: radial-gradient(
+        ellipse 80% 80% at 50% 50%,
+        black 35%,
+        transparent 100%
+    );
+}
+
+/* ── Layer 3: Mouse-Following Radial Aura ───────────────────────── */
+.dynamic-bg-aura {
+    position: absolute;
+    inset: -200px;
+    background: radial-gradient(
+        ellipse 600px 500px at var(--aura-x, 50%) var(--aura-y, 50%),
+        var(--color-accent-primary) 0%,
+        var(--color-accent-secondary) 25%,
+        transparent 60%
+    );
+    opacity: var(--aura-opacity, 0.18);
+    filter: blur(60px);
+    transition: opacity 1.5s var(--ease-spring);
+    pointer-events: none;
+}
+
+/* ── Layer 4: Floating Stars — drifting accent-coloured 4-point stars ── */
+.dynamic-bg-particle {
+    position: absolute;
+    left: var(--p-left, 50%);
+    top: var(--p-top, 50%);
+    width: var(--p-size, 6px);
+    height: var(--p-size, 6px);
+    /* 4-point star via overlapping rotated rectangles */
+    background:
+        linear-gradient(
+            to right,
+            transparent 42%,
+            var(--color-accent-primary) 42%,
+            var(--color-accent-primary) 58%,
+            transparent 58%
+        ),
+        linear-gradient(
+            to bottom,
+            transparent 42%,
+            var(--color-accent-primary) 42%,
+            var(--color-accent-primary) 58%,
+            transparent 58%
+        );
+    opacity: var(--p-opacity, 0.35);
+    box-shadow:
+        0 0 4px var(--color-glow-accent-soft),
+        0 0 10px var(--color-glow-accent-strong),
+        0 0 20px var(--color-glow-accent-soft);
+    animation: star-drift var(--p-duration, 8s) var(--ease-spring) infinite;
+    animation-delay: var(--p-delay, 0s);
+    pointer-events: none;
+}
+
+@keyframes star-drift {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(0.6) rotate(0deg);
+        opacity: var(--p-opacity, 0.35);
+    }
+    20% {
+        transform: translate(50px, -70px) scale(1.3) rotate(55deg);
+        opacity: 1;
+    }
+    40% {
+        transform: translate(-40px, 35px) scale(0.5) rotate(140deg);
+        opacity: calc(var(--p-opacity, 0.35) * 0.4);
+    }
+    60% {
+        transform: translate(65px, 20px) scale(1.0) rotate(220deg);
+        opacity: calc(var(--p-opacity, 0.35) * 1.5);
+    }
+    80% {
+        transform: translate(-55px, -50px) scale(0.8) rotate(310deg);
+        opacity: calc(var(--p-opacity, 0.35) * 0.7);
+    }
+}
+
+/* ── Layer 5: Animated Gradient Orbs — large soft accent blobs ───── */
+.dynamic-bg-orb {
+    position: absolute;
+    top: var(--orb-top, 50%);
+    left: var(--orb-left, 50%);
+    width: var(--orb-size, 300px);
+    height: var(--orb-size, 300px);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        var(--orb-color, var(--color-accent-primary)) 0%,
+        transparent 70%
+    );
+    opacity: var(--orb-opacity, 0.08);
+    filter: blur(80px);
+    transform: translate(-50%, -50%);
+    animation: orb-float var(--orb-duration, 26s) var(--ease-spring) infinite;
+    animation-delay: var(--orb-delay, 0s);
+}
+
+@keyframes orb-float {
+    0%,
+    100% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    25% {
+        transform: translate(calc(-50% + 90px), calc(-50% - 70px))
+            scale(1.18)
+            rotate(2deg);
+    }
+    50% {
+        transform: translate(calc(-50% - 80px), calc(-50% + 50px))
+            scale(0.82)
+            rotate(-2deg);
+    }
+    75% {
+        transform: translate(calc(-50% + 50px), calc(-50% + 70px))
+            scale(1.10)
+            rotate(1deg);
+    }
+}
+
+/* ── Layer 6: Noise Texture — filmic grain overlay ────────────────── */
+.dynamic-bg-noise {
+    position: absolute;
+    inset: 0;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+}
+
+/* Reduced motion: disable all drifting animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .dynamic-bg-orb,
+    .dynamic-bg-particle {
+        animation: none;
+    }
 }

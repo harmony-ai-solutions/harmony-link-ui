@@ -174,7 +174,7 @@ const IntegrationsView = () => {
 
   if (!quickstartPathConfigured) {
     return (
-      <div className="flex flex-col min-h-full bg-background-base">
+      <div className="flex flex-col min-h-full">
         <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
           <h1 className="text-2xl font-extrabold tracking-tight">
             {colorFirstWord(t('integrations:header.title'))}
@@ -193,7 +193,7 @@ const IntegrationsView = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-background-base">
+    <div className="flex flex-col min-h-full">
       <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
         <h1 className="text-2xl font-extrabold tracking-tight">
           {colorFirstWord(t('integrations:header.title'))}

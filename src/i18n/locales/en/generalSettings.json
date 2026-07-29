@@ -103,9 +103,9 @@
         "fr": "1 000,00 (French)"
       }
     },
-    "animatedBackground": {
-      "label": "Animated Background",
-      "description": "Ambient motion & particle effects on the main dashboard.",
+    "dynamicBackground": {
+      "label": "Dynamic Background",
+      "description": "Ambient stars, orbs, and cursor-following aura on all pages.",
       "performance": "Turn off for better performance."
     },
     "autoUpdate": {

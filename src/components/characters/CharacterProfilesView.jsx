@@ -89,7 +89,7 @@ export default function CharacterProfilesView() {
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-background-base">
+        <div className="flex flex-col min-h-full">
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>

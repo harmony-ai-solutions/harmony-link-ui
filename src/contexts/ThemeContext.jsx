@@ -103,6 +103,7 @@ export const ThemeProvider = ({ children }) => {
 
         // Text
         root.style.setProperty('--color-text-primary', colors.text.primary);
+        root.style.setProperty('--color-text-primary-rgb', hexToRgb(colors.text.primary));
         root.style.setProperty('--color-text-secondary', colors.text.secondary);
         root.style.setProperty('--color-text-muted', colors.text.muted);
         root.style.setProperty('--color-text-disabled', colors.text.disabled);

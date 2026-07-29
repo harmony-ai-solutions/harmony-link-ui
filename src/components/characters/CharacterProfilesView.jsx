@@ -4,6 +4,7 @@ import useCharacterProfileStore from '../../store/characterProfileStore';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
+import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 
 /**
  * Main view for managing character profiles
@@ -18,6 +19,7 @@ export default function CharacterProfilesView() {
     const [cardSize, setCardSize] = useState(() => {
         return localStorage.getItem('characterProfileCardSize') || 'medium';
     });
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
 
     /** Filter profiles by search query — matches name and description */
     const filteredProfiles = useMemo(() => {
@@ -48,13 +50,23 @@ export default function CharacterProfilesView() {
         setShowEditor(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm(t('characters:deleteConfirm'))) return;
+    const handleDeleteRequest = (id) => {
+        setDeleteTargetId(id);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteTargetId) return;
+        const id = deleteTargetId;
+        setDeleteTargetId(null);
         try {
             await deleteProfile(id);
         } catch (error) {
             alert(t('characters:deleteFailed', { message: error.message }));
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteTargetId(null);
     };
 
     const handleImportSuccess = async (result) => {
@@ -169,7 +181,7 @@ export default function CharacterProfilesView() {
                         <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
                             {filteredProfiles.map(profile => (
                                 <CharacterProfileCard key={profile.id} profile={profile}
-                                    onClick={() => handleEdit(profile)} onDelete={handleDelete} />
+                                    onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest} />
                             ))}
                         </div>
                     ) : (
@@ -226,6 +238,16 @@ export default function CharacterProfilesView() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                isOpen={deleteTargetId !== null}
+                title={t('characters:deleteDialog.title')}
+                message={t('characters:deleteDialog.message')}
+                confirmText={t('characters:deleteDialog.confirm')}
+                cancelText={t('characters:deleteDialog.cancel')}
+                onConfirm={handleDeleteConfirm}
+                onCancel={handleDeleteCancel}
+            />
         </div>
     );
 }

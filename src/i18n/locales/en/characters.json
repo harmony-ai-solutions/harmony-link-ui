@@ -24,5 +24,11 @@
   "importTitle": "Import Character Card",
   "clearSearch": "Clear search",
   "deleteConfirm": "Are you sure you want to delete this character profile? This action cannot be undone.",
-  "deleteFailed": "Failed to delete profile: {{message}}"
+  "deleteFailed": "Failed to delete profile: {{message}}",
+  "deleteDialog": {
+    "title": "Delete Character Profile",
+    "message": "Are you sure you want to delete this character profile?\n\nThis action cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  }
 }

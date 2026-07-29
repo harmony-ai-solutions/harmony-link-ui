@@ -2324,6 +2324,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         transform: translate(calc(-50% + 50px), calc(-50% + 70px))
             scale(1.10)
             rotate(1deg);
+    }
 }
 
 /* ── Layer 6: Noise Texture — filmic grain overlay ────────────────── */

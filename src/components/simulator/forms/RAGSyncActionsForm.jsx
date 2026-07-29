@@ -39,20 +39,20 @@ function RAGSyncActionsForm({ onSendEvent, formState, onClearResponse }) {
     return (
         <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Actions Data (JSON):</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-1.5">Actions Data (JSON):</label>
                 <textarea
                     value={actionsData}
                     onChange={(e) => setActionsData(e.target.value)}
-                    className="w-full h-40 p-2 bg-neutral-600 border border-neutral-500 rounded text-neutral-100 font-mono text-sm custom-scrollbar"
+                    className="input-field w-full h-40 text-sm font-mono custom-scrollbar"
                 />
             </div>
-            <div className="text-xs text-gray-400 mb-2">
+            <div className="text-xs text-text-muted">
                 Define actions with examples, confirmations, and rejections for RAG matching
             </div>
             <button
                 type="submit"
                 disabled={formState.loading}
-                className="bg-neutral-700 hover:bg-neutral-500 font-bold py-2 px-4 text-orange-400 rounded disabled:opacity-50"
+                className="module-action-btn w-full justify-center text-accent-primary border-accent-primary/30"
             >
                 {formState.loading ? 'Syncing...' : 'Sync Actions'}
             </button>

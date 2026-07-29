@@ -389,7 +389,7 @@ function SimulatorView() {
                     onOpenCollectionManager={handleOpenCollectionManager}
                     onRefreshCollections={loadRAGCollections} />;
             case 'cognition': return <CognitionTab {...commonProps} />;
-            default: return <div>{ts('messages.tabNotFound')}</div>;
+            default: return <div className="p-6 text-text-muted">{ts('messages.tabNotFound')}</div>;
         }
     };
 
@@ -400,47 +400,48 @@ function SimulatorView() {
         disconnecting: t('common:status.disconnecting'),
     };
 
+    const statusBadgeClasses = {
+        connected: 'status-badge status-success',
+        disconnected: 'status-badge status-error',
+        connecting: 'px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-yellow-500/15 text-yellow-400 border border-yellow-500/25',
+        disconnecting: 'px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-yellow-500/15 text-yellow-400 border border-yellow-500/25',
+    };
+
     return (
-        <div className="bg-neutral-900 text-neutral-100">
-            <div className="bg-neutral-800 px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-extrabold tracking-tight">
-                            {colorFirstWord(ts('header.title'))}
-                        </h1>
-                        <p className="text-sm text-gray-400 mt-1">{ts('header.subtitle')}</p>
+        <div className="flex flex-col min-h-full">
+            {/* View Header */}
+            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
+                <div>
+                    <h1 className="text-2xl font-extrabold tracking-tight">
+                        {colorFirstWord(ts('header.title'))}
+                    </h1>
+                    <p className="text-xs text-text-muted mt-0.5 font-medium">
+                        {ts('header.subtitle')}
+                    </p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className={statusBadgeClasses[connectionStatus] || statusBadgeClasses.disconnected}>
+                        {(statusLabels[connectionStatus] || connectionStatus).toUpperCase()}
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' :
-                            connectionStatus === 'disconnected' ? 'bg-red-500/20 text-red-400' :
-                            'bg-yellow-500/20 text-yellow-400'
-                        }`}>
-                            {(statusLabels[connectionStatus] || connectionStatus).toUpperCase()}
+                    {selectedEntity && (
+                        <div className="text-sm text-text-secondary">
+                            {ts('entityLabel')}: <span className="text-accent-primary font-medium">{selectedEntity}</span>
                         </div>
-                        {selectedEntity && (
-                            <div className="text-sm text-gray-300">
-                                {ts('entityLabel')}: <span className="text-orange-400 font-medium">{selectedEntity}</span>
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
 
-            <div className="bg-neutral-800">
-                <div className="flex overflow-x-auto">
-                    {tabs.map((tab) => (
+            {/* Tab Bar — matching DevelopmentView sub-tab design */}
+            <div className="character-editor-tab-bar">
+                {tabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    return (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                                activeTab === tab.id
-                                    ? 'border-orange-400 text-orange-400 bg-neutral-700/50'
-                                    : 'border-transparent text-gray-400 hover:text-gray-300 hover:bg-neutral-700/30'
-                            }`}>
-                            <span className="text-sm">{tab.icon}</span>
-                            {tab.label}
+                            className={`character-editor-tab ${isActive ? 'character-editor-tab-active' : 'character-editor-tab-inactive'}`}>
+                            {tab.icon}{tab.label}
                         </button>
-                    ))}
-                </div>
+                    );
+                })}
             </div>
 
             <div className="flex-1">

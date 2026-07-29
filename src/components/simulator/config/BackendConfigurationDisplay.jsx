@@ -4,9 +4,9 @@ import React from 'react';
 function BackendConfigurationDisplay({ config, loading, error }) {
     if (loading) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="flex items-center text-yellow-400 text-sm">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400 mr-2"></div>
+            <div className="card-compact">
+                <div className="flex items-center text-text-muted text-sm">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary mr-2"></div>
                     Loading backend configuration...
                 </div>
             </div>
@@ -15,8 +15,8 @@ function BackendConfigurationDisplay({ config, loading, error }) {
 
     if (error) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="text-red-400 text-sm">
+            <div className="card-compact-error">
+                <div className="text-error text-sm">
                     <strong>Error:</strong> {error}
                 </div>
             </div>
@@ -25,8 +25,8 @@ function BackendConfigurationDisplay({ config, loading, error }) {
 
     if (!config) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="text-gray-400 text-sm">No backend configuration available</div>
+            <div className="card-compact">
+                <div className="text-text-muted text-sm">No backend configuration available</div>
             </div>
         );
     }
@@ -61,111 +61,40 @@ function BackendConfigurationDisplay({ config, loading, error }) {
 
     const providerConfig = getProviderConfig(config);
 
+    const ConfigRow = ({ label, value, mono }) => (
+        <div>
+            <span className="text-text-muted">{label}:</span>
+            <span className={`ml-2 text-text-secondary ${mono ? 'font-mono text-xs' : ''}`}>
+                {value}
+            </span>
+        </div>
+    );
+
     return (
-        <div className="bg-neutral-700 rounded p-2">
+        <div className="bg-background-surface-translucent backdrop-blur-sm rounded-lg p-3 border border-border-glass">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Provider Information */}
                 <div>
-                    <h5 className="font-medium text-purple-400 mb-1 text-sm">Provider Configuration</h5>
+                    <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Provider Configuration</h5>
                     <div className="space-y-1 text-xs">
                         <div>
-                            <span className="text-gray-400">Provider:</span>
-                            <span className="ml-2 text-green-400 font-medium">
+                            <span className="text-text-muted">Provider:</span>
+                            <span className="ml-2 text-success font-medium">
                                 {getProviderDisplayName(config.provider)}
                             </span>
                         </div>
-                        
+
                         {providerConfig && (
                             <>
-                                {providerConfig.baseurl && (
-                                    <div>
-                                        <span className="text-gray-400">Base URL:</span>
-                                        <span className="ml-2 text-gray-300 font-mono text-xs">
-                                            {providerConfig.baseurl}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.model && (
-                                    <div>
-                                        <span className="text-gray-400">Model:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {providerConfig.model}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.apikey && (
-                                    <div>
-                                        <span className="text-gray-400">API Key:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.apikey.slice(-4)}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.apikey && (
-                                    <div>
-                                        <span className="text-gray-400">OpenAI API Key:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.apikey.slice(-4)}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.apitoken && (
-                                    <div>
-                                        <span className="text-gray-400">API Token:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}...{providerConfig.apitoken.slice(-4)}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.chatroomurl && (
-                                    <div>
-                                        <span className="text-gray-400">Chat Room URL:</span>
-                                        <span className="ml-2 text-gray-300 font-mono text-xs">
-                                            {providerConfig.chatroomurl}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.kajiroomurl && (
-                                    <div>
-                                        <span className="text-gray-400">Kaji Room URL:</span>
-                                        <span className="ml-2 text-gray-300 font-mono text-xs">
-                                            {providerConfig.kajiroomurl}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.kindroidid && (
-                                    <div>
-                                        <span className="text-gray-400">Kindroid ID:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {providerConfig.kindroidid}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.username && (
-                                    <div>
-                                        <span className="text-gray-400">Username:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {providerConfig.username}
-                                        </span>
-                                    </div>
-                                )}
-                                
-                                {providerConfig.password && (
-                                    <div>
-                                        <span className="text-gray-400">Password:</span>
-                                        <span className="ml-2 text-gray-300">
-                                            {'*'.repeat(8)}
-                                        </span>
-                                    </div>
-                                )}
+                                {providerConfig.baseurl && <ConfigRow label="Base URL" value={providerConfig.baseurl} mono />}
+                                {providerConfig.model && <ConfigRow label="Model" value={providerConfig.model} />}
+                                {providerConfig.apikey && <ConfigRow label="API Key" value={'*'.repeat(8) + '...' + providerConfig.apikey.slice(-4)} />}
+                                {providerConfig.apitoken && <ConfigRow label="API Token" value={'*'.repeat(8) + '...' + providerConfig.apitoken.slice(-4)} />}
+                                {providerConfig.chatroomurl && <ConfigRow label="Chat Room URL" value={providerConfig.chatroomurl} mono />}
+                                {providerConfig.kajiroomurl && <ConfigRow label="Kaji Room URL" value={providerConfig.kajiroomurl} mono />}
+                                {providerConfig.kindroidid && <ConfigRow label="Kindroid ID" value={providerConfig.kindroidid} />}
+                                {providerConfig.username && <ConfigRow label="Username" value={providerConfig.username} />}
+                                {providerConfig.password && <ConfigRow label="Password" value={'*'.repeat(8)} />}
                             </>
                         )}
                     </div>
@@ -173,58 +102,25 @@ function BackendConfigurationDisplay({ config, loading, error }) {
 
                 {/* Model Settings */}
                 <div>
-                    <h5 className="font-medium text-purple-400 mb-1 text-sm">Model Settings</h5>
+                    <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Model Settings</h5>
                     <div className="space-y-1 text-xs">
-                        {providerConfig?.temperature !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Temperature:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.temperature}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.maxtokens && (
-                            <div>
-                                <span className="text-gray-400">Max Tokens:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.maxtokens}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.topp !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Top P:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.topp}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.n && (
-                            <div>
-                                <span className="text-gray-400">N (Completions):</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.n}
-                                </span>
-                            </div>
-                        )}
-                        
+                        {providerConfig?.temperature !== undefined && <ConfigRow label="Temperature" value={providerConfig.temperature} />}
+                        {providerConfig?.maxtokens && <ConfigRow label="Max Tokens" value={providerConfig.maxtokens} />}
+                        {providerConfig?.topp !== undefined && <ConfigRow label="Top P" value={providerConfig.topp} />}
+                        {providerConfig?.n && <ConfigRow label="N (Completions)" value={providerConfig.n} />}
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
                             <div>
-                                <span className="text-gray-400">Stop Tokens:</span>
-                                <div className="ml-2 text-gray-300 text-xs">
+                                <span className="text-text-muted">Stop Tokens:</span>
+                                <div className="ml-2 text-text-secondary text-xs">
                                     {providerConfig.stoptokens.join(', ')}
                                 </div>
                             </div>
                         )}
-                        
-                        <div className="mt-3 p-2 bg-neutral-600 rounded">
-                            <div className="text-xs text-gray-400 mb-1">Status:</div>
-                            <div className="flex items-center">
-                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                                <span className="text-green-400 text-xs">Configuration Loaded</span>
+
+                        <div className="mt-3 p-2 bg-background-surface/50 rounded-lg border border-border-glass">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
+                                <span className="text-success text-xs font-medium">Configuration Loaded</span>
                             </div>
                         </div>
                     </div>

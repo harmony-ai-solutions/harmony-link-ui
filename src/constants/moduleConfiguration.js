@@ -10,14 +10,14 @@ import logo_xai from '../assets/images/logo_xai.svg';
 import logo_anthropic from '../assets/images/logo_anthropic.svg';
 
 export const MODULE_TYPE_OPTIONS = [
-    { id: 'backend', name: 'Backend / LLM', emoji: '🧠', description: 'Core AI conversation engine powering character responses and dialogue' },
-    { id: 'tts', name: 'Text-to-Speech', emoji: '🗣️', description: 'Converts text responses into spoken audio output' },
-    { id: 'stt', name: 'Speech-to-Text', emoji: '🎙️', description: 'Transcribes voice input into text for processing' },
-    { id: 'rag', name: 'RAG', emoji: '📚', description: 'Retrieval-Augmented Generation for context-aware knowledge retrieval' },
-    { id: 'movement', name: 'Movement', emoji: '💃', description: 'Controls character animations, gestures and physical expressions' },
-    { id: 'cognition', name: 'Cognition', emoji: '🧩', description: 'Advanced reasoning, memory consolidation and emotional processing' },
-    { id: 'vision', name: 'Vision', emoji: '👁️', description: 'Visual perception and image understanding capabilities' },
-    { id: 'imagination', name: 'Imagination', emoji: '🎨', description: 'AI-powered image generation and visual creativity' }
+    { id: 'backend', name: 'Backend / LLM', iconKey: 'brain', description: 'Core AI conversation engine powering character responses and dialogue' },
+    { id: 'tts', name: 'Text-to-Speech', iconKey: 'speaker', description: 'Converts text responses into spoken audio output' },
+    { id: 'stt', name: 'Speech-to-Text', iconKey: 'microphone', description: 'Transcribes voice input into text for processing' },
+    { id: 'rag', name: 'RAG', iconKey: 'book', description: 'Retrieval-Augmented Generation for context-aware knowledge retrieval' },
+    { id: 'movement', name: 'Movement', iconKey: 'activity', description: 'Controls character animations, gestures and physical expressions' },
+    { id: 'cognition', name: 'Cognition', iconKey: 'puzzle', description: 'Advanced reasoning, memory consolidation and emotional processing' },
+    { id: 'vision', name: 'Vision', iconKey: 'eye', description: 'Visual perception and image understanding capabilities' },
+    { id: 'imagination', name: 'Imagination', iconKey: 'palette', description: 'AI-powered image generation and visual creativity' }
 ];
 
 export const MODULE_CONFIGS = {

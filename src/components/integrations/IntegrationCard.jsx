@@ -173,7 +173,7 @@ const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, o
                         onClick={() => handleOpenProjectWebsite(integration.projectWebsite)}
                         className="btn-website-link py-1 px-3 text-xs rounded"
                     >
-                        🌐 Website
+                        Website
                     </button>
                 </div>
 

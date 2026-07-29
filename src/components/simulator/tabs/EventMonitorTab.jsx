@@ -98,8 +98,8 @@ function EventMonitorTab({
                                             onChange={(e) => setUseGroupedView(e.target.value === 'grouped')}
                                             className="p-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100 text-xs focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
                                         >
-                                            <option value="grouped">📊 Grouped</option>
-                                            <option value="individual">📋 Individual</option>
+                                            <option value="grouped">Grouped</option>
+                                            <option value="individual">Individual</option>
                                         </select>
                                     </div>
                                     <button

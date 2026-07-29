@@ -86,7 +86,11 @@ export default function LogLevelSettings({ isOpen, onClose }) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-text-primary">Log Level Settings</h3>
-                <button className="module-action-btn text-sm" onClick={onClose}>✕</button>
+                <button className="module-action-btn text-sm" onClick={onClose}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
             {/* Default Level */}
@@ -133,7 +137,9 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                                 setConfig({ ...config, componentLevels: next });
                             }}
                         >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
                 ))}

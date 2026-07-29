@@ -10,6 +10,7 @@ import {
 } from '../services/management/simulatorService.js';
 import {getConfig} from '../services/management/configService.js';
 import {getEntityRAGCollections} from '../services/management/ragService.js';
+import { LinkIcon, ChartIcon, BrainIcon, CrosshairIcon, VolumeIcon, MicIcon, LightbulbIcon, SmileIcon } from '../constants/icons.jsx';
 
 import ConnectionTab from './simulator/tabs/ConnectionTab';
 import EventMonitorTab from './simulator/tabs/EventMonitorTab';
@@ -346,14 +347,14 @@ function SimulatorView() {
     };
 
     const tabs = [
-        { id: 'connection', label: ts('tabs.connection'), icon: '🔗' },
-        { id: 'events', label: ts('tabs.eventMonitor'), icon: '📊' },
-        { id: 'backend', label: ts('tabs.backend'), icon: '🧠' },
-        { id: 'movement', label: ts('tabs.movement'), icon: '🎯' },
-        { id: 'tts', label: ts('tabs.tts'), icon: '🔊' },
-        { id: 'stt', label: ts('tabs.stt'), icon: '🎤' },
-        { id: 'rag', label: ts('tabs.rag'), icon: '💡' },
-        { id: 'cognition', label: ts('tabs.cognition'), icon: '😊' }
+        { id: 'connection', label: ts('tabs.connection'), icon: <LinkIcon className="w-4 h-4" /> },
+        { id: 'events', label: ts('tabs.eventMonitor'), icon: <ChartIcon className="w-4 h-4" /> },
+        { id: 'backend', label: ts('tabs.backend'), icon: <BrainIcon className="w-4 h-4" /> },
+        { id: 'movement', label: ts('tabs.movement'), icon: <CrosshairIcon className="w-4 h-4" /> },
+        { id: 'tts', label: ts('tabs.tts'), icon: <VolumeIcon className="w-4 h-4" /> },
+        { id: 'stt', label: ts('tabs.stt'), icon: <MicIcon className="w-4 h-4" /> },
+        { id: 'rag', label: ts('tabs.rag'), icon: <LightbulbIcon className="w-4 h-4" /> },
+        { id: 'cognition', label: ts('tabs.cognition'), icon: <SmileIcon className="w-4 h-4" /> }
     ];
 
     const renderTabContent = () => {

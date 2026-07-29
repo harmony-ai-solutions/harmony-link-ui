@@ -1,5 +1,6 @@
 import React from 'react';
 import ConfigurableJsonViewer from '../../widgets/ConfigurableJsonViewer';
+import { MessageIcon, VolumeIcon, MicIcon, CrosshairIcon, LightbulbIcon, BrainIcon, BookIcon, ClipboardIcon } from '../../../constants/icons.jsx';
 
 function EventHistoryDisplay({ events }) {
     if (!events || events.length === 0) {
@@ -7,14 +8,14 @@ function EventHistoryDisplay({ events }) {
     }
 
     const getEventIcon = (eventType) => {
-        if (eventType.includes('USER_UTTERANCE')) return '💬';
-        if (eventType.includes('TTS')) return '🔊';
-        if (eventType.includes('STT')) return '🎤';
-        if (eventType.includes('MOVEMENT')) return '🎯';
-        if (eventType.includes('RAG')) return '💡';
-        if (eventType.includes('BACKEND')) return '🧠';
-        if (eventType.includes('CHAT_HISTORY')) return '📚';
-        return '📋';
+        if (eventType.includes('USER_UTTERANCE')) return <MessageIcon className="w-3 h-3" />;
+        if (eventType.includes('TTS')) return <VolumeIcon className="w-3 h-3" />;
+        if (eventType.includes('STT')) return <MicIcon className="w-3 h-3" />;
+        if (eventType.includes('MOVEMENT')) return <CrosshairIcon className="w-3 h-3" />;
+        if (eventType.includes('RAG')) return <LightbulbIcon className="w-3 h-3" />;
+        if (eventType.includes('BACKEND')) return <BrainIcon className="w-3 h-3" />;
+        if (eventType.includes('CHAT_HISTORY')) return <BookIcon className="w-3 h-3" />;
+        return <ClipboardIcon className="w-3 h-3" />;
     };
 
     const getStatusColor = (status) => {
@@ -41,7 +42,7 @@ function EventHistoryDisplay({ events }) {
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <div className={`w-6 h-6 rounded flex items-center justify-center border ${getDirectionColor(event.direction)}`}>
-                                    <span className="text-xs">{getEventIcon(event.event.event_type)}</span>
+                                    {getEventIcon(event.event.event_type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">

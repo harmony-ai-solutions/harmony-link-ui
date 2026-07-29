@@ -359,7 +359,7 @@ export default function LogViewer() {
                         onClick={() => setAutoScroll(prev => !prev)}
                         title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
                     >
-                        {autoScroll ? '⇆ Auto' : '⇳ Manual'}
+                        {autoScroll ? 'Auto' : 'Manual'}
                     </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -367,7 +367,17 @@ export default function LogViewer() {
                         className="module-action-btn text-xs"
                         onClick={() => setIsPaused(prev => !prev)}
                     >
-                        {isPaused ? '▶ Resume' : '⏸ Pause'}
+                        {isPaused ? (
+                            <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                Resume
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                                Pause
+                            </span>
+                        )}
                     </button>
                     <button
                         className="module-action-btn text-xs"

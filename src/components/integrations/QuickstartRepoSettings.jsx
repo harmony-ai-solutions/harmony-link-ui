@@ -82,7 +82,7 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
             className="btn-website-link py-1 px-3 text-xs rounded flex-shrink-0 disabled:opacity-50"
             title="Open GitHub repository"
           >
-            {githubLoading ? '…' : '🌐 GitHub'}
+            {githubLoading ? '…' : 'GitHub'}
           </button>
         </div>
 

@@ -89,7 +89,7 @@ export default function ActionGraphTester() {
                 try {
                     actionGraph = JSON.parse(manualJson);
                 } catch (parseError) {
-                    setFeedback(`❌ Invalid JSON: ${parseError.message}`);
+                    setFeedback(`Invalid JSON: ${parseError.message}`);
                     return;
                 }
             } else {
@@ -110,10 +110,10 @@ export default function ActionGraphTester() {
 
             LogDebug("Sending ActionGraph:", actionGraph);
             const result = await sendTestActionGraph(selectedEntity, actionGraph);
-            setFeedback(`✅ ActionGraph sent successfully! Response: ${JSON.stringify(result)}`);
+            setFeedback(`ActionGraph sent successfully! Response: ${JSON.stringify(result)}`);
         } catch (error) {
             LogError("Failed to send ActionGraph:", error);
-            setFeedback(`❌ Error sending ActionGraph: ${error.message}`);
+            setFeedback(`Error sending ActionGraph: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -317,9 +317,9 @@ export default function ActionGraphTester() {
             {/* Feedback */}
             {feedback && (
                 <div className={`p-3 rounded-lg border ${
-                    feedback.startsWith('✅')
+                    feedback.startsWith('ActionGraph sent successfully')
                         ? 'bg-green-500/5 border-green-500/20 text-green-400'
-                        : feedback.startsWith('❌')
+                        : feedback.startsWith('Error') || feedback.startsWith('Invalid JSON')
                             ? 'bg-red-500/5 border-red-500/20 text-red-400'
                             : 'bg-background-surface border-white/5 text-text-secondary'
                 }`}>

@@ -48,8 +48,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [confirmModalYes, setConfirmModalYes] = useState(() => { });
     const [confirmModalNo, setConfirmModalNo] = useState(() => { });
 
-    // Zustand store — sync dynamic background toggle instantly across the app
-    const { setEnabled: setBgEnabled } = useDynamicBackgroundStore();
+    // Zustand store — single source of truth for dynamic background toggle
+    const dynamicBackground = useDynamicBackgroundStore((s) => s.enabled);
+    const setBgEnabled = useDynamicBackgroundStore((s) => s.setEnabled);
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -99,7 +100,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [fontScale, setFontScale] = useState("default");
     const [appLanguage, setAppLanguage] = useState("en");
     const [numberFormat, setNumberFormat] = useState("en");
-    const [dynamicBackground, setDynamicBackground] = useState(true);
+    // dynamicBackground is now read from Zustand store (see line ~52)
     const [autoUpdate, setAutoUpdate] = useState("notify");
     const [desktopNotifications, setDesktopNotifications] = useState(true);
     const [notificationBadges, setNotificationBadges] = useState(true);
@@ -194,7 +195,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setFontScale(generalSettings.fontscale || "default");
         setAppLanguage(generalSettings.applanguage || "en");
         setNumberFormat(generalSettings.numberformat || "en");
-        setDynamicBackground(generalSettings.animatedbackground !== false);
+        // dynamicBackground is managed via Zustand store — skip resetting on mount
+        // so unsaved toggles survive tab navigation. Store was seeded on app load.
         setAutoUpdate(generalSettings.autoupdate || "notify");
         setDesktopNotifications(generalSettings.desktopnotifications !== false);
         setNotificationBadges(generalSettings.notificationbadges !== false);
@@ -748,17 +750,21 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </select>
                             </div>
                         </div>
-                        <div className="card p-4 cursor-pointer group" onClick={() => { const next = !dynamicBackground; setDynamicBackground(next); setBgEnabled(next); }}>
-                            <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </div>
+                    <div className="card p-4 cursor-pointer group mt-4" onClick={() => setBgEnabled(!dynamicBackground)}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <input type="checkbox" checked={dynamicBackground} onChange={(e) => { e.stopPropagation(); const val = e.target.checked; setDynamicBackground(val); setBgEnabled(val); }} className="mt-0.5" />
+                                <div>
+                                    <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.label')}</h3>
+                                    <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.description')}</p>
+                                </div>
                             </div>
-                            <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.label')}</h3>
-                            <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.dynamicBackground.description')} <span className="opacity-60">{tgs('fields.dynamicBackground.performance')}</span></p>
+                            <input type="checkbox" checked={dynamicBackground} onChange={(e) => { e.stopPropagation(); setBgEnabled(e.target.checked); }} />
                         </div>
                     </div>
                 </section>

@@ -4,6 +4,8 @@ import { listModuleConfigs } from '../../services/management/moduleService.js';
 import ImageGallery from './ImageGallery';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
+import NumberStepper from '../ui/NumberStepper.jsx';
 
 /**
  * Modal editor for character profiles
@@ -383,15 +385,14 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                         Typing Speed
                                         <span className="character-editor-label-unit">Words per Minute</span>
                                     </label>
-                                    <input
-                                        type="number"
+                                    <NumberStepper
                                         name="typing_speed_wpm"
                                         value={typingSpeedWPM}
                                         onChange={(e) => setTypingSpeedWPM(e.target.value)}
                                         onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
-                                        min="1"
-                                        max="200"
-                                        className="input-field w-full"
+                                        min={1}
+                                        max={200}
+                                        className="w-full"
                                     />
                                     <p className="character-editor-hint">Average Human: 40–60 WPM. Affects typing indicator duration.</p>
                                 </div>
@@ -400,15 +401,14 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                         Audio Response Chance
                                         <span className="character-editor-label-unit">0–100%</span>
                                     </label>
-                                    <input
-                                        type="number"
+                                    <NumberStepper
                                         name="audio_response_chance_percent"
                                         value={audioResponseChance}
                                         onChange={(e) => setAudioResponseChance(e.target.value)}
                                         onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
-                                        min="0"
-                                        max="100"
-                                        className="input-field w-full"
+                                        min={0}
+                                        max={100}
+                                        className="w-full"
                                     />
                                     <p className="character-editor-hint">Probability of responding with an audio message. Requires TTS.</p>
                                 </div>
@@ -436,19 +436,15 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 Vision Integration
                             </div>
                             <div className="flex items-center gap-4 p-4">
-                                <select
+                                <ThemedSelect
                                     value={selectedVisionConfigId ?? ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setSelectedVisionConfigId(val || null);
-                                    }}
-                                    className="input-field flex-1 max-w-xs"
-                                >
-                                    <option value="">— None —</option>
-                                    {visionConfigs.map(cfg => (
-                                        <option key={cfg.id} value={cfg.id}>{cfg.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setSelectedVisionConfigId(val || null)}
+                                    options={[
+                                        { value: '', label: '— None —' },
+                                        ...visionConfigs.map(cfg => ({ value: cfg.id, label: cfg.name }))
+                                    ]}
+                                    className="flex-1 max-w-xs"
+                                />
                                 <p className="character-editor-hint flex-1 italic">
                                     Select a Vision module config to enable automated image analysis and labeling.
                                 </p>

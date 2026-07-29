@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import JsonViewer from './JsonViewer';
+import ThemedSelect from './ThemedSelect';
 
 function ConfigurableJsonViewer({ data, defaultDepth = 2, className = '' }) {
     const [selectedDepth, setSelectedDepth] = useState(defaultDepth);
@@ -18,17 +19,11 @@ function ConfigurableJsonViewer({ data, defaultDepth = 2, className = '' }) {
                 <span className="text-xs text-gray-400">JSON Payload</span>
                 <div className="flex items-center gap-2">
                     <label className="text-xs text-gray-400">Depth:</label>
-                    <select
+                    <ThemedSelect
                         value={selectedDepth}
-                        onChange={(e) => setSelectedDepth(parseInt(e.target.value))}
-                        className="text-xs p-1 bg-neutral-700 border border-neutral-600 rounded text-neutral-100"
-                    >
-                        {depthOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={(val) => setSelectedDepth(parseInt(val))}
+                        options={depthOptions}
+                    />
                 </div>
             </div>
             <JsonViewer data={data} maxDepth={selectedDepth} />

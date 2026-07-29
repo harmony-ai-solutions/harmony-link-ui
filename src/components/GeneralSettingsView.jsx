@@ -12,6 +12,8 @@ import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
 import Toggle from './ui/Toggle.jsx';
+import NumberStepper from './ui/NumberStepper.jsx';
+import ThemedSelect from './widgets/ThemedSelect.jsx';
 
 const FONT_SCALE_OPTIONS = [
     { value: 'compact', labelKey: 'generalSettings:fields.fontScale.options.compact' },
@@ -569,7 +571,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <input type="number" name="port" className="input-field w-full"
+                                <NumberStepper name="port" className="w-full"
                                     placeholder="Enter port number" value={port}
                                     onChange={(e) => setPort(parseInt(e.target.value) || -1)}
                                     onBlur={(e) => validatePort(parseInt(e.target.value) || -1)} />
@@ -584,7 +586,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <input type="number" name="clientConnectionBuffer" className="input-field w-full"
+                                <NumberStepper name="clientConnectionBuffer" className="w-full"
                                     placeholder="Buffer size" value={clientConnectionBuffer}
                                     onChange={(e) => setClientConnectionBuffer(parseInt(e.target.value) || -1)}
                                     onBlur={(e) => validateClientConnectionBuffer(parseInt(e.target.value) || -1)} />
@@ -598,7 +600,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <input type="number" name="wssPort" className="input-field w-full"
+                                <NumberStepper name="wssPort" className="w-full"
                                     placeholder="Enter WSS port number" value={wssPort}
                                     disabled={singlePort}
                                     onChange={(e) => setWssPort(parseInt(e.target.value) || -1)}
@@ -716,9 +718,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <select name="fontScale" className="input-field w-full" value={fontScale} onChange={(e) => setFontScale(e.target.value)}>
-                                    {FONT_SCALE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
-                                </select>
+                                <ThemedSelect value={fontScale} onChange={setFontScale}
+                                    options={FONT_SCALE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))} />
                             </div>
                         </div>
                         <div className="flex items-center w-full">
@@ -729,9 +730,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <select name="appLanguage" className="input-field w-full" value={appLanguage} onChange={(e) => handleAppLanguageChange(e.target.value)}>
-                                    {[{ value: 'en', labelKey: 'generalSettings:fields.appLanguage.options.en' }].map((opt) => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
-                                </select>
+                                <ThemedSelect value={appLanguage} onChange={handleAppLanguageChange}
+                                    options={[{ value: 'en', label: t('generalSettings:fields.appLanguage.options.en') }]} />
                             </div>
                         </div>
                         <div className="flex items-center w-full">
@@ -742,9 +742,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <select name="numberFormat" className="input-field w-full" value={numberFormat} onChange={(e) => setNumberFormat(e.target.value)}>
-                                    {NUMBER_FORMAT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
-                                </select>
+                                <ThemedSelect value={numberFormat} onChange={setNumberFormat}
+                                    options={NUMBER_FORMAT_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))} />
                             </div>
                         </div>
                     </div>
@@ -781,9 +780,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </SettingsTooltip>
                             </label>
                             <div className="w-2/3 px-3">
-                                <select name="autoUpdate" className="input-field w-full" value={autoUpdate} onChange={(e) => setAutoUpdate(e.target.value)}>
-                                    {AUTO_UPDATE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>)}
-                                </select>
+                                <ThemedSelect value={autoUpdate} onChange={setAutoUpdate}
+                                    options={AUTO_UPDATE_OPTIONS.map((opt) => ({ value: opt.value, label: t(opt.labelKey) }))} />
                             </div>
                         </div>
                     </div>

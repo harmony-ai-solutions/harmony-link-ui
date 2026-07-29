@@ -1,4 +1,6 @@
 import React from 'react';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
+import NumberStepper from '../ui/NumberStepper.jsx';
 
 /**
  * Shared Lifecycle Configuration Editor Component
@@ -45,17 +47,17 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Autonomy Level
                             <span className="character-editor-label-unit">0-3</span>
                         </label>
-                        <select
+                        <ThemedSelect
                             value={config.autonomy_level ?? 1}
-                            onChange={(e) => handleChange('autonomy_level', parseInt(e.target.value))}
+                            onChange={(val) => handleChange('autonomy_level', parseInt(val))}
+                            options={[
+                                { value: 0, label: '0 - Observe' },
+                                { value: 1, label: '1 - Reflect' },
+                                { value: 2, label: '2 - Reach Out' },
+                                { value: 3, label: '3 - Act (reserved)' },
+                            ]}
                             disabled={readOnly}
-                            className="input-field w-full"
-                        >
-                            <option value={0}>0 - Observe</option>
-                            <option value={1}>1 - Reflect</option>
-                            <option value={2}>2 - Reach Out</option>
-                            <option value={3}>3 - Act (reserved)</option>
-                        </select>
+                        />
                         <p className="character-editor-hint">Controls autonomous behavior level</p>
                     </div>
                     <div className="character-editor-field-group">
@@ -63,14 +65,13 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Beat Interval
                             <span className="character-editor-label-unit">seconds</span>
                         </label>
-                        <input
-                            type="number"
+                        <NumberStepper
                             value={config.beat_interval ?? 1800}
                             onChange={(e) => handleChange('beat_interval', e.target.value)}
                             disabled={readOnly}
-                            min="60"
-                            max="86400"
-                            className="input-field w-full"
+                            min={60}
+                            max={86400}
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Time between beats (default: 1800 = 30min)</p>
                     </div>
@@ -80,15 +81,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             {['self_reflection', 'curiosity', 'relationship', 'outreach'].map(type => (
                                 <div key={type} className="bg-background-base/50 rounded-lg p-3">
                                     <p className="text-xs text-text-muted capitalize mb-1">{type.replace('_', ' ')}</p>
-                                    <input
-                                        type="number"
-                                        step="0.05"
-                                        min="0"
-                                        max="1"
+                                    <NumberStepper
+                                        step={0.05}
+                                        min={0}
+                                        max={1}
                                         value={config.beat_type_weights?.[type] ?? getDefaultWeight(type)}
                                         onChange={(e) => handleBeatTypeWeightChange(type, e.target.value)}
                                         disabled={readOnly}
-                                        className="input-field w-full text-sm"
+                                        className="w-full text-sm"
                                     />
                                 </div>
                             ))}
@@ -112,15 +112,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Sleep Threshold
                             <span className="character-editor-label-unit">0-1</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.05"
-                            min="0"
-                            max="1"
+                        <NumberStepper
+                            step={0.05}
+                            min={0}
+                            max={1}
                             value={config.sleep_threshold ?? 0.80}
                             onChange={(e) => handleChange('sleep_threshold', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Exhaustion level to trigger sleep (default: 0.80)</p>
                     </div>
@@ -129,15 +128,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Wake Threshold
                             <span className="character-editor-label-unit">0-1</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.05"
-                            min="0"
-                            max="1"
+                        <NumberStepper
+                            step={0.05}
+                            min={0}
+                            max={1}
                             value={config.wake_threshold ?? 0.20}
                             onChange={(e) => handleChange('wake_threshold', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Exhaustion level to wake up (default: 0.20)</p>
                     </div>
@@ -146,15 +144,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Exhaustion Accumulation
                             <span className="character-editor-label-unit">per beat</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="1"
+                        <NumberStepper
+                            step={0.01}
+                            min={0}
+                            max={1}
                             value={config.exhaustion_accumulation_per_beat ?? 0.10}
                             onChange={(e) => handleChange('exhaustion_accumulation_per_beat', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Exhaustion gained per beat (default: 0.10)</p>
                     </div>
@@ -163,15 +160,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Exhaustion Decay
                             <span className="character-editor-label-unit">per tick</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="1"
+                        <NumberStepper
+                            step={0.01}
+                            min={0}
+                            max={1}
                             value={config.exhaustion_decay_per_tick ?? 0.02}
                             onChange={(e) => handleChange('exhaustion_decay_per_tick', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Exhaustion recovered per tick (default: 0.02)</p>
                     </div>
@@ -192,13 +188,12 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Decay Tau
                             <span className="character-editor-label-unit">seconds</span>
                         </label>
-                        <input
-                            type="number"
-                            min="1"
+                        <NumberStepper
+                            min={1}
                             value={config.emotion_decay_tau ?? 3600.0}
                             onChange={(e) => handleChange('emotion_decay_tau', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Emotion decay time constant (default: 3600 = 1hr)</p>
                     </div>
@@ -207,15 +202,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Emotion High Threshold
                             <span className="character-editor-label-unit">0-10</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
+                        <NumberStepper
+                            step={0.1}
+                            min={0}
+                            max={10}
                             value={config.emotion_high_threshold ?? 6.0}
                             onChange={(e) => handleChange('emotion_high_threshold', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">High emotion intensity for crystallization (default: 6.0)</p>
                     </div>
@@ -224,15 +218,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Emotion Low Threshold
                             <span className="character-editor-label-unit">0-10</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
+                        <NumberStepper
+                            step={0.1}
+                            min={0}
+                            max={10}
                             value={config.emotion_low_threshold ?? 1.0}
                             onChange={(e) => handleChange('emotion_low_threshold', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Low emotion intensity threshold (default: 1.0)</p>
                     </div>
@@ -253,15 +246,14 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Crystallize Intensity
                             <span className="character-editor-label-unit">0-10</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="10"
+                        <NumberStepper
+                            step={0.1}
+                            min={0}
+                            max={10}
                             value={config.emotion_crystallize_intensity ?? 7.0}
                             onChange={(e) => handleChange('emotion_crystallize_intensity', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Emotion intensity for memory crystallization (default: 7.0)</p>
                     </div>
@@ -270,14 +262,13 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Crystallize Min Hours
                             <span className="character-editor-label-unit">hours</span>
                         </label>
-                        <input
-                            type="number"
-                            step="0.1"
-                            min="0"
+                        <NumberStepper
+                            step={0.1}
+                            min={0}
                             value={config.emotion_crystallize_min_hours ?? 2.0}
                             onChange={(e) => handleChange('emotion_crystallize_min_hours', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Minimum hours for crystallization (default: 2.0)</p>
                     </div>
@@ -298,14 +289,13 @@ export default function LifecycleConfigEditor({ config, onChange, readOnly = fal
                             Core Memories K
                             <span className="character-editor-label-unit">count</span>
                         </label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="100"
+                        <NumberStepper
+                            min={1}
+                            max={100}
                             value={config.core_memories_k ?? 10}
                             onChange={(e) => handleChange('core_memories_k', e.target.value)}
                             disabled={readOnly}
-                            className="input-field w-full"
+                            className="w-full"
                         />
                         <p className="character-editor-hint">Number of core memories to retain (default: 10)</p>
                     </div>

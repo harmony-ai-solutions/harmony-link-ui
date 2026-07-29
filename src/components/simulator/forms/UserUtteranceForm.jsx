@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ThemedSelect from '../../widgets/ThemedSelect';
 
 function UserUtteranceForm({ onSendEvent, formState, onClearResponse }) {
     const [content, setContent] = useState('');
@@ -23,15 +24,15 @@ function UserUtteranceForm({ onSendEvent, formState, onClearResponse }) {
         <form onSubmit={handleSubmit} className="space-y-3">
             <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">Type:</label>
-                <select
+                <ThemedSelect
                     value={utteranceType}
-                    onChange={(e) => setUtteranceType(e.target.value)}
-                    className="input-field w-full text-xs py-1.5"
-                >
-                    <option value="UTTERANCE_VERBAL">Verbal</option>
-                    <option value="UTTERANCE_NONVERBAL">Non-verbal</option>
-                    <option value="UTTERANCE_COMBINED">Combined</option>
-                </select>
+                    onChange={setUtteranceType}
+                    options={[
+                        { value: 'UTTERANCE_VERBAL', label: 'Verbal' },
+                        { value: 'UTTERANCE_NONVERBAL', label: 'Non-verbal' },
+                        { value: 'UTTERANCE_COMBINED', label: 'Combined' },
+                    ]}
+                />
             </div>
             <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">Content:</label>

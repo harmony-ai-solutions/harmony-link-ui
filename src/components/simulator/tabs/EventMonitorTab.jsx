@@ -1,6 +1,7 @@
 import React from 'react';
 import EventHistoryDisplay from '../shared/EventHistoryDisplay';
 import GroupedEventHistoryDisplay from '../shared/GroupedEventHistoryDisplay';
+import ThemedSelect from '../../widgets/ThemedSelect';
 
 function EventMonitorTab({ 
     connectionStatus, 
@@ -91,14 +92,14 @@ function EventMonitorTab({
                             </div>
                             <div className="flex items-center gap-2">
                                 <label className="text-xs font-medium text-text-secondary">View:</label>
-                                <select
+                                <ThemedSelect
                                     value={useGroupedView ? 'grouped' : 'individual'}
-                                    onChange={(e) => setUseGroupedView(e.target.value === 'grouped')}
-                                    className="input-field text-xs py-1"
-                                >
-                                    <option value="grouped">Grouped</option>
-                                    <option value="individual">Individual</option>
-                                </select>
+                                    onChange={(val) => setUseGroupedView(val === 'grouped')}
+                                    options={[
+                                        { value: 'grouped', label: 'Grouped' },
+                                        { value: 'individual', label: 'Individual' },
+                                    ]}
+                                />
                                 <button
                                     onClick={onLoadEventHistory}
                                     className="module-action-btn text-accent-primary border-accent-primary/30"

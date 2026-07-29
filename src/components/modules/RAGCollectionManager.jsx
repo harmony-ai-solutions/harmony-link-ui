@@ -1,10 +1,10 @@
 import {useEffect, useRef, useState} from "react";
-import { 
-    getEntityRAGCollections, 
+import {
+    getEntityRAGCollections,
     getEntityRAGCollectionDetails,
     getEntityRAGCollectionDocuments,
-    getEntityRAGDocumentDetails, 
-    deleteEntityRAGDocument, 
+    getEntityRAGDocumentDetails,
+    deleteEntityRAGDocument,
     testEntityRAGSimilarityQuery,
     getEntityRAGCollectionGroups,
     getEntityRAGGroupDocuments,
@@ -13,6 +13,7 @@ import {
     deleteEntityRAGGroup
 } from "../../services/management/ragService.js";
 import ConfigurableJsonViewer from "../widgets/ConfigurableJsonViewer.jsx";
+import ThemedSelect from "../widgets/ThemedSelect";
 
 const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
     // Track whether the modal is currently open so in-flight requests
@@ -638,26 +639,24 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                         Documents {selectedCollection ? `- ${selectedCollection}` : ''}
                                     </h4>
                                     <div className="flex gap-2">
-                                        <select
+                                        <ThemedSelect
                                             value={filterArchetype}
-                                            onChange={(e) => setFilterArchetype(e.target.value)}
-                                            className="input-field text-sm py-1"
-                                        >
-                                            <option value="">All Archetypes</option>
-                                            {availableArchetypes.map(a => (
-                                                <option key={a} value={a}>{a}</option>
-                                            ))}
-                                        </select>
-                                        <select
+                                            onChange={setFilterArchetype}
+                                            options={[
+                                                { value: '', label: 'All Archetypes' },
+                                                ...availableArchetypes.map(a => ({ value: a, label: a }))
+                                            ]}
+                                            placeholder="All Archetypes"
+                                        />
+                                        <ThemedSelect
                                             value={filterCategory}
-                                            onChange={(e) => setFilterCategory(e.target.value)}
-                                            className="input-field text-sm py-1"
-                                        >
-                                            <option value="">All Categories</option>
-                                            {availableCategories.map(c => (
-                                                <option key={c} value={c}>{c}</option>
-                                            ))}
-                                        </select>
+                                            onChange={setFilterCategory}
+                                            options={[
+                                                { value: '', label: 'All Categories' },
+                                                ...availableCategories.map(c => ({ value: c, label: c }))
+                                            ]}
+                                            placeholder="All Categories"
+                                        />
                                     </div>
                                 </div>
 
@@ -764,26 +763,24 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                                     />
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <select
+                                                    <ThemedSelect
                                                         value={filterArchetype}
-                                                        onChange={(e) => setFilterArchetype(e.target.value)}
-                                                        className="input-field text-sm py-1"
-                                                    >
-                                                        <option value="">All Archetypes</option>
-                                                        {availableArchetypes.map(a => (
-                                                            <option key={a} value={a}>{a}</option>
-                                                        ))}
-                                                    </select>
-                                                    <select
+                                                        onChange={setFilterArchetype}
+                                                        options={[
+                                                            { value: '', label: 'All Archetypes' },
+                                                            ...availableArchetypes.map(a => ({ value: a, label: a }))
+                                                        ]}
+                                                        placeholder="All Archetypes"
+                                                    />
+                                                    <ThemedSelect
                                                         value={filterCategory}
-                                                        onChange={(e) => setFilterCategory(e.target.value)}
-                                                        className="input-field text-sm py-1"
-                                                    >
-                                                        <option value="">All Categories</option>
-                                                        {availableCategories.map(c => (
-                                                            <option key={c} value={c}>{c}</option>
-                                                        ))}
-                                                    </select>
+                                                        onChange={setFilterCategory}
+                                                        options={[
+                                                            { value: '', label: 'All Categories' },
+                                                            ...availableCategories.map(c => ({ value: c, label: c }))
+                                                        ]}
+                                                        placeholder="All Categories"
+                                                    />
                                                     <button
                                                         onClick={handleTestQuery}
                                                         disabled={!testQuery.trim() || testLoading}

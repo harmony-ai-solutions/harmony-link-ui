@@ -1,3 +1,5 @@
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
+
 /**
  * Level toggle buttons — clicking a level sets it as the minimum visible level.
  */
@@ -58,28 +60,28 @@ export default function FilterToolbar({
             {/* Row 1: Dropdowns + Level Toggles + Sort + Page Size */}
             <div className="flex items-center gap-3 flex-wrap">
                 {/* Component Dropdown */}
-                <select
+                <ThemedSelect
                     value={filters.component}
-                    onChange={(e) => onFilterChange({ ...filters, component: e.target.value })}
-                    className="input-field text-sm py-1.5 w-36"
-                >
-                    <option value="">All Components</option>
-                    {components && components.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                    ))}
-                </select>
+                    onChange={(val) => onFilterChange({ ...filters, component: val })}
+                    options={[
+                        { value: '', label: 'All Components' },
+                        ...(components || []).map(c => ({ value: c, label: c }))
+                    ]}
+                    placeholder="All Components"
+                    className="w-36"
+                />
 
                 {/* Entity Dropdown */}
-                <select
+                <ThemedSelect
                     value={filters.entityId}
-                    onChange={(e) => onFilterChange({ ...filters, entityId: e.target.value })}
-                    className="input-field text-sm py-1.5 w-36"
-                >
-                    <option value="">All Entities</option>
-                    {entities && entities.map(e => (
-                        <option key={e} value={e}>{e}</option>
-                    ))}
-                </select>
+                    onChange={(val) => onFilterChange({ ...filters, entityId: val })}
+                    options={[
+                        { value: '', label: 'All Entities' },
+                        ...(entities || []).map(e => ({ value: e, label: e }))
+                    ]}
+                    placeholder="All Entities"
+                    className="w-36"
+                />
 
                 {/* Divider */}
                 <div className="w-px h-6 bg-white/10" />
@@ -102,16 +104,16 @@ export default function FilterToolbar({
 
                 {/* Prompt Type Dropdown — only visible when isPrompt is toggled active (true) */}
                 {filters.isPrompt === true && (
-                    <select
+                    <ThemedSelect
                         value={filters.promptType}
-                        onChange={(e) => onFilterChange({ ...filters, promptType: e.target.value })}
-                        className="input-field text-sm py-1.5 w-28"
-                    >
-                        <option value="">All Types</option>
-                        {promptTypes && promptTypes.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                        ))}
-                    </select>
+                        onChange={(val) => onFilterChange({ ...filters, promptType: val })}
+                        options={[
+                            { value: '', label: 'All Types' },
+                            ...(promptTypes || []).map(t => ({ value: t, label: t }))
+                        ]}
+                        placeholder="All Types"
+                        className="w-28"
+                    />
                 )}
 
                 {/* Divider */}
@@ -136,16 +138,12 @@ export default function FilterToolbar({
                 </button>
 
                 {/* Page Size Dropdown */}
-                <select
+                <ThemedSelect
                     value={pageSize}
-                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                    className="input-field text-sm py-1.5 w-20"
-                    title="Logs per page"
-                >
-                    {pageSizeOptions.map(n => (
-                        <option key={n} value={n}>{n}</option>
-                    ))}
-                </select>
+                    onChange={(val) => onPageSizeChange(Number(val))}
+                    options={pageSizeOptions.map(n => ({ value: n, label: String(n) }))}
+                    className="w-20"
+                />
 
                 {/* Spacer */}
                 <div className="flex-1" />

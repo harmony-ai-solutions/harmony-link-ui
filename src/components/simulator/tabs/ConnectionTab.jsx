@@ -44,23 +44,20 @@ function ConnectionTab({
                                 <span className="text-sm font-semibold text-text-primary">Entity Selection</span>
                             </div>
                             <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <select
+                                <ThemedSelect
                                     value={selectedEntity}
-                                    onChange={(e) => {
-                                        const newEntityId = e.target.value;
+                                    onChange={(newEntityId) => {
                                         setSelectedEntity(newEntityId);
                                         onSyncEntityState(newEntityId);
                                     }}
-                                    className="flex-1 input-field text-xs py-1.5"
+                                    options={[
+                                        { value: '', label: 'Select an entity...' },
+                                        ...entities.map(entity => ({ value: entity.id, label: `${entity.id} (${entity.status})` }))
+                                    ]}
+                                    placeholder="Select an entity..."
                                     disabled={isLoading}
-                                >
-                                    <option value="">Select an entity...</option>
-                                    {entities.map(entity => (
-                                        <option key={entity.id} value={entity.id}>
-                                            {entity.id} {entity.is_simulated ? '(Simulated)' : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                                    className="flex-1"
+                                />
                                 <button 
                                     onClick={onLoadEntities}
                                     className="module-action-btn text-accent-primary border-accent-primary/30"

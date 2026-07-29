@@ -31,7 +31,7 @@ const ThemedSelect = ({ value, onChange, options, placeholder = "Select...", dis
                         className="fixed inset-0 z-[60]"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute z-[70] w-full mt-2 bg-background-elevated/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+                    <div className="absolute z-[70] w-full mt-2 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top" style={{ backgroundColor: 'var(--color-background-surface)', border: '1px solid var(--color-border-default)' }}>
                         <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
                             {options.map((option) => (
                                 <div

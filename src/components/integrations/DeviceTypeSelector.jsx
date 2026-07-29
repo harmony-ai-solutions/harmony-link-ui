@@ -1,4 +1,5 @@
 import React from 'react';
+import ThemedSelect from '../widgets/ThemedSelect';
 
 const DeviceTypeSelector = ({ value, onChange, disabled = false }) => {
   const deviceTypes = [
@@ -12,20 +13,12 @@ const DeviceTypeSelector = ({ value, onChange, disabled = false }) => {
   return (
     <div className="bg-neutral-800 p-4 rounded shadow-md mb-4">
       <h3 className="text-lg font-semibold text-orange-400 mb-2">Inference Device</h3>
-      <select
+      <ThemedSelect
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(val) => onChange(val)}
+        options={deviceTypes}
         disabled={disabled}
-        className={`mt-1 block w-full bg-neutral-800 shadow-sm focus:outline-none focus:border-orange-400 border border-neutral-600 text-neutral-100 ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
-      >
-        {deviceTypes.map((device) => (
-          <option key={device.value} value={device.value}>
-            {device.label}
-          </option>
-        ))}
-      </select>
+      />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import NumberStepper from '../ui/NumberStepper.jsx';
 
 /**
  * Displays and allows editing of extended sampling parameters.
@@ -132,14 +133,13 @@ const AdvancedSamplingParams = ({ extraParams = {}, onChange, presetParams = {} 
                                         onChange={(e) => handleParamChange(key, e.target.checked)}
                                     />
                                 ) : inputType === 'number' ? (
-                                    <input
-                                        type="number"
+                                    <NumberStepper
                                         step={info.step}
                                         min={info.min}
                                         max={info.max}
                                         value={currentValue ?? ''}
                                         onChange={(e) => handleParamChange(key, e.target.value)}
-                                        className="input-field flex-1 p-1 rounded text-sm"
+                                        className="flex-1 text-sm"
                                         placeholder={String(displayParams[key] ?? '')}
                                     />
                                 ) : (

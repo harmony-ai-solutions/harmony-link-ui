@@ -5,6 +5,7 @@ import {
     sendTestActionGraph
 } from '../../services/management/developmentService.js';
 import { LogDebug, LogError } from '../../utils/logger.js';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
 
 /**
  * ActionGraph Tester — allows testing ActionGraph commands against connected entities.
@@ -157,21 +158,16 @@ export default function ActionGraphTester() {
                         <label className="text-sm font-medium text-text-secondary w-28">
                             Connected Entity
                         </label>
-                        <select
+                        <ThemedSelect
                             value={selectedEntity}
-                            onChange={(e) => setSelectedEntity(e.target.value)}
-                            className="input-field flex-1"
+                            onChange={setSelectedEntity}
+                            options={[
+                                { value: '', label: 'Select an entity...' },
+                                ...(entities || []).map(entity => ({ value: entity.id, label: `${entity.id} (${entity.status})` }))
+                            ]}
                             disabled={isLoading}
-                        >
-                            <option value="">Select an entity...</option>
-                            {entities && entities.length > 0 &&
-                                entities.map(entity => (
-                                    <option key={entity.id} value={entity.id}>
-                                        {entity.id} ({entity.status})
-                                    </option>
-                                ))
-                            }
-                        </select>
+                            className="flex-1"
+                        />
                         <button onClick={loadEntities} className="module-action-btn" disabled={isLoading}>
                             Refresh
                         </button>
@@ -222,19 +218,16 @@ export default function ActionGraphTester() {
                                     <label className="text-sm font-medium text-text-secondary w-28">
                                         Action
                                     </label>
-                                    <select
+                                    <ThemedSelect
                                         value={selectedAction}
-                                        onChange={(e) => setSelectedAction(e.target.value)}
-                                        className="input-field flex-1"
+                                        onChange={setSelectedAction}
+                                        options={[
+                                            { value: '', label: 'Select an action...' },
+                                            ...(entityDetails.actions || []).map(action => ({ value: action.name, label: action.name }))
+                                        ]}
                                         disabled={isLoading}
-                                    >
-                                        <option value="">Select an action...</option>
-                                        {entityDetails.actions && entityDetails.actions.map(action => (
-                                            <option key={action.name} value={action.name}>
-                                                {action.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        className="flex-1"
+                                    />
                                 </div>
                             )}
 

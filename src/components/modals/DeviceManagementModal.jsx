@@ -46,11 +46,11 @@ export const DeviceManagementModal = ({ show, onClose }) => {
 
     const getStatusBadge = (device) => {
         if (device.is_approved === 1) {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">{t('common:deviceManagement.status.approved')}</span>;
+            return <span style={{ background: 'var(--color-success-bg)', color: 'var(--color-success)' }} className="px-2 py-1 rounded text-xs font-semibold">{t('common:deviceManagement.status.approved')}</span>;
         } else if (device.is_approved === 2) {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400">{t('common:deviceManagement.status.rejected')}</span>;
+            return <span style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }} className="px-2 py-1 rounded text-xs font-semibold">{t('common:deviceManagement.status.rejected')}</span>;
         } else {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-500/20 text-yellow-400">{t('common:deviceManagement.status.pending')}</span>;
+            return <span style={{ background: 'var(--color-warning-bg)', color: 'var(--color-warning)' }} className="px-2 py-1 rounded text-xs font-semibold">{t('common:deviceManagement.status.pending')}</span>;
         }
     };
 
@@ -76,7 +76,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="modal-content max-w-4xl w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            <div className="modal-content max-w-4xl w-full rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col" style={{ background: 'var(--color-background-elevated)' }}>
                 <div className="px-6 py-4 flex items-center justify-between">
                     <div>
                         <h2 className="text-2xl font-bold">
@@ -94,8 +94,8 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                 <div className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-6">
                         {error && (
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-                                <p className="text-red-400 text-sm">{error}</p>
+                            <div style={{ background: 'var(--color-error-bg)', borderColor: 'var(--color-error)' }} className="border rounded-lg p-4">
+                                <p style={{ color: 'var(--color-error)' }} className="text-sm">{error}</p>
                             </div>
                         )}
 
@@ -106,15 +106,15 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                         ) : (
                             <>
                                 {devices.length === 0 ? (
-                                    <div className="border border-white/10 rounded-lg p-8 text-center">
+                                    <div className="p-8 text-center">
                                         <p className="text-text-muted">{t('common:deviceManagement.noDevices')}</p>
                                         <p className="text-text-muted text-sm mt-2">{t('common:deviceManagement.noDevicesHint')}</p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto rounded-lg border border-white/10">
+                                    <div className="overflow-x-auto rounded-lg">
                                         <table className="w-full">
                                             <thead>
-                                                <tr className="bg-background-elevated/50">
+                                                <tr className="bg-background-elevated border-b border-[var(--color-border-default)]">
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.deviceName')}</th>
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.type')}</th>
                                                     <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.platform')}</th>
@@ -134,7 +134,8 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                                                         <td className="px-6 py-4 text-sm">
                                                             {device.is_approved === 1 && (
                                                                 <button onClick={() => handleRevoke(device.device_id)}
-                                                                    className="px-3 py-2 rounded text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
+                                                                    style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
+                                                                    className="px-3 py-2 rounded text-xs font-medium hover:opacity-80 transition-colors">
                                                                     {t('common:deviceManagement.revoke')}
                                                                 </button>
                                                             )}
@@ -150,7 +151,7 @@ export const DeviceManagementModal = ({ show, onClose }) => {
                     </div>
                 </div>
 
-                <div className="px-6 py-4 bg-background-base/50 flex justify-end">
+                <div className="px-6 py-4 bg-background-elevated border-t border-[var(--color-border-default)] flex justify-end">
                     <button onClick={onClose} className="btn-secondary">
                         {t('common:buttons.close')}
                     </button>

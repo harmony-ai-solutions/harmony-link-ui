@@ -839,15 +839,15 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {[
-                                { key: 'notifySystemUpdates', state: notifySystemUpdates, setter: setNotifySystemUpdates },
-                                { key: 'notifyConnectionAlerts', state: notifyConnectionAlerts, setter: setNotifyConnectionAlerts },
-                                { key: 'notifyTaskCompletion', state: notifyTaskCompletion, setter: setNotifyTaskCompletion },
-                            ].map(({ key, state, setter }) => (
+                                { key: 'notifySystemUpdates', state: notifySystemUpdates, setter: setNotifySystemUpdates, iconD: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+                                { key: 'notifyConnectionAlerts', state: notifyConnectionAlerts, setter: setNotifyConnectionAlerts, iconD: 'M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0' },
+                                { key: 'notifyTaskCompletion', state: notifyTaskCompletion, setter: setNotifyTaskCompletion, iconD: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+                            ].map(({ key, state, setter, iconD }) => (
                                 <div key={key} className="card p-4 cursor-pointer group" onClick={() => setter(!state)}>
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
                                             <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17v4h10v-4M7 17V7a4 4 0 018 0v4M5 17h14a2 2 0 002-2v-1a2 2 0 00-2-2H5a2 2 0 00-2 2v1a2 2 0 002 2z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconD} />
                                             </svg>
                                         </div>
                                         <Toggle checked={state} onChange={(e) => setter(e.target.checked)} />

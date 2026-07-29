@@ -30,7 +30,7 @@ function HarmonyLinkAppInner() {
 
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
-    const [settingsTab, setSettingsTab] = useState(SettingsTabGeneral);
+    const [settingsTab, setSettingsTab] = useState(SettingsTabCharacters);
 
     // Main Config reference
     const [applicationConfig, setApplicationConfig] = useState(null);

@@ -210,12 +210,18 @@ export const ThemeProvider = ({ children }) => {
         }
     };
 
+    const toggleDarkLight = async () => {
+        // Toggle between the two official themes: soulbits-dark ↔ soulbits-light
+        const target = currentTheme === 'soulbits-light' ? 'soulbits-dark' : 'soulbits-light';
+        await switchTheme(target);
+    };
+
     useEffect(() => {
         loadTheme();
     }, []);
 
     return (
-        <ThemeContext.Provider value={{ currentTheme, themeConfig, switchTheme, loading }}>
+        <ThemeContext.Provider value={{ currentTheme, themeConfig, switchTheme, toggleDarkLight, loading }}>
             {!loading && children}
         </ThemeContext.Provider>
     );

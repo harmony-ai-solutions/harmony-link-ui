@@ -18,6 +18,7 @@ import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
+import { useTheme } from './contexts/ThemeContext';
 
 /**
  * Inner component that has access to the useTranslation hook.
@@ -25,6 +26,7 @@ import { I18nProvider } from './contexts/I18nContext.jsx';
  */
 function HarmonyLinkAppInner() {
     const { t } = useTranslation();
+    const { currentTheme, toggleDarkLight } = useTheme();
 
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
@@ -211,6 +213,25 @@ function HarmonyLinkAppInner() {
 
                     {/* Help button — fixed right */}
                     <div className="flex items-center gap-4 flex-shrink-0 ml-auto z-10">
+                        {/* Dark/Light Theme Toggle */}
+                        <button
+                            className="nav-help-btn"
+                            onClick={toggleDarkLight}
+                            title={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
+                            aria-label={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
+                        >
+                            {currentTheme === 'soulbits-light' ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            )}
+                        </button>
                         <button
                             data-tutorial-id="tutorial-restart-btn"
                             className="nav-help-btn"

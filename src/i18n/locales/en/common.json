@@ -11,7 +11,9 @@
       "simulator": "Simulator",
       "dev": "Dev"
     },
-    "help": "Help / Restart Tutorial"
+    "help": "Help / Restart Tutorial",
+    "darkMode": "Switch to Dark Mode",
+    "lightMode": "Switch to Light Mode"
   },
   "footer": {
     "copyright": "©2023-2026 Project Harmony.AI"

@@ -1,12 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const ThemedSelect = ({ value, onChange, options, placeholder = "Select...", disabled, className = "" }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropdownStyle, setDropdownStyle] = useState({});
+    const buttonRef = useRef(null);
     const selectedOption = options.find(opt => String(opt.value) === String(value));
+
+    // Calculate dropdown position relative to viewport on open
+    useEffect(() => {
+        if (isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownStyle({
+                top: rect.bottom + 8,
+                left: rect.left,
+                width: rect.width,
+            });
+        }
+    }, [isOpen]);
+
+    // Recalculate on scroll/resize while open to keep dropdown anchored
+    useEffect(() => {
+        if (!isOpen) return;
+        const recalc = () => {
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect();
+                setDropdownStyle({
+                    top: rect.bottom + 8,
+                    left: rect.left,
+                    width: rect.width,
+                });
+            }
+        };
+        window.addEventListener('scroll', recalc, true);
+        window.addEventListener('resize', recalc);
+        return () => {
+            window.removeEventListener('scroll', recalc, true);
+            window.removeEventListener('resize', recalc);
+        };
+    }, [isOpen]);
 
     return (
         <div className={`relative w-full ${className}`}>
             <button
+                ref={buttonRef}
                 type="button"
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 className={`input-field w-full flex items-center justify-between text-left transition-all duration-200 ${disabled ? 'opacity-50 cursor-not-allowed bg-surface/50' : 'cursor-pointer hover:border-accent-primary/50'
@@ -25,13 +62,22 @@ const ThemedSelect = ({ value, onChange, options, placeholder = "Select...", dis
                 </svg>
             </button>
 
-            {isOpen && (
+            {isOpen && createPortal(
                 <>
                     <div
                         className="fixed inset-0 z-[60]"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute z-[70] w-full mt-2 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top" style={{ backgroundColor: 'var(--color-background-surface)', border: '1px solid var(--color-border-default)' }}>
+                    <div
+                        className="fixed z-[70] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top"
+                        style={{
+                            backgroundColor: 'var(--color-background-surface)',
+                            border: '1px solid var(--color-border-default)',
+                            top: `${dropdownStyle.top}px`,
+                            left: `${dropdownStyle.left}px`,
+                            width: `${dropdownStyle.width}px`,
+                        }}
+                    >
                         <div className="max-h-64 overflow-y-auto custom-scrollbar p-1">
                             {options.map((option) => (
                                 <div
@@ -55,7 +101,8 @@ const ThemedSelect = ({ value, onChange, options, placeholder = "Select...", dis
                             ))}
                         </div>
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );

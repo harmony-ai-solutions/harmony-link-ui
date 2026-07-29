@@ -11,6 +11,7 @@ import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
+import Toggle from './ui/Toggle.jsx';
 
 const FONT_SCALE_OPTIONS = [
     { value: 'compact', labelKey: 'generalSettings:fields.fontScale.options.compact' },
@@ -509,11 +510,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </div>
                         </div>
 
-                        {/* Right Column: Checkboxes */}
+                        {/* Right Column: Toggles */}
                         <div className="space-y-4">
-                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
-                                <input type="checkbox" name="useHarmonyCloud"
-                                    checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)} />
+                            <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setUseHarmonyCloud(!useHarmonyCloud)}>
+                                <Toggle checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.useHarmonyCloud.label')}</span>
@@ -524,10 +524,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     </div>
                                     <span className="text-xs text-text-muted">{tgs('fields.useHarmonyCloud.description')}</span>
                                 </div>
-                            </label>
-                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
-                                <input type="checkbox" name="confirmEvents"
-                                    checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)} />
+                            </div>
+                            <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setConfirmEvents(!confirmEvents)}>
+                                <Toggle checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.confirmEvents.label')}</span>
@@ -538,10 +537,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     </div>
                                     <span className="text-xs text-text-muted">{tgs('fields.confirmEvents.description')}</span>
                                 </div>
-                            </label>
-                            <label className="flex items-center gap-3 px-3 cursor-pointer group">
-                                <input type="checkbox" name="logFile"
-                                    checked={logFile} onChange={(e) => setLogFile(e.target.checked)} />
+                            </div>
+                            <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setLogFile(!logFile)}>
+                                <Toggle checked={logFile} onChange={(e) => setLogFile(e.target.checked)} />
                                 <div className="flex flex-col">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.logFile.label')}</span>
@@ -552,7 +550,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     </div>
                                     <span className="text-xs text-text-muted">{tgs('fields.logFile.description')}</span>
                                 </div>
-                            </label>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -607,9 +605,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     onBlur={(e) => validateWssPort(parseInt(e.target.value) || -1)} />
                             </div>
                         </div>
-                        <label className="flex items-center gap-3 px-3 cursor-pointer group">
-                            <input type="checkbox" name="singlePort"
-                                checked={singlePort} onChange={(e) => setSinglePort(e.target.checked)} />
+                        <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setSinglePort(!singlePort)}>
+                            <Toggle checked={singlePort} onChange={(e) => setSinglePort(e.target.checked)} />
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.singlePort.label')}</span>
@@ -620,7 +617,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                                 <span className="text-xs text-text-muted">{tgs('fields.singlePort.description')}</span>
                             </div>
-                        </label>
+                        </div>
                     </div>
                 </section>
 
@@ -764,7 +761,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.description')}</p>
                                 </div>
                             </div>
-                            <input type="checkbox" checked={dynamicBackground} onChange={(e) => { e.stopPropagation(); setBgEnabled(e.target.checked); }} />
+                            <Toggle checked={dynamicBackground} onChange={(e) => setBgEnabled(e.target.checked)} />
                         </div>
                     </div>
                 </section>
@@ -805,7 +802,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <input type="checkbox" checked={desktopNotifications} onChange={(e) => { e.stopPropagation(); setDesktopNotifications(e.target.checked); }} className="mt-0.5" />
+                                <Toggle checked={desktopNotifications} onChange={(e) => setDesktopNotifications(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.desktopNotifications.label')}</h3>
                             <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.desktopNotifications.description')}</p>
@@ -817,7 +814,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                                     </svg>
                                 </div>
-                                <input type="checkbox" checked={notificationBadges} onChange={(e) => { e.stopPropagation(); setNotificationBadges(e.target.checked); }} className="mt-0.5" />
+                                <Toggle checked={notificationBadges} onChange={(e) => setNotificationBadges(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationBadges.label')}</h3>
                             <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.notificationBadges.description')}</p>
@@ -829,7 +826,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                     </svg>
                                 </div>
-                                <input type="checkbox" checked={notificationSounds} onChange={(e) => { e.stopPropagation(); setNotificationSounds(e.target.checked); }} className="mt-0.5" />
+                                <Toggle checked={notificationSounds} onChange={(e) => setNotificationSounds(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationSounds.label')}</h3>
                             <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs('fields.notificationSounds.description')}</p>
@@ -855,7 +852,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17v4h10v-4M7 17V7a4 4 0 018 0v4M5 17h14a2 2 0 002-2v-1a2 2 0 00-2-2H5a2 2 0 00-2 2v1a2 2 0 002 2z" />
                                             </svg>
                                         </div>
-                                        <input type="checkbox" checked={state} onChange={(e) => { e.stopPropagation(); setter(e.target.checked); }} className="mt-0.5" />
+                                        <Toggle checked={state} onChange={(e) => setter(e.target.checked)} />
                                     </div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs(`fields.${key}.label`)}</h3>
                                     <p className="text-[11px] text-text-muted mt-0.5 leading-relaxed">{tgs(`fields.${key}.description`)}</p>
@@ -883,7 +880,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     <p className="text-[11px] text-text-muted">{tgs('fields.soundEffects.description')}</p>
                                 </div>
                             </div>
-                            <input type="checkbox" checked={soundEffects} onChange={(e) => { e.stopPropagation(); setSoundEffects(e.target.checked); }} />
+                            <Toggle checked={soundEffects} onChange={(e) => setSoundEffects(e.target.checked)} />
                         </div>
                     </div>
                     <div className="card p-5">

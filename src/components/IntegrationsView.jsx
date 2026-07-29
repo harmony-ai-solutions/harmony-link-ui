@@ -13,6 +13,13 @@ import ConfirmDialog from './modals/ConfirmDialog';
 
 const IntegrationsView = () => {
   const { t } = useTranslation();
+
+  const colorFirstWord = (text) => {
+    const spaceIdx = text.indexOf(' ');
+    if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+    return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+  };
+
   const [integrations, setIntegrations] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [showConfigEditor, setShowConfigEditor] = useState(false);
@@ -170,7 +177,7 @@ const IntegrationsView = () => {
       <div className="flex flex-col min-h-full bg-background-base">
         <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
           <h1 className="text-2xl font-extrabold tracking-tight">
-            <span className="text-gradient-primary">{t('integrations:header.title')}</span>
+            {colorFirstWord(t('integrations:header.title'))}
           </h1>
           <p className="text-xs text-text-muted mt-0.5 font-medium">
             {t('integrations:header.subtitle')}
@@ -189,7 +196,7 @@ const IntegrationsView = () => {
     <div className="flex flex-col min-h-full bg-background-base">
       <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          <span className="text-gradient-primary">{t('integrations:header.title')}</span>
+          {colorFirstWord(t('integrations:header.title'))}
         </h1>
         <p className="text-xs text-text-muted mt-0.5 font-medium">
           {t('integrations:header.subtitle')}

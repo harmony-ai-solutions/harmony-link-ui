@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import useModuleConfigStore from '../store/moduleConfigStore.js';
 import ModuleCard from './modules/ModuleCard.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
@@ -29,11 +29,17 @@ export default function ModuleConfigurationsView() {
         loadAllConfigs();
     };
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
-                    <Trans i18nKey="header.title" ns="moduleConfig" components={{ 0: <span className="text-gradient-primary" /> }} />
+                    {colorFirstWord(t('moduleConfig:header.title'))}
                 </h1>
                 <p className="text-xs text-text-muted mt-0.5 font-medium">
                     {t('moduleConfig:header.subtitle')}

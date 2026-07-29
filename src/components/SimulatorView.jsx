@@ -25,6 +25,12 @@ function SimulatorView() {
     const { t } = useTranslation();
     const ts = (key, opts) => t(`simulator:${key}`, opts);
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     const [entities, setEntities] = useState([]);
     const [selectedEntity, setSelectedEntity] = useState('');
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -399,7 +405,9 @@ function SimulatorView() {
             <div className="bg-neutral-800 px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-orange-400">{ts('header.title')}</h1>
+                        <h1 className="text-2xl font-extrabold tracking-tight">
+                            {colorFirstWord(ts('header.title'))}
+                        </h1>
                         <p className="text-sm text-gray-400 mt-1">{ts('header.subtitle')}</p>
                     </div>
                     <div className="flex items-center gap-4">

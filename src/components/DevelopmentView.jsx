@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import LogViewer from './dev/LogViewer.jsx';
 import ActionGraphTester from './dev/ActionGraphTester.jsx';
 
@@ -11,11 +11,17 @@ function DevelopmentView() {
     const { t } = useTranslation();
     const [activeSubTab, setActiveSubTab] = useState('logs');
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <div className="flex flex-col bg-background-base" style={{ height: 'calc(100vh - 6rem)' }}>
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
-                    <Trans i18nKey="header.title" ns="development" components={{ 0: <span className="text-gradient-primary" /> }} />
+                    {colorFirstWord(t('development:header.title'))}
                 </h1>
                 <p className="text-xs text-text-muted mt-0.5 font-medium">
                     {t('development:header.subtitle')}

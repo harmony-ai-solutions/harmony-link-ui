@@ -1,11 +1,12 @@
 {
   "header": {
-    "title": "<0>Character</0> Profiles",
+    "title": "Character Profiles",
     "subtitle": "Manage AI character identities and cards"
   },
   "buttons": {
     "importCard": "Import Card",
-    "createProfile": "Create Profile"
+    "createProfile": "Create Profile",
+    "clearSearch": "Clear Search"
   },
   "searchPlaceholder": "Search profiles...",
   "cardSize": "Card Size:",
@@ -16,10 +17,12 @@
   },
   "empty": {
     "title": "No profiles found",
+    "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
     "getStarted": "Get started by creating a new profile or importing a character card."
   },
   "importTitle": "Import Character Card",
+  "clearSearch": "Clear search",
   "deleteConfirm": "Are you sure you want to delete this character profile? This action cannot be undone.",
   "deleteFailed": "Failed to delete profile: {{message}}"
 }

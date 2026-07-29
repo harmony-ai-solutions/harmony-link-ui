@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
@@ -18,6 +18,16 @@ export default function CharacterProfilesView() {
     const [cardSize, setCardSize] = useState(() => {
         return localStorage.getItem('characterProfileCardSize') || 'medium';
     });
+
+    /** Filter profiles by search query — matches name and description */
+    const filteredProfiles = useMemo(() => {
+        if (!searchQuery.trim()) return profiles;
+        const query = searchQuery.toLowerCase().trim();
+        return profiles.filter(p =>
+            p.name?.toLowerCase().includes(query) ||
+            p.description?.toLowerCase().includes(query)
+        );
+    }, [profiles, searchQuery]);
 
     useEffect(() => {
         loadProfiles();
@@ -58,13 +68,6 @@ export default function CharacterProfilesView() {
         }
     };
 
-    const filteredProfiles = profiles.filter(p => 
-        p && p.id && p.name && (
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-        )
-    );
-
     const handleCardSizeChange = (size) => {
         setCardSize(size);
         localStorage.setItem('characterProfileCardSize', size);
@@ -79,13 +82,19 @@ export default function CharacterProfilesView() {
         }
     };
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold tracking-tight">
-                            <Trans i18nKey="characters:header.title" components={{ 0: <span className="text-gradient-primary" /> }} />
+                            {colorFirstWord(t('characters:header.title'))}
                         </h1>
                         <p className="text-xs text-text-muted mt-0.5 font-medium">
                             {t('characters:header.subtitle')}
@@ -112,17 +121,24 @@ export default function CharacterProfilesView() {
             </div>
 
             <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
-                <div className="flex items-center gap-4 justify-between">
-                    <div className="relative flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <input type="text" className="input-field block w-full pl-11 pr-3 py-2 rounded-md leading-5 sm:text-sm transition-colors"
-                            placeholder={t('characters:searchPlaceholder')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div className="flex items-center justify-between gap-4">
+                    {/* Search Bar */}
+                    <div data-tutorial-id="char-search" className="search-bar-wrapper">
+                        <svg className="search-bar-icon w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            className="search-bar-input"
+                            placeholder={t('characters:searchPlaceholder')}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            aria-label={t('characters:searchPlaceholder')}
+                        />
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Card Size Toggle */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-text-muted font-medium">{t('characters:cardSize')}</span>
                         <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
                             {[
@@ -148,32 +164,38 @@ export default function CharacterProfilesView() {
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
                     </div>
-                ) : filteredProfiles.length > 0 ? (
-                    <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
-                        {filteredProfiles.map(profile => (
-                            <CharacterProfileCard key={profile.id} profile={profile}
-                                onClick={() => handleEdit(profile)} onDelete={handleDelete} />
-                        ))}
-                    </div>
+                ) : profiles.length > 0 ? (
+                    filteredProfiles.length > 0 ? (
+                        <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
+                            {filteredProfiles.map(profile => (
+                                <CharacterProfileCard key={profile.id} profile={profile}
+                                    onClick={() => handleEdit(profile)} onDelete={handleDelete} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-24">
+                            <svg className="w-16 h-16 text-text-muted/25 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <p className="text-lg font-semibold text-text-primary mb-1.5">{t('characters:empty.noResults')}</p>
+                            <p className="text-sm text-text-muted">{t('characters:empty.tryAdjustingSearch')}</p>
+                        </div>
+                    )
                 ) : (
                     <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
                         <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         <h3 className="mt-2 text-sm font-medium text-text-primary">{t('characters:empty.title')}</h3>
-                        <p className="mt-1 text-sm text-text-muted">
-                            {searchQuery ? t('characters:empty.tryAdjustingSearch') : t('characters:empty.getStarted')}
-                        </p>
-                        {!searchQuery && (
-                            <div className="mt-6 flex justify-center gap-3">
-                                <button onClick={() => setShowImport(true)} className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
-                                    {t('characters:buttons.importCard')}
-                                </button>
-                                <button onClick={() => { setEditingProfile(null); setShowEditor(true); }} className="btn-primary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
-                                    {t('characters:buttons.createProfile')}
-                                </button>
-                            </div>
-                        )}
+                        <p className="mt-1 text-sm text-text-muted">{t('characters:empty.getStarted')}</p>
+                        <div className="mt-6 flex justify-center gap-3">
+                            <button onClick={() => setShowImport(true)} className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
+                                {t('characters:buttons.importCard')}
+                            </button>
+                            <button onClick={() => { setEditingProfile(null); setShowEditor(true); }} className="btn-primary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
+                                {t('characters:buttons.createProfile')}
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

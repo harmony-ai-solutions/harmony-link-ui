@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import { LogDebug, LogPrint } from "../utils/logger.js";
 import { useTheme } from '../contexts/ThemeContext';
@@ -364,13 +364,19 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const tgs = (key, opts) => t(`generalSettings:${key}`, opts);
     const tc = (key, opts) => t(`common:${key}`, opts);
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <div className="flex flex-col min-h-full bg-background-base">
             {/* View Header */}
             <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
-                        <Trans i18nKey="header.title" ns="generalSettings" components={{ 0: <span className="text-gradient-primary" /> }} />
+                        {colorFirstWord(tgs('header.title'))}
                     </h1>
                     <p className="text-xs text-text-muted mt-0.5 font-medium">
                         {tgs('header.subtitle')}

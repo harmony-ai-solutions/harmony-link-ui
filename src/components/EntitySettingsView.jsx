@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import useEntityStore from '../store/entityStore';
 import useModuleConfigStore from '../store/moduleConfigStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
@@ -524,6 +524,12 @@ const EntitySettingsView = ({ appName }) => {
         );
     }
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <>
             <ErrorDialog isOpen={errorDialog.isOpen} title={errorDialog.title} message={errorDialog.message}
@@ -538,7 +544,7 @@ const EntitySettingsView = ({ appName }) => {
                 {/* View Header */}
                 <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                     <h1 className="text-2xl font-extrabold tracking-tight">
-                        <Trans i18nKey="header.title" ns="entitySettings" components={{ 0: <span className="text-gradient-primary" /> }} />
+                        {colorFirstWord(tes('header.title'))}
                     </h1>
                     <p className="text-xs text-text-muted mt-0.5 font-medium">
                         {tes('header.subtitle')}

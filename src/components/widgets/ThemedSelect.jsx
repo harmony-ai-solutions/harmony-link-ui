@@ -87,9 +87,9 @@ const ThemedSelect = ({ value, onChange, options, placeholder = "Select...", dis
                                         setIsOpen(false);
                                     }}
                                     className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-150 mb-0.5 last:mb-0 flex items-center justify-between group ${String(option.value) === String(value)
-                                            ? 'bg-accent-primary text-white font-bold'
+                                            ? 'bg-accent-primary/25 text-accent-primary font-extrabold ring-1 ring-accent-primary/40 shadow-sm shadow-accent-primary/20'
                                             : 'text-text-primary hover:bg-white/5 hover:text-accent-primary'
-                                        }`}
+                                    }`}
                                 >
                                     <span className="truncate">{option.label}</span>
                                     {String(option.value) === String(value) && (

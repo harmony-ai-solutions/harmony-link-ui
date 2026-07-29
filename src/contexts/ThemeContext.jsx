@@ -15,6 +15,8 @@ const hexToRgb = (hex) => {
 
 // Derive glassmorphism tokens from the core theme colors.
 // This means ALL existing themes get glassmorphism for free — no backend changes needed.
+// Light themes get near-opaque glass tokens so windows look solid white instead of
+// transparent; dark themes keep the original glassmorphism transparency.
 const applyDerivedTokens = (root, colors) => {
     const bgBase = colors.background.base;
     const bgSurface = colors.background.surface;
@@ -31,27 +33,54 @@ const applyDerivedTokens = (root, colors) => {
     const statusSuccess = colors.status.success;
     const statusInfo = colors.status.info;
 
+    // Detect whether the theme is light or dark by measuring luminance of bgBase.
+    // Use perceived brightness: Y = 0.299R + 0.587G + 0.114B.  Values > 140 = light.
+    const isLight = (() => {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(bgBase);
+        if (!m) return false;
+        const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 140;
+    })();
+
     // ── Glass Background Tokens ──────────────────────────────────────────
-    root.style.setProperty('--color-background-glass', `rgba(${hexToRgb(bgBase)}, 0.4)`);
-    root.style.setProperty('--color-background-surface-translucent', `rgba(${hexToRgb(bgSurface)}, 0.35)`);
-    root.style.setProperty('--color-background-nav', `rgba(${hexToRgb(bgBase)}, 0.55)`);
-    root.style.setProperty('--color-background-hover-glass', `rgba(${hexToRgb(bgHover)}, 0.45)`);
+    // Light themes: near-opaque so windows look solid (no see-through ghosting).
+    // Dark themes: lower alpha for genuine glassmorphism with backdrop blur.
+    if (isLight) {
+        root.style.setProperty('--color-background-glass', `rgba(${hexToRgb(bgElevated)}, 0.92)`);
+        root.style.setProperty('--color-background-surface-translucent', `rgba(${hexToRgb(bgElevated)}, 0.88)`);
+        root.style.setProperty('--color-background-nav', `rgba(${hexToRgb(bgBase)}, 0.90)`);
+        root.style.setProperty('--color-background-hover-glass', `rgba(${hexToRgb(bgHover)}, 0.92)`);
+    } else {
+        root.style.setProperty('--color-background-glass', `rgba(${hexToRgb(bgElevated)}, 0.4)`);
+        root.style.setProperty('--color-background-surface-translucent', `rgba(${hexToRgb(bgElevated)}, 0.35)`);
+        root.style.setProperty('--color-background-nav', `rgba(${hexToRgb(bgBase)}, 0.55)`);
+        root.style.setProperty('--color-background-hover-glass', `rgba(${hexToRgb(bgElevated)}, 0.45)`);
+    }
 
     // ── Glass Border Tokens ──────────────────────────────────────────────
-    root.style.setProperty('--color-border-glass', `rgba(${accentRgb}, 0.12)`);
+    root.style.setProperty('--color-border-glass', `rgba(${accentRgb}, ${isLight ? 0.18 : 0.12})`);
     root.style.setProperty('--color-border-glow', `rgba(${accentRgb}, 0.35)`);
 
     // ── Glow Tokens ──────────────────────────────────────────────────────
-    root.style.setProperty('--color-glow-accent-soft', `rgba(${accentRgb}, 0.2)`);
-    root.style.setProperty('--color-glow-accent-strong', `rgba(${accentRgb}, 0.4)`);
+    root.style.setProperty('--color-glow-accent-soft', `rgba(${accentRgb}, ${isLight ? 0.12 : 0.2})`);
+    root.style.setProperty('--color-glow-accent-strong', `rgba(${accentRgb}, ${isLight ? 0.25 : 0.4})`);
 
     // ── Shadow Tokens ────────────────────────────────────────────────────
-    root.style.setProperty('--shadow-sm', '0 1px 2px rgba(0, 0, 0, 0.35)');
-    root.style.setProperty('--shadow-md', '0 6px 18px -4px rgba(0, 0, 0, 0.45)');
-    root.style.setProperty('--shadow-lg', '0 14px 40px -8px rgba(0, 0, 0, 0.55)');
-    root.style.setProperty('--shadow-xl', '0 28px 60px -12px rgba(0, 0, 0, 0.65)');
-    root.style.setProperty('--shadow-glass', '0 8px 32px rgba(0, 0, 0, 0.5)');
-    root.style.setProperty('--glow-accent', `0 0 40px -4px rgba(${accentRgb}, 0.45)`);
+    if (isLight) {
+        root.style.setProperty('--shadow-sm', '0 1px 3px rgba(0, 0, 0, 0.06)');
+        root.style.setProperty('--shadow-md', '0 4px 12px -2px rgba(0, 0, 0, 0.08)');
+        root.style.setProperty('--shadow-lg', '0 10px 30px -6px rgba(0, 0, 0, 0.1)');
+        root.style.setProperty('--shadow-xl', '0 20px 50px -10px rgba(0, 0, 0, 0.12)');
+        root.style.setProperty('--shadow-glass', '0 4px 20px rgba(0, 0, 0, 0.06)');
+        root.style.setProperty('--glow-accent', `0 0 40px -4px rgba(${accentRgb}, 0.2)`);
+    } else {
+        root.style.setProperty('--shadow-sm', '0 1px 2px rgba(0, 0, 0, 0.35)');
+        root.style.setProperty('--shadow-md', '0 6px 18px -4px rgba(0, 0, 0, 0.45)');
+        root.style.setProperty('--shadow-lg', '0 14px 40px -8px rgba(0, 0, 0, 0.55)');
+        root.style.setProperty('--shadow-xl', '0 28px 60px -12px rgba(0, 0, 0, 0.65)');
+        root.style.setProperty('--shadow-glass', '0 8px 32px rgba(0, 0, 0, 0.5)');
+        root.style.setProperty('--glow-accent', `0 0 40px -4px rgba(${accentRgb}, 0.45)`);
+    }
 
     // ── Border Radius Tokens ─────────────────────────────────────────────
     root.style.setProperty('--radius-sm', '0.375rem');

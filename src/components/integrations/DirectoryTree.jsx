@@ -98,7 +98,7 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
       title: (
         <span className="flex items-center">
           <span className="mr-2">
-            <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" style={{ color: 'var(--color-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {node.isDir ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               ) : (
@@ -106,7 +106,7 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
               )}
             </svg>
           </span>
-          <span className="text-neutral-100">{node.name}</span>
+          <span style={{ color: 'var(--color-text-primary)' }}>{node.name}</span>
         </span>
       ),
       isLeaf: !node.isDir,
@@ -172,7 +172,7 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="text-neutral-400">Loading directory structure...</div>
+        <div style={{ color: 'var(--color-text-muted)' }}>Loading directory structure...</div>
       </div>
     );
   }
@@ -180,7 +180,7 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
   if (!treeData) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="text-neutral-400">No directory data available</div>
+        <div style={{ color: 'var(--color-text-muted)' }}>No directory data available</div>
       </div>
     );
   }
@@ -188,7 +188,15 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
   const treeNodes = [convertToTreeData(treeData)];
 
   return (
-    <div className="directory-tree custom-scrollbar bg-neutral-800 p-4 rounded border border-neutral-600 max-h-80 overflow-auto">
+    <div
+      className="directory-tree custom-scrollbar p-4 rounded border max-h-80 overflow-auto"
+      style={{
+        background: 'var(--color-background-surface-translucent)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderColor: 'var(--color-border-glass)',
+      }}
+    >
       <Tree
         treeData={treeNodes}
         expandedKeys={expandedKeys}

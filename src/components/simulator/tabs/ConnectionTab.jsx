@@ -1,6 +1,7 @@
 import React from 'react';
+import ThemedSelect from '../../widgets/ThemedSelect';
 
-function ConnectionTab({ 
+function ConnectionTab({
     entities, 
     selectedEntity, 
     setSelectedEntity, 

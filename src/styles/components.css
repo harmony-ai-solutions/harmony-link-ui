@@ -668,7 +668,7 @@ input[type="checkbox"]:disabled:hover {
 }
 
 .btn-danger {
-    background: linear-gradient(to right, #f87171, #ef4444, #b91c1c);
+    background: var(--gradient-primary);
     border: none;
     color: #ffffff;
     padding: 0.875rem 2rem;
@@ -682,8 +682,8 @@ input[type="checkbox"]:disabled:hover {
 
 .btn-danger:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 0 30px rgba(239, 83, 80, 0.35),
-                0 0 60px rgba(239, 83, 80, 0.25);
+    box-shadow: 0 0 30px var(--color-glow-accent-soft),
+                0 0 60px var(--color-glow-accent-soft);
     letter-spacing: 0.06em;
 }
 
@@ -1197,7 +1197,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .module-action-btn-danger {
-    background: linear-gradient(to right, #f87171, #ef4444, #b91c1c);
+    background: var(--gradient-primary);
     border: none;
     color: #ffffff;
     font-weight: 600;
@@ -1214,8 +1214,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .module-action-btn-danger:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 0 16px rgba(239, 83, 80, 0.3),
-                0 0 32px rgba(239, 83, 80, 0.15);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft),
+                0 0 32px var(--color-glow-accent-strong);
 }
 
 .module-action-btn-danger:disabled {
@@ -1480,7 +1480,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .instance-action-btn-danger {
-    background: linear-gradient(to right, #f87171, #ef4444, #b91c1c);
+    background: var(--gradient-primary);
     border: none;
     color: #ffffff;
     font-weight: 600;
@@ -1497,8 +1497,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .instance-action-btn-danger:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 0 16px rgba(239, 83, 80, 0.3),
-                0 0 32px rgba(239, 83, 80, 0.15);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft),
+                0 0 32px var(--color-glow-accent-strong);
 }
 
 .instance-action-btn-danger:disabled {

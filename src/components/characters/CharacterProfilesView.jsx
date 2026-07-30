@@ -154,15 +154,15 @@ export default function CharacterProfilesView() {
                         <span className="text-xs text-text-muted font-medium">{t('characters:cardSize')}</span>
                         <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
                             {[
-                                { size: 'small', title: t('characters:cardSizes.small'), path: "M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" },
-                                { size: 'medium', title: t('characters:cardSizes.medium'), path: "M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" },
-                                { size: 'large', title: t('characters:cardSizes.large'), path: "M4 5a1 1 0 011-1h14a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h14a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z" },
+                                { size: 'small', title: t('characters:cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
+                                { size: 'medium', title: t('characters:cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
+                                { size: 'large', title: t('characters:cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                             ].map(({ size, title, path }) => (
                                 <button key={size} onClick={() => handleCardSizeChange(size)}
-                                    className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary text-white shadow-sm' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+                                    className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
                                     title={title}>
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d={path} />
                                     </svg>
                                 </button>
                             ))}

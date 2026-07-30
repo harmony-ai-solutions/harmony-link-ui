@@ -179,7 +179,7 @@ function HarmonyLinkAppInner() {
                 {/* Top-edge glass light catch */}
                 <div className="nav-top-edge" />
 
-                <div className="relative flex items-center h-full px-8 max-w-[1920px] mx-auto">
+                <div className="nav-inner relative flex items-center h-full px-8 max-w-[1920px] mx-auto">
                     {/* Brand — fixed left */}
                     <div className="flex items-center gap-4 flex-shrink-0 z-10">
                         {/* Brand logo dot — small glowing accent orb */}
@@ -188,13 +188,16 @@ function HarmonyLinkAppInner() {
                             <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-gradient-primary blur-[6px] opacity-60 animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite_0.5s]" />
                         </div>
                         <div className="flex items-baseline gap-1.5 leading-none">
-                            <span className="text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">{t('nav.brand')}</span>
-                            <span className="text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">{t('nav.brandSub')}</span>
+                            <span className="nav-brand-text text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">{t('nav.brand')}</span>
+                            <span className="nav-brand-sub text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">{t('nav.brandSub')}</span>
                         </div>
                     </div>
 
-                    {/* Pill Dock — absolutely centered */}
-                    <div className="absolute left-1/2 -translate-x-1/2 nav-pill-dock z-0">
+                    {/* Left flex spacer — shrinks before zones, centers pill dock when space allows */}
+                    <div className="flex-1 min-w-0" />
+
+                    {/* Pill Dock — flex-centered, scrolls when cramped */}
+                    <div className="nav-pill-dock z-0">
                         {navTabs.map((tab) => {
                             const isActive = settingsTab === tab.id;
                             return (
@@ -211,8 +214,11 @@ function HarmonyLinkAppInner() {
                         })}
                     </div>
 
-                    {/* Help button — fixed right */}
-                    <div className="flex items-center gap-4 flex-shrink-0 ml-auto z-10">
+                    {/* Right flex spacer */}
+                    <div className="flex-1 min-w-0" />
+
+                    {/* Action buttons — fixed right */}
+                    <div className="flex items-center gap-4 flex-shrink-0 z-10">
                         {/* Dark/Light Theme Toggle */}
                         <button
                             className="nav-help-btn"

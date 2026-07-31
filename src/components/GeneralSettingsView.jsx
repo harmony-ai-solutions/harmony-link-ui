@@ -10,7 +10,7 @@ import { openSystemUrl } from '../services/management/systemService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
-import useDynamicBackgroundStore, { BACKGROUND_VARIANTS } from '../store/dynamicBackgroundStore';
+import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
@@ -58,6 +58,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const setBgVariant = useDynamicBackgroundStore((s) => s.setVariant);
     const bgAura = useDynamicBackgroundStore((s) => s.auraEnabled);
     const setBgAura = useDynamicBackgroundStore((s) => s.setAuraEnabled);
+    const bgAuraStyle = useDynamicBackgroundStore((s) => s.auraStyle);
+    const setBgAuraStyle = useDynamicBackgroundStore((s) => s.setAuraStyle);
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -243,6 +245,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.animatedbackground = dynamicBackground;
         generalSettings.dynamicbackgroundvariant = bgVariant;
         generalSettings.cursoraura = bgAura;
+        generalSettings.cursoraurastyle = bgAuraStyle;
         generalSettings.autoupdate = autoUpdate;
         generalSettings.desktopnotifications = desktopNotifications;
         generalSettings.notificationbadges = notificationBadges;
@@ -815,6 +818,34 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                                 <Toggle checked={bgAura} onChange={(e) => setBgAura(e.target.checked)} />
                             </div>
+
+                            {/* Aura style picker — horizontal segmented control, text only */}
+                            {bgAura && (
+                                <div className="mt-4">
+                                    <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
+                                        {tgs('fields.dynamicBackground.auraStylesLabel')}
+                                    </p>
+                                    <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                        {AURA_STYLES.map((s) => {
+                                            const active = bgAuraStyle === s.id;
+                                            return (
+                                                <button
+                                                    key={s.id}
+                                                    type="button"
+                                                    onClick={() => setBgAuraStyle(s.id)}
+                                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                        active
+                                                            ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                            : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                    }`}
+                                                >
+                                                    {t(s.labelKey)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </section>

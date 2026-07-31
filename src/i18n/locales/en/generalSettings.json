@@ -115,7 +115,14 @@
         "waves": "Waves"
       },
       "auraLabel": "Mouse Aura",
-      "auraDescription": "Soft glow that follows your cursor on every background style."
+      "auraDescription": "Soft glow that follows your cursor on every background style.",
+      "auraStylesLabel": "Aura Style",
+      "auraStyles": {
+        "glow": "Glow",
+        "ring": "Ring",
+        "trail": "Sparkle Trail",
+        "embers": "Embers"
+      }
     },
     "autoUpdate": {
       "label": "Auto-Update Checks",

@@ -2382,7 +2382,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 /* ── Layer 3: Mouse-Following Radial Aura ─────────────────────────
    Standalone feature — a small soft glow centered on the cursor that
-   works on every dynamic background variant. */
+   works on every dynamic background variant.
+   The aura is portaled to document.body inside this fixed layer so it
+   renders ABOVE page content (buttons/cards) but BELOW modals (z-50). */
+.dynamic-bg-aura-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    overflow: hidden;
+    pointer-events: none;
+}
+
 .dynamic-bg-aura {
     position: absolute;
     left: var(--aura-x, 50%);
@@ -2401,6 +2411,129 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     filter: blur(28px);
     transition: opacity 0.4s var(--ease-spring);
     pointer-events: none;
+}
+
+/* ── Layer 3b: Mouse Aura — Ring ──────────────────────────────────
+   A crisp glowing ring that hugs the cursor, snapping to it tightly. */
+.dynamic-bg-aura-ring {
+    position: absolute;
+    left: var(--aura-x, 50%);
+    top: var(--aura-y, 50%);
+    width: 72px;
+    height: 72px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1.5px solid var(--color-accent-primary);
+    box-shadow:
+        0 0 10px var(--color-glow-accent-soft),
+        0 0 22px var(--color-glow-accent-strong),
+        inset 0 0 10px var(--color-glow-accent-soft);
+    opacity: var(--aura-opacity, 0.55);
+    filter: blur(1px);
+    transition:
+        left 0.04s linear,
+        top 0.04s linear,
+        opacity 0.4s var(--ease-spring);
+    will-change: left, top;
+    pointer-events: none;
+}
+
+/* ── Layer 3c: Mouse Aura — Sparkle Trail ─────────────────────────
+   A string of fading dots that chase the cursor, shrinking toward
+   the tail. Driven by the JS-positioned trail history. */
+.dynamic-bg-aura-trail {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.dynamic-bg-aura-trail-dot {
+    position: absolute;
+    left: var(--aura-x, 50%);
+    top: var(--aura-y, 50%);
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        var(--color-accent-primary) 0%,
+        var(--color-accent-secondary) 45%,
+        transparent 75%
+    );
+    opacity: calc(var(--aura-opacity, 0.45) * var(--dot-opacity, 1));
+    filter: blur(2px);
+    transition: opacity 0.4s var(--ease-spring);
+    animation: aura-trail-pulse 1.2s ease-in-out infinite;
+    animation-delay: var(--dot-delay, 0s);
+    will-change: transform, opacity;
+    pointer-events: none;
+}
+
+@keyframes aura-trail-pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(calc(var(--dot-scale, 1) * 1.25));
+    }
+}
+
+/* ── Layer 3d: Mouse Aura — Embers ────────────────────────────────
+   Tiny glowing sparks that continuously rise and fade from the
+   cursor like a sparkler. Each spark has its own drift, rise and
+   size so the fountain looks organic. */
+.dynamic-bg-aura-embers {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.dynamic-bg-aura-ember {
+    position: absolute;
+    left: var(--aura-x, 50%);
+    top: var(--aura-y, 50%);
+    width: var(--ember-size, 9px);
+    height: var(--ember-size, 9px);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(
+        circle at center,
+        var(--color-accent-primary) 0%,
+        var(--color-accent-secondary) 50%,
+        transparent 100%
+    );
+    box-shadow:
+        0 0 10px var(--color-glow-accent-soft),
+        0 0 22px var(--color-glow-accent-strong),
+        0 0 36px var(--color-glow-accent-soft);
+    opacity: var(--aura-opacity, 0.45);
+    filter: blur(0px);
+    animation: ember-rise var(--ember-duration, 1.6s) ease-out infinite;
+    animation-delay: var(--ember-delay, 0s);
+    will-change: transform, opacity;
+    pointer-events: none;
+}
+
+@keyframes ember-rise {
+    0% {
+        transform: translate(-50%, -50%) translate(0, 0) scale(0.3);
+        opacity: 0;
+    }
+    15% {
+        transform: translate(-50%, -50%) translate(0, -4px) scale(1);
+        opacity: calc(var(--aura-opacity, 0.45) * 1.35);
+    }
+    55% {
+        transform: translate(-50%, -50%) translate(calc(var(--ember-drift, 12px) * 0.4), var(--ember-rise, -70px)) scale(0.85);
+        opacity: calc(var(--aura-opacity, 0.45) * 0.85);
+    }
+    100% {
+        transform: translate(-50%, -50%) translate(var(--ember-drift, 12px), var(--ember-rise, -70px)) scale(0.2);
+        opacity: 0;
+    }
 }
 
 /* ── Layer 4: Floating Stars — drifting accent-coloured 4-point stars ── */
@@ -2516,6 +2649,10 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 @media (prefers-reduced-motion: reduce) {
     .dynamic-bg-orb,
     .dynamic-bg-particle {
+        animation: none;
+    }
+    .dynamic-bg-aura-trail-dot,
+    .dynamic-bg-aura-ember {
         animation: none;
     }
 }

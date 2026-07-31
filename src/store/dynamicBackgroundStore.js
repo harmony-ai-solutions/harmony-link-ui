@@ -13,6 +13,21 @@ export const BACKGROUND_VARIANTS = [
 
 export const DEFAULT_VARIANT = 'aurora';
 
+/**
+ * Available mouse aura styles. Each maps to a cursor-following effect
+ * rendered by <DynamicBackground />.
+ */
+export const AURA_STYLES = [
+    { id: 'glow', labelKey: 'generalSettings:fields.dynamicBackground.auraStyles.glow' },
+    { id: 'ring', labelKey: 'generalSettings:fields.dynamicBackground.auraStyles.ring' },
+    { id: 'trail', labelKey: 'generalSettings:fields.dynamicBackground.auraStyles.trail' },
+    { id: 'embers', labelKey: 'generalSettings:fields.dynamicBackground.auraStyles.embers' },
+];
+
+export const DEFAULT_AURA_STYLE = 'glow';
+
+export const isKnownAuraStyle = (v) => AURA_STYLES.some((s) => s.id === v);
+
 export const isKnownVariant = (v) => BACKGROUND_VARIANTS.some((b) => b.id === v);
 
 /**
@@ -30,12 +45,15 @@ const useDynamicBackgroundStore = create((set) => ({
     enabled: true, // default: on (matches GeneralSettingsView default)
     variant: DEFAULT_VARIANT, // default: aurora
     auraEnabled: true, // default: on — cursor-following aura is now a standalone feature
+    auraStyle: DEFAULT_AURA_STYLE, // default: glow (classic soft radial)
 
     setEnabled: (val) => set({ enabled: val }),
 
     setVariant: (val) => set({ variant: isKnownVariant(val) ? val : DEFAULT_VARIANT }),
 
     setAuraEnabled: (val) => set({ auraEnabled: val }),
+
+    setAuraStyle: (val) => set({ auraStyle: isKnownAuraStyle(val) ? val : DEFAULT_AURA_STYLE }),
 
     /** Called once after config loads to sync the initial state from the backend. */
     syncFromConfig: (config) => {
@@ -44,7 +62,10 @@ const useDynamicBackgroundStore = create((set) => ({
             ? config.general.dynamicbackgroundvariant
             : DEFAULT_VARIANT;
         const auraEnabled = config?.general?.cursoraura !== false;
-        set({ enabled, variant, auraEnabled });
+        const auraStyle = isKnownAuraStyle(config?.general?.cursoraurastyle)
+            ? config.general.cursoraurastyle
+            : DEFAULT_AURA_STYLE;
+        set({ enabled, variant, auraEnabled, auraStyle });
     },
 }));
 

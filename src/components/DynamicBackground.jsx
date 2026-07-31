@@ -1,16 +1,22 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
+import { VARIANT_SCENES } from './DynamicBackgroundVariants.jsx';
 
 /**
- * DynamicBackground — A theme-adaptive animated backdrop with mouse-following aura.
+ * DynamicBackground — a theme-adaptive animated backdrop with selectable
+ * scene variants (Aurora / Shapes / Sparkles / Waves).
  *
- * Layers (bottom → top):
- *   1. Base fill (theme's background-base colour)
- *   2. Dot-grid pattern — subtle texture with radial fade
- *   3. Mouse-following radial aura — a large glow that tracks cursor position
- *   4. Floating stars — drifting accent-coloured 4-point stars
- *   5. Animated gradient orbs — large soft blobs drifting across screen
- *   6. Noise/grain overlay — filmic depth
+ * The variant is driven by the Zustand dynamicBackgroundStore, which is seeded
+ * from applicationConfig.general.dynamicbackgroundvariant and can be switched
+ * instantly from General Settings (no save required).
+ *
+ * Shared layers (all variants):
+ *   - Mouse-following radial aura (standalone feature, toggleable via
+ *     applicationConfig.general.cursoraura / the store's auraEnabled)
+ *   - Noise/grain overlay — filmic depth
+ *
+ * Each variant scene renders its own dedicated layers (see
+ * DynamicBackgroundVariants.jsx + the CSS in styles/components.css).
  *
  * All colours are derived from CSS custom properties set by ThemeContext.
  * Animations are 100 % CSS for performance.
@@ -23,6 +29,8 @@ import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
 function DynamicBackground() {
     // ── All hooks run unconditionally (React Rules of Hooks) ─────────
     const enabled = useDynamicBackgroundStore((s) => s.enabled);
+    const variant = useDynamicBackgroundStore((s) => s.variant);
+    const auraEnabled = useDynamicBackgroundStore((s) => s.auraEnabled);
 
     // Mouse position state for the cursor-following aura
     const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
@@ -48,7 +56,7 @@ function DynamicBackground() {
         return () => window.removeEventListener('mousemove', handleMouseMove);
     }, [handleMouseMove]);
 
-    // Pre-compute floating stars
+    // Pre-compute floating stars (Aurora)
     const particles = useMemo(() => {
         const count = 40;
         const items = [];
@@ -67,7 +75,7 @@ function DynamicBackground() {
         return items;
     }, []);
 
-    // Pre-compute orb positions
+    // Pre-compute orb positions (Aurora)
     const orbs = useMemo(() => {
         const count = 4;
         const positions = [];
@@ -92,6 +100,9 @@ function DynamicBackground() {
 
     const auraOpacity = isMoving ? 0.45 : 0.20;
 
+    // Choose the scene renderer for the active variant
+    const sceneRenderer = VARIANT_SCENES[variant] || VARIANT_SCENES.aurora;
+
     // ── Bail: clean unmount when disabled ────────────────────────────
     if (!enabled) return null;
 
@@ -99,57 +110,22 @@ function DynamicBackground() {
     // compete in the same stacking context. The fixed positioning
     // and z-index: 0 keep the background behind all page content.
     return (
-        <div className="dynamic-bg" aria-hidden="true">
-            {/* Layer 1 — Base fill matching theme background */}
-            <div className="dynamic-bg-base" />
+        <div className="dynamic-bg" aria-hidden="true" data-variant={variant}>
+            {sceneRenderer({ particles, orbs })}
 
-            {/* Layer 2 — Dot grid */}
-            <div className="dynamic-bg-grid" />
-
-            {/* Layer 3 — Mouse-following radial aura */}
-            <div
-                className="dynamic-bg-aura"
-                style={{
-                    '--aura-x': `${mousePos.x * 100}%`,
-                    '--aura-y': `${mousePos.y * 100}%`,
-                    '--aura-opacity': auraOpacity,
-                }}
-            />
-
-            {/* Layer 4 — Floating stars */}
-            {particles.map((p, i) => (
+            {/* Mouse-following radial aura — standalone feature, works on every variant */}
+            {auraEnabled && (
                 <div
-                    key={`p-${i}`}
-                    className="dynamic-bg-particle"
+                    className="dynamic-bg-aura"
                     style={{
-                        '--p-left': p.left,
-                        '--p-top': p.top,
-                        '--p-delay': p.delay,
-                        '--p-duration': p.duration,
-                        '--p-size': p.size,
-                        '--p-opacity': p.opacity,
+                        '--aura-x': `${mousePos.x * 100}%`,
+                        '--aura-y': `${mousePos.y * 100}%`,
+                        '--aura-opacity': auraOpacity,
                     }}
                 />
-            ))}
+            )}
 
-            {/* Layer 5 — Animated gradient orbs */}
-            {orbs.map((orb, i) => (
-                <div
-                    key={`orb-${i}`}
-                    className="dynamic-bg-orb"
-                    style={{
-                        '--orb-top': orb.top,
-                        '--orb-left': orb.left,
-                        '--orb-delay': orb.delay,
-                        '--orb-duration': orb.duration,
-                        '--orb-size': orb.size,
-                        '--orb-opacity': orb.opacity,
-                        '--orb-color': orb.accentVar,
-                    }}
-                />
-            ))}
-
-            {/* Layer 6 — Noise texture overlay */}
+            {/* Noise texture overlay (shared) */}
             <div className="dynamic-bg-noise" />
         </div>
     );

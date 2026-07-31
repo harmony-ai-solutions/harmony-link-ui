@@ -10,7 +10,7 @@ import { openSystemUrl } from '../services/management/systemService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
-import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
+import useDynamicBackgroundStore, { BACKGROUND_VARIANTS } from '../store/dynamicBackgroundStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
@@ -51,9 +51,13 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [confirmModalYes, setConfirmModalYes] = useState(() => { });
     const [confirmModalNo, setConfirmModalNo] = useState(() => { });
 
-    // Zustand store — single source of truth for dynamic background toggle
+    // Zustand store — single source of truth for dynamic background toggle + variant
     const dynamicBackground = useDynamicBackgroundStore((s) => s.enabled);
     const setBgEnabled = useDynamicBackgroundStore((s) => s.setEnabled);
+    const bgVariant = useDynamicBackgroundStore((s) => s.variant);
+    const setBgVariant = useDynamicBackgroundStore((s) => s.setVariant);
+    const bgAura = useDynamicBackgroundStore((s) => s.auraEnabled);
+    const setBgAura = useDynamicBackgroundStore((s) => s.setAuraEnabled);
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -198,8 +202,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setFontScale(generalSettings.fontscale || "default");
         setAppLanguage(generalSettings.applanguage || "en");
         setNumberFormat(generalSettings.numberformat || "en");
-        // dynamicBackground is managed via Zustand store — skip resetting on mount
-        // so unsaved toggles survive tab navigation. Store was seeded on app load.
+        // dynamicBackground + variant are managed via Zustand store — skip resetting
+        // on mount so unsaved toggles survive tab navigation. Store was seeded on app load.
         setAutoUpdate(generalSettings.autoupdate || "notify");
         setDesktopNotifications(generalSettings.desktopnotifications !== false);
         setNotificationBadges(generalSettings.notificationbadges !== false);
@@ -237,6 +241,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.applanguage = appLanguage;
         generalSettings.numberformat = numberFormat;
         generalSettings.animatedbackground = dynamicBackground;
+        generalSettings.dynamicbackgroundvariant = bgVariant;
+        generalSettings.cursoraura = bgAura;
         generalSettings.autoupdate = autoUpdate;
         generalSettings.desktopnotifications = desktopNotifications;
         generalSettings.notificationbadges = notificationBadges;
@@ -747,8 +753,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="card p-4 cursor-pointer group mt-4" onClick={() => setBgEnabled(!dynamicBackground)}>
-                        <div className="flex items-center justify-between">
+                    <div className="card p-4 mt-4">
+                        <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgEnabled(!dynamicBackground)}>
                             <div className="flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
                                     <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -761,6 +767,54 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                             <Toggle checked={dynamicBackground} onChange={(e) => setBgEnabled(e.target.checked)} />
+                        </div>
+
+                        {/* Variant picker — horizontal segmented control, text only */}
+                        {dynamicBackground && (
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                                <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
+                                    {tgs('fields.dynamicBackground.variantsLabel')}
+                                </p>
+                                <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                    {BACKGROUND_VARIANTS.map((v) => {
+                                        const active = bgVariant === v.id;
+                                        return (
+                                            <button
+                                                key={v.id}
+                                                type="button"
+                                                onClick={() => setBgVariant(v.id)}
+                                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                    active
+                                                        ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                }`}
+                                            >
+                                                {t(v.labelKey)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mouse Aura — standalone cursor-following glow, works on every variant */}
+                        <div className="mt-4 pt-4 border-t border-white/5">
+                            <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgAura(!bgAura)}>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.auraLabel')}</h3>
+                                            <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.auraDescription')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Toggle checked={bgAura} onChange={(e) => setBgAura(e.target.checked)} />
+                            </div>
                         </div>
                     </div>
                 </section>

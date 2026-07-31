@@ -104,6 +104,15 @@ export const ThemeProvider = ({ children }) => {
         const root = document.documentElement;
         const { colors } = theme;
 
+        // Expose light/dark mode so CSS can adapt (e.g. dynamic background scenes)
+        const isLightMode = (() => {
+            const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(colors.background.base || '');
+            if (!m) return false;
+            const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+            return (0.299 * r + 0.587 * g + 0.114 * b) > 140;
+        })();
+        root.setAttribute('data-theme-mode', isLightMode ? 'light' : 'dark');
+
         // Backgrounds
         root.style.setProperty('--color-background-base', colors.background.base);
         root.style.setProperty('--color-background-surface', colors.background.surface);

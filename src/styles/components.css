@@ -2380,19 +2380,26 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     );
 }
 
-/* ── Layer 3: Mouse-Following Radial Aura ───────────────────────── */
+/* ── Layer 3: Mouse-Following Radial Aura ─────────────────────────
+   Standalone feature — a small soft glow centered on the cursor that
+   works on every dynamic background variant. */
 .dynamic-bg-aura {
     position: absolute;
-    inset: -200px;
+    left: var(--aura-x, 50%);
+    top: var(--aura-y, 50%);
+    width: 150px;
+    height: 150px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
     background: radial-gradient(
-        ellipse 600px 500px at var(--aura-x, 50%) var(--aura-y, 50%),
+        circle at center,
         var(--color-accent-primary) 0%,
-        var(--color-accent-secondary) 25%,
-        transparent 60%
+        var(--color-accent-secondary) 35%,
+        transparent 70%
     );
-    opacity: var(--aura-opacity, 0.18);
-    filter: blur(60px);
-    transition: opacity 1.5s var(--ease-spring);
+    opacity: var(--aura-opacity, 0.35);
+    filter: blur(28px);
+    transition: opacity 0.4s var(--ease-spring);
     pointer-events: none;
 }
 
@@ -2514,9 +2521,347 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   Toggle Switch — iOS-style themed toggle replacing checkboxes
+   Dynamic Background — Variant Scenes
+   Four distinct animated backdrops selectable in General Settings:
+   Shapes (drifting geometric shapes), Sparkles (sparkle bursts + stars),
+   Waves (flowing layered ribbons).
+   All colours derive from theme accent variables so every scene adapts
+   to the active theme. 100 % CSS animation.
    ═══════════════════════════════════════════════════════════════════ */
 
+/* Shared twinkle keyframe used by starfields in multiple scenes */
+@keyframes dbg-twinkle {
+    0%, 100% {
+        opacity: var(--s-opacity, 0.6);
+        transform: scale(1);
+    }
+    50% {
+        opacity: calc(var(--s-opacity, 0.6) * 0.2);
+        transform: scale(0.5);
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Variant: SHAPES — softly drifting geometric shapes
+   ──────────────────────────────────────────────────────────────────── */
+
+.dynamic-bg-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.shape-item {
+    position: absolute;
+    opacity: var(--sh-opacity, 0.6);
+    animation: shape-drift var(--sh-duration, 18s) ease-in-out infinite;
+    animation-delay: var(--sh-delay, 0s);
+    will-change: transform;
+}
+
+.shape-circle {
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55), transparent 60%),
+        var(--sh-color);
+    box-shadow: 0 0 22px 4px color-mix(in srgb, var(--sh-color), transparent 55%);
+}
+
+.shape-square {
+    border-radius: 6px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sh-color), #fff 18%), var(--sh-color));
+    box-shadow: 0 0 18px 3px color-mix(in srgb, var(--sh-color), transparent 60%);
+    animation-name: shape-drift-square;
+}
+
+.shape-ring {
+    border: 2px solid var(--sh-color);
+    border-radius: 50%;
+    box-shadow: 0 0 14px 2px color-mix(in srgb, var(--sh-color), transparent 60%),
+        inset 0 0 14px 2px color-mix(in srgb, var(--sh-color), transparent 75%);
+    animation-name: shape-drift-ring;
+}
+
+.shape-diamond {
+    border-radius: 4px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sh-color), #fff 22%), var(--sh-color));
+    box-shadow: 0 0 20px 4px color-mix(in srgb, var(--sh-color), transparent 55%);
+    transform: rotate(45deg);
+    animation-name: shape-drift-diamond;
+}
+
+@keyframes shape-drift {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translate3d(calc(var(--sh-drift) * 0.6), -32px, 0) rotate(8deg) scale(1.12);
+    }
+    50% {
+        transform: translate3d(calc(var(--sh-drift) * -0.5), 26px, 0) rotate(-6deg) scale(0.9);
+    }
+    75% {
+        transform: translate3d(calc(var(--sh-drift) * 0.3), -18px, 0) rotate(4deg) scale(1.05);
+    }
+}
+
+@keyframes shape-drift-square {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    }
+    25% {
+        transform: translate3d(calc(var(--sh-drift) * 0.5), -38px, 0) rotate(30deg) scale(1.1);
+    }
+    50% {
+        transform: translate3d(calc(var(--sh-drift) * -0.6), 24px, 0) rotate(-22deg) scale(0.92);
+    }
+    75% {
+        transform: translate3d(calc(var(--sh-drift) * 0.4), -14px, 0) rotate(14deg) scale(1.04);
+    }
+}
+
+@keyframes shape-drift-ring {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+    25% {
+        transform: translate3d(calc(var(--sh-drift) * 0.55), -26px, 0) scale(1.16);
+    }
+    50% {
+        transform: translate3d(calc(var(--sh-drift) * -0.45), 20px, 0) scale(0.86);
+    }
+    75% {
+        transform: translate3d(calc(var(--sh-drift) * 0.35), -16px, 0) scale(1.08);
+    }
+}
+
+@keyframes shape-drift-diamond {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(45deg) scale(1);
+    }
+    25% {
+        transform: translate3d(calc(var(--sh-drift) * -0.5), -34px, 0) rotate(78deg) scale(1.14);
+    }
+    50% {
+        transform: translate3d(calc(var(--sh-drift) * 0.55), 28px, 0) rotate(8deg) scale(0.88);
+    }
+    75% {
+        transform: translate3d(calc(var(--sh-drift) * -0.35), -20px, 0) rotate(42deg) scale(1.06);
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Variant: SPARKLES — shimmering sparkle bursts + drifting stars
+   ──────────────────────────────────────────────────────────────────── */
+
+.dynamic-bg-sparkles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.dynamic-bg-sparkles .sparkle-star {
+    position: absolute;
+    left: var(--s-left);
+    top: var(--s-top);
+    width: var(--s-size, 2px);
+    height: var(--s-size, 2px);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px 1px color-mix(in srgb, #fff, transparent 45%);
+    opacity: var(--s-opacity, 0.6);
+    animation: dbg-twinkle var(--s-duration, 4s) ease-in-out infinite;
+    animation-delay: var(--s-delay, 0s);
+}
+
+.dynamic-bg-sparkles .sparkle-burst {
+    position: absolute;
+    border-radius: 50%;
+    /* 4-point sparkle via overlapping rotated gradient rectangles */
+    background:
+        radial-gradient(circle, var(--spk-color) 0%, transparent 70%),
+        linear-gradient(90deg, transparent 42%, #fff 50%, transparent 58%),
+        linear-gradient(0deg, transparent 42%, #fff 50%, transparent 58%);
+    opacity: 0;
+    animation: sparkle-burst-pulse var(--spk-duration, 4s) ease-in-out infinite;
+    animation-delay: var(--spk-delay, 0s);
+}
+
+/* Light mode: switch white sparkles/stars to dark for contrast on light bg */
+html[data-theme-mode="light"] .dynamic-bg-sparkles .sparkle-star {
+    background: var(--color-text-secondary);
+    box-shadow: 0 0 6px 1px color-mix(in srgb, var(--color-accent-primary), transparent 65%);
+}
+
+html[data-theme-mode="light"] .dynamic-bg-sparkles .sparkle-burst {
+    background:
+        radial-gradient(circle, var(--spk-color) 0%, transparent 70%),
+        linear-gradient(90deg, transparent 42%, var(--color-text-secondary) 50%, transparent 58%),
+        linear-gradient(0deg, transparent 42%, var(--color-text-secondary) 50%, transparent 58%);
+}
+
+@keyframes sparkle-burst-pulse {
+    0% {
+        transform: scale(0.2) rotate(0deg);
+        opacity: 0;
+    }
+    12% {
+        transform: scale(1) rotate(30deg);
+        opacity: 0.95;
+    }
+    24% {
+        transform: scale(0.7) rotate(60deg);
+        opacity: 0.4;
+    }
+    38% {
+        transform: scale(1.15) rotate(90deg);
+        opacity: 0.8;
+    }
+    55%, 100% {
+        transform: scale(0.3) rotate(120deg);
+        opacity: 0;
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Variant: WAVES — thin glowing ribbons flowing up/down and left/right
+   ──────────────────────────────────────────────────────────────────── */
+
+.dynamic-bg-waves {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.dynamic-bg-waves .wave-item {
+    position: absolute;
+    opacity: 0;
+    will-change: transform, opacity;
+    border-radius: 9999px;
+    filter: blur(1.5px);
+}
+
+/* Ribbons flowing left/right — thin vertical streaks */
+.dynamic-bg-waves .wave-item.wave-x {
+    top: var(--wave-pos);
+    left: 50%;
+    width: var(--wave-thickness, 4px);
+    height: 34vh;
+    margin-left: calc(var(--wave-thickness, 4px) / -2);
+    background: linear-gradient(180deg,
+        transparent 0%,
+        color-mix(in srgb, var(--wave-color), transparent 45%) 30%,
+        color-mix(in srgb, var(--wave-color), transparent 22%) 50%,
+        color-mix(in srgb, var(--wave-color), transparent 45%) 70%,
+        transparent 100%);
+    animation: wave-sweep-x var(--wave-duration, 12s) ease-in-out infinite;
+    animation-delay: var(--wave-delay, 0s);
+}
+
+/* Ribbons flowing up/down — thin horizontal streaks */
+.dynamic-bg-waves .wave-item.wave-y {
+    left: var(--wave-pos);
+    top: 50%;
+    width: 34vw;
+    height: var(--wave-thickness, 4px);
+    margin-top: calc(var(--wave-thickness, 4px) / -2);
+    background: linear-gradient(90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--wave-color), transparent 45%) 30%,
+        color-mix(in srgb, var(--wave-color), transparent 22%) 50%,
+        color-mix(in srgb, var(--wave-color), transparent 45%) 70%,
+        transparent 100%);
+    animation: wave-sweep-y var(--wave-duration, 12s) ease-in-out infinite;
+    animation-delay: var(--wave-delay, 0s);
+}
+
+/* Light mode: waves must be darker + stronger for contrast on light bg */
+html[data-theme-mode="light"] .dynamic-bg-waves .wave-item.wave-x {
+    background: linear-gradient(180deg,
+        transparent 0%,
+        color-mix(in srgb, var(--wave-color), #000 25%) 30%,
+        color-mix(in srgb, var(--wave-color), #000 10%) 50%,
+        color-mix(in srgb, var(--wave-color), #000 25%) 70%,
+        transparent 100%);
+}
+
+html[data-theme-mode="light"] .dynamic-bg-waves .wave-item.wave-y {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--wave-color), #000 25%) 30%,
+        color-mix(in srgb, var(--wave-color), #000 10%) 50%,
+        color-mix(in srgb, var(--wave-color), #000 25%) 70%,
+        transparent 100%);
+}
+
+html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
+    filter: blur(1px);
+}
+
+@keyframes wave-sweep-x {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scaleY(0.55);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.55;
+    }
+    30% {
+        transform: translate3d(calc(var(--wave-travel) * -0.5), 0, 0) scaleY(1.05);
+        opacity: 0.65;
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scaleY(0.75);
+        opacity: 0.5;
+    }
+    78% {
+        transform: translate3d(calc(var(--wave-travel) * 0.55), 0, 0) scaleY(1.1);
+        opacity: 0.65;
+    }
+    92%, 100% {
+        transform: translate3d(0, 0, 0) scaleY(0.55);
+        opacity: 0;
+    }
+}
+
+@keyframes wave-sweep-y {
+    0%, 100% {
+        transform: translate3d(0, 0, 0) scaleX(0.55);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.55;
+    }
+    30% {
+        transform: translate3d(0, calc(var(--wave-travel) * -0.5), 0) scaleX(1.05);
+        opacity: 0.65;
+    }
+    55% {
+        transform: translate3d(0, 0, 0) scaleX(0.75);
+        opacity: 0.5;
+    }
+    78% {
+        transform: translate3d(0, calc(var(--wave-travel) * 0.55), 0) scaleX(1.1);
+        opacity: 0.65;
+    }
+    92%, 100% {
+        transform: translate3d(0, 0, 0) scaleX(0.55);
+        opacity: 0;
+    }
+}
+
+/* Reduced motion: freeze all variant scenes */
+@media (prefers-reduced-motion: reduce) {
+    .dynamic-bg-shapes .shape-item,
+    .dynamic-bg-sparkles .sparkle-star,
+    .dynamic-bg-sparkles .sparkle-burst,
+    .dynamic-bg-waves .wave-item {
+        animation: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Toggle Switch — iOS-style themed toggle replacing checkboxes
+   ═══════════════════════════════════════════════════════════════════ */
 .toggle {
     position: relative;
     display: inline-flex;

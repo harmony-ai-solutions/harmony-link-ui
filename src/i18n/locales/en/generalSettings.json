@@ -106,7 +106,16 @@
     "dynamicBackground": {
       "label": "Dynamic Background",
       "description": "Ambient stars, orbs, and cursor-following aura on all pages.",
-      "performance": "Turn off for better performance."
+      "performance": "Turn off for better performance.",
+      "variantsLabel": "Background Style",
+      "variants": {
+        "aurora": "Aurora",
+        "shapes": "Floating Shapes",
+        "sparkles": "Sparkles & Stars",
+        "waves": "Waves"
+      },
+      "auraLabel": "Mouse Aura",
+      "auraDescription": "Soft glow that follows your cursor on every background style."
     },
     "autoUpdate": {
       "label": "Auto-Update Checks",

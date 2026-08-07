@@ -177,6 +177,10 @@ export const ThemeProvider = ({ children }) => {
             root.style.setProperty('--color-nuance-development', primary);
         }
 
+        // Glass tokens (official palette overrides; fall back to derived values)
+        root.style.setProperty('--color-border-gradient-start', colors.glass?.borderGradientStart || `rgba(255, 255, 255, ${isLightMode ? 0.5 : 0.45})`);
+        root.style.setProperty('--color-border-gradient-end', colors.glass?.borderGradientEnd || `rgba(${hexToRgb(colors.accent.primary)}, 0.3)`);
+
         // ── Derive glassmorphism + radius + shadow tokens ──────────────
         applyDerivedTokens(root, colors);
     };
@@ -195,14 +199,14 @@ export const ThemeProvider = ({ children }) => {
                     background: {
                         base: '#0b0f19',
                         surface: '#0f1525',
-                        elevated: '#1a1f2e',
-                        hover: '#282f42'
+                        elevated: '#151d30',
+                        hover: '#1e2842'
                     },
                     accent: {
-                        primary: '#8f3ba7',
-                        primaryHover: '#b04fce',
-                        secondary: '#22318e',
-                        secondaryHover: '#3a3d99'
+                        primary: '#b84fd0',
+                        primaryHover: '#cf6be5',
+                        secondary: '#4a5fcf',
+                        secondaryHover: '#6b7de8'
                     },
                     status: {
                         success: '#4caf82',
@@ -215,21 +219,25 @@ export const ThemeProvider = ({ children }) => {
                         infoBg: 'rgba(77, 155, 240, 0.12)'
                     },
                     text: {
-                        primary: '#e8e6f0',
-                        secondary: '#c8c3dc',
-                        muted: '#8c87a8',
-                        disabled: '#5a5578'
+                        primary: '#f0edf6',
+                        secondary: '#d2cde3',
+                        muted: '#9692b0',
+                        disabled: '#6b6780'
                     },
                     border: {
-                        default: '#2a2147',
-                        focus: '#8f3ba7',
-                        hover: '#3a2159',
-                        accent: '#8f3ba7'
+                        default: '#2e2355',
+                        focus: '#b84fd0',
+                        hover: '#3e2a6b',
+                        accent: '#b84fd0'
                     },
                     gradients: {
-                        primary: 'linear-gradient(to right, #8f3ba7, #22318e, #2d2370)',
+                        primary: 'linear-gradient(to right, #b84fd0, #4a5fcf, #3a2d99)',
                         secondary: 'linear-gradient(135deg, #0b0f19 0%, #0f1525 100%)',
-                        surface: 'linear-gradient(135deg, rgba(143, 59, 167, 0.08) 0%, rgba(34, 49, 142, 0.08) 100%)'
+                        surface: 'linear-gradient(135deg, rgba(184, 79, 208, 0.10) 0%, rgba(74, 95, 207, 0.10) 100%)'
+                    },
+                    glass: {
+                        borderGradientStart: 'rgba(255, 255, 255, 0.45)',
+                        borderGradientEnd: 'rgba(184, 79, 208, 0.30)'
                     }
                 }
             };

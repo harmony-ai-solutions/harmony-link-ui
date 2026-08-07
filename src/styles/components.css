@@ -2198,7 +2198,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 .log-entry-prompt {
     background: linear-gradient(
         135deg,
-        rgba(143, 59, 167, 0.06) 0%,
+        rgba(184, 79, 208, 0.06) 0%,
         transparent 40%
     );
     border-left: 2px solid var(--color-accent-primary);
@@ -2256,11 +2256,11 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 .log-level-prompt {
     background: linear-gradient(
         135deg,
-        rgba(143, 59, 167, 0.15),
-        rgba(34, 49, 142, 0.15)
+        rgba(184, 79, 208, 0.15),
+        rgba(74, 95, 207, 0.15)
     );
     color: var(--color-accent-primary);
-    border-color: rgba(143, 59, 167, 0.2);
+    border-color: rgba(184, 79, 208, 0.2);
 }
 
 /* Filter Toolbar */
@@ -2346,15 +2346,15 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 }
 
 .log-tag-component {
-    background-color: rgba(143, 59, 167, 0.12);
+    background-color: rgba(184, 79, 208, 0.12);
     color: var(--color-accent-primary);
-    border: 1px solid rgba(143, 59, 167, 0.2);
+    border: 1px solid rgba(184, 79, 208, 0.2);
 }
 
 .log-tag-entity {
-    background-color: rgba(34, 49, 142, 0.12);
+    background-color: rgba(74, 95, 207, 0.12);
     color: var(--color-accent-secondary);
-    border: 1px solid rgba(34, 49, 142, 0.2);
+    border: 1px solid rgba(74, 95, 207, 0.2);
 }
 
 .log-tag-subsystem {

@@ -449,6 +449,135 @@ input[type="checkbox"]:disabled:hover {
     transform: scale(0.95);
 }
 
+/* ── Language Picker — glass button + portaled dropdown menu ─────── */
+.nav-lang-btn {
+    position: relative;
+    gap: 7px;
+    padding: 0 12px;
+    width: auto;
+    min-width: 92px;
+    height: 40px;
+}
+
+.nav-lang-btn .nav-lang-icon {
+    color: var(--color-text-muted);
+    transition: color 0.35s var(--ease-spring);
+}
+
+.nav-lang-btn:hover .nav-lang-icon {
+    color: var(--color-text-primary);
+}
+
+.nav-lang-flag {
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.nav-lang-code {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    transition: color 0.35s var(--ease-spring);
+    line-height: 1;
+}
+
+.nav-lang-btn:hover .nav-lang-code,
+.nav-lang-btn-active .nav-lang-code {
+    color: var(--color-text-primary);
+}
+
+.nav-lang-chevron {
+    color: var(--color-text-muted);
+    transition: transform 0.3s var(--ease-spring), color 0.35s var(--ease-spring);
+}
+
+.nav-lang-btn:hover .nav-lang-chevron,
+.nav-lang-btn-active .nav-lang-chevron {
+    color: var(--color-text-primary);
+}
+
+.nav-lang-btn-active {
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    color: var(--color-text-primary);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
+}
+
+/* Portaled dropdown — fixed position, inherits theme vars from <html> */
+.nav-lang-menu {
+    position: fixed;
+    z-index: 9999;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(32px) saturate(1.6);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-xl), 0 0 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: nav-lang-menu-in 0.22s var(--ease-spring);
+    transform-origin: top right;
+}
+
+@keyframes nav-lang-menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.nav-lang-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-spring);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-lang-item:hover {
+    background: var(--color-background-hover-glass);
+    color: var(--color-text-primary);
+}
+
+.nav-lang-item-active {
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 10%, transparent);
+}
+
+.nav-lang-item-flag {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.nav-lang-item-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.nav-lang-item-check {
+    color: var(--color-accent-primary);
+    flex-shrink: 0;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Navigation — Responsive Breakpoints
    Progressive shrinkage at 1100px → 900px → 720px → 520px
@@ -523,6 +652,18 @@ input[type="checkbox"]:disabled:hover {
     .nav-help-btn svg {
         width: 0.875rem;
         height: 0.875rem;
+    }
+
+    .nav-lang-btn {
+        width: auto;
+        min-width: 74px;
+        gap: 6px;
+        padding: 0 10px;
+        height: 36px;
+    }
+
+    .nav-lang-code {
+        font-size: 0.625rem;
     }
 }
 
@@ -608,6 +749,34 @@ input[type="checkbox"]:disabled:hover {
     }
 
     .nav-help-btn svg {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+
+    .nav-lang-btn {
+        width: auto;
+        min-width: 60px;
+        gap: 5px;
+        padding: 0 8px;
+        border-radius: 6px;
+        height: 32px;
+    }
+
+    /* Drop the globe icon on ultra-compact widths — flag + code remain */
+    .nav-lang-btn .nav-lang-icon {
+        display: none;
+    }
+
+    .nav-lang-btn .nav-lang-flag {
+        width: 1.125rem;
+        height: 0.75rem;
+    }
+
+    .nav-lang-code {
+        font-size: 0.5625rem;
+    }
+
+    .nav-lang-btn .nav-lang-chevron {
         width: 0.75rem;
         height: 0.75rem;
     }

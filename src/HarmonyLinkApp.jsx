@@ -20,6 +20,7 @@ import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
 import { useTheme } from './contexts/ThemeContext';
+import LanguagePicker from './components/icons/LanguagePicker.jsx';
 
 /**
  * Inner component that has access to the useTranslation hook.
@@ -224,6 +225,9 @@ function HarmonyLinkAppInner() {
 
                     {/* Action buttons — fixed right */}
                     <div className="flex items-center gap-4 flex-shrink-0 z-10">
+                        {/* Language Picker */}
+                        <LanguagePicker />
+
                         {/* Dark/Light Theme Toggle */}
                         <button
                             className="nav-help-btn"

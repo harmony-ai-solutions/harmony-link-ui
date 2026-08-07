@@ -12,6 +12,7 @@
       "dev": "Dev"
     },
     "help": "Help / Restart Tutorial",
+    "language": "Language",
     "darkMode": "Switch to Dark Mode",
     "lightMode": "Switch to Light Mode"
   },

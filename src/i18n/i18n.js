@@ -28,12 +28,27 @@ const resources = {
 /**
  * List of supported language codes.
  * Add new languages here when locale files are ready.
+ * `nativeName` is displayed in the language picker (shown in its own script),
+ * `flag` maps to the FlagIcon art key.
  */
 export const SUPPORTED_LANGUAGES = [
-  { value: 'en', label: 'English' },
-  // { value: 'ar', label: 'العربية' },
-  // { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'English', nativeName: 'English', flag: 'en' },
+  // { value: 'ar', label: 'العربية', nativeName: 'العربية', flag: 'sa' },
+  // { value: 'de', label: 'Deutsch', nativeName: 'Deutsch', flag: 'de' },
+  // { value: 'es', label: 'Español', nativeName: 'Español', flag: 'es' },
+  // { value: 'fr', label: 'Français', nativeName: 'Français', flag: 'fr' },
+  // { value: 'it', label: 'Italiano', nativeName: 'Italiano', flag: 'it' },
+  // { value: 'pt', label: 'Português', nativeName: 'Português', flag: 'pt' },
+  // { value: 'ru', label: 'Русский', nativeName: 'Русский', flag: 'ru' },
+  // { value: 'ja', label: '日本語', nativeName: '日本語', flag: 'jp' },
+  // { value: 'ko', label: '한국어', nativeName: '한국어', flag: 'kr' },
+  // { value: 'zh', label: '中文', nativeName: '中文', flag: 'cn' },
 ];
+
+/** Convenience: map language code → language descriptor */
+export const LANGUAGE_MAP = Object.fromEntries(
+  SUPPORTED_LANGUAGES.map((lang) => [lang.value, lang]),
+);
 
 /**
  * Get the language code from app config settings, or fall back to detector/browser.

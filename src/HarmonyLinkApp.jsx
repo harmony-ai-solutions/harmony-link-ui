@@ -9,6 +9,7 @@ import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
@@ -159,13 +160,13 @@ function HarmonyLinkAppInner() {
 
     // Tab definitions
     const navTabs = [
-        { id: SettingsTabGeneral, label: t('nav.tabs.general') },
-        { id: SettingsTabEntities, label: t('nav.tabs.entities') },
-        { id: SettingsTabModules, label: t('nav.tabs.modules') },
-        { id: SettingsTabCharacters, label: t('nav.tabs.characters') },
-        { id: SettingsTabIntegrations, label: t('nav.tabs.integrations') },
-        { id: SettingsTabSimulator, label: t('nav.tabs.simulator') },
-        { id: SettingsTabDevelopment, label: t('nav.tabs.dev') },
+        { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
+        { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
+        { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
+        { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
+        { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
+        { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
+        { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
     ];
 
     return (
@@ -200,6 +201,7 @@ function HarmonyLinkAppInner() {
                     <div className="nav-pill-dock z-0">
                         {navTabs.map((tab) => {
                             const isActive = settingsTab === tab.id;
+                            const TabIcon = tab.icon;
                             return (
                                 <button
                                     key={tab.id}
@@ -207,6 +209,9 @@ function HarmonyLinkAppInner() {
                                     onClick={() => setSettingsTab(tab.id)}
                                     className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
                                 >
+                                    <span className="nav-pill-icon">
+                                        <TabIcon className="w-4 h-4" />
+                                    </span>
                                     <span className="nav-pill-label">{tab.label}</span>
                                     {isActive && <span className="nav-pill-glow" />}
                                 </button>

@@ -2263,7 +2263,7 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     border-color: rgba(184, 79, 208, 0.2);
 }
 
-/* Filter Toolbar */
+/* Filter Toolbar — minimal-height single-line strip, no wrapping, no scrollbars */
 .log-filter-toolbar {
     flex-shrink: 0;
     background: var(--color-background-glass);
@@ -2271,7 +2271,30 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     -webkit-backdrop-filter: blur(12px) saturate(1.2);
     border: 1px solid var(--color-border-glass);
     border-radius: var(--radius-xl);
-    padding: 0.75rem 1rem;
+    padding: 0.35rem 0.6rem;
+}
+
+/* Compact pill buttons — used by all toolbar controls (dropdown triggers, sort, prompt, settings, refresh) */
+.log-toolbar-btn {
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    padding: 0.34rem 0.8rem;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s var(--ease-spring);
+}
+.log-toolbar-btn:hover:not(:disabled) {
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 10px var(--color-glow-accent-soft);
 }
 
 /* Log Viewer Bottom Control Bar */

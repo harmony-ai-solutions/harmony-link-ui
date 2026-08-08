@@ -211,8 +211,8 @@ export default function FilterToolbar({
                     />
                 )}
 
-                {/* Divider */}
-                <div className="w-px h-4 bg-white/10 shrink-0" />
+                {/* Divider — theme-aware, stays visible in light mode */}
+                <div className="log-toolbar-divider" />
 
                 {/* Level Toggle Pills — one colored button per log level.
                     Lit when the level is enabled, grayed when disabled. */}
@@ -221,8 +221,8 @@ export default function FilterToolbar({
                     onToggle={handleToggleLevel}
                 />
 
-                {/* Divider */}
-                <div className="w-px h-4 bg-white/10 shrink-0" />
+                {/* Divider — theme-aware, stays visible in light mode */}
+                <div className="log-toolbar-divider" />
 
                 {/* Sort Order Toggle */}
                 <button

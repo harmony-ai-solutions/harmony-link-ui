@@ -179,17 +179,9 @@ export default function FilterToolbar({
                     title="Filter by entity"
                 />
 
-                {/* Divider */}
-                <div className="w-px h-4 bg-white/10 shrink-0" />
-
-                {/* Level Toggle Pills — one colored button per log level.
-                    Lit when the level is enabled, grayed when disabled. */}
-                <LevelToggles
-                    enabledLevels={filters.enabledLevels}
-                    onToggle={handleToggleLevel}
-                />
-
-                {/* Prompt Toggle — binary: null (all) ↔ true (prompts only) */}
+                {/* Prompt Toggle — grouped with the All Components / All Entities
+                    context filters, separated from the colored level toggles.
+                    Binary: null (all) ↔ true (prompts only) */}
                 <button
                     className={`log-toolbar-btn text-[9px] font-bold shrink-0 ${
                         filters.isPrompt === true
@@ -218,6 +210,16 @@ export default function FilterToolbar({
                         title="Prompt type"
                     />
                 )}
+
+                {/* Divider */}
+                <div className="w-px h-4 bg-white/10 shrink-0" />
+
+                {/* Level Toggle Pills — one colored button per log level.
+                    Lit when the level is enabled, grayed when disabled. */}
+                <LevelToggles
+                    enabledLevels={filters.enabledLevels}
+                    onToggle={handleToggleLevel}
+                />
 
                 {/* Divider */}
                 <div className="w-px h-4 bg-white/10 shrink-0" />

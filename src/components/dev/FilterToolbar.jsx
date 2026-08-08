@@ -230,7 +230,7 @@ export default function FilterToolbar({
                     onClick={() => onSortOrderChange(sortOrder === 'desc' ? 'asc' : 'desc')}
                     title={sortOrder === 'desc' ? 'Newest first — click for oldest first' : 'Oldest first — click for newest first'}
                 >
-                    {sortOrder === 'desc' ? '▼ New' : '▲ Old'}
+                    {sortOrder === 'desc' ? '▼ Newest' : '▲ Oldest'}
                 </button>
 
                 {/* Page Size Dropdown */}

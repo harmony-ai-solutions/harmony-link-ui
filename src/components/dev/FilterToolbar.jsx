@@ -93,6 +93,40 @@ function CompactSelect({ value, options, onChange, placeholder, title }) {
 }
 
 /**
+ * Level toggle pills — one colored button per log level. Lit up (colored)
+ * when the level is enabled, grayed out when disabled. Clicking toggles it.
+ */
+const LEVEL_TOGGLES = [
+    { level: 'trace', label: 'TRACE', className: 'log-level-toggle-trace' },
+    { level: 'debug', label: 'DEBUG', className: 'log-level-toggle-debug' },
+    { level: 'info', label: 'INFO', className: 'log-level-toggle-info' },
+    { level: 'warn', label: 'WARN', className: 'log-level-toggle-warn' },
+    { level: 'error', label: 'ERROR', className: 'log-level-toggle-error' },
+];
+
+function LevelToggles({ enabledLevels, onToggle }) {
+    return (
+        <div className="flex items-center gap-1 shrink-0">
+            {LEVEL_TOGGLES.map(({ level, label, className }) => {
+                const enabled = enabledLevels.includes(level);
+                return (
+                    <button
+                        key={level}
+                        type="button"
+                        className={`log-level-toggle ${className} ${enabled ? 'log-level-toggle-on' : 'log-level-toggle-off'}`}
+                        onClick={() => onToggle(level)}
+                        title={enabled ? `Showing ${level} — click to hide` : `Hiding ${level} — click to show`}
+                        aria-pressed={enabled}
+                    >
+                        {label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
  * Filter toolbar for the log viewer.
  * Every control is a small pill button on one non-scrollable line.
  */
@@ -110,6 +144,14 @@ export default function FilterToolbar({
     onRefresh,
     onOpenSettings,
 }) {
+    const handleToggleLevel = (level) => {
+        const enabled = filters.enabledLevels.includes(level);
+        const next = enabled
+            ? filters.enabledLevels.filter(l => l !== level)
+            : [...filters.enabledLevels, level];
+        onFilterChange({ ...filters, enabledLevels: next });
+    };
+
     return (
         <div className="log-filter-toolbar">
             <div className="flex items-center gap-1.5 flex-nowrap">
@@ -140,19 +182,11 @@ export default function FilterToolbar({
                 {/* Divider */}
                 <div className="w-px h-4 bg-white/10 shrink-0" />
 
-                {/* Minimum Level Dropdown */}
-                <CompactSelect
-                    value={filters.minLevel}
-                    onChange={(level) => onFilterChange({ ...filters, minLevel: level })}
-                    options={[
-                        { value: 'trace', label: 'Level: TRACE' },
-                        { value: 'debug', label: 'Level: DEBUG' },
-                        { value: 'info', label: 'Level: INFO' },
-                        { value: 'warn', label: 'Level: WARN' },
-                        { value: 'error', label: 'Level: ERROR' },
-                    ]}
-                    placeholder="Level"
-                    title="Minimum log level"
+                {/* Level Toggle Pills — one colored button per log level.
+                    Lit when the level is enabled, grayed when disabled. */}
+                <LevelToggles
+                    enabledLevels={filters.enabledLevels}
+                    onToggle={handleToggleLevel}
                 />
 
                 {/* Prompt Toggle — binary: null (all) ↔ true (prompts only) */}

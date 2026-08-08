@@ -19,7 +19,7 @@ export default function LogViewer() {
     const [filters, setFilters] = useState({
         component: '',
         entityId: '',
-        enabledLevels: ['trace', 'debug', 'info', 'warn', 'error'], // levels shown; missing = hidden
+        enabledLevels: ['debug', 'info', 'warn', 'error'], // levels shown; missing = hidden
         search: '',
         isPrompt: null,    // null = no filter, true = prompts only, false = non-prompts only
         promptType: '',

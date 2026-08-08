@@ -168,7 +168,7 @@ const useCharacterProfileStore = create((set, get) => ({
     /**
      * Update image metadata (e.g., description)
      * @param {string} profileId 
-     * @param {number} imageId 
+     * @param {string} imageId 
      * @param {Object} updates - Metadata updates (e.g., {description: "..."})
      */
     updateImageMetadata: async (profileId, imageId, updates) => {
@@ -191,7 +191,7 @@ const useCharacterProfileStore = create((set, get) => ({
     /**
      * Delete a character image
      * @param {string} profileId 
-     * @param {number} imageId 
+     * @param {string} imageId 
      */
     deleteImage: async (profileId, imageId) => {
         try {
@@ -210,7 +210,7 @@ const useCharacterProfileStore = create((set, get) => ({
     /**
      * Set an image as the primary image for a profile
      * @param {string} profileId 
-     * @param {number} imageId 
+     * @param {string} imageId 
      */
     setPrimaryImage: async (profileId, imageId) => {
         try {
@@ -231,8 +231,8 @@ const useCharacterProfileStore = create((set, get) => ({
     /**
      * Trigger VL analysis for a character image and update local state.
      * @param {string} profileId
-     * @param {number} imageId
-     * @param {number} visionConfigId
+     * @param {string} imageId
+     * @param {string} visionConfigId
      */
     analyzeImage: async (profileId, imageId, visionConfigId) => {
         try {

@@ -21,7 +21,7 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
 
 /**
  * @typedef {Object} CharacterImage
- * @property {number} id
+ * @property {string} id - UUID (UUIDv7 for new images)
  * @property {string} character_profile_id
  * @property {string} mime_type - image/png, image/jpeg, image/webp
  * @property {string} description - Short contextual label (auto-generated or manual)
@@ -155,7 +155,7 @@ export async function listImages(characterId) {
 /**
  * Get a specific character image
  * @param {string} characterId 
- * @param {number} imageId 
+ * @param {string} imageId 
  * @returns {Promise<CharacterImage>}
  */
 export async function getImage(characterId, imageId) {
@@ -195,7 +195,7 @@ export async function uploadImage(characterId, file, description = '') {
 /**
  * Update image metadata
  * @param {string} characterId 
- * @param {number} imageId 
+ * @param {string} imageId 
  * @param {Object} updates 
  * @returns {Promise<CharacterImage>}
  */
@@ -212,7 +212,7 @@ export async function updateImageMetadata(characterId, imageId, updates) {
 /**
  * Delete a character image
  * @param {string} characterId 
- * @param {number} imageId 
+ * @param {string} imageId 
  * @returns {Promise<void>}
  */
 export async function deleteImage(characterId, imageId) {
@@ -226,7 +226,7 @@ export async function deleteImage(characterId, imageId) {
 /**
  * Set an image as the primary image for a character profile
  * @param {string} characterId 
- * @param {number} imageId 
+ * @param {string} imageId 
  * @returns {Promise<void>}
  */
 export async function setPrimaryImage(characterId, imageId) {
@@ -242,8 +242,8 @@ export async function setPrimaryImage(characterId, imageId) {
  * Runs two prompts: detailed interpretation (stored in vl_model_interpretation)
  * and a short contextual label (stored in description).
  * @param {string} characterId
- * @param {number} imageId
- * @param {number} visionConfigId - ID of the Vision module config to use
+ * @param {string} imageId
+ * @param {string} visionConfigId - UUID of the Vision module config to use
  * @returns {Promise<{vl_model: string, vl_model_interpretation: string, description: string}>}
  */
 export async function analyzeImage(characterId, imageId, visionConfigId) {

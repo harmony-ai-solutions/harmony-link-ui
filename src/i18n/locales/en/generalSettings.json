@@ -7,7 +7,7 @@
     "manageDevices": "Manage Devices"
   },
   "sections": {
-    "appAndCloud": "Application & Cloud",
+    "appAndCloud": "Application",
     "network": "Network & Infrastructure",
     "appearance": "Appearance & Personalization",
     "uiPersonalization": "UI Personalization",
@@ -28,24 +28,6 @@
     "databaseFile": {
       "label": "Database File",
       "tooltip": "The filename of the SQLite database within the data directory."
-    },
-    "authEndpoint": {
-      "label": "Auth Endpoint",
-      "tooltip": "Web URL for Harmony.AI's authentication service. Required for using our cloud services.",
-      "tooltipDisabled": "Changing this field is disabled if the cloud features are turned off."
-    },
-    "userApiKey": {
-      "label": "User API Key",
-      "tooltip": "Personal API Key of your user Account. Also stored in file 'harmony-user.key'.",
-      "tooltipDisabled": "Changing this field is disabled if the cloud features are turned off.",
-      "tooltipCaution": "CAUTION:",
-      "tooltipCautionText": "Changing this value to a wrong one and saving can result in losing access to online features provided by Harmony.AI."
-    },
-    "useHarmonyCloud": {
-      "label": "Use Harmony Cloud",
-      "description": "Authenticate with Harmony.AI cloud services",
-      "tooltip": "Whether Harmony Link should authenticate with the Harmony.AI cloud upon startup.",
-      "tooltipRestart": "Cloud Services like Speech Engine can only be used when authenticated. (Requires restart to apply)"
     },
     "confirmEvents": {
       "label": "Confirm Events",

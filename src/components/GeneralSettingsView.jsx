@@ -95,9 +95,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [workingDir, setWorkingDir] = useState("");
     const [dataDir, setDataDir] = useState("");
     const [databaseFileName, setDatabaseFileName] = useState("");
-    const [authEndpoint, setAuthEndpoint] = useState("");
-    const [userApiKey, setUserApiKey] = useState("");
-    const [useHarmonyCloud, setUseHarmonyCloud] = useState(false);
     const [confirmEvents, setConfirmEvents] = useState(false);
     const [logFile, setLogFile] = useState(false);
     const [port, setPort] = useState(28080);
@@ -145,23 +142,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         }
         return true;
     };
-    const validateAuthEndpoint = (value) => {
-        const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}|localhost|\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})(:[0-9]{1,5})?(\/.*)?$/;
-        if (urlRegex.test(value) === false) {
-            showModal(t('common:validation.invalidUrl', { field: 'Auth Endpoint' }));
-            setAuthEndpoint(generalSettings.authendpoint);
-            return false;
-        }
-        return true;
-    };
-    const validateUserApiKey = (value) => {
-        if (value.trim() === "") {
-            showModal(t('common:validation.required', { field: 'User API Key' }));
-            setUserApiKey(generalSettings.userapikey);
-            return false;
-        }
-        return true;
-    };
     const validatePort = (value) => {
         if (isNaN(value) || value < 1024 || value > 65535) {
             showModal(t('common:validation.portRange', { min: 1024, max: 65535 }));
@@ -191,9 +171,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setWorkingDir(generalSettings.workingdir);
         setDataDir(generalSettings.datadir);
         setDatabaseFileName(generalSettings.databasefilename);
-        setAuthEndpoint(generalSettings.authendpoint);
-        setUserApiKey(generalSettings.userapikey);
-        setUseHarmonyCloud(generalSettings.useharmonycloud)
         setConfirmEvents(generalSettings.confirmevents);
         setLogFile(generalSettings.logfile);
         setPort(generalSettings.port);
@@ -228,9 +205,6 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.workingdir = workingDir;
         generalSettings.datadir = dataDir;
         generalSettings.databasefilename = databaseFileName;
-        generalSettings.authendpoint = authEndpoint;
-        generalSettings.userapikey = userApiKey;
-        generalSettings.useharmonycloud = useHarmonyCloud;
         generalSettings.confirmevents = confirmEvents;
         generalSettings.logfile = logFile;
         generalSettings.port = port;
@@ -484,58 +458,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                         onBlur={(e) => validateDatabaseFileName(e.target.value)} />
                                 </div>
                             </div>
-                            <div className="flex items-center w-full">
-                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
-                                    {tgs('fields.authEndpoint.label')}
-                                    <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible}
-                                        setTooltipVisible={setTooltipVisible}>
-                                        {tgs('fields.authEndpoint.tooltip')}
-                                        <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">{tgs('fields.authEndpoint.tooltipDisabled')}</span>
-                                    </SettingsTooltip>
-                                </label>
-                                <div className="w-2/3 px-3">
-                                    <input type="text" name="authEndpoint" className="input-field w-full transition-all duration-200"
-                                        placeholder="Authentication endpoint URL" value={authEndpoint} disabled={!useHarmonyCloud}
-                                        onChange={(e) => setAuthEndpoint(e.target.value)}
-                                        onBlur={(e) => validateAuthEndpoint(e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="flex items-center w-full">
-                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
-                                    {tgs('fields.userApiKey.label')}
-                                    <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible}
-                                        setTooltipVisible={setTooltipVisible}>
-                                        {tgs('fields.userApiKey.tooltip')}
-                                        <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">{tgs('fields.userApiKey.tooltipDisabled')}</span>
-                                        <br />
-                                        <span className="text-accent-primary font-bold mt-2 block">{tgs('fields.userApiKey.tooltipCaution')}</span>
-                                        <span className="text-text-secondary italic text-[11px]">{tgs('fields.userApiKey.tooltipCautionText')}</span>
-                                    </SettingsTooltip>
-                                </label>
-                                <div className="w-2/3 px-3">
-                                    <input type="password" name="userApiKey" className="input-field w-full transition-all duration-200"
-                                        placeholder="API Key" value={userApiKey} disabled={!useHarmonyCloud}
-                                        onChange={(e) => setUserApiKey(e.target.value)}
-                                        onBlur={(e) => validateUserApiKey(e.target.value)} />
-                                </div>
-                            </div>
                         </div>
 
                         {/* Right Column: Toggles */}
                         <div className="space-y-4">
-                            <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setUseHarmonyCloud(!useHarmonyCloud)}>
-                                <Toggle checked={useHarmonyCloud} onChange={(e) => setUseHarmonyCloud(e.target.checked)} />
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.useHarmonyCloud.label')}</span>
-                                        <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                            {tgs('fields.useHarmonyCloud.tooltip')}
-                                            <br /><span className="opacity-70 mt-1 block italic font-normal text-[11px]">{tgs('fields.useHarmonyCloud.tooltipRestart')}</span>
-                                        </SettingsTooltip>
-                                    </div>
-                                    <span className="text-xs text-text-muted">{tgs('fields.useHarmonyCloud.description')}</span>
-                                </div>
-                            </div>
                             <div className="flex items-center gap-3 px-3 cursor-pointer group" onClick={() => setConfirmEvents(!confirmEvents)}>
                                 <Toggle checked={confirmEvents} onChange={(e) => setConfirmEvents(e.target.checked)} />
                                 <div className="flex flex-col">

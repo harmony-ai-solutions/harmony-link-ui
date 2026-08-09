@@ -116,7 +116,8 @@ export const MODULE_DEFAULTS = {
             format: "flac"
         },
         [PROVIDERS.HARMONYSPEECH]: {
-            endpoint: "https://speech.project-harmony.ai",
+            endpoint: "",
+            apikey: "",
             voiceconfigfile: "",
             format: "wav",
             samplerate: 16000,
@@ -152,7 +153,8 @@ export const MODULE_DEFAULTS = {
             apikey: ""
         },
         [PROVIDERS.HARMONYSPEECH]: {
-            endpoint: "https://speech.project-harmony.ai",
+            endpoint: "",
+            apikey: "",
             model: "faster-whisper-large-v3-turbo"
         },
         [PROVIDERS.OPENROUTER]: {
@@ -171,7 +173,8 @@ export const MODULE_DEFAULTS = {
             apikey: ""
         },
         [PROVIDERS.HARMONYSPEECH]: {
-            endpoint: "https://speech.project-harmony.ai",
+            endpoint: "",
+            apikey: "",
             model: "silero_vad"
         },
         [PROVIDERS.OPENROUTER]: {

@@ -83,7 +83,7 @@ const modelOperationModes = {
     ],
 };
 
-const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initialSettings }) => {
+const VoiceConfigManager = ({ endpoint, apiKey, voiceConfigFile, onSettingsChange, initialSettings }) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -121,7 +121,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
         modelVoiceOptions, 
         refreshModels, 
         isLoading: isLoadingModels 
-    } = useHarmonySpeechClient(endpoint, 'tts');
+    } = useHarmonySpeechClient(endpoint, 'tts', apiKey);
 
     // Internal State handling
     const [voiceConfigs, setVoiceConfigs] = useState([]);

@@ -25,8 +25,8 @@ import usePresetStore from '../../store/presetStore.js';
  * HarmonySpeech Model Select component
  * Uses the useHarmonySpeechClient hook to fetch and display models
  */
-const HarmonySpeechModelSelect = ({ endpoint, mode, value, onChange }) => {
-    const { modelOptions, isLoading } = useHarmonySpeechClient(endpoint, mode);
+const HarmonySpeechModelSelect = ({ endpoint, mode, apiKey, value, onChange }) => {
+    const { modelOptions, isLoading } = useHarmonySpeechClient(endpoint, mode, apiKey);
     return (
         <ThemedSelect
             value={value}
@@ -383,7 +383,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     }
 
                     try {
-                        const plugin = new HarmonySpeechEnginePlugin('', endpoint);
+                        const plugin = new HarmonySpeechEnginePlugin(getNestedValue(moduleSettings, 'apikey') || '', endpoint);
                         let response;
                         
                         if (schema.harmonySpeechMode === 'stt') {
@@ -855,6 +855,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                         )}
                         <VoiceConfigManager
                             endpoint={getNestedValue(moduleSettings, 'endpoint')}
+                            apiKey={getNestedValue(moduleSettings, 'apikey')}
                             voiceConfigFile={getNestedValue(moduleSettings, 'voiceconfigfile')}
                             onSettingsChange={(updated) => {
                                 const newSettings = { ...moduleSettings, ...updated };
@@ -885,6 +886,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             <HarmonySpeechModelSelect
                                 endpoint={endpoint}
                                 mode={mode}
+                                apiKey={getNestedValue(moduleSettings, 'apikey')}
                                 value={currentValue}
                                 onChange={(value) => handleSelectChange(field, value)}
                             />

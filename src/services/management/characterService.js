@@ -6,17 +6,28 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * @property {string} name
  * @property {string} description
  * @property {string} personality
- * @property {string} appearance
- * @property {string} backstory
  * @property {string} voice_characteristics
  * @property {string} [base_prompt] - Base system prompt for AI
  * @property {string} [scenario] - Character scenario/context
- * @property {string} [example_dialogues] - Example conversations
  * @property {number} typing_speed_wpm - Typing speed in words per minute for chat simulation
  * @property {number} audio_response_chance_percent - Percentage chance (0-100) character responds with audio
  * @property {string|null} [vision_config_id] - UUID of the Vision module config for image analysis
  * @property {string} created_at
  * @property {string} updated_at
+ * @property {string} [first_mes] - Authored opening message delivered on a truly-new chat
+ * @property {string} [mes_example] - Example dialogue showing how the character speaks
+ * @property {string} [alternate_greetings] - JSON []string of alternative opening messages
+ * @property {string} [post_history_instructions] - Instructions injected after chat history (UJB)
+ * @property {string} [creator_notes] - Notes left by the card author
+ * @property {string} [creator] - Original author of the character card
+ * @property {string} [character_version] - Version string of this character
+ * @property {string} [nickname] - Short name; drives the {{char}} macro
+ * @property {string} [tags] - JSON []string of searchable tags
+ * @property {string} [group_only_greetings] - JSON []string of group-chat-only greetings
+ * @property {string} [extensions] - Raw JSON {} opaque extensions object (preserved for export)
+ * @property {string} [assets] - Raw JSON [] full asset manifest (preserved for export)
+ * @property {string} [card_provenance] - Raw JSON {} import provenance (read-only, import-managed)
+ * @property {string} [character_book] - Raw JSON {} full lorebook (top-level + entries[])
  */
 
 /**
@@ -36,9 +47,12 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
 
 /**
  * @typedef {Object} CharacterCardImportResult
- * @property {CharacterProfile} profile
- * @property {CharacterImage} image
- * @property {string} message
+ * @property {string} status - "imported"
+ * @property {string} id - Profile UUID
+ * @property {string} name - Character name
+ * @property {string[]} [dropped_fields] - Non-spec card keys detected and
+ *   dropped on import (present only when non-empty). The UI surfaces these as
+ *   a user warning (no-unknown-fields policy).
  */
 
 // Character Profile Operations
@@ -116,25 +130,64 @@ export async function deleteCharacterProfile(id) {
 
 /**
  * Import a character card from a PNG file
- * @param {File} file 
+ * @param {File} file
  * @returns {Promise<CharacterCardImportResult>}
  */
 export async function importCharacterCard(file) {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/import`, {
         method: 'POST',
         headers: getAuthHeaders(), // NOTE: Do NOT set Content-Type for FormData - browser sets it with boundary
         body: formData,
     });
-    
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to import character card');
     }
-    
+
     return response.json();
+}
+
+// Character Card Export (V3)
+
+/**
+ * Export a character profile as a Character Card V3 (JSON or PNG `ccv3`) and
+ * trigger a browser download. Mirrors the backend
+ * `GET /api/v1/character-profiles/:id/export?format=json|png` route.
+ *
+ * @param {string} profileId
+ * @param {'json'|'png'} [format='png'] - 'png' embeds a ccv3 tEXt chunk (shareable); 'json' is the raw V3 card
+ * @param {string} [filenameBase] - Base file name (defaults to 'character'); the extension is appended
+ * @returns {Promise<void>}
+ */
+export async function exportCharacterCard(profileId, format = 'png', filenameBase = 'character') {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-profiles/${profileId}/export?format=${encodeURIComponent(format)}`,
+        { headers: getAuthHeaders() }
+    );
+    if (!resp.ok) {
+        let msg = 'Failed to export character card';
+        try {
+            const e = await resp.json();
+            msg = e.error || msg;
+        } catch { /* response had no JSON body */ }
+        throw new Error(msg);
+    }
+    const blob = await resp.blob();
+    const ext = format === 'json' ? 'json' : 'png';
+    const safe = String(filenameBase || 'character').replace(/[^\w.-]+/g, '_').replace(/^[._]+|[._]+$/g, '') || 'character';
+    // Trigger a download in the Wails/Chromium webview.
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safe}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 }
 
 // Character Image Operations

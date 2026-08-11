@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 
 /**
@@ -9,6 +10,7 @@ import useCharacterProfileStore from '../../store/characterProfileStore';
  * @param {Function} props.onClose - Callback to close the modal
  */
 export default function ImageUploadModal({ profileId, onClose }) {
+    const { t } = useTranslation('characters');
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [description, setDescription] = useState('');
@@ -23,13 +25,13 @@ export default function ImageUploadModal({ profileId, onClose }) {
 
         // Validate file type
         if (!selectedFile.type.startsWith('image/')) {
-            setError('Please select an image file');
+            setError(t('import.selectImageFile'));
             return;
         }
 
         // Validate file size (10MB max)
         if (selectedFile.size > 10 * 1024 * 1024) {
-            setError('Image size must be less than 10MB');
+            setError(t('import.imageTooLarge'));
             return;
         }
 
@@ -46,7 +48,7 @@ export default function ImageUploadModal({ profileId, onClose }) {
 
     const handleUpload = async () => {
         if (!file) {
-            setError('Please select a file');
+            setError(t('import.selectFile'));
             return;
         }
 
@@ -80,13 +82,13 @@ export default function ImageUploadModal({ profileId, onClose }) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                 </svg>
                             </div>
-                            <h2 className="text-lg font-bold text-gradient-primary leading-tight">Upload Image</h2>
+                            <h2 className="text-lg font-bold text-gradient-primary leading-tight">{t('buttons.uploadImage')}</h2>
                         </div>
                         <button
                             onClick={onClose}
                             disabled={uploading}
                             className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5 disabled:opacity-40"
-                            title="Close"
+                            title={t('buttons.close')}
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -99,7 +101,7 @@ export default function ImageUploadModal({ profileId, onClose }) {
                 <div className="flex-1 min-h-0 overflow-y-auto space-y-4 p-6 bg-background-base">
                     {/* File Input */}
                     <div className="character-editor-field-group">
-                        <label className="character-editor-label">Select Image</label>
+                        <label className="character-editor-label">{t('import.selectImage')}</label>
                         {/* Hidden native input — triggered by the styled button below */}
                         <input
                             ref={fileInputRef}
@@ -114,17 +116,17 @@ export default function ImageUploadModal({ profileId, onClose }) {
                                 onClick={() => fileInputRef.current?.click()}
                                 className="btn-primary py-1.5 px-4 text-xs font-semibold flex-shrink-0"
                             >
-                                Choose File
+                                {t('import.chooseFile')}
                             </button>
                             {file ? (
                                 <span className="character-editor-label-unit truncate max-w-[16rem]" title={file.name}>
                                     {file.name}
                                 </span>
                             ) : (
-                                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>No file chosen</span>
+                                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('import.noFileChosen')}</span>
                             )}
                         </div>
-                        <p className="character-editor-hint">PNG, JPEG, or WEBP. Max 10MB.</p>
+                        <p className="character-editor-hint">{t('import.imageHint')}</p>
                     </div>
 
                     {/* Preview */}
@@ -138,7 +140,7 @@ export default function ImageUploadModal({ profileId, onClose }) {
                         >
                             <img
                                 src={preview}
-                                alt="Preview"
+                                alt={t('import.previewAlt')}
                                 className="w-full object-contain"
                                 style={{ maxHeight: 'clamp(12rem, calc(70vh - 20rem), 60vh)' }}
                             />
@@ -148,8 +150,8 @@ export default function ImageUploadModal({ profileId, onClose }) {
                     {/* Description */}
                     <div className="character-editor-field-group">
                         <label className="character-editor-label">
-                            Description
-                            <span className="character-editor-label-unit">optional</span>
+                            {t('import.description')}
+                            <span className="character-editor-label-unit">{t('import.optional')}</span>
                         </label>
                         <textarea
                             value={description}
@@ -157,9 +159,9 @@ export default function ImageUploadModal({ profileId, onClose }) {
                             maxLength={1000}
                             rows={3}
                             className="input-field w-full resize-none"
-                            placeholder="Describe this image..."
+                            placeholder={t('import.describeImage')}
                         />
-                        <p className="character-editor-hint">{description.length}/1000 characters</p>
+                        <p className="character-editor-hint">{t('import.characters', { count: description.length })}</p>
                     </div>
 
                     {/* Error Message */}
@@ -182,7 +184,7 @@ export default function ImageUploadModal({ profileId, onClose }) {
                             disabled={uploading}
                             className="btn-secondary px-5 py-2 text-sm font-semibold disabled:opacity-50"
                         >
-                            Cancel
+                            {t('buttons.cancel')}
                         </button>
                         <button
                             onClick={handleUpload}
@@ -195,9 +197,9 @@ export default function ImageUploadModal({ profileId, onClose }) {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                                     </svg>
-                                    Uploading…
+                                    {t('buttons.uploading')}
                                 </span>
-                            ) : 'Upload'}
+                            ) : t('buttons.upload')}
                         </button>
                     </div>
                 </div>

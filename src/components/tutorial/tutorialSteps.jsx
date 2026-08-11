@@ -36,7 +36,7 @@ const characterCreationSteps = section('Characters', [
         title: 'Character Profiles',
         content: (
             <div className="space-y-2">
-                <p>Here you manage all your character identities. Each character has a name, personality, appearance, backstory, and more.</p>
+                <p>Here you manage all your character identities. Each character has a name, personality, description, and more.</p>
                 <p>You can <strong>Create</strong> a new profile from scratch or <strong>Import</strong> an existing character card (more on that next).</p>
             </div>
         ),
@@ -67,8 +67,8 @@ const characterCreationSteps = section('Characters', [
                 <p>The editor has several tabs for different aspects of your character:</p>
                 <ul className="list-disc list-inside space-y-1 mt-1">
                     <li><strong>Basic Info</strong> — Name, description, personality</li>
-                    <li><strong>Extended Info</strong> — Appearance, backstory, voice</li>
-                    <li><strong>Advanced</strong> — System prompt, scenario, example dialogues</li>
+                    <li><strong>Extended Info</strong> — Voice characteristics</li>
+                    <li><strong>Advanced</strong> — System prompt, scenario, example message style</li>
                     <li><strong>Lifecycle</strong> — Autonomy, sleep/wake cycles, emotion settings</li>
                 </ul>
             </div>
@@ -784,7 +784,7 @@ const entityAssignmentSteps = section('Assignment', [
         content: (
             <div className="space-y-2">
                 <p>Use the <strong>Character Profile</strong> dropdown to assign a character identity to this entity.</p>
-                <p>This gives your entity a personality, backstory, appearance, and voice characteristics.</p>
+                <p>This gives your entity a personality, description, and voice characteristics.</p>
             </div>
         ),
         placement: 'left',

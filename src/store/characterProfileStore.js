@@ -119,10 +119,28 @@ const useCharacterProfileStore = create((set, get) => ({
     
     /**
      * Select a profile by ID
-     * @param {string} id 
+     * @param {string} id
      */
     selectProfile: (id) => {
         set({ selectedProfileId: id });
+    },
+
+    /**
+     * Export a character profile as a Character Card V3 (JSON or PNG `ccv3`).
+     * Triggers a browser download of the exported card.
+     * @param {string} profileId
+     * @param {'json'|'png'} [format='png']
+     * @param {string} [filenameBase]
+     */
+    exportCharacterCard: async (profileId, format = 'png', filenameBase) => {
+        set({ isLoading: true, error: null });
+        try {
+            await characterService.exportCharacterCard(profileId, format, filenameBase);
+            set({ isLoading: false });
+        } catch (error) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
     },
     
     // Actions - Images

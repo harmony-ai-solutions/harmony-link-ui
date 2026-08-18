@@ -60,16 +60,20 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
         }
     };
 
-    const getDeviceIcon = (deviceType) => {
+    const getDeviceClassName = (deviceType) => {
         switch (deviceType) {
-            case 'nvidia': return '🟢'; // Green circle for NVIDIA
-            case 'amd': return '🔴'; // Red circle for AMD
-            case 'amd-wsl': return '🔴'; // Red circle for AMD
-            case 'intel': return '🔵'; // Blue circle for Intel
-            case 'cpu': return '💻'; // Laptop for CPU
-            default: return '⚙️'; // Gear for unknown
+            case 'nvidia': return 'bg-green-500';
+            case 'amd': return 'bg-red-500';
+            case 'amd-wsl': return 'bg-red-500';
+            case 'intel': return 'bg-blue-500';
+            case 'cpu': return 'bg-purple-500';
+            default: return 'bg-gray-500';
         }
     };
+
+    const DeviceIcon = ({ deviceType }) => (
+        <span className={`inline-block w-3 h-3 rounded-full ${getDeviceClassName(deviceType)}`} />
+    );
 
     return (
         <div className="flex flex-wrap w-full mb-3">
@@ -102,7 +106,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                 </span>
                                 {integrationOption.deviceType && (
                                     <span className="integration-display-badge">
-                                        {getDeviceIcon(integrationOption.deviceType)} {integrationOption.deviceType.toUpperCase()}
+                                        <DeviceIcon deviceType={integrationOption.deviceType} /> {integrationOption.deviceType.toUpperCase()}
                                     </span>
                                 )}
                             </div>
@@ -120,7 +124,7 @@ const IntegrationDisplay = ({ moduleName, providerName, useIntegration }) => {
                                                 className={isApplied ? 'module-action-btn-save' : 'module-action-btn'}
                                                 disabled={isApplied}
                                             >
-                                                {isApplied ? 'Applied ✓' : 'Apply Config'}
+                                                {isApplied ? 'Applied' : 'Apply Config'}
                                             </button>
                                         );
                                     })

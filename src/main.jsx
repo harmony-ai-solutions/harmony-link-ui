@@ -1,6 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import './style.css'
+import './i18n/i18n.js'
 import { isHarmonySpeechEngineMode } from './config/appMode.js'
 import HarmonyLinkApp from './HarmonyLinkApp.jsx'
 import HarmonySpeechEngineApp from './HarmonySpeechEngineApp.jsx'

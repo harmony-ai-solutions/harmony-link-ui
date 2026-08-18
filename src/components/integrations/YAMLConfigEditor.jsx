@@ -13,16 +13,20 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
 
     const isRunning = instanceStatus && (instanceStatus.status === 'running' || instanceStatus.status === 'partially_running');
 
-    const getDeviceIcon = (deviceType) => {
+    const getDeviceClassName = (deviceType) => {
         switch (deviceType) {
-            case 'nvidia': return '🟢'; // Green circle for NVIDIA
-            case 'amd': return '🔴'; // Red circle for AMD
-            case 'amd-wsl': return '🔴'; // Red circle for AMD
-            case 'intel': return '🔵'; // Blue circle for Intel
-            case 'cpu': return '💻'; // Laptop for CPU
-            default: return '⚙️'; // Gear for unknown
+            case 'nvidia': return 'bg-green-500';
+            case 'amd': return 'bg-red-500';
+            case 'amd-wsl': return 'bg-red-500';
+            case 'intel': return 'bg-blue-500';
+            case 'cpu': return 'bg-purple-500';
+            default: return 'bg-gray-500';
         }
     };
+
+    const DeviceIcon = ({ deviceType }) => (
+        <span className={`inline-block w-3 h-3 rounded-full ${getDeviceClassName(deviceType)}`} />
+    );
 
     const fetchInstanceData = async () => {
         try {
@@ -147,7 +151,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                     as="h3"
                                     className="text-lg font-medium leading-6 text-white"
                                 >
-                                    Configure {integrationName} ({instanceName}) {getDeviceIcon(instanceDeviceType)} [{instanceDeviceType.toUpperCase()}]
+                                    Configure {integrationName} ({instanceName}) <DeviceIcon deviceType={instanceDeviceType} /> [{instanceDeviceType.toUpperCase()}]
                                 </Dialog.Title>
                                 <div className="mt-2">
                                     {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -180,7 +184,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                     <div>
                                         <button
                                             type="button"
-                                            className={`font-bold py-1 px-2 mx-1 text-white ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-700 hover:bg-red-500'}`}
+                                            className={`font-bold py-1 px-2 mx-1 text-white rounded-lg ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'btn-danger'}`}
                                             onClick={handleDelete}
                                             disabled={loading || isRunning}
                                         >
@@ -197,7 +201,7 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                         </button>
                                         <button
                                             type="button"
-                                            className={`font-bold py-1 px-2 mx-1 text-orange-400 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'bg-neutral-700 hover:bg-neutral-500'}`}
+                                            className={`font-bold py-1 px-2 mx-1 ${isRunning ? 'bg-gray-500 cursor-not-allowed' : 'btn-primary'}`}
                                             onClick={handleSave}
                                             disabled={loading || isRunning}
                                         >

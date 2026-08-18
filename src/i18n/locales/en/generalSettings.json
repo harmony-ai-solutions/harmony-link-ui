@@ -1,0 +1,159 @@
+{
+  "header": {
+    "title": "General Settings",
+    "subtitle": "Global application configuration and appearance settings"
+  },
+  "buttons": {
+    "manageDevices": "Manage Devices"
+  },
+  "sections": {
+    "appAndCloud": "Application",
+    "network": "Network & Infrastructure",
+    "appearance": "Appearance & Personalization",
+    "uiPersonalization": "UI Personalization",
+    "updates": "Updates",
+    "notifications": "Notifications",
+    "soundAudio": "Sound & Audio",
+    "dataSupport": "Data & Support"
+  },
+  "fields": {
+    "workingDir": {
+      "label": "Working Directory",
+      "tooltip": "Specify the directory used for storing entity specific working data and temporary files."
+    },
+    "dataDir": {
+      "label": "Data Directory",
+      "tooltip": "The primary directory for persistent data, including themes and application state."
+    },
+    "databaseFile": {
+      "label": "Database File",
+      "tooltip": "The filename of the SQLite database within the data directory."
+    },
+    "confirmEvents": {
+      "label": "Confirm Events",
+      "description": "Send confirmation events for each received event",
+      "tooltip": "Whether Harmony Link should send confirmation events for each event it receives.",
+      "tooltipDebug": "(Useful for Debugging or in stateful contexts)"
+    },
+    "logFile": {
+      "label": "Create Log File",
+      "description": "Write detailed log file to disk (requires restart)",
+      "tooltip": "Whether Harmony Link should write a log file while running.",
+      "tooltipRestart": "(Changing requires restart)"
+    },
+    "connectionPort": {
+      "label": "Connection Port",
+      "tooltip": "Port on this machine which Harmony Plugins can to connect to."
+    },
+    "websocketBuffer": {
+      "label": "WebSocket Buffer (Bytes)",
+      "tooltip": "If using WebSocket, this defines the message buffer size in Bytes. Connecting WebSocket Clients need to match this value.",
+      "tooltipFix": "If you're running into issues with broken WebSocket Messages, increasing this value might fix it."
+    },
+    "wssPort": {
+      "label": "WSS Port",
+      "tooltip": "The port used for secure WebSocket (WSS) connections. Disabled when Single Port Mode is active."
+    },
+    "singlePort": {
+      "label": "Single Port Mode",
+      "description": "Serve WS and WSS on the same port (requires restart)",
+      "tooltip": "When enabled, both plain WebSocket (WS) and secure WebSocket (WSS) connections are served on the same port. The server automatically detects TLS connections and handles them accordingly.",
+      "tooltipTunnel": "Useful when using TCP tunnels (e.g. ngrok) for remote debugging — only one tunnel needed. (Requires restart to apply)"
+    },
+    "fontScale": {
+      "label": "Font Size / Scale",
+      "tooltip": "Adjust the interface font scaling. Compact reduces UI size, Large increases readability.",
+      "options": {
+        "compact": "Compact",
+        "default": "Default",
+        "large": "Large"
+      }
+    },
+    "appLanguage": {
+      "label": "App Language",
+      "tooltip": "Select the display language for the application interface.",
+      "options": {
+        "en": "English"
+      }
+    },
+    "numberFormat": {
+      "label": "Number Format",
+      "tooltip": "Choose the decimal and thousands separator style for numeric displays.",
+      "options": {
+        "en": "1,000.00 (English)",
+        "de": "1.000,00 (German)",
+        "fr": "1 000,00 (French)"
+      }
+    },
+    "dynamicBackground": {
+      "label": "Dynamic Background",
+      "description": "Ambient stars, orbs, and cursor-following aura on all pages.",
+      "performance": "Turn off for better performance.",
+      "variantsLabel": "Background Style",
+      "variants": {
+        "aurora": "Aurora",
+        "shapes": "Floating Shapes",
+        "sparkles": "Sparkles & Stars",
+        "waves": "Waves"
+      },
+      "auraLabel": "Mouse Aura",
+      "auraDescription": "Soft glow that follows your cursor on every background style.",
+      "auraStylesLabel": "Aura Style",
+      "auraStyles": {
+        "glow": "Glow",
+        "ring": "Ring",
+        "trail": "Sparkle Trail",
+        "embers": "Embers"
+      }
+    },
+    "autoUpdate": {
+      "label": "Auto-Update Checks",
+      "tooltip": "Control how the application handles automatic update checks.",
+      "tooltipNotify": "\"Notify Only\" will alert you without installing.",
+      "options": {
+        "auto": "Check & Install Automatically",
+        "notify": "Notify Only",
+        "disabled": "Disabled"
+      }
+    },
+    "desktopNotifications": {
+      "label": "Desktop",
+      "description": "Push & toast notifications"
+    },
+    "notificationBadges": {
+      "label": "Badges",
+      "description": "Unread count indicators"
+    },
+    "notificationSounds": {
+      "label": "Sounds",
+      "description": "System alert sounds"
+    },
+    "notifySystemUpdates": {
+      "label": "System Updates",
+      "description": "New releases & patches"
+    },
+    "notifyConnectionAlerts": {
+      "label": "Connection Alerts",
+      "description": "Entity online/offline status"
+    },
+    "notifyTaskCompletion": {
+      "label": "Task Completion",
+      "description": "Image gen, imports & batches"
+    },
+    "soundEffects": {
+      "label": "Sound Effects",
+      "description": "UI interaction clicks, success & alert chimes"
+    },
+    "volume": {
+      "label": "Volume",
+      "value": "{{value}}%"
+    }
+  },
+  "themes": {
+    "official": "Official Themes",
+    "more": "MORE THEMES"
+  },
+  "notify": {
+    "about": "Notify me about"
+  }
+}

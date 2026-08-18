@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import usePresetStore from '../../store/presetStore.js';
 import { uploadPreset, deletePreset } from '../../services/management/presetService.js';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+import ThemedSelect from './ThemedSelect';
 
 /**
  * Preset selector dropdown that loads available presets and fires onChange.
@@ -30,8 +31,7 @@ const PresetSelector = ({ value, onChange }) => {
         setShowUploadModal(true);
     };
 
-    const handleChange = async (e) => {
-        const selectedName = e.target.value;
+    const handleChange = async (selectedName) => {
         if (selectedName) {
             setIsLoading(true);
             await loadPresetDetail(selectedName);
@@ -110,19 +110,17 @@ const PresetSelector = ({ value, onChange }) => {
     return (
         <>
             <div className="flex items-center gap-1.5 w-full">
-                <select
+                <ThemedSelect
                     value={value || ''}
                     onChange={handleChange}
+                    options={[
+                        { value: '', label: 'None (Manual)' },
+                        ...presets.map(p => ({ value: p.name, label: `${p.name} (${p.param_count} params)` }))
+                    ]}
+                    placeholder="None (Manual)"
                     disabled={isLoading}
-                    className="input-field flex-1 min-w-0 p-1.5 rounded text-sm custom-scrollbar"
-                >
-                    <option value="">None (Manual)</option>
-                    {presets.map(p => (
-                        <option key={p.name} value={p.name}>
-                            {p.name} ({p.param_count} params)
-                        </option>
-                    ))}
-                </select>
+                    className="flex-1 min-w-0"
+                />
                 {isLoading && <span className="ml-2 text-xs text-text-muted">Loading...</span>}
                 <button
                     type="button"

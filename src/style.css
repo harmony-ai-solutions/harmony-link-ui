@@ -3,11 +3,127 @@
 @import './styles/components.css';
 @import './styles/tutorial.css';
 
-html {
-    background-color: var(--color-background-base);
+/* ── Tailwind v4 Theme Configuration ────────────────────────────────── */
+/* In TW4, configuration is CSS-native via @theme, NOT tailwind.config.js */
+@theme {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
-/* Directory Tree Styles (Themed) */
+/* ── Typography Foundation ─────────────────────────────────────────── */
+/* Portal design DNA: Inter body, Plus Jakarta Sans headings, JetBrains Mono code */
+
+html {
+    background-color: var(--color-background-base);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading hierarchy — Plus Jakarta Sans for all H-tags */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+h1 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    letter-spacing: -0.03em;
+}
+
+h2 {
+    font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+}
+
+h3 {
+    font-size: 1.1rem;
+}
+
+/* Code font */
+code, pre, kbd, samp {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+}
+
+/* Small / eyebrow / helper text */
+small, .text-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+}
+
+/* ── Base Transition ──────────────────────────────────────────────── */
+/* All interactive elements use the portal's signature ease curve */
+*, *::before, *::after {
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Focus Ring ───────────────────────────────────────────────────── */
+/* Portal-style glowing focus ring */
+*:focus-visible {
+    outline: none;
+    box-shadow: 0 0 16px var(--color-glow-accent-soft),
+                0 0 0 3px var(--color-glow-accent-soft);
+    border-color: var(--color-accent-primary);
+}
+
+/* ── Scrollbar — Glassmorphism ─────────────────────────────────────── */
+/* Thin portal-style scrollbar with a glowing, shimmering thumb.
+   Uses the theme's accent colour so every theme gets its own glow
+   (purple for SoulBits Light, magenta for SoulBits Dark, etc.). */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--color-accent-primary-rgb), 0.35) rgba(var(--color-accent-primary-rgb), 0.06);
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(var(--color-accent-primary-rgb), 0.06);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-accent-primary-rgb), 0.35);
+    border-radius: 3px;
+    box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
+    animation: scrollbar-shimmer 2.5s ease-in-out infinite;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--color-accent-primary-rgb), 0.55);
+    box-shadow: 0 0 16px 4px rgba(var(--color-accent-primary-rgb), 0.6);
+}
+
+@keyframes scrollbar-shimmer {
+    0%, 100% {
+        box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
+    }
+    50% {
+        box-shadow: 0 0 14px 4px rgba(var(--color-accent-primary-rgb), 0.5);
+    }
+}
+
+/* ── Selection ────────────────────────────────────────────────────── */
+::selection {
+    background: var(--color-background-elevated);
+    color: var(--color-accent-primary);
+}
+
+/* ── Directory Tree Styles (Themed) ────────────────────────────────── */
 .directory-tree .rc-tree {
     background: transparent;
     color: var(--color-text-primary);
@@ -20,11 +136,11 @@ html {
 }
 
 .directory-tree .rc-tree-node-content-wrapper:hover {
-    background-color: var(--color-background-hover);
+    background-color: var(--color-background-hover-glass);
 }
 
 .directory-tree .rc-tree-node-content-wrapper.rc-tree-node-selected {
-    background-color: var(--color-accent-primary);
+    background: var(--gradient-primary);
     color: #fff;
 }
 

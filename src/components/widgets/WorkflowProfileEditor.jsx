@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { parseImaginationWorkflow, testImaginationGeneration } from '../../services/management/configService.js';
 import SettingsTooltip from '../settings/SettingsTooltip.jsx';
+import ThemedSelect from './ThemedSelect';
+import NumberStepper from '../ui/NumberStepper.jsx';
 
 export const EMPTY_PROFILE = {
     workflowjson: '',
@@ -240,7 +242,7 @@ export default function WorkflowProfileEditor({
                                     style={{ backgroundColor: 'var(--color-error)', color: '#ffffff' }}
                                     title={`Remove "${name}"`}
                                     onClick={e => { e.stopPropagation(); setConfirmRemove(true); }}>
-                                    ✕
+                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                                 </span>
                             )}
                         </button>
@@ -300,10 +302,13 @@ export default function WorkflowProfileEditor({
                         <button className="btn-secondary px-4 py-1 text-sm"
                             onClick={handleParseWorkflow}
                             disabled={isParsing}>
-                            {isParsing ? 'Parsing...' : '⚙ Parse Workflow Nodes'}
+                            {isParsing ? 'Parsing...' : 'Parse Workflow Nodes'}
                         </button>
                         {parsedNodes.length > 0 && (
-                            <span className="text-xs text-green-400">✓ {parsedNodes.length} nodes loaded</span>
+                            <span className="text-xs text-green-400">
+                                <svg className="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                {parsedNodes.length} nodes loaded
+                            </span>
                         )}
                         {parseError && (
                             <span className="text-xs text-red-400">{parseError}</span>
@@ -338,12 +343,15 @@ export default function WorkflowProfileEditor({
                         </label>
                         <div className="flex-1">
                             {parsedNodes.length > 0 ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.promptnodeid}
-                                    onChange={e => updateProfileField('promptnodeid', e.target.value)}>
-                                    <option value="">— node —</option>
-                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('promptnodeid', val)}
+                                    options={[
+                                        { value: '', label: '— node —' },
+                                        ...nodeOptions.map(n => ({ value: n.value, label: n.label }))
+                                    ]}
+                                    placeholder="— node —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.promptnodeid}
@@ -354,12 +362,15 @@ export default function WorkflowProfileEditor({
                         <span className="text-text-muted text-xs shrink-0">→</span>
                         <div className="flex-1">
                             {parsedNodes.length > 0 && currentProfile.promptnodeid ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.promptfieldname}
-                                    onChange={e => updateProfileField('promptfieldname', e.target.value)}>
-                                    <option value="">— field —</option>
-                                    {fieldsForNode(currentProfile.promptnodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('promptfieldname', val)}
+                                    options={[
+                                        { value: '', label: '— field —' },
+                                        ...fieldsForNode(currentProfile.promptnodeid).map(f => ({ value: f, label: f }))
+                                    ]}
+                                    placeholder="— field —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.promptfieldname}
@@ -379,12 +390,15 @@ export default function WorkflowProfileEditor({
                         </label>
                         <div className="flex-1">
                             {parsedNodes.length > 0 ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.negativenodeid}
-                                    onChange={e => updateProfileField('negativenodeid', e.target.value)}>
-                                    <option value="">— node —</option>
-                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('negativenodeid', val)}
+                                    options={[
+                                        { value: '', label: '— node —' },
+                                        ...nodeOptions.map(n => ({ value: n.value, label: n.label }))
+                                    ]}
+                                    placeholder="— node —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.negativenodeid}
@@ -395,12 +409,15 @@ export default function WorkflowProfileEditor({
                         <span className="text-text-muted text-xs shrink-0">→</span>
                         <div className="flex-1">
                             {parsedNodes.length > 0 && currentProfile.negativenodeid ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.negativefieldname}
-                                    onChange={e => updateProfileField('negativefieldname', e.target.value)}>
-                                    <option value="">— field —</option>
-                                    {fieldsForNode(currentProfile.negativenodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('negativefieldname', val)}
+                                    options={[
+                                        { value: '', label: '— field —' },
+                                        ...fieldsForNode(currentProfile.negativenodeid).map(f => ({ value: f, label: f }))
+                                    ]}
+                                    placeholder="— field —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.negativefieldname}
@@ -421,12 +438,15 @@ export default function WorkflowProfileEditor({
                         </label>
                         <div className="flex-1">
                             {parsedNodes.length > 0 ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.seednodeid}
-                                    onChange={e => updateProfileField('seednodeid', e.target.value)}>
-                                    <option value="">— node —</option>
-                                    {nodeOptions.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('seednodeid', val)}
+                                    options={[
+                                        { value: '', label: '— node —' },
+                                        ...nodeOptions.map(n => ({ value: n.value, label: n.label }))
+                                    ]}
+                                    placeholder="— node —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.seednodeid}
@@ -437,12 +457,15 @@ export default function WorkflowProfileEditor({
                         <span className="text-text-muted text-xs shrink-0">→</span>
                         <div className="flex-1">
                             {parsedNodes.length > 0 && currentProfile.seednodeid ? (
-                                <select className="input-field w-full"
+                                <ThemedSelect
                                     value={currentProfile.seedfieldname}
-                                    onChange={e => updateProfileField('seedfieldname', e.target.value)}>
-                                    <option value="">— field —</option>
-                                    {fieldsForNode(currentProfile.seednodeid).map(f => <option key={f} value={f}>{f}</option>)}
-                                </select>
+                                    onChange={(val) => updateProfileField('seedfieldname', val)}
+                                    options={[
+                                        { value: '', label: '— field —' },
+                                        ...fieldsForNode(currentProfile.seednodeid).map(f => ({ value: f, label: f }))
+                                    ]}
+                                    placeholder="— field —"
+                                />
                             ) : (
                                 <input type="text" className="input-field w-full"
                                     value={currentProfile.seedfieldname}
@@ -464,12 +487,12 @@ export default function WorkflowProfileEditor({
                         </SettingsTooltip>
                     </label>
                     <div className="flex items-center gap-2">
-                        <input type="number" className="input-field w-24"
+                        <NumberStepper className="w-24"
                             value={currentProfile.width}
                             onChange={e => updateProfileField('width', parseInt(e.target.value) || 512)}
                             min={64} max={4096} step={64} />
                         <span className="text-text-muted">×</span>
-                        <input type="number" className="input-field w-24"
+                        <NumberStepper className="w-24"
                             value={currentProfile.height}
                             onChange={e => updateProfileField('height', parseInt(e.target.value) || 512)}
                             min={64} max={4096} step={64} />
@@ -478,7 +501,7 @@ export default function WorkflowProfileEditor({
                 </div>
 
                 {/* Generation Settings */}
-                <div className="border-t border-border-default pt-4">
+                <div className="pt-4">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
                         Generation Settings
                         <SettingsTooltip tooltipIndex={6} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
@@ -557,7 +580,7 @@ export default function WorkflowProfileEditor({
                 </div>
 
                 {/* ── Test Generation ── */}
-                <div className="border-t border-border-default pt-4 mt-2">
+                <div className="pt-4 mt-2">
                     <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                         Test Generation
                         <SettingsTooltip tooltipIndex={11} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
@@ -611,7 +634,7 @@ export default function WorkflowProfileEditor({
                                 The seed actually used is reported after a successful generation.
                             </SettingsTooltip>
                         </label>
-                        <input type="number" className="input-field w-48"
+                        <NumberStepper className="w-48"
                             value={testSeed}
                             onChange={e => setTestSeed(parseInt(e.target.value) || 0)}
                             min={0} step={1}
@@ -622,7 +645,7 @@ export default function WorkflowProfileEditor({
                         <button className="btn-primary px-4 py-1 text-sm"
                             onClick={handleTestGeneration}
                             disabled={isGenerating || !baseURL}>
-                            {isGenerating ? '⏳ Generating...' : '🎨 Generate Test Image'}
+                            {isGenerating ? 'Generating...' : 'Generate Test Image'}
                         </button>
                         {!baseURL && (
                             <span className="text-xs text-text-muted">Configure a Base URL first.</span>
@@ -638,7 +661,8 @@ export default function WorkflowProfileEditor({
                     {testResult && (
                         <div>
                             <p className="text-xs text-text-muted mb-2">
-                                ✓ Generation successful — Seed used: <span className="text-text-primary font-medium">{testResult.seed_used}</span>
+                                <svg className="w-3.5 h-3.5 inline mr-1 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                Generation successful — Seed used: <span className="text-text-primary font-medium">{testResult.seed_used}</span>
                             </p>
                             <div className="flex flex-wrap gap-3">
                                 {testResult.images && testResult.images.map((img, idx) => (

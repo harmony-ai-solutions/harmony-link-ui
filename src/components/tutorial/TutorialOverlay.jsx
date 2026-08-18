@@ -153,20 +153,10 @@ export default function TutorialOverlay({
                 <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium text-accent-primary">
                         {sectionLabel
-                            ? `${sectionLabel} · Step ${stepInSection} of ${totalInSection}`
-                            : `Step ${stepIndex + 1} of ${totalSteps}`
+                            ? `${sectionLabel} · ${stepInSection}/${totalInSection}`
+                            : `${stepIndex + 1}/${totalSteps}`
                         }
                     </span>
-                    <div className="flex gap-1">
-                        {Array.from({ length: totalInSection }).map((_, i) => (
-                            <div
-                                key={i}
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                    i < stepInSection ? 'bg-accent-primary' : 'bg-white/20'
-                                }`}
-                            />
-                        ))}
-                    </div>
                 </div>
 
                 {/* Title */}

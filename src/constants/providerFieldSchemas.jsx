@@ -1607,6 +1607,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 }
             },
             {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'Optional API key for your self-hosted Harmony Speech Engine',
+                tooltip: 'Optional API key required by your self-hosted Harmony Speech Engine instance. Leave empty if the engine does not require authentication.',
+                width: 'full',
+                labelWidth: '1/4'
+            },
+            {
                 key: 'voiceconfigfile',
                 label: 'Voice Configuration',
                 type: 'voice-config-manager',
@@ -1637,6 +1646,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     type: 'url',
                     message: 'Endpoint must be a valid URL.'
                 }
+            },
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'Optional API key for your self-hosted Harmony Speech Engine',
+                tooltip: 'Optional API key required by your self-hosted Harmony Speech Engine instance. Leave empty if the engine does not require authentication.',
+                width: 'full',
+                labelWidth: '1/6'
             },
             {
                 key: 'model',
@@ -1671,6 +1689,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     type: 'url',
                     message: 'Endpoint must be a valid URL.'
                 }
+            },
+            {
+                key: 'apikey',
+                label: 'API Key',
+                type: 'password',
+                placeholder: 'Optional API key for your self-hosted Harmony Speech Engine',
+                tooltip: 'Optional API key required by your self-hosted Harmony Speech Engine instance. Leave empty if the engine does not require authentication.',
+                width: 'full',
+                labelWidth: '1/6'
             },
             {
                 key: 'model',

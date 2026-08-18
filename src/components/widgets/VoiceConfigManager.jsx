@@ -8,6 +8,7 @@ import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import ThemedSelect from './ThemedSelect.jsx';
+import NumberStepper from '../ui/NumberStepper.jsx';
 import useHarmonySpeechClient from '../../hooks/useHarmonySpeechClient.js';
 
 // Model name mappings
@@ -82,7 +83,7 @@ const modelOperationModes = {
     ],
 };
 
-const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initialSettings }) => {
+const VoiceConfigManager = ({ endpoint, apiKey, voiceConfigFile, onSettingsChange, initialSettings }) => {
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
     // Modal dialog values
@@ -120,7 +121,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
         modelVoiceOptions, 
         refreshModels, 
         isLoading: isLoadingModels 
-    } = useHarmonySpeechClient(endpoint, 'tts');
+    } = useHarmonySpeechClient(endpoint, 'tts', apiKey);
 
     // Internal State handling
     const [voiceConfigs, setVoiceConfigs] = useState([]);
@@ -562,20 +563,16 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Select from existing voice configurations or manage your configurations
                         </SettingsTooltip>
                     </label>
-                    <select
+                    <ThemedSelect
                         value={currentVoiceConfigFile}
-                        onChange={(e) => changeVoiceConfigAndUpdate(e.target.value)}
-                        className="input-field block w-1/3"
-                    >
-                        <option value={NEW_CONFIG_OPTION}>New Voice Config</option>
-                        {voiceConfigs && voiceConfigs.length > 0 && (
-                            voiceConfigs.map((config) => (
-                                <option key={config} value={config}>
-                                    {config}
-                                </option>
-                            ))
-                        )}
-                    </select>
+                        onChange={(val) => changeVoiceConfigAndUpdate(val)}
+                        options={[
+                            { value: NEW_CONFIG_OPTION, label: 'New Voice Config' },
+                            ...(voiceConfigs || []).map((config) => ({ value: config, label: config }))
+                        ]}
+                        placeholder="New Voice Config"
+                        className="w-1/3"
+                    />
                     <button onClick={handleSaveConfig}
                         className="module-action-btn-save mx-1">
                         {currentVoiceConfigFile === NEW_CONFIG_OPTION ? 'Save' : 'Update'}
@@ -599,7 +596,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 </div>
 
                 {/* Voice Config Editor - Basic Settings */}
-                <div className="flex flex-wrap w-full border-t border-white/10 pt-2 mb-2">
+                <div className="flex flex-wrap w-full pt-2 mb-2">
                     <div className="flex items-center w-full mb-2">
                         <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">Basic Settings</h2>
                     </div>
@@ -652,7 +649,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Voice Embedding Section */}
                 {currentVoiceConfig.operation_mode === "voice_cloning" && (
                     <div className="w-full">
-                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                        <div className="flex items-center mb-2 w-full pt-2">
                             <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Voice Embedding Settings
                                 <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible}
@@ -732,7 +729,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Voice Generation Settings */}
-                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                <div className="flex items-center mb-2 w-full pt-2">
                     <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Voice Generation Settings
                         <SettingsTooltip tooltipIndex={7} tooltipVisible={() => tooltipVisible}
@@ -804,12 +801,11 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Seed
                         </label>
                         <div className="w-1/2">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
+                            <NumberStepper
+                                min={0}
+                                step={1}
                                 name="seed"
-                                className="input-field mt-1 block w-full"
+                                className="mt-1 block w-full"
                                 placeholder="Seed"
                                 value={currentVoiceConfig.seed}
                                 onChange={(e) =>
@@ -830,12 +826,11 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Style
                         </label>
                         <div className="w-1/2">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
+                            <NumberStepper
+                                min={0}
+                                step={1}
                                 name="style"
-                                className="input-field mt-1 block w-full"
+                                className="mt-1 block w-full"
                                 placeholder="Style"
                                 value={currentVoiceConfig.style}
                                 onChange={(e) =>
@@ -856,11 +851,10 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Speed
                         </label>
                         <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
+                            <NumberStepper
+                                step={0.01}
                                 name="speed"
-                                className="input-field mt-1 block w-full"
+                                className="mt-1 block w-full"
                                 placeholder="Speed"
                                 value={currentVoiceConfig.speed}
                                 onChange={(e) =>
@@ -881,11 +875,10 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Pitch
                         </label>
                         <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
+                            <NumberStepper
+                                step={0.01}
                                 name="pitch"
-                                className="input-field mt-1 block w-full"
+                                className="mt-1 block w-full"
                                 placeholder="Pitch"
                                 value={currentVoiceConfig.pitch}
                                 onChange={(e) =>
@@ -906,11 +899,10 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                             Energy
                         </label>
                         <div className="w-1/2">
-                            <input
-                                type="number"
-                                step="0.01"
+                            <NumberStepper
+                                step={0.01}
                                 name="energy"
-                                className="input-field mt-1 block w-full"
+                                className="mt-1 block w-full"
                                 placeholder="Energy"
                                 value={currentVoiceConfig.energy}
                                 onChange={(e) =>
@@ -927,7 +919,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 {/* Chatterbox-specific generation parameters */}
                 {isChatterboxModel(currentVoiceConfig.model) && (
                     <>
-                        <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                        <div className="flex items-center mb-2 w-full pt-2">
                             <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                                 Chatterbox Parameters
                             </h2>
@@ -943,13 +935,12 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     </SettingsTooltip>
                                 </label>
                                 <div className="w-1/2">
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="1"
+                                    <NumberStepper
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
                                         name="exaggeration"
-                                        className="input-field mt-1 block w-full"
+                                        className="mt-1 block w-full"
                                         placeholder="Exaggeration"
                                         value={currentVoiceConfig.exaggeration}
                                         onChange={(e) =>
@@ -973,13 +964,12 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     </SettingsTooltip>
                                 </label>
                                 <div className="w-1/2">
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="1"
+                                    <NumberStepper
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
                                         name="cfg_weight"
-                                        className="input-field mt-1 block w-full"
+                                        className="mt-1 block w-full"
                                         placeholder="CFG Weight"
                                         value={currentVoiceConfig.cfg_weight}
                                         onChange={(e) =>
@@ -1001,13 +991,12 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 </SettingsTooltip>
                             </label>
                             <div className="w-1/2">
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    max="1"
+                                <NumberStepper
+                                    step={0.01}
+                                    min={0}
+                                    max={1}
                                     name="temperature"
-                                    className="input-field mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     placeholder="Temperature"
                                     value={currentVoiceConfig.temperature}
                                     onChange={(e) =>
@@ -1028,12 +1017,11 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 </SettingsTooltip>
                             </label>
                             <div className="w-1/2">
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="1"
+                                <NumberStepper
+                                    step={0.01}
+                                    min={1}
                                     name="repetition_penalty"
-                                    className="input-field mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     placeholder="Repetition Penalty"
                                     value={currentVoiceConfig.repetition_penalty}
                                     onChange={(e) =>
@@ -1054,13 +1042,12 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                 </SettingsTooltip>
                             </label>
                             <div className="w-1/2">
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    max="1"
+                                <NumberStepper
+                                    step={0.01}
+                                    min={0}
+                                    max={1}
                                     name="top_p"
-                                    className="input-field mt-1 block w-full"
+                                    className="mt-1 block w-full"
                                     placeholder="Top P"
                                     value={currentVoiceConfig.top_p}
                                     onChange={(e) =>
@@ -1083,13 +1070,12 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     </SettingsTooltip>
                                 </label>
                                 <div className="w-1/2">
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="1"
+                                    <NumberStepper
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
                                         name="min_p"
-                                        className="input-field mt-1 block w-full"
+                                        className="mt-1 block w-full"
                                         placeholder="Min P"
                                         value={currentVoiceConfig.min_p}
                                         onChange={(e) =>
@@ -1113,12 +1099,11 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     </SettingsTooltip>
                                 </label>
                                 <div className="w-1/2">
-                                    <input
-                                        type="number"
-                                        step="1"
-                                        min="0"
+                                    <NumberStepper
+                                        step={1}
+                                        min={0}
                                         name="top_k"
-                                        className="input-field mt-1 block w-full"
+                                        className="mt-1 block w-full"
                                         placeholder="Top K"
                                         value={currentVoiceConfig.top_k}
                                         onChange={(e) =>
@@ -1145,7 +1130,6 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                                     <input
                                         type="checkbox"
                                         name="norm_loudness"
-                                        className="input-field mt-1"
                                         checked={currentVoiceConfig.norm_loudness}
                                         onChange={(e) =>
                                             setCurrentVoiceConfig({
@@ -1161,7 +1145,7 @@ const VoiceConfigManager = ({ endpoint, voiceConfigFile, onSettingsChange, initi
                 )}
 
                 {/* Generate Speech Section */}
-                <div className="flex items-center mb-2 w-full border-t border-white/10 pt-2">
+                <div className="flex items-center mb-2 w-full pt-2">
                     <h2 className="text-xs font-bold uppercase tracking-wide text-text-secondary">
                         Generate Speech
                         <SettingsTooltip tooltipIndex={18} tooltipVisible={() => tooltipVisible}

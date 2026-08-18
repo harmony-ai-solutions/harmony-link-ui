@@ -8,11 +8,12 @@ import IntegrationDisplay from '../integrations/IntegrationDisplay.jsx';
 import ConfigVerificationSection from '../widgets/ConfigVerificationSection.jsx';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import { PROVIDER_FIELD_SCHEMAS, validateField } from '../../constants/providerFieldSchemas.jsx';
 import { getNestedValue, setNestedValue } from '../../constants/moduleConfiguration.js';
+import NumberStepper from '../ui/NumberStepper.jsx';
 import VoiceConfigManager from '../widgets/VoiceConfigManager.jsx';
-import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import WorkflowProfileEditor, { EMPTY_PROFILE } from '../widgets/WorkflowProfileEditor.jsx';
 import TestGenerationWidget from '../widgets/TestGenerationWidget.jsx';
 import useHarmonySpeechClient from '../../hooks/useHarmonySpeechClient.js';
@@ -24,8 +25,8 @@ import usePresetStore from '../../store/presetStore.js';
  * HarmonySpeech Model Select component
  * Uses the useHarmonySpeechClient hook to fetch and display models
  */
-const HarmonySpeechModelSelect = ({ endpoint, mode, value, onChange }) => {
-    const { modelOptions, isLoading } = useHarmonySpeechClient(endpoint, mode);
+const HarmonySpeechModelSelect = ({ endpoint, mode, apiKey, value, onChange }) => {
+    const { modelOptions, isLoading } = useHarmonySpeechClient(endpoint, mode, apiKey);
     return (
         <ThemedSelect
             value={value}
@@ -382,7 +383,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     }
 
                     try {
-                        const plugin = new HarmonySpeechEnginePlugin('', endpoint);
+                        const plugin = new HarmonySpeechEnginePlugin(getNestedValue(moduleSettings, 'apikey') || '', endpoint);
                         let response;
                         
                         if (schema.harmonySpeechMode === 'stt') {
@@ -503,10 +504,9 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             </SettingsTooltip>
                         </label>
                         <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
-                            <input
-                                type="number"
+                            <NumberStepper
                                 name={field.key}
-                                className="input-field w-full py-1 px-1.5 rounded text-sm"
+                                className="w-full text-sm"
                                 placeholder={field.placeholder}
                                 value={displayValue}
                                 onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -531,18 +531,11 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             </SettingsTooltip>
                         </label>
                         <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2`}>
-                            <select
-                                name={field.key}
-                                className="input-field w-full p-1.5 rounded text-sm custom-scrollbar"
+                            <ThemedSelect
                                 value={currentValue || ''}
-                                onChange={(e) => handleSelectChange(field, e.target.value)}
-                            >
-                                {field.options.map(opt => (
-                                    <option key={opt.id} value={opt.id}>
-                                        {opt.name || opt.id}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => handleSelectChange(field, val)}
+                                options={field.options.map(opt => ({ value: opt.id, label: opt.name || opt.id }))}
+                            />
                         </div>
                     </div>
                 );
@@ -561,18 +554,12 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             </SettingsTooltip>
                         </label>
                         <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2 relative`}>
-                            <select
-                                name={field.key}
-                                className="input-field w-full p-1.5 rounded text-sm custom-scrollbar"
+                            <ThemedSelect
                                 value={currentValue || ''}
-                                onChange={(e) => handleSelectChange(field, e.target.value)}
-                            >
-                                {availableModels.map(modelInfo => (
-                                    <option key={modelInfo.id} value={modelInfo.id}>
-                                        {modelInfo.name || modelInfo.id}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(val) => handleSelectChange(field, val)}
+                                options={availableModels.map(modelInfo => ({ value: modelInfo.id, label: modelInfo.name || modelInfo.id }))}
+                                disabled={modelsLoading}
+                            />
                             {modelsLoading && (
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                     <svg className="animate-spin h-4 w-4 text-accent-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -602,7 +589,6 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             <input
                                 type="checkbox"
                                 name={field.key}
-                                className="h-4 w-4 rounded text-accent-primary focus:ring-accent-primary focus:ring-offset-0"
                                 checked={!!currentValue}
                                 onChange={(e) => handleCheckboxChange(field, e.target.checked)}
                             />
@@ -811,10 +797,9 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             </SettingsTooltip>
                         </label>
                         <div className={`${getInputWidthClass(field.width, field.labelWidth)} px-2 flex items-center gap-2`}>
-                            <input
-                                type="number"
+                            <NumberStepper
                                 name={`${field.key}_width`}
-                                className="input-field w-20 p-1.5 rounded text-sm"
+                                className="w-20 text-sm"
                                 placeholder="Width"
                                 value={currentWidth || ''}
                                 onChange={(e) => handleResolutionChange('width', e.target.value)}
@@ -823,10 +808,9 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                 max={4096}
                             />
                             <span className="text-text-secondary">×</span>
-                            <input
-                                type="number"
+                            <NumberStepper
                                 name={`${field.key}_height`}
-                                className="input-field w-20 p-1.5 rounded text-sm"
+                                className="w-20 text-sm"
                                 placeholder="Height"
                                 value={currentHeight || ''}
                                 onChange={(e) => handleResolutionChange('height', e.target.value)}
@@ -871,6 +855,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                         )}
                         <VoiceConfigManager
                             endpoint={getNestedValue(moduleSettings, 'endpoint')}
+                            apiKey={getNestedValue(moduleSettings, 'apikey')}
                             voiceConfigFile={getNestedValue(moduleSettings, 'voiceconfigfile')}
                             onSettingsChange={(updated) => {
                                 const newSettings = { ...moduleSettings, ...updated };
@@ -901,6 +886,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                             <HarmonySpeechModelSelect
                                 endpoint={endpoint}
                                 mode={mode}
+                                apiKey={getNestedValue(moduleSettings, 'apikey')}
                                 value={currentValue}
                                 onChange={(value) => handleSelectChange(field, value)}
                             />

@@ -110,7 +110,7 @@ export const DeviceManagementView = () => {
                 <div className="overflow-x-auto rounded-lg border border-white/10">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-white/10 bg-background-elevated/50">
+                            <tr className="bg-background-elevated/50">
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Device Name</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Type</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Platform</th>
@@ -121,7 +121,7 @@ export const DeviceManagementView = () => {
                         </thead>
                         <tbody>
                             {devices.map(device => (
-                                <tr key={device.device_id} className="border-b border-white/5 hover:bg-background-elevated/50 transition-colors">
+                                <tr key={device.device_id} className="hover:bg-background-elevated/50 transition-colors">
                                     <td className="px-6 py-4 text-sm text-text-primary font-medium">{device.device_name}</td>
                                     <td className="px-6 py-4 text-sm text-text-muted">{device.device_type}</td>
                                     <td className="px-6 py-4 text-sm text-text-muted">{device.device_platform}</td>

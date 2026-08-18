@@ -1,0 +1,7 @@
+{
+  "header": {
+    "title": "Module Configurations",
+    "subtitle": "Manage AI module configurations and provider settings"
+  },
+  "deleteFailed": "Failed to delete configuration: {{message}}"
+}

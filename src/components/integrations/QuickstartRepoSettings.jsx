@@ -82,14 +82,13 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
             className="btn-website-link py-1 px-3 text-xs rounded flex-shrink-0 disabled:opacity-50"
             title="Open GitHub repository"
           >
-            {githubLoading ? '…' : '🌐 GitHub'}
+            {githubLoading ? '…' : 'GitHub'}
           </button>
         </div>
 
         {/* ── Path Configuration Area ─────────────────────────────────── */}
         <div
           className="relative px-5 py-3"
-          style={{ borderTop: '1px solid rgba(255, 255, 255, 0.07)' }}
         >
           {isEditing ? (
             /* Editing state */
@@ -114,7 +113,7 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
                   data-tutorial-id="quickstart-save-btn"
                   onClick={handleSave}
                   disabled={loading || !path}
-                  className="instance-action-btn-success flex-shrink-0 disabled:opacity-50"
+                  className="btn-primary text-xs py-1 px-3 flex-shrink-0 disabled:opacity-50"
                 >
                   {loading ? 'Saving…' : 'Save'}
                 </button>

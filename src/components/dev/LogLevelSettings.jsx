@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchLogLevels, updateLogLevels, fetchLogComponents } from '../../services/management/logService.js';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
 
 /**
  * Log level settings panel for runtime control of per-component log levels
@@ -86,23 +87,28 @@ export default function LogLevelSettings({ isOpen, onClose }) {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-text-primary">Log Level Settings</h3>
-                <button className="module-action-btn text-sm" onClick={onClose}>✕</button>
+                <button className="module-action-btn text-sm" onClick={onClose}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
             {/* Default Level */}
             <div className="flex items-center gap-3">
                 <label className="text-xs font-medium text-text-secondary w-32">Default Level</label>
-                <select
+                <ThemedSelect
                     value={config.defaultLevel}
-                    onChange={(e) => setConfig({ ...config, defaultLevel: e.target.value })}
-                    className="input-field text-sm py-1 w-32"
-                >
-                    <option value="trace">TRACE</option>
-                    <option value="debug">DEBUG</option>
-                    <option value="info">INFO</option>
-                    <option value="warn">WARN</option>
-                    <option value="error">ERROR</option>
-                </select>
+                    onChange={(val) => setConfig({ ...config, defaultLevel: val })}
+                    options={[
+                        { value: 'trace', label: 'TRACE' },
+                        { value: 'debug', label: 'DEBUG' },
+                        { value: 'info', label: 'INFO' },
+                        { value: 'warn', label: 'WARN' },
+                        { value: 'error', label: 'ERROR' },
+                    ]}
+                    className="w-32"
+                />
             </div>
 
             {/* Component Overrides */}
@@ -111,20 +117,21 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                 {Object.entries(config.componentLevels).map(([comp, level]) => (
                     <div key={comp} className="flex items-center gap-2">
                         <span className="text-xs text-accent-primary font-semibold w-32">{comp}</span>
-                        <select
+                        <ThemedSelect
                             value={level}
-                            onChange={(e) => setConfig({
+                            onChange={(val) => setConfig({
                                 ...config,
-                                componentLevels: { ...config.componentLevels, [comp]: e.target.value }
+                                componentLevels: { ...config.componentLevels, [comp]: val }
                             })}
-                            className="input-field text-xs py-1 w-24"
-                        >
-                            <option value="trace">TRACE</option>
-                            <option value="debug">DEBUG</option>
-                            <option value="info">INFO</option>
-                            <option value="warn">WARN</option>
-                            <option value="error">ERROR</option>
-                        </select>
+                            options={[
+                                { value: 'trace', label: 'TRACE' },
+                                { value: 'debug', label: 'DEBUG' },
+                                { value: 'info', label: 'INFO' },
+                                { value: 'warn', label: 'WARN' },
+                                { value: 'error', label: 'ERROR' },
+                            ]}
+                            className="w-24"
+                        />
                         <button
                             className="module-action-btn text-[10px] text-red-400"
                             onClick={() => {
@@ -133,7 +140,9 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                                 setConfig({ ...config, componentLevels: next });
                             }}
                         >
-                            ✕
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
                 ))}
@@ -141,16 +150,16 @@ export default function LogLevelSettings({ isOpen, onClose }) {
                 {/* Add override */}
                 {unusedComponents.length > 0 && (
                     <div className="flex items-center gap-2 mt-2">
-                        <select
+                        <ThemedSelect
                             value={addingComponent}
-                            onChange={(e) => setAddingComponent(e.target.value)}
-                            className="input-field text-xs py-1 w-40"
-                        >
-                            <option value="">Select component...</option>
-                            {unusedComponents.map(c => (
-                                <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
+                            onChange={setAddingComponent}
+                            options={[
+                                { value: '', label: 'Select component...' },
+                                ...unusedComponents.map(c => ({ value: c, label: c }))
+                            ]}
+                            placeholder="Select component..."
+                            className="w-40"
+                        />
                         <button
                             className="module-action-btn text-xs"
                             onClick={handleAddComponent}
@@ -183,7 +192,7 @@ export default function LogLevelSettings({ isOpen, onClose }) {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
+            <div className="flex justify-end gap-2 pt-2">
                 <button className="btn-secondary text-sm py-1.5" onClick={handleReset}>
                     Reset to Defaults
                 </button>

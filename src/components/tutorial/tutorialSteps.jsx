@@ -36,7 +36,7 @@ const characterCreationSteps = section('Characters', [
         title: 'Character Profiles',
         content: (
             <div className="space-y-2">
-                <p>Here you manage all your character identities. Each character has a name, personality, appearance, backstory, and more.</p>
+                <p>Here you manage all your character identities. Each character has a name, personality, description, and more.</p>
                 <p>You can <strong>Create</strong> a new profile from scratch or <strong>Import</strong> an existing character card (more on that next).</p>
             </div>
         ),
@@ -67,8 +67,8 @@ const characterCreationSteps = section('Characters', [
                 <p>The editor has several tabs for different aspects of your character:</p>
                 <ul className="list-disc list-inside space-y-1 mt-1">
                     <li><strong>Basic Info</strong> — Name, description, personality</li>
-                    <li><strong>Extended Info</strong> — Appearance, backstory, voice</li>
-                    <li><strong>Advanced</strong> — System prompt, scenario, example dialogues</li>
+                    <li><strong>Extended Info</strong> — Voice characteristics</li>
+                    <li><strong>Advanced</strong> — System prompt, scenario, example message style</li>
                     <li><strong>Lifecycle</strong> — Autonomy, sleep/wake cycles, emotion settings</li>
                 </ul>
             </div>
@@ -358,7 +358,9 @@ const integrationBranchStep = section('Integration', {
                     className="btn-primary w-full text-sm py-2.5"
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <span>🐳</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
                         <span>Local LLM (Docker)</span>
                     </span>
                     <span className="text-xs opacity-70 block mt-0.5">Free, private, runs on your machine</span>
@@ -371,7 +373,9 @@ const integrationBranchStep = section('Integration', {
                     className="btn-secondary w-full text-sm py-2.5"
                 >
                     <span className="flex items-center justify-center gap-2">
-                        <span>☁️</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                         <span>Cloud Provider (API Key)</span>
                     </span>
                     <span className="text-xs opacity-70 block mt-0.5">OpenAI, Anthropic, Google, OpenRouter, etc.</span>
@@ -780,7 +784,7 @@ const entityAssignmentSteps = section('Assignment', [
         content: (
             <div className="space-y-2">
                 <p>Use the <strong>Character Profile</strong> dropdown to assign a character identity to this entity.</p>
-                <p>This gives your entity a personality, backstory, appearance, and voice characteristics.</p>
+                <p>This gives your entity a personality, description, and voice characteristics.</p>
             </div>
         ),
         placement: 'left',

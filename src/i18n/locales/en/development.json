@@ -1,0 +1,10 @@
+{
+  "header": {
+    "title": "Development Tools",
+    "subtitle": "Real-time log viewer, prompt inspector, and ActionGraph testing"
+  },
+  "tabs": {
+    "logViewer": "Log Viewer",
+    "actionGraphTester": "ActionGraph Tester"
+  }
+}

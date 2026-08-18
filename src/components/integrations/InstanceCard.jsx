@@ -63,16 +63,20 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
         }
     };
 
-    const getDeviceIcon = (deviceType) => {
+    const getDeviceClassName = (deviceType) => {
         switch (deviceType) {
-            case 'nvidia': return '🟢';
-            case 'amd': return '🔴';
-            case 'amd-wsl': return '🔴';
-            case 'intel': return '🔵';
-            case 'cpu': return '💻';
-            default: return '⚙️';
+            case 'nvidia': return 'bg-green-500';
+            case 'amd': return 'bg-red-500';
+            case 'amd-wsl': return 'bg-red-500';
+            case 'intel': return 'bg-blue-500';
+            case 'cpu': return 'bg-purple-500';
+            default: return 'bg-gray-500';
         }
     };
+
+    const DeviceIcon = ({ deviceType }) => (
+        <span className={`inline-block w-3 h-3 rounded-full ${getDeviceClassName(deviceType)}`} />
+    );
 
     const handleOpenWebInterface = async (url) => {
         try {
@@ -170,7 +174,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                             color: 'var(--color-text-secondary)',
                         }}
                     >
-                        {getDeviceIcon(instance.deviceType)} {instance.deviceType.toUpperCase()}
+                        <DeviceIcon deviceType={instance.deviceType} /> {instance.deviceType.toUpperCase()}
                     </span>
                 )}
 
@@ -191,7 +195,9 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                             onMouseEnter={() => setShowErrorTooltip(true)}
                             onMouseLeave={() => setShowErrorTooltip(false)}
                         >
-                            ⚠
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
                         </span>
 
                         {/* Immediate hover tooltip — positioned above the badge */}
@@ -359,7 +365,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             {showContainers && instance.containers && instance.containers.length > 0 && (
                 <div
                     className="pl-14 pr-4 pb-3"
-                    style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
                 >
                     <div
                         className="mt-1.5 rounded-lg overflow-hidden"
@@ -372,7 +377,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         <div
                             className="px-3 py-1.5"
                             style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.06)',
                                 background: 'linear-gradient(to right, var(--color-background-elevated), transparent)',
                             }}
                         >
@@ -391,7 +395,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                                 className="flex items-center gap-3 px-3 py-1.5 text-xs"
                                 style={{
                                     color: 'var(--color-text-muted)',
-                                    borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                                 }}
                             >
                                 <span
@@ -443,7 +446,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         <div
                             className="flex items-center justify-between px-4 py-3 flex-shrink-0"
                             style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.08)',
                                 background: 'linear-gradient(135deg, var(--color-nuance-integrations), transparent 60%)',
                                 backgroundSize: '100% 100%',
                             }}
@@ -479,7 +481,7 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                                 className="relative text-lg leading-none transition-colors"
                                 style={{ color: 'var(--color-text-muted)' }}
                             >
-                                ✕
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
 
@@ -487,7 +489,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {currentOperation.progress && (
                             <div
                                 className="px-4 py-2.5 flex-shrink-0"
-                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                             >
                                 <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
                                     <span>Step {currentOperation.progress.currentStep} of {currentOperation.progress.totalSteps}</span>
@@ -517,7 +518,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {imagePullKeys.length > 0 && (
                             <div
                                 className="px-4 py-2 flex-shrink-0"
-                                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                             >
                                 <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
                                     Image Pulls:
@@ -579,7 +579,6 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         {/* Footer */}
                         <div
                             className="flex justify-between items-center px-4 py-2.5 flex-shrink-0"
-                            style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                                 {currentOperation.inProgress ? 'Operation in progress…' : 'Operation complete.'}

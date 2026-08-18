@@ -49,26 +49,29 @@ const CreateInstanceModal = ({ integrationName, isOpen, onClose, onCreate }) => 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
             <div className="modal-content w-full max-w-md">
-                <h3 className="text-2xl font-bold mb-4 text-orange-400">
-                    Create New Instance for {integrationName}
+                <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-accent-primary)' }}>
+                    Create New Instance
                 </h3>
+                <p className="text-sm mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+                    for <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{integrationName}</span>
+                </p>
                 <form onSubmit={handleSubmit}>
 
                     <div className="mb-6">
-                        <label htmlFor="deviceType" className="block text-neutral-300 text-sm font-bold mb-2">
+                        <label htmlFor="deviceType" className="block text-sm font-semibold mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                             Device Type:
                         </label>
                         <DeviceTypeSelector
                             value={deviceType}
                             onChange={setDeviceType}
                         />
-                        <p className="text-neutral-400 text-xs mt-1">
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
                             Select the hardware device type for this instance.
                         </p>
                     </div>
 
                     <div className="mb-4">
-                        <label htmlFor="instanceName" className="block text-neutral-300 text-sm font-bold mb-2">
+                        <label htmlFor="instanceName" className="block text-sm font-semibold mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                             Instance Name:
                         </label>
                         <input
@@ -77,25 +80,27 @@ const CreateInstanceModal = ({ integrationName, isOpen, onClose, onCreate }) => 
                             value={formData.instanceName}
                             onChange={(e) => setFormData({...formData, instanceName: e.target.value})}
                             placeholder="e.g., ollama-cpu-main, textgen-gpu-default"
-                            className="shadow appearance-none border border-neutral-600 rounded w-full py-2 px-3 text-neutral-200 leading-tight focus:outline-none focus:shadow-outline bg-neutral-700"
+                            className="input-field w-full font-mono text-sm"
                             required
                         />
-                        <p className="text-neutral-400 text-xs mt-1">A unique identifier for this instance.</p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>A unique identifier for this instance.</p>
                     </div>
 
-                    {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                    <div className="flex items-center justify-end gap-2">
+                    {error && (
+                        <p className="text-sm mb-4" style={{ color: 'var(--color-error)' }}>{error}</p>
+                    )}
+                    <div className="flex items-center justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="bg-neutral-600 hover:bg-neutral-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className="btn-secondary py-2 px-4 text-sm"
                             disabled={loading}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
                             disabled={loading}
                         >
                             {loading ? 'Creating...' : 'Create Instance'}

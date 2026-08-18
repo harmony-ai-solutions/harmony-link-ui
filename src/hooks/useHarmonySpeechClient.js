@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HarmonySpeechEnginePlugin } from '@harmony-ai/harmonyspeech';
-import { getConfig } from '../services/management/configService.js';
-import { isHarmonyLinkMode } from '../config/appMode.js';
 import { LogError } from '../utils/logger.js';
 
 // Known model names for display
@@ -27,12 +25,13 @@ const STT_MODEL_NAMES = {
 
 /**
  * Custom hook for managing HarmonySpeech client and model fetching.
- * 
+ *
  * @param {string} endpoint - The endpoint URL for the Harmony Speech Engine API
  * @param {string} mode - The mode: 'tts', 'stt', or 'vad'
+ * @param {string} apiKey - Optional user-supplied API key for a self-hosted Harmony Speech Engine instance
  * @returns {object} Hook interface with plugin, model options, and refresh function
  */
-const useHarmonySpeechClient = (endpoint, mode) => {
+const useHarmonySpeechClient = (endpoint, mode, apiKey = '') => {
     const [harmonySpeechPlugin, setHarmonySpeechPlugin] = useState(null);
     const [modelOptions, setModelOptions] = useState([
         { name: "Loading models...", value: null }
@@ -200,14 +199,7 @@ const useHarmonySpeechClient = (endpoint, mode) => {
             }
 
             try {
-                let apiKey = '';
-                
-                if (isHarmonyLinkMode()) {
-                    const appConfig = await getConfig();
-                    apiKey = appConfig.general?.userapikey || '';
-                }
-
-                plugin = new HarmonySpeechEnginePlugin(apiKey, endpoint);
+                plugin = new HarmonySpeechEnginePlugin(apiKey || '', endpoint);
                 
                 if (isMounted) {
                     setHarmonySpeechPlugin(plugin);

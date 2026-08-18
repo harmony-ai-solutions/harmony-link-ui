@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import logo from './assets/images/harmony-link-icon-256.png';
+import { useTranslation } from 'react-i18next';
 import { getConfig, updateConfig, getAppName, getAppVersion } from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
@@ -8,18 +8,31 @@ import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
+import DynamicBackground from "./components/DynamicBackground.jsx";
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
+import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
+import { I18nProvider } from './contexts/I18nContext.jsx';
+import { useTheme } from './contexts/ThemeContext';
+import LanguagePicker from './components/icons/LanguagePicker.jsx';
 
-function HarmonyLinkApp() {
+/**
+ * Inner component that has access to the useTranslation hook.
+ * Separated so I18nProvider sits above it in the tree.
+ */
+function HarmonyLinkAppInner() {
+    const { t } = useTranslation();
+    const { currentTheme, toggleDarkLight } = useTheme();
+
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
-    const [settingsTab, setSettingsTab] = useState(SettingsTabGeneral);
+    const [settingsTab, setSettingsTab] = useState(SettingsTabCharacters);
 
     // Main Config reference
     const [applicationConfig, setApplicationConfig] = useState(null);
@@ -72,6 +85,9 @@ function HarmonyLinkApp() {
             getConfig().then((result) => {
                 setApplicationConfig(result);
 
+                // Sync dynamic background store with loaded config
+                useDynamicBackgroundStore.getState().syncFromConfig(result);
+
                 // Auto-launch tutorial if not completed
                 if (!result.general?.skiptutorial) {
                     setTimeout(() => {
@@ -122,7 +138,7 @@ function HarmonyLinkApp() {
             setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
         } catch (error) {
             LogError('Failed to approve device:', error);
-            alert('Failed to approve device. Please try again.');
+            alert(t('deviceApproval.failed'));
         }
     };
 
@@ -139,85 +155,104 @@ function HarmonyLinkApp() {
             setCurrentDevice(remaining.length > 0 ? remaining[0] : null);
         } catch (error) {
             LogError('Failed to reject device:', error);
-            alert('Failed to reject device. Please try again.');
+            alert(t('deviceApproval.rejected'));
         }
     };
 
-    return (
-        <div id="App" className="min-h-screen bg-background-base text-text-primary selection:bg-accent-primary/20">
-            {/* Top Navigation Bar */}
-            <nav className="sticky top-0 z-50 bg-background-base/90 backdrop-blur-md border-b border-white/10 h-16 overflow-hidden">
-                <div className="flex items-center justify-between h-full px-6 max-w-[1920px] mx-auto">
-                    <div className="flex items-center gap-10 h-full">
-                        {/* Original Logo */}
-                        <div className="flex items-center gap-4 flex-shrink-0">
-                            <img src={logo} className="h-9 w-auto drop-shadow-md" alt="Harmony AI" />
-                            <div className="flex flex-col leading-none">
-                                <span className="text-sm font-black tracking-widest text-white uppercase">Harmony</span>
-                                <span className="text-[11px] font-bold tracking-[0.12em] text-accent-primary opacity-90 uppercase">Link</span>
-                            </div>
-                        </div>
+    // Tab definitions
+    const navTabs = [
+        { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
+        { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
+        { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
+        { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
+        { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
+        { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
+        { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
+    ];
 
-                        {/* Theme-Aware Tab Panel */}
-                        <ul className="flex items-center h-full gap-3 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: SettingsTabGeneral, label: 'General', var: '--color-nuance-general' },
-                                { id: SettingsTabEntities, label: 'Entities', var: '--color-nuance-entities' },
-                                { id: SettingsTabModules, label: 'Modules', var: '--color-nuance-modules' },
-                                { id: SettingsTabCharacters, label: 'Characters', var: '--color-nuance-characters' },
-                                { id: SettingsTabIntegrations, label: 'Integrations', var: '--color-nuance-integrations' },
-                                { id: SettingsTabSimulator, label: 'Simulator', var: '--color-nuance-simulator' },
-                                { id: SettingsTabDevelopment, label: 'Dev', var: '--color-nuance-development' },
-                            ].map((tab) => (
-                                <li key={tab.id} className="h-full flex items-center">
-                                    <button
-                                        data-tutorial-id={`nav-tab-${tab.id}`}
-                                        onClick={() => setSettingsTab(tab.id)}
-                                        className="px-4 h-full text-base font-bold transition-all duration-200 relative whitespace-nowrap flex items-center"
-                                        style={{
-                                            color: settingsTab === tab.id ? `var(${tab.var})` : 'var(--color-text-muted)',
-                                            backgroundColor: settingsTab === tab.id ? `color-mix(in srgb, var(${tab.var}), transparent 88%)` : 'transparent'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (settingsTab !== tab.id) {
-                                                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                                e.currentTarget.style.color = 'var(--color-text-primary)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (settingsTab !== tab.id) {
-                                                e.currentTarget.style.backgroundColor = 'transparent';
-                                                e.currentTarget.style.color = 'var(--color-text-muted)';
-                                            }
-                                        }}
-                                    >
-                                        <div
-                                            className={`px-3 py-1.5 rounded-md transition-all duration-200 ${settingsTab === tab.id ? 'bg-opacity-10' : ''}`}
-                                            style={{
-                                                backgroundColor: settingsTab === tab.id ? `color-mix(in srgb, var(${tab.var}), transparent 85%)` : 'transparent'
-                                            }}
-                                        >
-                                            {tab.label}
-                                        </div>
-                                        {settingsTab === tab.id && (
-                                            <span
-                                                className="absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full shadow-[0_-2px_12px_rgba(0,0,0,0.5)]"
-                                                style={{ backgroundColor: `var(${tab.var})` }}
-                                            />
-                                        )}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+    return (
+        <>
+            {/* Theme-adaptive dynamic background — controlled by Zustand store for instant toggle */}
+            <DynamicBackground />
+
+            <div id="App" className="relative z-[1] min-h-screen text-text-primary selection:bg-accent-primary/20">
+            {/* Top Navigation Bar — Ultra Glassmorphic Floating Dock */}
+            <nav className="sticky top-0 z-50 nav-glass-bar">
+                {/* Top-edge glass light catch */}
+                <div className="nav-top-edge" />
+
+                <div className="nav-inner relative flex items-center h-full px-8 max-w-[1920px] mx-auto">
+                    {/* Brand — fixed left */}
+                    <div className="flex items-center gap-4 flex-shrink-0 z-10">
+                        {/* Brand logo dot — small glowing accent orb */}
+                        <div className="relative flex-shrink-0 mr-1">
+                            <div className="w-2.5 h-2.5 rounded-full bg-gradient-primary shadow-[0_0_10px_var(--color-glow-accent-soft),0_0_24px_var(--color-glow-accent-strong)] animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite]" />
+                            <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-gradient-primary blur-[6px] opacity-60 animate-[nav-glow-pulse_3s_var(--ease-spring)_infinite_0.5s]" />
+                        </div>
+                        <div className="flex items-baseline gap-1.5 leading-none">
+                            <span className="nav-brand-text text-base font-black tracking-[0.15em] text-gradient-primary uppercase select-none">{t('nav.brand')}</span>
+                            <span className="nav-brand-sub text-[10px] font-bold tracking-[0.18em] text-text-muted opacity-60 uppercase select-none">{t('nav.brandSub')}</span>
+                        </div>
                     </div>
 
-                    {/* Tutorial restart button */}
-                    <div className="flex items-center gap-3">
+                    {/* Left flex spacer — shrinks before zones, centers pill dock when space allows */}
+                    <div className="flex-1 min-w-0" />
+
+                    {/* Pill Dock — flex-centered, scrolls when cramped */}
+                    <div className="nav-pill-dock z-0">
+                        {navTabs.map((tab) => {
+                            const isActive = settingsTab === tab.id;
+                            const TabIcon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    data-tutorial-id={`nav-tab-${tab.id}`}
+                                    onClick={() => setSettingsTab(tab.id)}
+                                    className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
+                                >
+                                    <span className="nav-pill-icon">
+                                        <TabIcon className="w-4 h-4" />
+                                    </span>
+                                    <span className="nav-pill-label">{tab.label}</span>
+                                    {isActive && <span className="nav-pill-glow" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Right flex spacer */}
+                    <div className="flex-1 min-w-0" />
+
+                    {/* Action buttons — fixed right */}
+                    <div className="flex items-center gap-4 flex-shrink-0 z-10">
+                        {/* Language Picker */}
+                        <LanguagePicker />
+
+                        {/* Dark/Light Theme Toggle */}
+                        <button
+                            className="nav-help-btn"
+                            onClick={toggleDarkLight}
+                            title={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
+                            aria-label={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
+                        >
+                            {currentTheme === 'soulbits-light' ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            )}
+                        </button>
                         <button
                             data-tutorial-id="tutorial-restart-btn"
-                            className="tutorial-restart-btn"
+                            className="nav-help-btn"
                             onClick={handleRestartTutorial}
-                            title="Help / Restart Tutorial"
+                            title={t('nav.help')}
+                            aria-label="Help"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -225,11 +260,10 @@ function HarmonyLinkApp() {
                             </svg>
                         </button>
                     </div>
-
                 </div>
             </nav>
 
-            <div className="flex-1 bg-background-base min-h-[calc(100vh-6rem)]">
+            <div className="flex-1 min-h-[calc(100vh-6rem)]">
                 {applicationConfig && settingsTab === SettingsTabGeneral &&
                     <GeneralSettingsView 
                         generalSettings={applicationConfig.general} 
@@ -267,14 +301,50 @@ function HarmonyLinkApp() {
                 show={currentDevice !== null}
             />
 
-            <footer className="flex items-center justify-center bg-background-base border-t border-white/5">
+            <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3]">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
                     <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
-                        {appName} {appVersion} - &copy;2023-2026 Project Harmony.AI
+                        {appName} {appVersion} - {t('footer.copyright')}
                     </a>
                 </p>
             </footer>
-        </div>
+            </div>
+        </>
+    );
+}
+
+function HarmonyLinkApp() {
+    const [appLanguage, setAppLanguage] = useState(null);
+
+    // Load language from config on mount
+    useEffect(() => {
+        getConfig().then((config) => {
+            if (config?.general?.applanguage) {
+                setAppLanguage(config.general.applanguage);
+            }
+        }).catch(() => {
+            // Use default - i18n will fall back to browser detection
+        });
+    }, []);
+
+    const handleLanguageChange = (lang) => {
+        setAppLanguage(lang);
+        // Persist to app config
+        getConfig().then((config) => {
+            const updated = {
+                ...config,
+                general: { ...config.general, applanguage: lang },
+            };
+            updateConfig(updated, false)
+                .then(() => LogDebug(`Language changed to: ${lang}`))
+                .catch((err) => LogError(`Failed to persist language: ${err}`));
+        }).catch(() => {});
+    };
+
+    return (
+        <I18nProvider appLanguage={appLanguage} onLanguageChange={handleLanguageChange}>
+            <HarmonyLinkAppInner />
+        </I18nProvider>
     );
 }
 

@@ -41,14 +41,11 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
         setTreeData(response.root);
 
         // Reset loaded keys when changing root directory
-        // This ensures we start fresh for new directory structures
-        // but keep expansion state for the new tree
         setLoadedKeysRef(new Set());
 
         // Handle available drives (Windows only)
         if (response.availableDrives && response.availableDrives.length > 0) {
           setAvailableDrives(response.availableDrives);
-          // Set selected drive based on current path
           if (response.root && response.root.path) {
             const currentDrive = response.availableDrives.find(drive =>
               response.root.path.toLowerCase().startsWith(drive.toLowerCase())
@@ -86,7 +83,6 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
   // Find and update a node in the tree recursively
   const findAndUpdateNode = (node, path, newChildren) => {
     if (node.path === path) {
-      // Replace children completely instead of appending to avoid duplicates
       node.children = newChildren;
       return true;
     }
@@ -109,11 +105,9 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
     setNodeLoadingStates(prev => new Set(prev).add(path));
 
     try {
-      // Load directory contents for this specific path (only immediate children)
       const response = await listDirectories(path, false, 1); // non-recursive, only 1 level
 
       if (response.success && response.root && response.root.children) {
-        // Update the tree data by adding the loaded children
         setTreeData(prevTreeData => {
           if (!prevTreeData) return prevTreeData;
 
@@ -176,13 +170,10 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
       if (path.includes('\\')) {
         const parts = path.split('\\').filter(part => part !== '');
         if (parts.length > 1) {
-          // If we have more than just the drive letter, go up one level
           parentPath = parts.slice(0, -1).join('\\') + '\\';
         } else if (parts.length === 1) {
-          // If we're at drive root (e.g., "C:"), go to drive root with backslash
           parentPath = parts[0] + '\\';
         } else {
-          // Fallback to current working directory
           parentPath = '';
         }
       } else {
@@ -252,15 +243,15 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
 
       {/* Full-screen container with responsive sizing */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto w-full max-w-4xl max-h-[90vh] bg-neutral-900 rounded-lg shadow-xl border border-neutral-700 flex flex-col">
+        <Dialog.Panel className="mx-auto w-full max-w-4xl max-h-[90vh] bg-[var(--color-background-nav)] backdrop-blur-[28px] saturate-[1.5] rounded-[var(--radius-xl)] shadow-[0_0_50px_var(--color-glow-accent-soft),var(--shadow-glass)] border border-[var(--color-border-glass)] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-neutral-700">
-            <Dialog.Title className="text-lg font-semibold text-orange-400">
+          <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-glass)]">
+            <Dialog.Title className="text-lg font-semibold" style={{ color: 'var(--color-accent-primary)' }}>
               Browse Directory
             </Dialog.Title>
             <button
               onClick={onClose}
-              className="text-neutral-400 hover:text-neutral-200 text-xl font-bold"
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-xl font-bold transition-colors duration-200"
             >
               ×
             </button>
@@ -270,43 +261,43 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
             {/* Path Navigation */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-neutral-300 mb-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                 Current Path:
               </label>
-              <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={pathInput}
                   onChange={handlePathInputChange}
                   onKeyPress={handlePathInputKeyPress}
                   placeholder="Enter directory path..."
-                  className="flex-1 bg-neutral-800 border border-neutral-600 text-neutral-100 px-3 py-2 rounded focus:outline-none focus:border-orange-400"
+                  className="input-field flex-1 text-sm font-mono"
                 />
                 <button
                   onClick={handleNavigateToPath}
                   disabled={loading}
-                  className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
+                  className="instance-action-btn disabled:opacity-50"
                 >
                   Go
                 </button>
                 <button
                   onClick={handleGoUp}
                   disabled={loading || !treeData}
-                  className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
+                  className="instance-action-btn disabled:opacity-50"
                 >
                   Up
                 </button>
                 <button
                   onClick={handleGoWorkingDir}
                   disabled={loading}
-                  className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
+                  className="instance-action-btn disabled:opacity-50"
                 >
                   Working Dir
                 </button>
                 <button
                   onClick={handleGoHome}
                   disabled={loading}
-                  className="bg-neutral-700 hover:bg-neutral-600 text-orange-400 px-4 py-2 rounded disabled:opacity-50"
+                  className="instance-action-btn disabled:opacity-50"
                 >
                   Home
                 </button>
@@ -316,7 +307,7 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
             {/* Drive Selection (Windows only) */}
             {availableDrives.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-neutral-300 mb-2">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                   Available Drives:
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -325,11 +316,16 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
                       key={drive}
                       onClick={() => handleDriveSelect(drive)}
                       disabled={loading}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 ${
+                      className="instance-action-btn disabled:opacity-50"
+                      style={
                         selectedDrive === drive
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-neutral-700 hover:bg-neutral-600 text-neutral-300'
-                      }`}
+                          ? {
+                              background: 'linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-secondary) 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                            }
+                          : {}
+                      }
                     >
                       {drive}
                     </button>
@@ -340,14 +336,18 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
 
             {/* Error Display */}
             {error && (
-              <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded text-red-300">
+              <div className="mb-4 p-3 rounded border text-sm" style={{
+                backgroundColor: 'var(--color-error-bg)',
+                borderColor: 'rgba(239, 83, 80, 0.25)',
+                color: 'var(--color-error)',
+              }}>
                 {error}
               </div>
             )}
 
             {/* Directory Tree */}
             <div className="mb-6">
-            <DirectoryTree
+              <DirectoryTree
                 treeData={treeData}
                 onSelect={handleTreeSelect}
                 onLoadChildren={handleLoadChildren}
@@ -359,25 +359,28 @@ const DirectoryBrowserModal = ({ isOpen, onClose, onPathSelected, initialPath = 
 
             {/* Selected Path Display */}
             {selectedPath && (
-              <div className="mb-4 p-3 bg-neutral-800 border border-neutral-600 rounded">
-                <div className="text-sm text-neutral-300 mb-1">Selected Path:</div>
-                <div className="font-mono text-green-400 break-all">{selectedPath}</div>
+              <div className="mb-4 p-3 rounded border" style={{
+                backgroundColor: 'var(--color-background-surface-translucent)',
+                borderColor: 'var(--color-border-glass)',
+              }}>
+                <div className="text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Selected Path:</div>
+                <div className="font-mono text-sm break-all" style={{ color: 'var(--color-accent-primary)' }}>{selectedPath}</div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 p-6 border-t border-neutral-700">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-[var(--color-border-glass)]">
             <button
               onClick={handleCancel}
-              className="bg-neutral-700 hover:bg-neutral-600 text-neutral-300 px-4 py-2 rounded"
+              className="btn-secondary py-2 px-4 text-sm"
             >
               Cancel
             </button>
             <button
               onClick={handleSelectPath}
               disabled={!selectedPath}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary py-2 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Select Path
             </button>

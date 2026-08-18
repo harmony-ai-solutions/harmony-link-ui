@@ -1,0 +1,362 @@
+{
+  "header": {
+    "title": "Character Profiles",
+    "subtitle": "Manage AI character identities and cards"
+  },
+  "buttons": {
+    "importCard": "Import Card",
+    "createProfile": "Create Profile",
+    "exportCard": "Export Card",
+    "exportAsJson": "Export as JSON",
+    "exportAsPng": "Export as PNG (ccv3)",
+    "clearSearch": "Clear Search",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "delete": "Delete",
+    "continue": "Continue",
+    "saveProfile": "Save Profile",
+    "saving": "Saving…",
+    "uploadImage": "Upload Image",
+    "upload": "Upload",
+    "uploading": "Uploading…"
+  },
+  "searchPlaceholder": "Search profiles...",
+  "cardSize": "Card Size:",
+  "cardSizes": {
+    "small": "Small cards",
+    "medium": "Medium cards",
+    "large": "Large cards"
+  },
+  "empty": {
+    "title": "No profiles found",
+    "noResults": "No matching profiles",
+    "tryAdjustingSearch": "Try adjusting your search query.",
+    "getStarted": "Get started by creating a new profile or importing a character card."
+  },
+  "importTitle": "Import Character Card",
+  "noDescription": "No description provided.",
+  "deleteProfile": "Delete profile",
+  "import": {
+    "uploading": "Importing character card...",
+    "dropActive": "Drop the PNG file here",
+    "dropIdle": "Drag & drop a character card PNG",
+    "orClick": "or click to select file",
+    "formats": "Supports Character Card V1, V2, and V3 formats",
+    "selectImage": "Select Image",
+    "chooseFile": "Choose File",
+    "noFileChosen": "No file chosen",
+    "imageHint": "PNG, JPEG, or WEBP. Max 10MB.",
+    "previewAlt": "Preview",
+    "description": "Description",
+    "optional": "optional",
+    "describeImage": "Describe this image...",
+    "characters": "{{count}}/1000 characters",
+    "selectImageFile": "Please select an image file",
+    "imageTooLarge": "Image size must be less than 10MB",
+    "selectFile": "Please select a file",
+    "droppedFieldsTitle": "{{count}} non-spec field dropped on import",
+    "droppedFieldsTitle_plural": "{{count}} non-spec fields dropped on import",
+    "droppedFieldsHint": "The imported card contained fields that are not part of the Character Card spec. They were not stored to prevent potentially unsafe content and will not be re-exported."
+  },
+  "clearSearch": "Clear search",
+  "deleteConfirm": "Are you sure you want to delete this character profile? This action cannot be undone.",
+  "deleteFailed": "Failed to delete profile: {{message}}",
+  "exportFailed": "Failed to export character card: {{message}}",
+  "deleteDialog": {
+    "title": "Delete Character Profile",
+    "message": "Are you sure you want to delete this character profile?\n\nThis action cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "editor": {
+    "createTitle": "Create Character Profile",
+    "editTitle": "Edit Profile",
+    "invalidInputTitle": "Invalid Input",
+    "nameRequired": "Name is required.",
+    "nameCannotBeEmpty": "Name cannot be empty.",
+    "typingSpeedValidation": "Typing speed must be a whole number between 1 and 200.",
+    "audioChanceValidation": "Audio response chance must be a whole number between 0 and 100.",
+    "typingSpeedError": "Please fix validation errors: typing speed must be a number between 1 and 200.",
+    "audioChanceError": "Please fix validation errors: audio response chance must be a number between 0 and 100.",
+    "invalidJsonIn": "Invalid JSON in {{field}}. Please fix the syntax error before saving.",
+    "invalidJson": "Invalid JSON — fix the syntax error before saving.",
+    "remove": "Remove"
+  },
+  "tabs": {
+    "basic": "Basic Info",
+    "extended": "Extended Info",
+    "greeting": "Greeting",
+    "lorebook": "Lorebook",
+    "attribution": "Attribution",
+    "advanced": "AI Behaviour",
+    "lifecycle": "AI Lifecycle",
+    "images": "Images"
+  },
+  "fields": {
+    "name": "Name",
+    "namePlaceholder": "Character name...",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Short name...",
+    "nicknameHint": "Alternative short name. Drives the {{char}} macro in prompts and greetings.",
+    "description": "Description",
+    "descriptionPlaceholder": "A brief overview of this character...",
+    "descriptionHint": "A brief summary of who this character is.",
+    "personality": "Personality",
+    "personalityPlaceholder": "Friendly, curious, witty, empathetic...",
+    "personalityHint": "How the character thinks, behaves, and interacts.",
+    "voiceCharacteristics": "Voice Characteristics",
+    "voiceCharacteristicsPlaceholder": "Speaks softly, uses archaic phrases, laughs often...",
+    "voiceCharacteristicsHint": "Speaking style, tone, and distinctive phrases.",
+    "firstMessage": "First Message",
+    "firstMessagePlaceholder": "*She looks up from her book as you step into the study...*",
+    "firstMessageHint": "The authored opening message delivered on a truly-new chat. Macros like {{char}} / {{user}} are resolved by the engine.",
+    "exampleMessage": "Example Message",
+    "exampleMessagePlaceholder": "<START>\n{{user}}: Hello there.\n{{char}}: Well, well... and what brings you to my door?",
+    "exampleMessageHint": "Sample dialogue showing how the character speaks and reacts. Macros like {{char}} / {{user}} are resolved by the engine.",
+    "alternateGreetings": "Alternate Greetings",
+    "alternateGreetingsPlaceholder": "Add an alternate greeting...",
+    "alternateGreetingsHint": "Alternative opening messages users can choose from when starting a new chat.",
+    "addGreeting": "Add Greeting",
+    "groupOnlyGreetings": "Group-Only Greetings",
+    "groupOnlyGreetingsPlaceholder": "Add a group-only greeting...",
+    "groupOnlyGreetingsHint": "Openings used only when the character is addressed as part of a group chat.",
+    "creator": "Creator",
+    "creatorPlaceholder": "Card author...",
+    "creatorHint": "Original author of this character card.",
+    "creatorNotes": "Creator Notes",
+    "creatorNotesPlaceholder": "Notes from the card author...",
+    "creatorNotesHint": "Notes left by the card author — usage guidance, inspiration, or context.",
+    "characterVersion": "Character Version",
+    "characterVersionPlaceholder": "e.g. 1.0",
+    "characterVersionHint": "Version string of this character, as declared by the card author.",
+    "tags": "Tags",
+    "tagsPlaceholder": "Add a tag...",
+    "tagsHint": "Searchable tags for this character card.",
+    "addTag": "Add Tag"
+  },
+  "provenance": {
+    "title": "Card Provenance",
+    "hint": "Import metadata preserved for export.",
+    "sourceAppendOnly": "Source is append-only",
+    "sourceAppendOnlyHint": " — shown read-only and never sent back on save.",
+    "source": "Source",
+    "creationDate": "Creation Date",
+    "modificationDate": "Modification Date",
+    "specVersion": "Spec Version"
+  },
+  "advanced": {
+    "aiPromptSection": "AI Prompt Settings",
+    "baseSystemPrompt": "Base System Prompt",
+    "baseSystemPromptPlaceholder": "You are {{char}}, a helpful and friendly assistant...",
+    "baseSystemPromptHint": "Primary instructions passed to the AI model. Overrides internal base prompt. Macros like {{char}} / {{user}} / {{original}} are resolved by the engine.",
+    "postHistoryInstructions": "Post-History Instructions (UJB)",
+    "postHistoryInstructionsPlaceholder": "Instructions applied after the conversation history...",
+    "postHistoryInstructionsHint": "Instructions injected after the chat history (UJB). Macros like {{char}} / {{user}} / {{original}} are resolved by the engine.",
+    "scenario": "Scenario",
+    "scenarioPlaceholder": "A cozy cafe in a fantasy city, late afternoon...",
+    "scenarioHint": "The current setting or context for the conversation (if not defined by active session).",
+    "chatBehaviorSection": "Chat Behavior",
+    "typingSpeed": "Typing Speed",
+    "wordsPerMinute": "Words per Minute",
+    "typingSpeedHint": "Average Human: 40–60 WPM. Affects typing indicator duration.",
+    "audioResponseChance": "Audio Response Chance",
+    "audioChanceHint": "Probability of responding with an audio message. Requires TTS.",
+    "rawJsonSection": "Raw JSON (Advanced)",
+    "rawJsonHint": "Opaque spec fields stored verbatim for lossless card export. Edit with care.",
+    "extensions": "Extensions",
+    "extensionsHint": "Opaque extensions object (e.g. {\"world\": ...}) — preserved for export round-trips.",
+    "assets": "Assets",
+    "assetsHint": "Full asset manifest array — preserved for export round-trips."
+  },
+  "vision": {
+    "title": "Vision Integration",
+    "none": "— None —",
+    "hint": "Select a Vision module config to enable automated image analysis and labeling."
+  },
+  "lorebook": {
+    "entry": "entry",
+    "entries": "entries",
+    "constant": "constant",
+    "scanDepth": "scan depth",
+    "editRawJson": "Edit raw JSON",
+    "rawJsonHint": "Editing raw JSON. Switch back to structured view to re-parse.",
+    "structuredView": "Structured view",
+    "invalidJson": "Invalid JSON — fix the syntax before leaving raw mode or saving.",
+    "parseFailedHint": "The character_book column holds invalid JSON — showing an empty book. Use \"Edit raw JSON\" to repair it.",
+    "bookSettings": "Book settings",
+    "bookName": "Book name",
+    "bookDescription": "Book description",
+    "scanDepthField": "Scan depth",
+    "scanDepthHint": "How far the scanner recurses into the prompt.",
+    "tokenBudget": "Token budget",
+    "tokenBudgetHint": "Soft cap on injected lore tokens.",
+    "recursiveScanning": "Recursive scanning",
+    "recursiveScanningHint": "Allow matched entries to trigger further entry scans.",
+    "empty": "No lorebook entries yet. Entries you add here are embedded and retrieved semantically by the engine.",
+    "untitledEntry": "Untitled entry",
+    "noKeys": "No keys",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "addEntry": "+ Add entry",
+    "content": "Content",
+    "contentHint": "What gets embedded and matched by the RAG engine. Macros like {{char}} / {{user}} are resolved engine-side, not here.",
+    "contentPlaceholder": "The lore this entry injects when retrieved…",
+    "keys": "Keys",
+    "keysHint": "Keyword triggers — preserved for export. Semantic retrieval is driven by content above, not these.",
+    "keysPlaceholder": "keyword, keyword2",
+    "name": "Name",
+    "nameHint": "Optional label shown in the entry list.",
+    "namePlaceholder": "Entry name…",
+    "comment": "Comment",
+    "commentHint": "Optional internal note.",
+    "commentPlaceholder": "Note for yourself…",
+    "matchingGroup": "Matching",
+    "enabled": "Enabled",
+    "enabledHint": "Disabled entries are skipped by the retriever.",
+    "constantLabel": "Constant",
+    "constantHint": "Always injected into the prompt, regardless of retrieval.",
+    "advancedToggle": "Advanced — preserved for export",
+    "advancedHint": "These fields round-trip to the exported card but do not drive semantic matching.",
+    "position": "Position",
+    "positionBeforeChar": "Before Character",
+    "positionAfterChar": "After Character",
+    "insertionOrder": "Insertion order",
+    "insertionOrderHint": "Lower is inserted earlier.",
+    "priority": "Priority",
+    "priorityHint": "Optional; higher wins on conflict.",
+    "selective": "Selective",
+    "selectiveHint": "Require a secondary key match in addition to a primary key.",
+    "secondaryKeys": "Secondary keys",
+    "secondaryKeysPlaceholder": "secondary keyword, another",
+    "caseSensitive": "Case sensitive",
+    "useRegex": "Use regex",
+    "id": "ID",
+    "idHint": "Optional entry id (numeric or string).",
+    "deleteEntry": "Delete entry",
+    "footerHint": "Only <1>enabled</1>, <2>content</2> and <3>constant</3> drive engine retrieval; all other fields are preserved verbatim for Character Card export."
+  },
+  "images": {
+    "title": "Character Images",
+    "image": "image",
+    "images": "images",
+    "noImages": "No images yet. Upload one to get started!",
+    "primaryBadge": "Primary",
+    "actions": "Actions",
+    "characterImageAlt": "Character image",
+    "setPrimary": "Set Primary",
+    "analyze": "Analyze",
+    "editDescription": "Edit Description",
+    "deleteImage": "Delete",
+    "analyzedBy": "Analyzed by {{model}}: {{interpretation}}",
+    "editTitle": "Edit Image Description",
+    "currentImageAlt": "Current image",
+    "describePlaceholder": "Describe this image...",
+    "vlAnalysis": "VL Analysis ({{model}}):",
+    "setPrimaryFailed": "Failed to set primary image: {{message}}",
+    "deleteImageFailed": "Failed to delete image: {{message}}",
+    "updateDescriptionFailed": "Failed to update description: {{message}}",
+    "analyzeFailed": "Failed to analyze image: {{message}}",
+    "selectVisionFirst": "Please select a Vision Integration above before analyzing images.",
+    "deleteConfirm": "Are you sure you want to delete this image?"
+  },
+  "lifecycle": {
+    "defaultsNote": "These are the default lifecycle settings applied when a new AI character is created from this profile. Each character (entity) created from this profile inherits these values, but they can be customized individually in that entity's detail settings.",
+    "beatSchedule": {
+      "title": "Beat Schedule",
+      "tooltip": "Controls the character's autonomous 'beat' loop — how often it thinks, reflects, or reaches out on its own when no one is talking to it, and which kinds of actions it tends toward. Higher autonomy means more independent behavior.",
+      "autonomyLevel": {
+        "label": "Autonomy Level",
+        "unit": "0-3",
+        "hint": "How independently the character acts on its own. 0 = never self-initiates (only responds to you). 1 = quietly reflects and updates its inner state. 2 = may reach out and start conversations. 3 = fully autonomous (reserved/experimental)."
+      },
+      "autonomyLevels": {
+        "observe": "0 - Observe",
+        "reflect": "1 - Reflect",
+        "reachOut": "2 - Reach Out",
+        "act": "3 - Act (reserved)"
+      },
+      "beatInterval": {
+        "label": "Beat Interval",
+        "unit": "seconds",
+        "hint": "How often the autonomous 'beat' loop runs. Shorter intervals make the character more active and aware but use more resources; longer intervals make it more subdued. 1800s = a beat roughly every 30 minutes."
+      },
+      "beatTypeWeights": {
+        "label": "Beat Type Weights",
+        "hint": "Relative chance of each beat type when one fires. Self-reflection and curiosity are passive (internal musing); relationship and outreach are active and can generate messages to you. Values should roughly sum to 1.0."
+      },
+      "beatTypes": {
+        "self_reflection": "Self Reflection",
+        "curiosity": "Curiosity",
+        "relationship": "Relationship",
+        "outreach": "Outreach"
+      }
+    },
+    "sleepExhaustion": {
+      "title": "Sleep & Exhaustion",
+      "tooltip": "Models the character getting tired from activity and resting. Each beat adds exhaustion; once it crosses the sleep threshold the character dozes off, recovering until it drops below the wake threshold.",
+      "sleepThreshold": {
+        "label": "Sleep Threshold",
+        "unit": "0-1",
+        "hint": "Exhaustion level (0–1) at which the character falls asleep and stops responding until it has rested. Raise it to let the character stay awake longer under heavy activity."
+      },
+      "wakeThreshold": {
+        "label": "Wake Threshold",
+        "unit": "0-1",
+        "hint": "Exhaustion level the character must recover to before waking back up. Keep this below the sleep threshold; a lower value means longer, deeper sleeps."
+      },
+      "exhaustionAccumulation": {
+        "label": "Exhaustion Accumulation",
+        "unit": "per beat",
+        "hint": "How much exhaustion (0–1) each beat adds. Higher values make the character tire quickly from activity; 0 means it never tires."
+      },
+      "exhaustionDecay": {
+        "label": "Exhaustion Decay",
+        "unit": "per tick",
+        "hint": "How much exhaustion (0–1) each tick removes while the character rests. Higher values mean faster recovery during sleep."
+      }
+    },
+    "emotionDecay": {
+      "title": "Emotion Decay",
+      "tooltip": "Governs how the character's feelings fade back toward calm over time. The decay tau is the time constant of that fade (larger = longer-lasting); the high/low thresholds flag emotionally significant moments.",
+      "decayTau": {
+        "label": "Decay Tau",
+        "unit": "seconds",
+        "hint": "Time constant (seconds) for emotions fading back toward calm — roughly the half-life of a feeling. Larger values make moods linger; smaller values make them shift quickly. 3600s ≈ a 1-hour half-life."
+      },
+      "highThreshold": {
+        "label": "Emotion High Threshold",
+        "unit": "0-10",
+        "hint": "Emotion intensity (0–10) counted as a 'high' spike. These are the moments strong enough to drive memory formation and crystallization."
+      },
+      "lowThreshold": {
+        "label": "Emotion Low Threshold",
+        "unit": "0-10",
+        "hint": "Emotion intensity (0–10) below which a feeling is treated as negligible and barely influences the character's behavior."
+      }
+    },
+    "crystallization": {
+      "title": "Crystallization",
+      "tooltip": "Decides when a strong, sustained feeling hardens into a permanent personality trait. An emotion held at high intensity for at least the minimum hours becomes 'crystallized' and shapes the character going forward.",
+      "intensity": {
+        "label": "Crystallize Intensity",
+        "unit": "0-10",
+        "hint": "Minimum sustained emotion intensity (0–10) before that emotion can crystallize into a permanent personality trait. Only strong, persistent feelings qualify."
+      },
+      "minHours": {
+        "label": "Crystallize Min Hours",
+        "unit": "hours",
+        "hint": "How long (hours) a high-intensity emotion must keep going before it crystallizes. Higher values mean only very stable feelings become permanent."
+      }
+    },
+    "memory": {
+      "title": "Memory",
+      "tooltip": "Controls how many 'core' memories stay pinned at the top of the character's recall regardless of age — the formative moments that always shape its responses.",
+      "coreMemoriesK": {
+        "label": "Core Memories K",
+        "unit": "count",
+        "hint": "How many memories are kept 'core' — pinned at the top of recall regardless of age, so the formative moments always shape the character's responses."
+      }
+    }
+  }
+}

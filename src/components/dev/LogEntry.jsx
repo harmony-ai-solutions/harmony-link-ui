@@ -1,16 +1,17 @@
 import { useState, useCallback } from 'react';
+import { MagnifierIcon, InfoCircleIcon, WarningIcon, XCircleIcon, SkullIcon, ExplosionIcon } from '../../constants/icons.jsx';
 
 /**
- * Level color configuration using theme-aware colors.
+ * Level color configuration using theme-aware colors with SVG icons.
  */
 const levelConfig = {
-    trace:    { className: 'log-level-badge log-level-trace', icon: '🔎' },
-    debug:    { className: 'log-level-badge log-level-debug', icon: '🔍' },
-    info:     { className: 'log-level-badge log-level-info', icon: 'ℹ️' },
-    warn:     { className: 'log-level-badge log-level-warn', icon: '⚠️' },
-    error:    { className: 'log-level-badge log-level-error', icon: '❌' },
-    fatal:    { className: 'log-level-badge log-level-fatal', icon: '💀' },
-    panic:    { className: 'log-level-badge log-level-fatal', icon: '💥' },
+    trace:    { className: 'log-level-badge log-level-trace', icon: <MagnifierIcon className="w-3.5 h-3.5" />, iconKey: 'magnifier' },
+    debug:    { className: 'log-level-badge log-level-debug', icon: <MagnifierIcon className="w-3.5 h-3.5" />, iconKey: 'magnifier' },
+    info:     { className: 'log-level-badge log-level-info', icon: <InfoCircleIcon className="w-3.5 h-3.5" />, iconKey: 'info' },
+    warn:     { className: 'log-level-badge log-level-warn', icon: <WarningIcon className="w-3.5 h-3.5" />, iconKey: 'warning' },
+    error:    { className: 'log-level-badge log-level-error', icon: <XCircleIcon className="w-3.5 h-3.5" />, iconKey: 'xCircle' },
+    fatal:    { className: 'log-level-badge log-level-fatal', icon: <SkullIcon className="w-3.5 h-3.5" />, iconKey: 'skull' },
+    panic:    { className: 'log-level-badge log-level-fatal', icon: <ExplosionIcon className="w-3.5 h-3.5" />, iconKey: 'explosion' },
 };
 
 /**
@@ -138,7 +139,9 @@ export default function LogEntry({ entry }) {
 
                 {/* Expand/collapse indicator */}
                 <span className="text-text-muted text-xs flex-shrink-0">
-                    {isExpanded ? '▼' : '▶'}
+                    <svg className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                 </span>
             </div>
 
@@ -173,7 +176,7 @@ export default function LogEntry({ entry }) {
                             className="module-action-btn text-[10px]"
                             onClick={(e) => { e.stopPropagation(); handleCopy(); }}
                         >
-                            📋 Copy
+                            Copy
                         </button>
                     </div>
                 </div>

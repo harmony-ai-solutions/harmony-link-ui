@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useEntityStore from '../store/entityStore';
 import useModuleConfigStore from '../store/moduleConfigStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
@@ -17,10 +18,10 @@ import useDockerStatus from '../hooks/useDockerStatus';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 
 
-
 function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
+    const { t } = useTranslation();
     const options = [
-        { value: '', label: 'Disabled' },
+        { value: '', label: t('entitySettings:modules.disabled') },
         ...configs.map(config => ({ value: String(config.id), label: config.name }))
     ];
 
@@ -42,8 +43,8 @@ function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, c
 }
 
 
-
 const EntitySettingsView = ({ appName }) => {
+    const { t } = useTranslation();
     const {
         entities,
         selectedEntityId,
@@ -101,6 +102,9 @@ const EntitySettingsView = ({ appName }) => {
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
     const [inputDialog, setInputDialog] = useState({ isOpen: false, title: '', message: '', defaultValue: '', onConfirm: null });
 
+    // Helper for translated keys
+    const tes = (key, opts) => t(`entitySettings:${key}`, opts);
+
     useEffect(() => {
         loadEntities();
         loadCharacterProfiles();
@@ -114,7 +118,6 @@ const EntitySettingsView = ({ appName }) => {
         loadConfigs('vision');
     }, []);
 
-    // Auto-select first entity when entities are loaded
     useEffect(() => {
         if (entities && Array.isArray(entities) && entities.length > 0 && !selectedEntityId) {
             selectEntity(entities[0].id);
@@ -130,7 +133,6 @@ const EntitySettingsView = ({ appName }) => {
 
     useEffect(() => {
         if (selectedEntity) {
-            // Extract config IDs from the nested modules structure
             setEntityMappings({
                 backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
                 cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '',
@@ -141,11 +143,8 @@ const EntitySettingsView = ({ appName }) => {
                 tts: selectedEntity.modules?.tts?.id ? String(selectedEntity.modules.tts.id) : '',
                 vision: selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : ''
             });
-            // Extract character profile ID from nested structure
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
-            // Extract alias
             setEntityAlias(selectedEntity.alias || '');
-            // Parse lifecycle_config from entity
             if (selectedEntity.lifecycle_config) {
                 try {
                     const parsed = typeof selectedEntity.lifecycle_config === 'string'
@@ -179,38 +178,28 @@ const EntitySettingsView = ({ appName }) => {
 
     const isProfileSupported = supportsCharacterProfile(backendProvider);
 
-    // Load images for selected character profile
     useEffect(() => {
         if (selectedCharacterProfileId && isProfileSupported) {
             loadCharacterImages(selectedCharacterProfileId);
         }
     }, [selectedCharacterProfileId, isProfileSupported, loadCharacterImages]);
 
-    // Additional effect to ensure images are loaded when profile is first set
     useEffect(() => {
         if (selectedCharacterProfileId) {
             loadCharacterImages(selectedCharacterProfileId);
         }
     }, [selectedCharacterProfileId, loadCharacterImages]);
 
-    // Helper: Generate unique entity ID
     const generateUniqueEntityId = (baseName = 'new-entity') => {
         if (!entities) return baseName;
-
-        // Convert entities array to object for easier checking
         const entityIds = {};
-        entities.forEach(e => {
-            entityIds[e.id] = true;
-        });
-
+        entities.forEach(e => { entityIds[e.id] = true; });
         let newName = baseName;
         let counter = 0;
-
         while (entityIds[newName]) {
             counter++;
             newName = `${baseName}-${counter}`;
         }
-
         return newName;
     };
 
@@ -220,11 +209,10 @@ const EntitySettingsView = ({ appName }) => {
             setError(null);
 
             if (!selectedEntityId) {
-                setError('No entity selected');
+                setError(tes('validation.noEntitySelected'));
                 return;
             }
 
-            // Update character profile and/or alias if changed
             const currentProfileId = selectedEntity.character_profile_id || '';
             const currentAlias = selectedEntity.alias || '';
             const newProfileId = isProfileSupported ? (selectedCharacterProfileId || null) : null;
@@ -232,7 +220,6 @@ const EntitySettingsView = ({ appName }) => {
                 await updateEntity(selectedEntityId, newProfileId, null, entityAlias);
             }
 
-            // Update module mappings
             const mappings = {
                 backend_config_id: entityMappings.backend || null,
                 cognition_config_id: entityMappings.cognition || null,
@@ -245,14 +232,12 @@ const EntitySettingsView = ({ appName }) => {
             };
 
             await updateEntityMappings(selectedEntityId, mappings);
-
-            // Reload the entity to get updated data
             await loadEntities();
 
-            setSuccessMessage('Entity saved successfully');
+            setSuccessMessage(tes('messages.saveSuccess'));
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
-            setError(`Failed to save entity: ${error.message}`);
+            setError(tes('messages.saveFailed', { message: error.message }));
         } finally {
             setIsSaving(false);
         }
@@ -260,7 +245,6 @@ const EntitySettingsView = ({ appName }) => {
 
     const handleReset = () => {
         if (selectedEntity) {
-            // Extract config IDs from the nested modules structure
             setEntityMappings({
                 backend: selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '',
                 cognition: selectedEntity.modules?.cognition?.id ? String(selectedEntity.modules.cognition.id) : '',
@@ -273,7 +257,6 @@ const EntitySettingsView = ({ appName }) => {
             });
             setSelectedCharacterProfileId(selectedEntity.character_profile?.id || '');
             setEntityAlias(selectedEntity.alias || '');
-            // Reset lifecycle config
             if (selectedEntity.lifecycle_config) {
                 try {
                     const parsed = typeof selectedEntity.lifecycle_config === 'string'
@@ -290,7 +273,6 @@ const EntitySettingsView = ({ appName }) => {
         }
     };
 
-    // Handle reset to character defaults
     const handleResetToCharacterDefaults = async () => {
         if (!selectedEntityId) return;
         try {
@@ -305,41 +287,38 @@ const EntitySettingsView = ({ appName }) => {
                     setEntityLifecycleConfig(null);
                 }
             }
-            setSuccessMessage('Lifecycle config reset to character defaults');
+            setSuccessMessage(tes('messages.lifecycleReset'));
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
-            setError(`Failed to reset lifecycle config: ${error.message}`);
+            setError(tes('messages.lifecycleResetFailed', { message: error.message }));
         }
     };
 
-    // Handle lifecycle config save
     const handleSaveLifecycleConfig = async () => {
         if (!selectedEntityId || !entityLifecycleConfig) return;
         try {
             await updateEntity(selectedEntityId, null, JSON.stringify(entityLifecycleConfig));
             await loadEntities();
-            setSuccessMessage('Lifecycle config saved successfully');
+            setSuccessMessage(tes('messages.lifecycleSaved'));
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (error) {
-            setError(`Failed to save lifecycle config: ${error.message}`);
+            setError(tes('messages.lifecycleSaveFailed', { message: error.message }));
         }
     };
 
-    // Handle lifecycle config change
     const handleLifecycleConfigChange = (newConfig) => {
         setEntityLifecycleConfig(newConfig);
     };
 
-    // Validation helper
     const validateEntityId = (id) => {
         if (!id || id.trim() === '') {
-            return 'Entity ID cannot be empty';
+            return tes('validation.empty');
         }
         if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
-            return 'Entity ID can only contain letters, numbers, hyphens, and underscores';
+            return tes('validation.invalidChars');
         }
         if (getEntity(id)) {
-            return 'Entity ID already exists';
+            return tes('validation.alreadyExists');
         }
         return null;
     };
@@ -348,8 +327,8 @@ const EntitySettingsView = ({ appName }) => {
         const defaultName = generateUniqueEntityId('new-entity');
         setInputDialog({
             isOpen: true,
-            title: 'Add Entity',
-            message: 'Enter a unique ID for the new entity:',
+            title: tes('dialogs.add.title'),
+            message: tes('dialogs.add.message'),
             defaultValue: defaultName,
             onConfirm: async (entityId) => {
                 setInputDialog({ ...inputDialog, isOpen: false });
@@ -359,7 +338,7 @@ const EntitySettingsView = ({ appName }) => {
                 if (validationError) {
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Invalid Entity ID',
+                        title: tes('dialogs.invalidEntityId.title'),
                         message: validationError,
                         type: 'error'
                     });
@@ -368,13 +347,13 @@ const EntitySettingsView = ({ appName }) => {
 
                 try {
                     await createEntity(entityId, null);
-                    setSuccessMessage('Entity created successfully');
+                    setSuccessMessage(tes('messages.createSuccess'));
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } catch (error) {
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Creation Failed',
-                        message: `Failed to create entity: ${error.message}`,
+                        title: tes('dialogs.creationFailed.title'),
+                        message: tes('messages.createFailed', { message: error.message }),
                         type: 'error'
                     });
                 }
@@ -384,23 +363,22 @@ const EntitySettingsView = ({ appName }) => {
 
     const handleDelete = async () => {
         if (!selectedEntityId) return;
-
         setConfirmDialog({
             isOpen: true,
-            title: 'Confirm Delete',
-            message: `Delete entity '${selectedEntityId}'?\n\nThis action cannot be undone.`,
+            title: tes('dialogs.confirmDelete.title'),
+            message: tes('dialogs.confirmDelete.message', { entityId: selectedEntityId }),
             onConfirm: async () => {
                 try {
                     await deleteEntity(selectedEntityId);
-                    setSuccessMessage('Entity deleted successfully');
+                    setSuccessMessage(tes('messages.deleteSuccess'));
                     setTimeout(() => setSuccessMessage(null), 3000);
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Deletion Failed',
-                        message: `Failed to delete entity: ${error.message}`,
+                        title: tes('dialogs.deletionFailed.title'),
+                        message: tes('messages.deleteFailed', { message: error.message }),
                         type: 'error'
                     });
                 }
@@ -410,34 +388,28 @@ const EntitySettingsView = ({ appName }) => {
 
     const handleCopy = () => {
         if (!selectedEntityId || !selectedEntity) return;
-
         const defaultName = generateUniqueEntityId(`${selectedEntityId}-copy`);
         setInputDialog({
             isOpen: true,
-            title: 'Copy Entity',
-            message: `Enter ID for the copy of '${selectedEntityId}':`,
+            title: tes('dialogs.copy.title'),
+            message: tes('dialogs.copy.message', { entityId: selectedEntityId }),
             defaultValue: defaultName,
             onConfirm: async (newId) => {
                 setInputDialog({ ...inputDialog, isOpen: false });
                 if (!newId) return;
-
                 const validationError = validateEntityId(newId);
                 if (validationError) {
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Invalid Entity ID',
+                        title: tes('dialogs.invalidEntityId.title'),
                         message: validationError,
                         type: 'error'
                     });
                     return;
                 }
-
                 try {
-                    // Create entity with character profile from nested structure
                     const characterProfileId = selectedEntity.character_profile?.id || null;
                     await createEntity(newId, characterProfileId);
-
-                    // Copy module mappings from nested structure
                     const mappings = {
                         backend_config_id: selectedEntity.modules?.backend?.id || null,
                         cognition_config_id: selectedEntity.modules?.cognition?.id || null,
@@ -449,23 +421,18 @@ const EntitySettingsView = ({ appName }) => {
                         vision_config_id: selectedEntity.modules?.vision?.id || null
                     };
                     await updateEntityMappings(newId, mappings);
-
-                    // Copy alias from the source entity
                     const sourceAlias = selectedEntity.alias || '';
                     if (sourceAlias) {
                         await updateEntity(newId, null, null, sourceAlias);
                     }
-
-                    // Reload entities to get the updated list
                     await loadEntities();
-
-                    setSuccessMessage('Entity copied successfully');
+                    setSuccessMessage(tes('messages.copySuccess'));
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } catch (error) {
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Copy Failed',
-                        message: `Failed to copy entity: ${error.message}`,
+                        title: tes('dialogs.copyFailed.title'),
+                        message: tes('messages.copyFailedDetail', { message: error.message }),
                         type: 'error'
                     });
                 }
@@ -475,51 +442,42 @@ const EntitySettingsView = ({ appName }) => {
 
     const handleRename = () => {
         if (!selectedEntityId || !selectedEntity) return;
-
         setInputDialog({
             isOpen: true,
-            title: 'Rename Entity',
-            message: `Enter new ID for '${selectedEntityId}':`,
+            title: tes('dialogs.rename.title'),
+            message: tes('dialogs.rename.message', { entityId: selectedEntityId }),
             defaultValue: selectedEntityId,
             onConfirm: async (newId) => {
                 setInputDialog({ ...inputDialog, isOpen: false });
                 if (!newId || newId === selectedEntityId) return;
-
                 const validationError = validateEntityId(newId);
                 if (validationError) {
                     setErrorDialog({
                         isOpen: true,
-                        title: 'Invalid Entity ID',
+                        title: tes('dialogs.invalidEntityId.title'),
                         message: validationError,
                         type: 'error'
                     });
                     return;
                 }
-
                 setConfirmDialog({
                     isOpen: true,
-                    title: 'Confirm Rename',
-                    message: `Rename entity '${selectedEntityId}' to '${newId}'?\n\nThis will atomically:\n• Create a new entity with ID '${newId}'\n• Copy all configurations\n• Delete the old entity '${selectedEntityId}'\n\nThis action cannot be undone.`,
+                    title: tes('dialogs.confirmRename.title'),
+                    message: tes('dialogs.confirmRename.message', { oldId: selectedEntityId, newId: newId }),
                     onConfirm: async () => {
                         try {
-                            // Use atomic rename endpoint
                             await renameEntity(selectedEntityId, newId);
-
-                            // Reload entities to get updated list
                             await loadEntities();
-
-                            // Select the new entity
                             selectEntity(newId);
-
-                            setSuccessMessage(`Entity renamed from '${selectedEntityId}' to '${newId}'`);
+                            setSuccessMessage(tes('messages.renamedFrom', { oldId: selectedEntityId, newId: newId }));
                             setTimeout(() => setSuccessMessage(null), 3000);
                             setConfirmDialog({ ...confirmDialog, isOpen: false });
                         } catch (error) {
                             setConfirmDialog({ ...confirmDialog, isOpen: false });
                             setErrorDialog({
                                 isOpen: true,
-                                title: 'Rename Failed',
-                                message: `Failed to rename entity: ${error.message}`,
+                                title: tes('dialogs.renameFailed.title'),
+                                message: tes('messages.renameFailedDetail', { message: error.message }),
                                 type: 'error'
                             });
                         }
@@ -541,7 +499,6 @@ const EntitySettingsView = ({ appName }) => {
         const currentVision = selectedEntity.modules?.vision?.id ? String(selectedEntity.modules.vision.id) : '';
         const currentProfile = selectedEntity.character_profile?.id || '';
         const currentAlias = selectedEntity.alias || '';
-
         return (
             currentBackend != entityMappings.backend ||
             currentCognition != entityMappings.cognition ||
@@ -556,56 +513,41 @@ const EntitySettingsView = ({ appName }) => {
         );
     };
 
-    // Loading guard - only show spinner if entities haven't been loaded yet (null)
     if (isEntityLoading && entities === null) {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
-                    <p className="text-text-muted">Loading entities...</p>
+                    <p className="text-text-muted">{t('common:status.loading')}</p>
                 </div>
             </div>
         );
     }
 
+    const colorFirstWord = (text) => {
+        const spaceIdx = text.indexOf(' ');
+        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
+        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
+    };
+
     return (
         <>
-            {/* Error Dialog */}
-            <ErrorDialog
-                isOpen={errorDialog.isOpen}
-                title={errorDialog.title}
-                message={errorDialog.message}
-                type={errorDialog.type}
-                onClose={() => setErrorDialog({ ...errorDialog, isOpen: false })}
-            />
+            <ErrorDialog isOpen={errorDialog.isOpen} title={errorDialog.title} message={errorDialog.message}
+                type={errorDialog.type} onClose={() => setErrorDialog({ ...errorDialog, isOpen: false })} />
+            <ConfirmDialog isOpen={confirmDialog.isOpen} title={confirmDialog.title} message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm} onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} />
+            <InputDialog isOpen={inputDialog.isOpen} title={inputDialog.title} message={inputDialog.message}
+                defaultValue={inputDialog.defaultValue} onConfirm={inputDialog.onConfirm}
+                onCancel={() => setInputDialog({ ...inputDialog, isOpen: false })} />
 
-            {/* Confirm Dialog */}
-            <ConfirmDialog
-                isOpen={confirmDialog.isOpen}
-                title={confirmDialog.title}
-                message={confirmDialog.message}
-                onConfirm={confirmDialog.onConfirm}
-                onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-            />
-
-            {/* Input Dialog */}
-            <InputDialog
-                isOpen={inputDialog.isOpen}
-                title={inputDialog.title}
-                message={inputDialog.message}
-                defaultValue={inputDialog.defaultValue}
-                onConfirm={inputDialog.onConfirm}
-                onCancel={() => setInputDialog({ ...inputDialog, isOpen: false })}
-            />
-
-            <div className="flex flex-col min-h-full bg-background-base">
+            <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm border-b border-white/5 px-6 py-4">
+                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
                     <h1 className="text-2xl font-extrabold tracking-tight">
-                        <span className="text-gradient-primary">Entity</span> Settings
+                        {colorFirstWord(tes('header.title'))}
                     </h1>
                     <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        Manage your AI entities and their associated module profiles
+                        {tes('header.subtitle')}
                     </p>
                 </div>
 
@@ -613,28 +555,25 @@ const EntitySettingsView = ({ appName }) => {
                     {/* Left Panel: Entity List */}
                     <div className="w-1/4 p-4 space-y-4 border-r border-white/10 min-h-[600px]">
                         <div className="grid grid-cols-2 gap-2">
-                            <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">Add</button>
-                            <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Rename</button>
-                            <button onClick={handleCopy} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">Copy</button>
-                            <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-accent-gradient text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">Delete</button>
+                            <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">{tes('buttons.add')}</button>
+                            <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.rename')}</button>
+                            <button onClick={handleCopy} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.copy')}</button>
+                            <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-danger text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">{tes('buttons.delete')}</button>
                         </div>
 
                         <div className="flex flex-col space-y-2">
                             <div className="text-center">
                                 <label className="text-sm font-medium text-text-secondary">
-                                    Total Entities: <span className="text-accent-primary">{entities && Array.isArray(entities) ? entities.length : 0}</span>
+                                    {tes('entityList.totalEntities', { count: entities && Array.isArray(entities) ? entities.length : 0 })}
                                 </label>
                             </div>
                             <div data-tutorial-id="entity-list" className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1 space-y-0.5">
                                 {entities && Array.isArray(entities) && entities.map((entity) => (
-                                    <div
-                                        key={entity.id}
-                                        onClick={() => selectEntity(entity.id)}
+                                    <div key={entity.id} onClick={() => selectEntity(entity.id)}
                                         className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-200 flex items-center justify-between group relative border ${selectedEntityId === entity.id
                                             ? 'bg-accent-primary/20 border-accent-primary/40 text-accent-primary font-bold shadow-sm'
                                             : 'text-text-primary hover:bg-white/5 border-transparent'
-                                            }`}
-                                    >
+                                            }`}>
                                         <div className="flex items-center gap-3">
                                             {selectedEntityId === entity.id && (
                                                 <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent-primary rounded-r-full" />
@@ -653,27 +592,21 @@ const EntitySettingsView = ({ appName }) => {
                                 ))}
                                 {(!entities || entities.length === 0) && (
                                     <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
-                                        No entities found
+                                        {tes('entityList.noEntities')}
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         <div className="flex items-center justify-center space-x-2">
-                            <button
-                                data-tutorial-id="entity-save-btn"
-                                onClick={handleSave}
+                            <button data-tutorial-id="entity-save-btn" onClick={handleSave}
                                 disabled={isSaving || !hasUnsavedChanges()}
-                                className={`btn-primary ${isSaving || !hasUnsavedChanges() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {isSaving ? 'Saving...' : 'Save'}
+                                className={`btn-primary ${isSaving || !hasUnsavedChanges() ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {isSaving ? tes('buttons.saving') : tes('buttons.save')}
                             </button>
-                            <button
-                                onClick={handleReset}
-                                disabled={!hasUnsavedChanges()}
-                                className={`btn-secondary ${!hasUnsavedChanges() ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                Reset
+                            <button onClick={handleReset} disabled={!hasUnsavedChanges()}
+                                className={`btn-secondary ${!hasUnsavedChanges() ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {tes('buttons.reset')}
                             </button>
                         </div>
                     </div>
@@ -685,61 +618,52 @@ const EntitySettingsView = ({ appName }) => {
                                 <svg className="w-16 h-16 mb-4 opacity-20" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                 </svg>
-                                <p className="text-xl text-text-primary">Select an entity to configure</p>
+                                <p className="text-xl text-text-primary">{tes('entityList.selectPlaceholder')}</p>
                             </div>
                         ) : (
                             <div className="space-y-6 animate-fadeIn">
                                 {error && (
-                                    <div className="p-3 bg-error-bg/30 border border-error-bg rounded text-error text-sm">
-                                        {error}
-                                    </div>
+                                    <div className="p-3 bg-error-bg/30 border border-error-bg rounded text-error text-sm">{error}</div>
                                 )}
                                 {successMessage && (
-                                    <div className="p-3 bg-success-bg/30 border border-success-bg rounded text-success text-sm">
-                                        {successMessage}
-                                    </div>
+                                    <div className="p-3 bg-success-bg/30 border border-success-bg rounded text-success text-sm">{successMessage}</div>
                                 )}
 
                                 <section className="space-y-4">
-                                    <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6">
-                                        <span className="text-gradient-primary">Identity Settings</span>
+                                    <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6">
+                                        <span className="text-gradient-primary">{tes('sections.identitySettings')}</span>
                                         <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                            Configure the character identity for this entity.
+                                            {tes('sections.identityTooltip')}
                                         </SettingsTooltip>
                                     </h3>
 
                                     <div className="flex items-center mb-4 w-full">
                                         <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
-                                            Entity Alias
+                                            {tes('fields.entityAlias.label')}
                                             <SettingsTooltip tooltipIndex={4} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                                A human-friendly display name for this entity. Shown in the entity list and used as a label in conversations.
+                                                {tes('fields.entityAlias.tooltip')}
                                             </SettingsTooltip>
                                         </label>
                                         <div className="w-4/5 px-3">
-                                            <input
-                                                type="text"
-                                                value={entityAlias}
-                                                onChange={(e) => setEntityAlias(e.target.value)}
-                                                className="input-field w-full p-2 rounded text-sm"
-                                                placeholder="Optional display name"
-                                            />
+                                            <input type="text" value={entityAlias} onChange={(e) => setEntityAlias(e.target.value)}
+                                                className="input-field w-full p-2 rounded text-sm" placeholder={tes('fields.entityAlias.placeholder')} />
                                         </div>
                                     </div>
 
                                     <div className="flex items-center mb-4 w-full">
                                         <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
-                                            Character Profile
+                                            {tes('fields.characterProfile.label')}
                                         </label>
                                         <div className="w-4/5 px-3" data-tutorial-id="entity-char-profile-select">
                                             <ThemedSelect
                                                 value={selectedCharacterProfileId || ''}
                                                 onChange={(val) => setSelectedCharacterProfileId(val)}
                                                 options={[
-                                                    { value: '', label: 'No Character Profile' },
+                                                    { value: '', label: tes('fields.characterProfile.noProfile') },
                                                     ...characterProfiles.map(profile => ({ value: profile.id, label: profile.name }))
                                                 ]}
                                                 disabled={!isProfileSupported}
-                                                placeholder="Select Character Profile"
+                                                placeholder={tes('fields.characterProfile.selectPlaceholder')}
                                             />
                                             {!isProfileSupported && (
                                                 <p className="mt-2 text-xs text-accent-secondary flex items-center italic font-medium">
@@ -747,8 +671,8 @@ const EntitySettingsView = ({ appName }) => {
                                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                                     </svg>
                                                     {backendProvider
-                                                        ? `This backend provider (${backendProvider}) has built-in identity and doesn't use Harmony Link profiles.`
-                                                        : 'Character profiles require a backend configuration which supports custom prompting. Please select a backend module first.'}
+                                                        ? tes('fields.characterProfile.unsupportedBackend', { provider: backendProvider })
+                                                        : tes('fields.characterProfile.unsupportedNoBackend')}
                                                 </p>
                                             )}
                                         </div>
@@ -764,179 +688,112 @@ const EntitySettingsView = ({ appName }) => {
                                     )}
                                 </section>
 
-                                {/* Integration Status Banner */}
                                 <IntegrationStatusBanner
-                                    entityMappings={entityMappings}
-                                    getConfigById={getConfigById}
-                                    allInstances={allInstances}
-                                    onRefresh={refreshInstances}
-                                    dockerStatus={dockerStatus}
-                                />
+                                    entityMappings={entityMappings} getConfigById={getConfigById}
+                                    allInstances={allInstances} onRefresh={refreshInstances} dockerStatus={dockerStatus} />
 
                                 <section className="space-y-4">
-                                    <h3 data-tutorial-id="entity-module-section" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
-                                        <span className="text-gradient-primary">Module Configurations</span>
+                                    <h3 data-tutorial-id="entity-module-section" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                        <span className="text-gradient-primary">{tes('sections.moduleConfigurations')}</span>
                                         <SettingsTooltip tooltipIndex={2} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                            Select pre-configured module settings for this entity.
+                                            {tes('sections.moduleTooltip')}
                                         </SettingsTooltip>
                                     </h3>
 
                                     <div data-tutorial-id="entity-module-backend">
-                                    <ModuleConfigSelector
-                                        label="AI Backend / LLM"
-                                        moduleType="backend"
-                                        selectedConfigId={entityMappings.backend}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, backend: id }))}
-                                        configs={getConfigs('backend')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.backend')} moduleType="backend"
+                                            selectedConfigId={entityMappings.backend}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, backend: id }))}
+                                            configs={getConfigs('backend')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-tts">
-                                    <ModuleConfigSelector
-                                        label="Text-to-Speech"
-                                        moduleType="tts"
-                                        selectedConfigId={entityMappings.tts}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, tts: id }))}
-                                        configs={getConfigs('tts')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.tts')} moduleType="tts"
+                                            selectedConfigId={entityMappings.tts}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, tts: id }))}
+                                            configs={getConfigs('tts')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-stt">
-                                    <ModuleConfigSelector
-                                        label="Speech-to-Text"
-                                        moduleType="stt"
-                                        selectedConfigId={entityMappings.stt}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, stt: id }))}
-                                        configs={getConfigs('stt')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.stt')} moduleType="stt"
+                                            selectedConfigId={entityMappings.stt}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, stt: id }))}
+                                            configs={getConfigs('stt')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-rag" className="flex flex-wrap items-center w-full">
-                                        <ModuleConfigSelector
-                                            label="RAG Settings"
-                                            moduleType="rag"
+                                        <ModuleConfigSelector label={tes('modules.rag')} moduleType="rag"
                                             selectedConfigId={entityMappings.rag}
                                             onChange={(id) => setEntityMappings(prev => ({ ...prev, rag: id }))}
-                                            configs={getConfigs('rag')}
-                                            isLoading={isModuleLoading}
-                                        />
+                                            configs={getConfigs('rag')} isLoading={isModuleLoading} />
                                         <div className="w-1/5"></div>
                                         <div className="w-4/5 px-3">
-                                            <button
-                                                onClick={() => setShowRAGCollections(true)}
-                                                className="btn-accent-gradient text-sm py-1.5 px-4 font-bold"
-                                            >
-                                                Manage RAG Collections
+                                            <button onClick={() => setShowRAGCollections(true)} className="btn-accent-gradient text-sm py-1.5 px-4 font-bold">
+                                                {tes('buttons.manageRagCollections')}
                                             </button>
                                         </div>
                                     </div>
-
-                                    <RAGCollectionManager
-                                        entityId={selectedEntityId}
-                                        isOpen={showRAGCollections}
+                                    <RAGCollectionManager entityId={selectedEntityId} isOpen={showRAGCollections}
                                         onClose={() => setShowRAGCollections(false)}
-                                        onError={(msg) => setErrorDialog({
-                                            isOpen: true,
-                                            title: 'RAG Error',
-                                            message: msg,
-                                            type: 'error'
-                                        })}
-                                    />
-
+                                        onError={(msg) => setErrorDialog({ isOpen: true, title: tes('dialogs.ragError.title'), message: msg, type: 'error' })} />
                                     <div data-tutorial-id="entity-module-movement">
-                                    <ModuleConfigSelector
-                                        label="Movement"
-                                        moduleType="movement"
-                                        selectedConfigId={entityMappings.movement}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, movement: id }))}
-                                        configs={getConfigs('movement')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.movement')} moduleType="movement"
+                                            selectedConfigId={entityMappings.movement}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, movement: id }))}
+                                            configs={getConfigs('movement')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-cognition">
-                                    <ModuleConfigSelector
-                                        label="Cognition"
-                                        moduleType="cognition"
-                                        selectedConfigId={entityMappings.cognition}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, cognition: id }))}
-                                        configs={getConfigs('cognition')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.cognition')} moduleType="cognition"
+                                            selectedConfigId={entityMappings.cognition}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, cognition: id }))}
+                                            configs={getConfigs('cognition')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-imagination">
-                                    <ModuleConfigSelector
-                                        label="Imagination"
-                                        moduleType="imagination"
-                                        selectedConfigId={entityMappings.imagination}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, imagination: id }))}
-                                        configs={getConfigs('imagination')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.imagination')} moduleType="imagination"
+                                            selectedConfigId={entityMappings.imagination}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, imagination: id }))}
+                                            configs={getConfigs('imagination')} isLoading={isModuleLoading} />
                                     </div>
-
                                     <div data-tutorial-id="entity-module-vision">
-                                    <ModuleConfigSelector
-                                        label="Vision"
-                                        moduleType="vision"
-                                        selectedConfigId={entityMappings.vision}
-                                        onChange={(id) => setEntityMappings(prev => ({ ...prev, vision: id }))}
-                                        configs={getConfigs('vision')}
-                                        isLoading={isModuleLoading}
-                                    />
+                                        <ModuleConfigSelector label={tes('modules.vision')} moduleType="vision"
+                                            selectedConfigId={entityMappings.vision}
+                                            onChange={(id) => setEntityMappings(prev => ({ ...prev, vision: id }))}
+                                            configs={getConfigs('vision')} isLoading={isModuleLoading} />
                                     </div>
                                 </section>
 
                                 {/* Lifecycle Settings Section */}
                                 <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">
-                                    <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary border-b border-white/10 pb-2 flex items-center gap-2 w-full mb-6 mt-8">
-                                        <span className="text-gradient-primary">Lifecycle Settings</span>
+                                    <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                        <span className="text-gradient-primary">{tes('sections.lifecycleSettings')}</span>
                                         <SettingsTooltip tooltipIndex={3} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
-                                            Per-entity lifecycle configuration overrides.
+                                            {tes('sections.lifecycleTooltip')}
                                         </SettingsTooltip>
                                     </h3>
 
                                     {selectedCharacterProfileId && (
                                         <div className="flex items-center gap-3 mb-4">
-                                            <button
-                                                onClick={handleResetToCharacterDefaults}
-                                                className="btn-secondary text-sm py-1.5 px-3"
-                                                title="Reset to character profile defaults"
-                                            >
-                                                Reset to Character Defaults
+                                            <button onClick={handleResetToCharacterDefaults} className="btn-secondary text-sm py-1.5 px-3"
+                                                title={tes('buttons.resetToCharacterDefaults')}>
+                                                {tes('buttons.resetToCharacterDefaults')}
                                             </button>
-                                            <p className="text-xs text-text-muted italic">
-                                                Copies lifecycle config from the character profile
-                                            </p>
+                                            <p className="text-xs text-text-muted italic">{tes('buttons.resetToCharacterDefaultsHint')}</p>
                                         </div>
                                     )}
 
                                     {entityLifecycleConfig ? (
                                         <div className="space-y-4">
-                                            <LifecycleConfigEditor
-                                                config={entityLifecycleConfig}
-                                                onChange={handleLifecycleConfigChange}
-                                            />
+                                            <LifecycleConfigEditor config={entityLifecycleConfig} onChange={handleLifecycleConfigChange} />
                                             <div className="flex justify-end pt-4">
-                                                <button
-                                                    onClick={handleSaveLifecycleConfig}
-                                                    className="btn-primary px-5 py-2 text-sm font-semibold"
-                                                >
-                                                    Save Lifecycle Config
+                                                <button onClick={handleSaveLifecycleConfig} className="btn-primary px-5 py-2 text-sm font-semibold">
+                                                    {tes('buttons.saveLifecycleConfig')}
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="text-center py-8 text-text-muted">
-                                            <p>No lifecycle configuration set.</p>
+                                            <p>{tes('lifecycle.noConfig')}</p>
                                             <p className="text-sm mt-2">
-                                                {selectedCharacterProfileId 
-                                                    ? "Click 'Reset to Character Defaults' to copy from character profile, or save manually after editing."
-                                                    : "Assign a character profile to configure lifecycle settings."}
+                                                {selectedCharacterProfileId
+                                                    ? tes('lifecycle.clickToCopy')
+                                                    : tes('lifecycle.assignProfile')}
                                             </p>
                                         </div>
                                     )}

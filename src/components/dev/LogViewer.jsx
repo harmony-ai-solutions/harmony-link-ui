@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import useLogStream from '../../hooks/useLogStream.js';
 import { fetchLogs, fetchLogComponents, fetchLogEntities, fetchLogPromptTypes, getLogStreamUrl } from '../../services/management/logService.js';
 import LogEntry from './LogEntry.jsx';
@@ -19,7 +19,7 @@ export default function LogViewer() {
     const [filters, setFilters] = useState({
         component: '',
         entityId: '',
-        minLevel: 'debug',
+        enabledLevels: ['debug', 'info', 'warn', 'error'], // levels shown; missing = hidden
         search: '',
         isPrompt: null,    // null = no filter, true = prompts only, false = non-prompts only
         promptType: '',
@@ -42,9 +42,37 @@ export default function LogViewer() {
 
     // ── WebSocket streaming ──
     const wsUrl = getLogStreamUrl();
+
+    // Derive a backend-compatible minLevel from the enabled levels so the
+    // stream only delivers entries the client would actually display
+    // (bandwidth optimization — the client-side filter remains authoritative).
+    //
+    // Backend semantics: minLevel keeps entries with numeric severity <= the
+    // threshold. To guarantee every enabled level passes the server filter we
+    // pick the LEAST severe enabled level (highest numeric value). Levels
+    // between the least and most severe enabled levels are streamed too but
+    // filtered out client-side.
+    const streamMinLevel = (() => {
+        const severity = { panic: 0, fatal: 1, error: 2, warn: 3, info: 4, debug: 5, trace: 6 };
+        let max = -1;
+        for (const lvl of filters.enabledLevels) {
+            const sev = severity[lvl];
+            if (sev !== undefined && sev > max) max = sev;
+        }
+        // No enabled levels → stream everything and let the client filter all out
+        if (max === -1) return 'trace';
+        return Object.keys(severity).find(k => severity[k] === max);
+    })();
+
+    const streamFilters = useMemo(() => ({
+        component: filters.component,
+        entityId: filters.entityId,
+        minLevel: streamMinLevel,
+    }), [filters.component, filters.entityId, streamMinLevel]);
+
     const { entries: liveEntries, isLive, entryCount, clearEntries, reconnect } = useLogStream({
         wsUrl,
-        filters,
+        filters: streamFilters,
         isPaused,
         maxEntries: 2000,
     });
@@ -119,13 +147,15 @@ export default function LogViewer() {
 
     // ── Apply filters ──
     const filteredEntries = (() => {
-        const levelSeverity = { panic: 0, fatal: 1, error: 2, warn: 3, info: 4, debug: 5, trace: 6 };
-        const minSeverity = levelSeverity[filters.minLevel] ?? 5;
         return allEntries.filter(e => {
             if (filters.component && e.component !== filters.component) return false;
             if (filters.entityId && e.entityId !== filters.entityId) return false;
-            const entrySeverity = levelSeverity[e.level] ?? 5;
-            if (entrySeverity > minSeverity) return false;
+            // Level filtering: show only entries whose level is in the enabled
+            // set. Fatal/panic are more severe than error and follow the error
+            // toggle (there are no dedicated buttons for them).
+            const levelEnabled = filters.enabledLevels.includes(e.level)
+                || ((e.level === 'fatal' || e.level === 'panic') && filters.enabledLevels.includes('error'));
+            if (!levelEnabled) return false;
             if (filters.search && (!e.message || !e.message.toLowerCase().includes(filters.search.toLowerCase()))) return false;
             // Prompt filter: only show prompt entries when toggled on
             if (filters.isPrompt === true && !e.isPrompt) return false;
@@ -359,7 +389,7 @@ export default function LogViewer() {
                         onClick={() => setAutoScroll(prev => !prev)}
                         title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
                     >
-                        {autoScroll ? '⇆ Auto' : '⇳ Manual'}
+                        {autoScroll ? 'Auto' : 'Manual'}
                     </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -367,7 +397,17 @@ export default function LogViewer() {
                         className="module-action-btn text-xs"
                         onClick={() => setIsPaused(prev => !prev)}
                     >
-                        {isPaused ? '▶ Resume' : '⏸ Pause'}
+                        {isPaused ? (
+                            <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                Resume
+                            </span>
+                        ) : (
+                            <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                                Pause
+                            </span>
+                        )}
                     </button>
                     <button
                         className="module-action-btn text-xs"

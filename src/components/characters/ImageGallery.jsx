@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import ImageUploadModal from './ImageUploadModal';
 
@@ -10,6 +11,7 @@ import ImageUploadModal from './ImageUploadModal';
  * @param {number|null} props.visionConfigId - ID of the selected vision configuration
  */
 export default function ImageGallery({ profileId, visionConfigId }) {
+    const { t } = useTranslation('characters');
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [editingImage, setEditingImage] = useState(null);
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
@@ -48,18 +50,18 @@ export default function ImageGallery({ profileId, visionConfigId }) {
             await setPrimaryImage(profileId, imageId);
             setOpenMenuId(null);
         } catch (error) {
-            alert('Failed to set primary image: ' + error.message);
+            alert(t('images.setPrimaryFailed', { message: error.message }));
         }
     };
 
     const handleDelete = async (imageId) => {
-        if (!confirm('Are you sure you want to delete this image?')) return;
+        if (!confirm(t('images.deleteConfirm'))) return;
 
         try {
             await deleteImage(profileId, imageId);
             setOpenMenuId(null);
         } catch (error) {
-            alert('Failed to delete image: ' + error.message);
+            alert(t('images.deleteImageFailed', { message: error.message }));
         }
     };
 
@@ -76,7 +78,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
             // Reload images to refresh the display
             await loadImages(profileId);
         } catch (error) {
-            alert('Failed to update description: ' + error.message);
+            alert(t('images.updateDescriptionFailed', { message: error.message }));
         }
     };
 
@@ -87,7 +89,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
 
     const handleAnalyze = async (imageId) => {
         if (!visionConfigId) {
-            alert('Please select a Vision Integration above before analyzing images.');
+            alert(t('images.selectVisionFirst'));
             return;
         }
         setAnalyzingImageId(imageId);
@@ -97,7 +99,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
             // Reload images to get the updated VL data
             await loadImages(profileId);
         } catch (error) {
-            alert('Failed to analyze image: ' + error.message);
+            alert(t('images.analyzeFailed', { message: error.message }));
         } finally {
             setAnalyzingImageId(null);
         }
@@ -119,9 +121,9 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Character Images
+                        {t('images.title')}
                         <span className="integration-count-pill text-xs px-2 py-0.5 rounded-full font-medium" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                            {images.length} {images.length === 1 ? 'image' : 'images'}
+                            {images.length} {images.length === 1 ? t('images.image') : t('images.images')}
                         </span>
                     </div>
                     <button
@@ -129,7 +131,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         className="btn-primary py-1 px-3 text-xs"
                         style={{ textTransform: 'none', letterSpacing: 'normal' }}
                     >
-                        + Upload Image
+                        + {t('buttons.uploadImage')}
                     </button>
                 </div>
             </div>
@@ -152,7 +154,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         {/* Main image - clickable for lightbox */}
                         <img
                             src={image.data_url}
-                            alt={image.description || 'Character image'}
+                            alt={image.description || t('images.characterImageAlt')}
                             className="w-full aspect-square object-cover"
                         />
                         
@@ -168,7 +170,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         {/* Primary badge - top-left, read-only */}
                         {image.is_primary && (
                             <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
-                                Primary
+                                {t('images.primaryBadge')}
                             </div>
                         )}
 
@@ -182,7 +184,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                 bg-black/30 border border-white/10 text-white/70
                                 hover:opacity-100 hover:bg-black/60 hover:border-white/30
                                 transition-all duration-200 z-10"
-                            title="Actions"
+                            title={t('images.actions')}
                         >
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                                 <circle cx="12" cy="5" r="2" />
@@ -211,7 +213,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        Set Primary
+                                        {t('images.setPrimary')}
                                     </button>
                                 )}
                                 {visionConfigId && (
@@ -230,7 +232,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                             </svg>
                                         )}
-                                        Analyze
+                                        {t('images.analyze')}
                                     </button>
                                 )}
                                 <button
@@ -243,17 +245,16 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
-                                    Edit Description
+                                    {t('images.editDescription')}
                                 </button>
-                                <div className="border-t border-white/10 my-0.5"></div>
                                 <button
                                     onClick={() => handleDelete(image.id)}
-                                    className="w-full px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-white/5 transition-colors text-red-400"
+                                    className="module-action-btn-danger w-full"
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
-                                    Delete
+                                    {t('images.deleteImage')}
                                 </button>
                             </div>
                         )}
@@ -262,7 +263,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         {image.vl_model && (
                             <div
                                 className="absolute bottom-2 right-2 bg-purple-600/50 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 pointer-events-none"
-                                title={`Analyzed by ${image.vl_model}: ${image.vl_model_interpretation || ''}`}
+                                title={t('images.analyzedBy', { model: image.vl_model, interpretation: image.vl_model_interpretation || '' })}
                             >
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -285,7 +286,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No images yet. Upload one to get started!</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('images.noImages')}</p>
                 </div>
             )}
 
@@ -326,7 +327,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </div>
-                                <h2 className="text-lg font-bold text-gradient-primary leading-tight">Edit Image Description</h2>
+                                <h2 className="text-lg font-bold text-gradient-primary leading-tight">{t('images.editTitle')}</h2>
                             </div>
                         </div>
 
@@ -341,7 +342,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                             >
                                 <img
                                     src={currentEditImage.data_url}
-                                    alt="Current image"
+                                    alt={t('images.currentImageAlt')}
                                     className="w-full object-contain"
                                     style={{ maxHeight: 'clamp(12rem, calc(70vh - 28rem), 50vh)' }}
                                 />
@@ -355,11 +356,11 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                     maxLength={1000}
                                     rows={4}
                                     className="input-field w-full resize-none"
-                                    placeholder="Describe this image..."
+                                    placeholder={t('images.describePlaceholder')}
                                     autoFocus
                                 />
                                 <p className="mt-1 text-xs text-text-muted">
-                                    {(currentEditImage.description?.length || 0)}/1000 characters
+                                    {t('import.characters', { count: currentEditImage.description?.length || 0 })}
                                 </p>
                             </div>
 
@@ -378,7 +379,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                         >
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
-                                        VL Analysis ({currentEditImage.vl_model}):
+                                        {t('images.vlAnalysis', { model: currentEditImage.vl_model })}
                                     </button>
 
                                     {/* Keep textarea in the DOM; animate max-height so the
@@ -412,13 +413,13 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                     onClick={handleCancelEdit}
                                     className="btn-secondary px-5 py-2 text-sm font-semibold"
                                 >
-                                    Cancel
+                                    {t('buttons.cancel')}
                                 </button>
                                 <button
                                     onClick={() => handleSaveDescription(editingImage)}
                                     className="btn-primary px-5 py-2 text-sm font-semibold"
                                 >
-                                    Save
+                                    {t('buttons.save')}
                                 </button>
                             </div>
                         </div>
@@ -450,6 +451,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
  * @param {Function} props.onNavigate - Navigate to another image
  */
 function LightboxModal({ image, images, onClose, onNavigate }) {
+    const { t } = useTranslation('characters');
     const [showOverlay, setShowOverlay] = useState(true);
     const currentIndex = images.findIndex(img => img.id === image.id);
     const hasPrev = currentIndex > 0;
@@ -541,7 +543,7 @@ function LightboxModal({ image, images, onClose, onNavigate }) {
             {/* Image */}
             <img
                 src={image.data_url}
-                alt={image.description || 'Character image'}
+                alt={image.description || t('images.characterImageAlt')}
                 className="max-w-[90vw] max-h-[90vh] object-contain"
                 onClick={(e) => e.stopPropagation()}
             />

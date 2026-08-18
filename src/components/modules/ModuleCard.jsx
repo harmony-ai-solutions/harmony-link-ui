@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
 import ModuleConfigRow from './ModuleConfigRow.jsx';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
+import { BrainIcon, SpeakerIcon, MicrophoneIcon, BookIcon, ActivityIcon, PuzzleIcon, EyeIcon, PaletteIcon } from '../../constants/icons.jsx';
+
+const MODULE_ICON_MAP = {
+    brain: BrainIcon,
+    speaker: SpeakerIcon,
+    microphone: MicrophoneIcon,
+    book: BookIcon,
+    activity: ActivityIcon,
+    puzzle: PuzzleIcon,
+    eye: EyeIcon,
+    palette: PaletteIcon,
+};
+
+const ModuleIcon = ({ iconKey, className = "w-4 h-4 mr-1.5 flex-shrink-0" }) => {
+    const IconComp = MODULE_ICON_MAP[iconKey];
+    if (!IconComp) return null;
+    return <IconComp className={className} />;
+};
 
 export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading, onCreate, onEdit, onCopy, onDelete, onSaveNew, allInstances, onInstancesRefresh, dockerStatus }) {
     const [showConfigs, setShowConfigs] = useState(false);
@@ -64,8 +82,9 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
 
                 {/* [2] Module identity — emoji + name + description */}
                 <div className="flex flex-col min-w-0 flex-1">
-                    <span className="module-row-name text-sm font-bold leading-tight break-words">
-                        {moduleInfo.emoji} {moduleInfo.name}
+                    <span className="module-row-name text-sm font-bold leading-tight break-words inline-flex items-center">
+                        <ModuleIcon iconKey={moduleInfo.iconKey} />
+                        {moduleInfo.name}
                     </span>
                     <span className="text-xs leading-tight mt-0.5 break-words" style={{ color: 'var(--color-text-muted)' }}>
                         {moduleInfo.description}
@@ -127,7 +146,7 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                             </div>
 
                             {/* Inline editor — immediately expanded */}
-                            <div className="pl-14 pr-4 pb-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="pl-14 pr-4 pb-3">
                                 <div className="mt-1.5">
                                     <ModuleConfigInlineEditor
                                         moduleType={moduleType}

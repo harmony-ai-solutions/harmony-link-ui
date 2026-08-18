@@ -3,9 +3,9 @@ import React from 'react';
 function TTSConfigurationDisplay({ config, loading, error }) {
     if (loading) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="flex items-center text-yellow-400 text-sm">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-400 mr-2"></div>
+            <div className="card-compact">
+                <div className="flex items-center text-text-muted text-sm">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary mr-2"></div>
                     Loading TTS configuration...
                 </div>
             </div>
@@ -14,8 +14,8 @@ function TTSConfigurationDisplay({ config, loading, error }) {
 
     if (error) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="text-red-400 text-sm">
+            <div className="card-compact-error">
+                <div className="text-error text-sm">
                     <strong>Error:</strong> {error}
                 </div>
             </div>
@@ -24,8 +24,8 @@ function TTSConfigurationDisplay({ config, loading, error }) {
 
     if (!config) {
         return (
-            <div className="bg-neutral-700 rounded p-2">
-                <div className="text-gray-400 text-sm">No TTS configuration available</div>
+            <div className="card-compact">
+                <div className="text-text-muted text-sm">No TTS configuration available</div>
             </div>
         );
     }
@@ -42,129 +42,70 @@ function TTSConfigurationDisplay({ config, loading, error }) {
 
     const getProviderConfig = (config) => {
         switch (config.provider) {
-            case 'harmonyspeech':
-                return config.harmonyspeech;
-            case 'elevenlabs':
-                return config.elevenlabs;
-            case 'openai':
-                return config.openai;
-            case 'kindroid':
-                return config.kindroid;
-            default:
-                return null;
+            case 'harmonyspeech': return config.harmonyspeech;
+            case 'elevenlabs': return config.elevenlabs;
+            case 'openai': return config.openai;
+            case 'kindroid': return config.kindroid;
+            default: return null;
         }
     };
 
     const providerConfig = getProviderConfig(config);
 
+    const ConfigRow = ({ label, value, mono }) => (
+        <div>
+            <span className="text-text-muted">{label}:</span>
+            <span className={`ml-2 text-text-secondary ${mono ? 'font-mono text-xs' : ''}`}>
+                {value}
+            </span>
+        </div>
+    );
+
     return (
-        <div className="bg-neutral-700 rounded p-2">
+        <div className="bg-background-surface-translucent backdrop-blur-sm rounded-lg p-3 border border-border-glass">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                    <h5 className="font-medium text-emerald-400 mb-1 text-sm">Provider Configuration</h5>
+                    <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Provider Configuration</h5>
                     <div className="space-y-1 text-xs">
                         <div>
-                            <span className="text-gray-400">Provider:</span>
-                            <span className="ml-2 text-green-400 font-medium">
+                            <span className="text-text-muted">Provider:</span>
+                            <span className="ml-2 text-success font-medium">
                                 {getProviderDisplayName(config.provider)}
                             </span>
                         </div>
-                        
-                        {config.outputtype && (
-                            <div>
-                                <span className="text-gray-400">Output Type:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {config.outputtype}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {config.vocalizenonverbal !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Vocalize Non-verbal:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {config.vocalizenonverbal ? 'Yes' : 'No'}
-                                </span>
-                            </div>
-                        )}
+
+                        {config.outputtype && <ConfigRow label="Output Type" value={config.outputtype} />}
+                        {config.vocalizenonverbal !== undefined && <ConfigRow label="Vocalize Non-verbal" value={config.vocalizenonverbal ? 'Yes' : 'No'} />}
 
                         {config.wordstoreplace && Object.keys(config.wordstoreplace).length > 0 && (
                             <div>
-                                <span className="text-gray-400">Word Replacements:</span>
-                                <div className="ml-2 text-gray-300 text-xs bg-neutral-600 p-2 rounded mt-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                <span className="text-text-muted">Word Replacements:</span>
+                                <div className="ml-2 text-text-secondary text-xs bg-background-surface/50 p-2 rounded-lg mt-1 max-h-20 overflow-y-auto custom-scrollbar border border-border-glass">
                                     {Object.entries(config.wordstoreplace).map(([from, to]) => (
                                         <div key={from}>{from} → {to}</div>
                                     ))}
                                 </div>
                             </div>
                         )}
-                        
-                        <div className="mt-3 p-2 bg-neutral-600 rounded">
-                            <div className="text-xs text-gray-400 mb-1">Status:</div>
-                            <div className="flex items-center">
-                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                                <span className="text-green-400 text-xs">Configuration Loaded</span>
+
+                        <div className="mt-3 p-2 bg-background-surface/50 rounded-lg border border-border-glass">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
+                                <span className="text-success text-xs font-medium">Configuration Loaded</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <h5 className="font-medium text-emerald-400 mb-1 text-sm">Voice Settings</h5>
+                    <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Voice Settings</h5>
                     <div className="space-y-1 text-xs">
-                        {providerConfig?.model && (
-                            <div>
-                                <span className="text-gray-400">Model:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.model}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.voice && (
-                            <div>
-                                <span className="text-gray-400">Voice:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.voice}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.voiceid && (
-                            <div>
-                                <span className="text-gray-400">Voice ID:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.voiceid}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.speed !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Speed:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.speed}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.stability !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Stability:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.stability}
-                                </span>
-                            </div>
-                        )}
-                        
-                        {providerConfig?.similarityboost !== undefined && (
-                            <div>
-                                <span className="text-gray-400">Similarity Boost:</span>
-                                <span className="ml-2 text-gray-300">
-                                    {providerConfig.similarityboost}
-                                </span>
-                            </div>
-                        )}
+                        {providerConfig?.model && <ConfigRow label="Model" value={providerConfig.model} />}
+                        {providerConfig?.voice && <ConfigRow label="Voice" value={providerConfig.voice} />}
+                        {providerConfig?.voiceid && <ConfigRow label="Voice ID" value={providerConfig.voiceid} />}
+                        {providerConfig?.speed !== undefined && <ConfigRow label="Speed" value={providerConfig.speed} />}
+                        {providerConfig?.stability !== undefined && <ConfigRow label="Stability" value={providerConfig.stability} />}
+                        {providerConfig?.similarityboost !== undefined && <ConfigRow label="Similarity Boost" value={providerConfig.similarityboost} />}
                     </div>
                 </div>
             </div>

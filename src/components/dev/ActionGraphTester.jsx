@@ -5,6 +5,7 @@ import {
     sendTestActionGraph
 } from '../../services/management/developmentService.js';
 import { LogDebug, LogError } from '../../utils/logger.js';
+import ThemedSelect from '../widgets/ThemedSelect.jsx';
 
 /**
  * ActionGraph Tester — allows testing ActionGraph commands against connected entities.
@@ -89,7 +90,7 @@ export default function ActionGraphTester() {
                 try {
                     actionGraph = JSON.parse(manualJson);
                 } catch (parseError) {
-                    setFeedback(`❌ Invalid JSON: ${parseError.message}`);
+                    setFeedback(`Invalid JSON: ${parseError.message}`);
                     return;
                 }
             } else {
@@ -110,10 +111,10 @@ export default function ActionGraphTester() {
 
             LogDebug("Sending ActionGraph:", actionGraph);
             const result = await sendTestActionGraph(selectedEntity, actionGraph);
-            setFeedback(`✅ ActionGraph sent successfully! Response: ${JSON.stringify(result)}`);
+            setFeedback(`ActionGraph sent successfully! Response: ${JSON.stringify(result)}`);
         } catch (error) {
             LogError("Failed to send ActionGraph:", error);
-            setFeedback(`❌ Error sending ActionGraph: ${error.message}`);
+            setFeedback(`Error sending ActionGraph: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -157,21 +158,16 @@ export default function ActionGraphTester() {
                         <label className="text-sm font-medium text-text-secondary w-28">
                             Connected Entity
                         </label>
-                        <select
+                        <ThemedSelect
                             value={selectedEntity}
-                            onChange={(e) => setSelectedEntity(e.target.value)}
-                            className="input-field flex-1"
+                            onChange={setSelectedEntity}
+                            options={[
+                                { value: '', label: 'Select an entity...' },
+                                ...(entities || []).map(entity => ({ value: entity.id, label: `${entity.id} (${entity.status})` }))
+                            ]}
                             disabled={isLoading}
-                        >
-                            <option value="">Select an entity...</option>
-                            {entities && entities.length > 0 &&
-                                entities.map(entity => (
-                                    <option key={entity.id} value={entity.id}>
-                                        {entity.id} ({entity.status})
-                                    </option>
-                                ))
-                            }
-                        </select>
+                            className="flex-1"
+                        />
                         <button onClick={loadEntities} className="module-action-btn" disabled={isLoading}>
                             Refresh
                         </button>
@@ -222,19 +218,16 @@ export default function ActionGraphTester() {
                                     <label className="text-sm font-medium text-text-secondary w-28">
                                         Action
                                     </label>
-                                    <select
+                                    <ThemedSelect
                                         value={selectedAction}
-                                        onChange={(e) => setSelectedAction(e.target.value)}
-                                        className="input-field flex-1"
+                                        onChange={setSelectedAction}
+                                        options={[
+                                            { value: '', label: 'Select an action...' },
+                                            ...(entityDetails.actions || []).map(action => ({ value: action.name, label: action.name }))
+                                        ]}
                                         disabled={isLoading}
-                                    >
-                                        <option value="">Select an action...</option>
-                                        {entityDetails.actions && entityDetails.actions.map(action => (
-                                            <option key={action.name} value={action.name}>
-                                                {action.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        className="flex-1"
+                                    />
                                 </div>
                             )}
 
@@ -258,7 +251,6 @@ export default function ActionGraphTester() {
                                                 type="checkbox"
                                                 checked={lookAtTarget}
                                                 onChange={(e) => setLookAtTarget(e.target.checked)}
-                                                className="accent-accent-primary"
                                                 disabled={isLoading}
                                             />
                                             Look at target
@@ -268,7 +260,6 @@ export default function ActionGraphTester() {
                                                 type="checkbox"
                                                 checked={requiresConsent}
                                                 onChange={(e) => setRequiresConsent(e.target.checked)}
-                                                className="accent-accent-primary"
                                                 disabled={isLoading}
                                             />
                                             Requires consent
@@ -319,9 +310,9 @@ export default function ActionGraphTester() {
             {/* Feedback */}
             {feedback && (
                 <div className={`p-3 rounded-lg border ${
-                    feedback.startsWith('✅')
+                    feedback.startsWith('ActionGraph sent successfully')
                         ? 'bg-green-500/5 border-green-500/20 text-green-400'
-                        : feedback.startsWith('❌')
+                        : feedback.startsWith('Error') || feedback.startsWith('Invalid JSON')
                             ? 'bg-red-500/5 border-red-500/20 text-red-400'
                             : 'bg-background-surface border-white/5 text-text-secondary'
                 }`}>

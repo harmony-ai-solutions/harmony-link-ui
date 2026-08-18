@@ -1,0 +1,124 @@
+{
+  "header": {
+    "title": "Entity Settings",
+    "subtitle": "Manage your AI entities and their associated module profiles"
+  },
+  "entityList": {
+    "totalEntities": "Total Entities: {{count}}",
+    "noEntities": "No entities found",
+    "selectPlaceholder": "Select an entity to configure"
+  },
+  "buttons": {
+    "add": "Add",
+    "rename": "Rename",
+    "copy": "Copy",
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving...",
+    "reset": "Reset",
+    "manageRagCollections": "Manage RAG Collections",
+    "saveLifecycleConfig": "Save Lifecycle Config",
+    "resetToCharacterDefaults": "Reset to Character Defaults",
+    "resetToCharacterDefaultsHint": "Copies lifecycle config from the character profile"
+  },
+  "sections": {
+    "identitySettings": "Identity Settings",
+    "identityTooltip": "Configure the character identity for this entity.",
+    "moduleConfigurations": "Module Configurations",
+    "moduleTooltip": "Select pre-configured module settings for this entity.",
+    "lifecycleSettings": "Lifecycle Settings",
+    "lifecycleTooltip": "Per-entity lifecycle configuration overrides."
+  },
+  "fields": {
+    "entityAlias": {
+      "label": "Entity Alias",
+      "tooltip": "A human-friendly display name for this entity. Shown in the entity list and used as a label in conversations.",
+      "placeholder": "Optional display name"
+    },
+    "characterProfile": {
+      "label": "Character Profile",
+      "noProfile": "No Character Profile",
+      "selectPlaceholder": "Select Character Profile",
+      "unsupportedBackend": "This backend provider ({{provider}}) has built-in identity and doesn't use Harmony Link profiles.",
+      "unsupportedNoBackend": "Character profiles require a backend configuration which supports custom prompting. Please select a backend module first."
+    }
+  },
+  "modules": {
+    "backend": "AI Backend / LLM",
+    "tts": "Text-to-Speech",
+    "stt": "Speech-to-Text",
+    "rag": "RAG Settings",
+    "movement": "Movement",
+    "cognition": "Cognition",
+    "imagination": "Imagination",
+    "vision": "Vision",
+    "disabled": "Disabled"
+  },
+  "lifecycle": {
+    "noConfig": "No lifecycle configuration set.",
+    "clickToCopy": "Click 'Reset to Character Defaults' to copy from character profile, or save manually after editing.",
+    "assignProfile": "Assign a character profile to configure lifecycle settings."
+  },
+  "dialogs": {
+    "add": {
+      "title": "Add Entity",
+      "message": "Enter a unique ID for the new entity:"
+    },
+    "copy": {
+      "title": "Copy Entity",
+      "message": "Enter ID for the copy of '{{entityId}}':"
+    },
+    "rename": {
+      "title": "Rename Entity",
+      "message": "Enter new ID for '{{entityId}}':"
+    },
+    "confirmRename": {
+      "title": "Confirm Rename",
+      "message": "Rename entity '{{oldId}}' to '{{newId}}'?\n\nThis will atomically:\n• Create a new entity with ID '{{newId}}'\n• Copy all configurations\n• Delete the old entity '{{oldId}}'\n\nThis action cannot be undone."
+    },
+    "confirmDelete": {
+      "title": "Confirm Delete",
+      "message": "Delete entity '{{entityId}}'?\n\nThis action cannot be undone."
+    },
+    "invalidEntityId": {
+      "title": "Invalid Entity ID"
+    },
+    "creationFailed": {
+      "title": "Creation Failed"
+    },
+    "copyFailed": {
+      "title": "Copy Failed"
+    },
+    "renameFailed": {
+      "title": "Rename Failed"
+    },
+    "deletionFailed": {
+      "title": "Deletion Failed"
+    },
+    "ragError": {
+      "title": "RAG Error"
+    }
+  },
+  "validation": {
+    "empty": "Entity ID cannot be empty",
+    "invalidChars": "Entity ID can only contain letters, numbers, hyphens, and underscores",
+    "alreadyExists": "Entity ID already exists",
+    "noEntitySelected": "No entity selected"
+  },
+  "messages": {
+    "saveSuccess": "Entity saved successfully",
+    "createSuccess": "Entity created successfully",
+    "deleteSuccess": "Entity deleted successfully",
+    "copySuccess": "Entity copied successfully",
+    "renamedFrom": "Entity renamed from '{{oldId}}' to '{{newId}}'",
+    "lifecycleReset": "Lifecycle config reset to character defaults",
+    "lifecycleSaved": "Lifecycle config saved successfully",
+    "saveFailed": "Failed to save entity: {{message}}",
+    "createFailed": "Failed to create entity: {{message}}",
+    "deleteFailed": "Failed to delete entity: {{message}}",
+    "copyFailedDetail": "Failed to copy entity: {{message}}",
+    "renameFailedDetail": "Failed to rename entity: {{message}}",
+    "lifecycleResetFailed": "Failed to reset lifecycle config: {{message}}",
+    "lifecycleSaveFailed": "Failed to save lifecycle config: {{message}}"
+  }
+}

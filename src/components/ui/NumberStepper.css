@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Number Stepper — Custom +/- buttons replacing native number inputs
+   Glassmorphism design matching Toggle & input-field aesthetics
+   ═══════════════════════════════════════════════════════════════════ */
+
+.number-stepper {
+    display: inline-flex;
+    align-items: stretch;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-glass);
+    transition: all 0.3s var(--ease-spring);
+}
+
+.number-stepper:focus-within {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 16px var(--color-glow-accent-soft),
+                0 0 0 3px var(--color-glow-accent-soft);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+
+.number-stepper__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-spring);
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+}
+
+.number-stepper__btn:hover:not(:disabled) {
+    color: var(--color-accent-primary);
+    background: var(--color-background-hover-glass);
+}
+
+.number-stepper__btn:active:not(:disabled) {
+    transform: scale(0.92);
+    color: var(--color-accent-primary);
+}
+
+.number-stepper__btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Left button — subtle right border separator */
+.number-stepper__btn--minus {
+    border-right: 1px solid var(--color-border-glass);
+    border-radius: 0;
+}
+
+/* Right button — subtle left border separator */
+.number-stepper__btn--plus {
+    border-left: 1px solid var(--color-border-glass);
+    border-radius: 0;
+}
+
+/* ── Input ────────────────────────────────────────────────────────── */
+
+.number-stepper__input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.75rem 0.25rem;
+    text-align: center;
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.number-stepper__input::-webkit-outer-spin-button,
+.number-stepper__input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-stepper__input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.number-stepper__input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ── Disabled state ───────────────────────────────────────────────── */
+
+.number-stepper--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .number-stepper,
+    .number-stepper__btn,
+    .number-stepper__input {
+        transition: none;
+    }
+}

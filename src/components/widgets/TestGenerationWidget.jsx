@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { testImaginationGeneration } from '../../services/management/configService.js';
+import NumberStepper from '../ui/NumberStepper.jsx';
 
 /**
  * Test generation widget for non-ComfyUI imagination providers.
@@ -44,7 +45,7 @@ export default function TestGenerationWidget({
     };
 
     return (
-        <div className="border-t border-border-default pt-4 mt-2">
+        <div className="pt-4 mt-2">
             <h5 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
                 Test Generation
             </h5>
@@ -83,7 +84,7 @@ export default function TestGenerationWidget({
                 <label className="text-sm font-medium text-text-secondary w-1/4 px-2">
                     Seed
                 </label>
-                <input type="number" className="input-field w-48"
+                <NumberStepper className="w-48"
                     value={testSeed}
                     onChange={e => setTestSeed(parseInt(e.target.value) || 0)}
                     min={0} step={1}

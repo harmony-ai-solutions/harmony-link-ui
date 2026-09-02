@@ -18,7 +18,7 @@ import useDockerStatus from '../hooks/useDockerStatus';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 
 
-function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
+export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
     const { t } = useTranslation();
     const options = [
         { value: '', label: t('entitySettings:modules.disabled') },
@@ -119,10 +119,21 @@ const EntitySettingsView = ({ appName }) => {
     }, []);
 
     useEffect(() => {
-        if (entities && Array.isArray(entities) && entities.length > 0 && !selectedEntityId) {
-            selectEntity(entities[0].id);
+        // Keep the selected entity constrained to the AI-entity list.
+        if (aiEntities && aiEntities.length > 0) {
+            const current = aiEntities.find(e => e.id === selectedEntityId);
+            if (!current) {
+                selectEntity(aiEntities[0].id);
+            }
         }
-    }, [entities, selectedEntityId, selectEntity]);
+    }, [aiEntities, selectedEntityId, selectEntity]);
+
+    // 3-1: the Entities tab now surfaces AI entities only. Personas (user-type
+    // entities) live on the dedicated Personas tab.
+    const aiEntities = useMemo(() =>
+        (entities || []).filter(e => (e.entity_type || 'ai') === 'ai'),
+        [entities]
+    );
 
     const selectedEntity = useMemo(() => {
         if (!selectedEntityId || !entities || entities.length === 0) {
@@ -564,11 +575,11 @@ const EntitySettingsView = ({ appName }) => {
                         <div className="flex flex-col space-y-2">
                             <div className="text-center">
                                 <label className="text-sm font-medium text-text-secondary">
-                                    {tes('entityList.totalEntities', { count: entities && Array.isArray(entities) ? entities.length : 0 })}
+                                    {tes('entityList.totalEntities', { count: aiEntities.length })}
                                 </label>
                             </div>
                             <div data-tutorial-id="entity-list" className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1 space-y-0.5">
-                                {entities && Array.isArray(entities) && entities.map((entity) => (
+                                {aiEntities.map((entity) => (
                                     <div key={entity.id} onClick={() => selectEntity(entity.id)}
                                         className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-200 flex items-center justify-between group relative border ${selectedEntityId === entity.id
                                             ? 'bg-accent-primary/20 border-accent-primary/40 text-accent-primary font-bold shadow-sm'
@@ -590,7 +601,7 @@ const EntitySettingsView = ({ appName }) => {
                                         )}
                                     </div>
                                 ))}
-                                {(!entities || entities.length === 0) && (
+                                {aiEntities.length === 0 && (
                                     <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
                                         {tes('entityList.noEntities')}
                                     </div>

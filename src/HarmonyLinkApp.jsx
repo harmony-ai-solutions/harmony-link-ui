@@ -7,13 +7,14 @@ import DevelopmentView from "./components/DevelopmentView.jsx";
 import IntegrationsView from "./components/IntegrationsView.jsx";
 import SimulatorView from "./components/SimulatorView.jsx";
 import CharacterProfilesView from "./components/characters/CharacterProfilesView.jsx";
+import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
-import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
+import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
@@ -165,6 +166,7 @@ function HarmonyLinkAppInner() {
         { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
         { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
         { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
+        { id: SettingsTabPersonas, label: t('nav.tabs.personas'), icon: SmileIcon },
         { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
         { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
         { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
@@ -275,6 +277,9 @@ function HarmonyLinkAppInner() {
                 }
                 {settingsTab === SettingsTabCharacters &&
                     <CharacterProfilesView></CharacterProfilesView>
+                }
+                {settingsTab === SettingsTabPersonas &&
+                    <PersonasView></PersonasView>
                 }
                 {settingsTab === SettingsTabModules &&
                     <ModuleConfigurationsView></ModuleConfigurationsView>

@@ -36,6 +36,25 @@ export async function createEntity(id, characterProfileId) {
     return await resp.json();
 }
 
+/**
+ * Create a persona (user-type) entity. Mirrors `createEntity` but sends the
+ * optional `entity_type: 'user'` marker (management `handleCreateEntity`
+ * supports it) so the engine treats it as a chat-only persona rather than an
+ * AI entity.
+ * @param {string} id - Entity id (also the persona name).
+ * @param {string} characterProfileId - Linked character profile id.
+ * @returns {Promise<{id: string, character_profile_id: string|null, entity_type: string}>}
+ */
+export async function createPersonaEntity(id, characterProfileId) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ id, character_profile_id: characterProfileId, entity_type: 'user' })
+    });
+    await handleResponse(resp, "Failed to create entity");
+    return await resp.json();
+}
+
 export async function updateEntity(id, characterProfileId, lifecycleConfig, alias) {
     const body = {};
     if (characterProfileId !== undefined && characterProfileId !== null) {

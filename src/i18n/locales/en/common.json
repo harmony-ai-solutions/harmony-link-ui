@@ -4,9 +4,10 @@
     "brandSub": "Link",
     "tabs": {
       "general": "General",
-      "entities": "Entities",
+      "entities": "AI Entities",
       "modules": "Modules",
       "characters": "Characters",
+      "personas": "Personas",
       "integrations": "Integrations",
       "simulator": "Simulator",
       "dev": "Dev"

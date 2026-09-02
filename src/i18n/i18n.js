@@ -11,6 +11,7 @@ import simulatorEn from './locales/en/simulator.json';
 import developmentEn from './locales/en/development.json';
 import integrationsEn from './locales/en/integrations.json';
 import charactersEn from './locales/en/characters.json';
+import personasEn from './locales/en/personas.json';
 
 const resources = {
   en: {
@@ -22,6 +23,7 @@ const resources = {
     development: developmentEn,
     integrations: integrationsEn,
     characters: charactersEn,
+    personas: personasEn,
   },
 };
 

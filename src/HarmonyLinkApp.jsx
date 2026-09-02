@@ -15,6 +15,7 @@ import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
+import usePersonaStore from './store/personaStore';
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
@@ -75,6 +76,13 @@ function HarmonyLinkAppInner() {
         setTimeout(() => {
             useTutorialStore.getState().startTutorial();
         }, 300);
+    };
+
+    // 3-2: "Create persona from this card" — stash an identity-field-only prefill
+    // and flip to the Personas tab (which opens its create form prefilled).
+    const handleCreatePersonaFromCard = (prefill) => {
+        usePersonaStore.getState().setCreatePrefill(prefill);
+        setSettingsTab(SettingsTabPersonas);
     };
 
     // On Application Loaded
@@ -276,7 +284,7 @@ function HarmonyLinkAppInner() {
                     <EntitySettingsView appName={appName}></EntitySettingsView>
                 }
                 {settingsTab === SettingsTabCharacters &&
-                    <CharacterProfilesView></CharacterProfilesView>
+                    <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}></CharacterProfilesView>
                 }
                 {settingsTab === SettingsTabPersonas &&
                     <PersonasView></PersonasView>

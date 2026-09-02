@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
+import useEntityStore from '../../store/entityStore';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -8,10 +9,33 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 
 /**
  * Main view for managing character profiles
+ * @param {Object} props
+ * @param {Function} [props.onCreatePersonaFromCard] - 3-2: "Create persona from
+ *   this card" — receives { name, description, personality } (identity fields
+ *   only, copy semantics) so the app can switch to the Personas tab prefilled.
  */
-export default function CharacterProfilesView() {
+export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
+    const { entities, loadEntities } = useEntityStore();
+
+    /**
+     * 3-2: map character_profile_id → the entities (AI or persona) that
+     * reference it. Entity↔profile is a LIVE reference (edits to a profile
+     * change the linked entity's behavior immediately) — these map drives the
+     * "used by" badges and the editor's live-link hint.
+     */
+    const referencingByProfile = useMemo(() => {
+        const map = {};
+        (entities || []).forEach(entity => {
+            const pid = entity.character_profile_id || entity.character_profile?.id;
+            if (pid) {
+                if (!map[pid]) map[pid] = [];
+                map[pid].push(entity);
+            }
+        });
+        return map;
+    }, [entities]);
     const [showEditor, setShowEditor] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
@@ -33,7 +57,9 @@ export default function CharacterProfilesView() {
 
     useEffect(() => {
         loadProfiles();
-    }, [loadProfiles]);
+        // Needed for the "used by" badges / live-link hint (3-2).
+        loadEntities();
+    }, [loadProfiles, loadEntities]);
 
     useEffect(() => {
         if (profiles && profiles.length > 0) {
@@ -181,7 +207,9 @@ export default function CharacterProfilesView() {
                         <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
                             {filteredProfiles.map(profile => (
                                 <CharacterProfileCard key={profile.id} profile={profile}
-                                    onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest} />
+                                    onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
+                                    referencingEntities={referencingByProfile[profile.id] || []}
+                                    onCreatePersona={onCreatePersonaFromCard} />
                             ))}
                         </div>
                     ) : (
@@ -213,7 +241,9 @@ export default function CharacterProfilesView() {
             </div>
 
             {showEditor && (
-                <CharacterProfileEditor profile={editingProfile} onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
+                <CharacterProfileEditor profile={editingProfile}
+                    referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
+                    onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
             )}
 
             {showImport && (

@@ -6,6 +6,7 @@
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
+    "createPersona": "Create persona from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",
@@ -37,6 +38,11 @@
   "importTitle": "Import Character Card",
   "noDescription": "No description provided.",
   "deleteProfile": "Delete profile",
+  "liveLinkHint": "Linked to an entity — changes apply immediately",
+  "usedBy": {
+    "aiPrefix": "AI · {{name}}",
+    "personaPrefix": "Persona · {{name}}"
+  },
   "import": {
     "uploading": "Importing character card...",
     "dropActive": "Drop the PNG file here",

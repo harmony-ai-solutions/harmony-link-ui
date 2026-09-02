@@ -9,10 +9,15 @@ import CharacterCardExport from './CharacterCardExport';
  * @param {import('../../services/management/characterService').CharacterProfile} props.profile - The character profile to display
  * @param {Function} props.onClick - Callback when the card is clicked
  * @param {Function} [props.onDelete] - Callback when the delete button is clicked
+ * @param {Object[]} [props.referencingEntities] - 3-2: entities (AI or persona)
+ *   that link this profile live. Drives the "used by" badges.
+ * @param {Function} [props.onCreatePersona] - 3-2: "Create persona from this
+ *   card" — receives { name, description, personality } (copy semantics).
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
+    const referenced = Array.isArray(referencingEntities) ? referencingEntities : [];
     
     return (
         <div 
@@ -52,6 +57,28 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                         </svg>
                     </button>
                 )}
+
+                {onCreatePersona && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // COPY semantics: identity fields only (no lore /
+                            // character_book / module configs). Source card
+                            // untouched.
+                            onCreatePersona({
+                                name: profile.name,
+                                description: profile.description,
+                                personality: profile.personality,
+                            });
+                        }}
+                        className="absolute bottom-2 left-2 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                        title={t('buttons.createPersona')}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                    </button>
+                )}
             </div>
             
             <div className="p-4">
@@ -59,6 +86,24 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                 <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
                     {profile.description || t('noDescription')}
                 </p>
+                {referenced.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {referenced.map(entity => (
+                            <span
+                                key={entity.id}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    entity.entity_type === 'user'
+                                        ? 'bg-accent-primary/15 text-accent-primary'
+                                        : 'bg-accent-secondary/15 text-accent-secondary'
+                                }`}
+                            >
+                                {entity.entity_type === 'user'
+                                    ? t('usedBy.personaPrefix', { name: entity.alias || entity.id })
+                                    : t('usedBy.aiPrefix', { name: entity.alias || entity.id })}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

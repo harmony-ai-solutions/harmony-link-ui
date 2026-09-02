@@ -98,10 +98,13 @@ function StringListEditor({ values, onChange, placeholder, addLabel }) {
  * @param {Object} props
  * @param {import('../../services/management/characterService').CharacterProfile} [props.profile] - Existing profile to edit
  * @param {Function} props.onClose - Callback to close the editor
+ * @param {Object[]} [props.referencedEntities] - 3-2: entities that link this
+ *   profile live. When non-empty the header shows a muted live-link hint.
  */
-export default function CharacterProfileEditor({ profile, onClose }) {
+export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [] }) {
     const { t } = useTranslation('characters');
     const [activeTab, setActiveTab] = useState('basic');
+    const isReferenced = Array.isArray(referencedEntities) && referencedEntities.length > 0;
 
     const createProfile = useCharacterProfileStore(state => state.createProfile);
     const updateProfile = useCharacterProfileStore(state => state.updateProfile);
@@ -789,6 +792,11 @@ export default function CharacterProfileEditor({ profile, onClose }) {
                                 </h2>
                                 {profile && (
                                     <p className="text-xs text-text-muted mt-0.5">{profile.name}</p>
+                                )}
+                                {profile && isReferenced && (
+                                    <p className="text-[11px] text-text-muted italic mt-0.5">
+                                        {t('liveLinkHint')}
+                                    </p>
                                 )}
                             </div>
                         </div>

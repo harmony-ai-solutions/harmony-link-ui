@@ -12,6 +12,11 @@
       "simulator": "Simulator",
       "dev": "Dev"
     },
+    "groups": {
+      "identity": "Identity",
+      "system": "System",
+      "tools": "Tools"
+    },
     "help": "Help / Restart Tutorial",
     "language": "Language",
     "darkMode": "Switch to Dark Mode",

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { getConfig, updateConfig, getAppName, getAppVersion } from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
@@ -10,7 +11,7 @@ import CharacterProfilesView from "./components/characters/CharacterProfilesView
 import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronDownIcon, CheckIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
@@ -23,6 +24,71 @@ import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
 import { useTheme } from './contexts/ThemeContext';
 import LanguagePicker from './components/icons/LanguagePicker.jsx';
+
+/**
+ * A single grouped navigation dropdown trigger + panel.
+ *
+ * Variant C: replaces the flat 8-pill dock with grouped dropdown menus.
+ * - Trigger is styled like the existing `.nav-pill`; its label follows
+ *   "show the active tab if one in this group is active, else the group label".
+ * - Panel is a Headless UI Menu portaled to <body> (via `anchor`, which forces
+ *   `portal`) so `.nav-glass-bar { overflow: hidden }` never clips it.
+ */
+function NavGroupMenu({ group, settingsTab, onSelect }) {
+    const activeTabInGroup = group.tabs.find((tab) => tab.id === settingsTab) || null;
+    const triggerLabel = activeTabInGroup ? activeTabInGroup.label : group.label;
+    const TriggerIcon = activeTabInGroup ? activeTabInGroup.icon : group.icon;
+    const isActive = activeTabInGroup !== null;
+
+    return (
+        <Menu>
+            <MenuButton
+                data-tutorial-id={`nav-group-${group.id}`}
+                className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
+            >
+                <span className="nav-pill-icon">
+                    <TriggerIcon className="w-4 h-4" />
+                </span>
+                <span className="nav-pill-label">{triggerLabel}</span>
+                <ChevronDownIcon className="nav-pill-caret w-3.5 h-3.5" />
+                {isActive && <span className="nav-pill-glow" />}
+            </MenuButton>
+
+            <MenuItems
+                anchor={{ to: 'bottom start', gap: 8 }}
+                modal={false}
+                className="nav-menu-panel"
+            >
+                {group.tabs.map((tab) => {
+                    const TabIcon = tab.icon;
+                    const tabActive = settingsTab === tab.id;
+                    return (
+                        <MenuItem key={tab.id}>
+                            {({ focus }) => (
+                                <button
+                                    type="button"
+                                    data-tutorial-id={`nav-tab-${tab.id}`}
+                                    onClick={() => onSelect(tab.id)}
+                                    className={`nav-menu-item ${tabActive ? 'nav-menu-item-active' : ''} ${focus ? 'nav-menu-item-focus' : ''}`}
+                                >
+                                    <span className="nav-menu-item-icon">
+                                        <TabIcon className="w-4 h-4" />
+                                    </span>
+                                    <span className="nav-menu-item-label">{tab.label}</span>
+                                    {tabActive && (
+                                        <span className="nav-menu-item-indicator">
+                                            <CheckIcon className="w-3.5 h-3.5" />
+                                        </span>
+                                    )}
+                                </button>
+                            )}
+                        </MenuItem>
+                    );
+                })}
+            </MenuItems>
+        </Menu>
+    );
+}
 
 /**
  * Inner component that has access to the useTranslation hook.
@@ -168,16 +234,37 @@ function HarmonyLinkAppInner() {
         }
     };
 
-    // Tab definitions
-    const navTabs = [
-        { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
-        { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
-        { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
-        { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
-        { id: SettingsTabPersonas, label: t('nav.tabs.personas'), icon: SmileIcon },
-        { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
-        { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
-        { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
+    // Tab definitions — grouped into 3 dropdown menus (Variant C)
+    const navGroups = [
+        {
+            id: 'identity',
+            label: t('nav.groups.identity'),
+            icon: RobotIcon,
+            tabs: [
+                { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
+                { id: SettingsTabPersonas, label: t('nav.tabs.personas'), icon: SmileIcon },
+                { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
+            ],
+        },
+        {
+            id: 'system',
+            label: t('nav.groups.system'),
+            icon: SettingsGearIcon,
+            tabs: [
+                { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
+                { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
+                { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
+            ],
+        },
+        {
+            id: 'tools',
+            label: t('nav.groups.tools'),
+            icon: SimulatorIcon,
+            tabs: [
+                { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
+                { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
+            ],
+        },
     ];
 
     return (
@@ -208,26 +295,16 @@ function HarmonyLinkAppInner() {
                     {/* Left flex spacer — shrinks before zones, centers pill dock when space allows */}
                     <div className="flex-1 min-w-0" />
 
-                    {/* Pill Dock — flex-centered, scrolls when cramped */}
+                    {/* Grouped Dropdown Dock — 3 menus instead of 8 pills */}
                     <div className="nav-pill-dock z-0">
-                        {navTabs.map((tab) => {
-                            const isActive = settingsTab === tab.id;
-                            const TabIcon = tab.icon;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    data-tutorial-id={`nav-tab-${tab.id}`}
-                                    onClick={() => setSettingsTab(tab.id)}
-                                    className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
-                                >
-                                    <span className="nav-pill-icon">
-                                        <TabIcon className="w-4 h-4" />
-                                    </span>
-                                    <span className="nav-pill-label">{tab.label}</span>
-                                    {isActive && <span className="nav-pill-glow" />}
-                                </button>
-                            );
-                        })}
+                        {navGroups.map((group) => (
+                            <NavGroupMenu
+                                key={group.id}
+                                group={group}
+                                settingsTab={settingsTab}
+                                onSelect={setSettingsTab}
+                            />
+                        ))}
                     </div>
 
                     {/* Right flex spacer */}

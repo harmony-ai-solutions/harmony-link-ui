@@ -118,6 +118,15 @@ const EntitySettingsView = ({ appName }) => {
         loadConfigs('vision');
     }, []);
 
+    // 3-1: the Entities tab now surfaces AI entities only. Personas (user-type
+    // entities) live on the dedicated Personas tab.
+    // NOTE: must be declared before the selection-constraining effect below,
+    // whose dependency array reads it during render (TDZ otherwise).
+    const aiEntities = useMemo(() =>
+        (entities || []).filter(e => (e.entity_type || 'ai') === 'ai'),
+        [entities]
+    );
+
     useEffect(() => {
         // Keep the selected entity constrained to the AI-entity list.
         if (aiEntities && aiEntities.length > 0) {
@@ -127,13 +136,6 @@ const EntitySettingsView = ({ appName }) => {
             }
         }
     }, [aiEntities, selectedEntityId, selectEntity]);
-
-    // 3-1: the Entities tab now surfaces AI entities only. Personas (user-type
-    // entities) live on the dedicated Personas tab.
-    const aiEntities = useMemo(() =>
-        (entities || []).filter(e => (e.entity_type || 'ai') === 'ai'),
-        [entities]
-    );
 
     const selectedEntity = useMemo(() => {
         if (!selectedEntityId || !entities || entities.length === 0) {

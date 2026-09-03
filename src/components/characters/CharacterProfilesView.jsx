@@ -132,8 +132,9 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
      */
     const handleCreatePersonaFromCard = async (profile) => {
         if (!profile?.id) return;
+        let newProfile = null;
         try {
-            const newProfile = await characterService.duplicateCharacterProfile(profile.id);
+            newProfile = await characterService.duplicateCharacterProfile(profile.id);
             // The copy's name (e.g. "Max 2") can contain characters that are
             // invalid in an entity id or collide with an existing id — derive a
             // safe, unique id. Its display alias is deduped the same way:
@@ -152,6 +153,21 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
             usePersonaStore.getState().requestEditPersona(entityName);
             onCreatePersonaFromCard();
         } catch (error) {
+            // Compensation: once duplicateCharacterProfile resolved, the profile
+            // COPY exists — so any failure after it (id/alias derivation, the
+            // atomic create, anything else) would orphan an unowned card that
+            // resurfaces in the Characters grid. Best-effort delete via the
+            // direct service (NOT the store's deleteProfile — its isLoading
+            // side-effects must not churn during error handling). Cleanup
+            // failures are swallowed/logged so they never mask the original
+            // error surfaced by the i18n'd alert below.
+            if (newProfile?.id) {
+                try {
+                    await characterService.deleteCharacterProfile(newProfile.id);
+                } catch (cleanupError) {
+                    console.error('Failed to clean up duplicated character profile after failed persona creation:', cleanupError);
+                }
+            }
             alert(t('characters:createPersonaFailed', { message: error.message }));
         }
     };

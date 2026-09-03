@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useEntityStore from '../../store/entityStore';
+import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -45,15 +46,32 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
     });
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-    /** Filter profiles by search query — matches name and description */
+    /**
+     * 2-1: ids of profiles owned by personas (referenced by ≥1 user entity).
+     * Those cards are managed in the Personas tab — they must not show in this
+     * grid, must not resurface via search, and (defensively) hide even if an AI
+     * entity also references them (persona ownership wins).
+     */
+    const personaOwnedIds = useMemo(
+        () => personaOwnedProfileIds(entities, profiles),
+        [entities, profiles]
+    );
+
+    /** Profiles visible in this tab: persona-owned cards excluded. */
+    const visibleProfiles = useMemo(
+        () => (profiles || []).filter(p => !personaOwnedIds.has(p.id)),
+        [profiles, personaOwnedIds]
+    );
+
+    /** Filter visible profiles by search query — matches name and description */
     const filteredProfiles = useMemo(() => {
-        if (!searchQuery.trim()) return profiles;
+        if (!searchQuery.trim()) return visibleProfiles;
         const query = searchQuery.toLowerCase().trim();
-        return profiles.filter(p =>
+        return visibleProfiles.filter(p =>
             p.name?.toLowerCase().includes(query) ||
             p.description?.toLowerCase().includes(query)
         );
-    }, [profiles, searchQuery]);
+    }, [visibleProfiles, searchQuery]);
 
     useEffect(() => {
         loadProfiles();
@@ -62,14 +80,14 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
     }, [loadProfiles, loadEntities]);
 
     useEffect(() => {
-        if (profiles && profiles.length > 0) {
-            profiles.forEach(profile => {
+        if (visibleProfiles && visibleProfiles.length > 0) {
+            visibleProfiles.forEach(profile => {
                 if (profile && profile.id) {
                     loadImages(profile.id);
                 }
             });
         }
-    }, [profiles, loadImages]);
+    }, [visibleProfiles, loadImages]);
 
     const handleEdit = (profile) => {
         setEditingProfile(profile);
@@ -202,7 +220,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
                     </div>
-                ) : profiles.length > 0 ? (
+                ) : visibleProfiles.length > 0 ? (
                     filteredProfiles.length > 0 ? (
                         <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
                             {filteredProfiles.map(profile => (
@@ -228,6 +246,13 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
                         </svg>
                         <h3 className="mt-2 text-sm font-medium text-text-primary">{t('characters:empty.title')}</h3>
                         <p className="mt-1 text-sm text-text-muted">{t('characters:empty.getStarted')}</p>
+                        {/* 2-1: the grid may be empty because every profile is
+                            persona-owned — point at the Personas tab. */}
+                        {profiles.length > 0 && (
+                            <p className="mt-2 text-sm text-accent-secondary italic font-medium">
+                                {t('characters:empty.personaOwnedHint')}
+                            </p>
+                        )}
                         <div className="mt-6 flex justify-center gap-3">
                             <button onClick={() => setShowImport(true)} className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
                                 {t('characters:buttons.importCard')}

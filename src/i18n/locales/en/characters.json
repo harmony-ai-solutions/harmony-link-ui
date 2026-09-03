@@ -33,7 +33,8 @@
     "title": "No profiles found",
     "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
-    "getStarted": "Get started by creating a new profile or importing a character card."
+    "getStarted": "Get started by creating a new profile or importing a character card.",
+    "personaOwnedHint": "Persona-owned cards are managed in the Personas tab."
   },
   "importTitle": "Import Character Card",
   "noDescription": "No description provided.",

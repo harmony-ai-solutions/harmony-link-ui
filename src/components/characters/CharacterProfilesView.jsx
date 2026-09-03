@@ -6,7 +6,7 @@ import usePersonaStore from '../../store/personaStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
-import { deriveEntityId } from '../../utils/entityIdUtils';
+import { deriveEntityId, deriveEntityAlias } from '../../utils/entityIdUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -125,9 +125,10 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     /**
      * 2-4: "Create persona from this card" — IMMEDIATE full copy (decision 7):
      * duplicate the whole card via the engine 1-3 endpoint (all spec + Soulbits
-     * fields, images copied with the primary flag preserved), create the persona
-     * entity named after the copy, sync the alias, then open the new persona in
-     * the Personas tab's editor. The old identity-prefill stash flow is retired.
+     * fields, images copied with the primary flag preserved), atomically create
+     * the persona entity named after the copy WITH its deduped display alias
+     * (single engine transaction), then open the new persona in the Personas
+     * tab's editor. The old identity-prefill stash flow is retired.
      */
     const handleCreatePersonaFromCard = async (profile) => {
         if (!profile?.id) return;
@@ -135,14 +136,19 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
             const newProfile = await characterService.duplicateCharacterProfile(profile.id);
             // The copy's name (e.g. "Max 2") can contain characters that are
             // invalid in an entity id or collide with an existing id — derive a
-            // safe, unique id. The display alias below stays the real name.
+            // safe, unique id. Its display alias is deduped the same way:
+            // entities.alias is UNIQUE among non-empty live aliases, so two
+            // personas from the same profile must not share a raw name.
             const entityName = deriveEntityId(newProfile.name, (entities || []).map(e => e.id), {
                 reservedMessage: t('characters:createPersonaReservedUser'),
                 emptyMessage: t('characters:entityIdInvalidName', { name: newProfile.name }),
             });
-            await entityService.createPersonaEntity(entityName, newProfile.id);
-            // Sync alias so the persona displays by its name in the entity list.
-            await entityService.updateEntity(entityName, newProfile.id, null, newProfile.name);
+            const alias = deriveEntityAlias(newProfile.name, entityName, (entities || []).map(e => e.alias));
+            // Atomic create (engine eb1124e): id + profile + alias in ONE
+            // request — an alias collision surfaces as a clean 400 ("entity
+            // alias is already in use") before anything is created, instead of
+            // a mid-flow unique-index 500 after the entity already exists.
+            await entityService.createPersonaEntity(entityName, newProfile.id, alias);
             usePersonaStore.getState().requestEditPersona(entityName);
             onCreatePersonaFromCard();
         } catch (error) {
@@ -153,10 +159,11 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     /**
      * "Create AI entity from this card" — AI entities link profiles LIVE
      * (engine 1:1 semantics, no card copy): derive an unused entity id from
-     * the profile name, create the entity pointing at THIS profile, sync the
-     * alias so the entity list displays by name, then refresh the entity list
-     * and preselect the new entity BEFORE the shell switches to the Entities
-     * tab (EntitySettingsView's selection-constraining effect then keeps it).
+     * the profile name, atomically create the entity pointing at THIS profile
+     * with a deduped display alias (single request: id + profile + alias),
+     * then refresh the entity list and preselect the new entity BEFORE the
+     * shell switches to the Entities tab (EntitySettingsView's
+     * selection-constraining effect then keeps it).
      */
     const handleCreateEntityFromCard = async (profile) => {
         if (!profile?.id) return;
@@ -165,9 +172,15 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                 reservedMessage: t('characters:createEntityReservedUser'),
                 emptyMessage: t('characters:entityIdInvalidName', { name: profile.name }),
             });
-            await entityService.createEntity(entityId, profile.id);
-            // Sync alias so the entity displays by its name in the entity list.
-            await entityService.updateEntity(entityId, profile.id, null, profile.name);
+            // The alias is deduped too: entities.alias is UNIQUE among
+            // non-empty live aliases, so a second AI entity from the same
+            // profile must not reuse the raw profile name.
+            const alias = deriveEntityAlias(profile.name, entityId, (entities || []).map(e => e.alias));
+            // Atomic create (engine eb1124e): id + profile + alias in ONE
+            // request — an alias collision surfaces as a clean 400 ("entity
+            // alias is already in use") before anything is created, instead of
+            // a mid-flow unique-index 500 after the entity already exists.
+            await entityService.createEntity(entityId, profile.id, alias);
             // Refresh first so the tab mounts with the new entity already in
             // the store — otherwise the selection constraint could override
             // the preselection while the list is still stale.

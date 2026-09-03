@@ -26,11 +26,29 @@ export async function getEntity(id) {
     return await resp.json();
 }
 
-export async function createEntity(id, characterProfileId) {
+/**
+ * Create an AI entity in ONE atomic request: id + character profile link +
+ * display alias land in a single engine transaction — there is no
+ * create→alias-PUT window anymore that could orphan a half-configured entity.
+ * The engine answers 400 {"error":"entity alias is already in use"} when
+ * `alias` exact-matches another live entity's alias (`entities.alias` partial
+ * UNIQUE index), so pass a pre-deduped alias (`deriveEntityAlias`).
+ * @param {string} id - Entity id.
+ * @param {string|null} characterProfileId - Linked character profile id.
+ * @param {string} [alias] - Display alias; included in the POST body ONLY
+ *   when a non-empty string is passed (omitted → exact legacy wire format, so
+ *   all 2-arg call sites keep behaving identically).
+ * @returns {Promise<{id: string, character_profile_id: string|null, entity_type: string|null, alias: string|null}>}
+ */
+export async function createEntity(id, characterProfileId, alias) {
+    const body = { id, character_profile_id: characterProfileId };
+    if (typeof alias === 'string' && alias !== '') {
+        body.alias = alias;
+    }
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities`, {
         method: "POST",
         headers: getJsonHeaders(),
-        body: JSON.stringify({ id, character_profile_id: characterProfileId })
+        body: JSON.stringify(body)
     });
     await handleResponse(resp, "Failed to create entity");
     return await resp.json();
@@ -40,16 +58,24 @@ export async function createEntity(id, characterProfileId) {
  * Create a persona (user-type) entity. Mirrors `createEntity` but sends the
  * optional `entity_type: 'user'` marker (management `handleCreateEntity`
  * supports it) so the engine treats it as a chat-only persona rather than an
- * AI entity.
+ * AI entity. Same atomic id + profile + alias semantics (and the same clean
+ * 400 on alias conflict) as `createEntity`.
  * @param {string} id - Entity id (also the persona name).
  * @param {string} characterProfileId - Linked character profile id.
- * @returns {Promise<{id: string, character_profile_id: string|null, entity_type: string}>}
+ * @param {string} [alias] - Display alias; included in the POST body ONLY
+ *   when a non-empty string is passed (omitted → exact legacy wire format, so
+ *   all 2-arg call sites keep behaving identically).
+ * @returns {Promise<{id: string, character_profile_id: string|null, entity_type: string, alias: string|null}>}
  */
-export async function createPersonaEntity(id, characterProfileId) {
+export async function createPersonaEntity(id, characterProfileId, alias) {
+    const body = { id, character_profile_id: characterProfileId, entity_type: 'user' };
+    if (typeof alias === 'string' && alias !== '') {
+        body.alias = alias;
+    }
     const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities`, {
         method: "POST",
         headers: getJsonHeaders(),
-        body: JSON.stringify({ id, character_profile_id: characterProfileId, entity_type: 'user' })
+        body: JSON.stringify(body)
     });
     await handleResponse(resp, "Failed to create entity");
     return await resp.json();

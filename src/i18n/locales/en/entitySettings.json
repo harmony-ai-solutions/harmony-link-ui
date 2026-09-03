@@ -40,7 +40,8 @@
       "noProfile": "No Character Profile",
       "selectPlaceholder": "Select Character Profile",
       "unsupportedBackend": "This backend provider ({{provider}}) has built-in identity and doesn't use Harmony Link profiles.",
-      "unsupportedNoBackend": "Character profiles require a backend configuration which supports custom prompting. Please select a backend module first."
+      "unsupportedNoBackend": "Character profiles require a backend configuration which supports custom prompting. Please select a backend module first.",
+      "personaOwnedStale": "This card is owned by a persona — choose another card."
     }
   },
   "modules": {

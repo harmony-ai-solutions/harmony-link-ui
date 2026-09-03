@@ -8,6 +8,7 @@ import CharacterProfilePreview from './widgets/CharacterProfilePreview';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity, renameEntity, resetEntityLifecycleConfig } from '../services/management/entityService';
+import { personaOwnedProfileIds } from '../utils/personaProfileUtils';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
@@ -125,6 +126,14 @@ const EntitySettingsView = ({ appName }) => {
     const aiEntities = useMemo(() =>
         (entities || []).filter(e => (e.entity_type || 'ai') === 'ai'),
         [entities]
+    );
+
+    // 2-2: profile ids owned by personas (referenced by ≥1 user-type entity).
+    // Persona-owned cards live in the Personas tab — AI entities must never be
+    // offered them in the character-profile dropdown (decision 1, UI side).
+    const personaOwnedIds = useMemo(
+        () => personaOwnedProfileIds(entities, characterProfiles),
+        [entities, characterProfiles]
     );
 
     useEffect(() => {
@@ -673,11 +682,27 @@ const EntitySettingsView = ({ appName }) => {
                                                 onChange={(val) => setSelectedCharacterProfileId(val)}
                                                 options={[
                                                     { value: '', label: tes('fields.characterProfile.noProfile') },
-                                                    ...characterProfiles.map(profile => ({ value: profile.id, label: profile.name }))
+                                                    // 2-2: exclude persona-owned cards (managed in Personas).
+                                                    ...characterProfiles
+                                                        .filter(profile => !personaOwnedIds.has(profile.id))
+                                                        .map(profile => ({ value: profile.id, label: profile.name }))
                                                 ]}
                                                 disabled={!isProfileSupported}
                                                 placeholder={tes('fields.characterProfile.selectPlaceholder')}
                                             />
+                                            {/* 2-2 stale-assignment hint: the currently edited AI entity
+                                                points at a persona-owned card (pre-guard data). The card is
+                                                not in the dropdown — surface it instead of silently showing
+                                                a missing value. Saving only works after picking another card
+                                                (the engine guard would 400 the assignment anyway). */}
+                                            {selectedCharacterProfileId && personaOwnedIds.has(selectedCharacterProfileId) && (
+                                                <p className="mt-2 text-xs text-accent-secondary flex items-center italic font-medium">
+                                                    <svg className="w-4 h-4 mr-1 text-accent-secondary" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                    </svg>
+                                                    {tes('fields.characterProfile.personaOwnedStale')}
+                                                </p>
+                                            )}
                                             {!isProfileSupported && (
                                                 <p className="mt-2 text-xs text-accent-secondary flex items-center italic font-medium">
                                                     <svg className="w-4 h-4 mr-1 text-accent-secondary" fill="currentColor" viewBox="0 0 20 20">

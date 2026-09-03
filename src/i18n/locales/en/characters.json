@@ -41,6 +41,7 @@
   "deleteProfile": "Delete profile",
   "createPersonaFailed": "Failed to create persona from this card: {{message}}",
   "createPersonaReservedUser": "'user' is a reserved persona name — choose a different card or rename the copy.",
+  "entityIdInvalidName": "Could not derive a valid entity id from \"{{name}}\" — rename the card copy first.",
   "liveLinkHint": "Linked to an entity — changes apply immediately",
   "usedBy": {
     "aiPrefix": "AI · {{name}}",

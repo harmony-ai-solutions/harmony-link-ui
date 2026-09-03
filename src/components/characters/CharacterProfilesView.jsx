@@ -6,6 +6,7 @@ import usePersonaStore from '../../store/personaStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
+import { deriveEntityId } from '../../utils/entityIdUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -128,15 +129,16 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
         if (!profile?.id) return;
         try {
             const newProfile = await characterService.duplicateCharacterProfile(profile.id);
-            const entityName = (newProfile.name || '').trim();
-            // Decision 14: the built-in 'user' id is reserved — refuse client-side
-            // even on this path (engine PK collision stays as the backstop).
-            if (entityName.toLowerCase() === 'user') {
-                throw new Error(t('characters:createPersonaReservedUser'));
-            }
+            // The copy's name (e.g. "Max 2") can contain characters that are
+            // invalid in an entity id or collide with an existing id — derive a
+            // safe, unique id. The display alias below stays the real name.
+            const entityName = deriveEntityId(newProfile.name, (entities || []).map(e => e.id), {
+                reservedMessage: t('characters:createPersonaReservedUser'),
+                emptyMessage: t('characters:entityIdInvalidName', { name: newProfile.name }),
+            });
             await entityService.createPersonaEntity(entityName, newProfile.id);
             // Sync alias so the persona displays by its name in the entity list.
-            await entityService.updateEntity(entityName, newProfile.id, null, entityName);
+            await entityService.updateEntity(entityName, newProfile.id, null, newProfile.name);
             usePersonaStore.getState().requestEditPersona(entityName);
             onCreatePersonaFromCard();
         } catch (error) {
@@ -258,7 +260,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
                                 <CharacterProfileCard key={profile.id} profile={profile}
                                     onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
                                     referencingEntities={referencingByProfile[profile.id] || []}
-                                    onCreatePersona={onCreatePersonaFromCard} />
+                                    onCreatePersona={handleCreatePersonaFromCard} />
                             ))}
                         </div>
                     ) : (

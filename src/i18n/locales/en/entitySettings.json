@@ -12,6 +12,7 @@
     "add": "Add",
     "rename": "Rename",
     "copy": "Copy",
+    "copyPersonaHint": "Personas cannot be copied — only AI entities can.",
     "delete": "Delete",
     "save": "Save",
     "saving": "Saving...",

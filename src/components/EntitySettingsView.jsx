@@ -7,7 +7,7 @@ import ThemedSelect from './widgets/ThemedSelect';
 import CharacterProfilePreview from './widgets/CharacterProfilePreview';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
-import { updateEntity, renameEntity, resetEntityLifecycleConfig } from '../services/management/entityService';
+import { updateEntity, renameEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
 import { personaOwnedProfileIds } from '../utils/personaProfileUtils';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
@@ -152,6 +152,14 @@ const EntitySettingsView = ({ appName }) => {
         }
         return getEntity(selectedEntityId);
     }, [selectedEntityId, entities, getEntity]);
+
+    // Copy guard: the engine duplicate endpoint only accepts AI entities
+    // (personas answer 400 "persona entities cannot be duplicated"). The
+    // constraining effect above normally pins the selection to AI entities,
+    // but with ZERO AI entities a persona selected on the Personas tab (the
+    // entity store is shared) could persist here — disable Copy for it,
+    // mirroring the personas-tab built-in locks.
+    const isPersonaSelected = selectedEntity?.entity_type === 'user';
 
     useEffect(() => {
         if (selectedEntity) {
@@ -412,58 +420,34 @@ const EntitySettingsView = ({ appName }) => {
         });
     };
 
-    const handleCopy = () => {
+    /**
+     * One-click copy via the engine duplicate endpoint. The server derives
+     * the copy's id (copy-suffix series, soft-delete aware) and alias
+     * ("Name 2" series, live-aware), and atomically copies the source's
+     * module mappings + lifecycle_config while linking the SAME character
+     * profile live — so the old typed-id prompt and the manual
+     * create→mappings→alias PUT chain are gone. The 201 body's `id` is
+     * server-resolved (may differ from the source id whenever a suffix was
+     * needed) and the preselection follows it. Clean 400/404 bodies
+     * ("persona entities cannot be duplicated" / "entity not found") surface
+     * verbatim in the error dialog.
+     */
+    const handleCopy = async () => {
         if (!selectedEntityId || !selectedEntity) return;
-        const defaultName = generateUniqueEntityId(`${selectedEntityId}-copy`);
-        setInputDialog({
-            isOpen: true,
-            title: tes('dialogs.copy.title'),
-            message: tes('dialogs.copy.message', { entityId: selectedEntityId }),
-            defaultValue: defaultName,
-            onConfirm: async (newId) => {
-                setInputDialog({ ...inputDialog, isOpen: false });
-                if (!newId) return;
-                const validationError = validateEntityId(newId);
-                if (validationError) {
-                    setErrorDialog({
-                        isOpen: true,
-                        title: tes('dialogs.invalidEntityId.title'),
-                        message: validationError,
-                        type: 'error'
-                    });
-                    return;
-                }
-                try {
-                    const characterProfileId = selectedEntity.character_profile?.id || null;
-                    await createEntity(newId, characterProfileId);
-                    const mappings = {
-                        backend_config_id: selectedEntity.modules?.backend?.id || null,
-                        cognition_config_id: selectedEntity.modules?.cognition?.id || null,
-                        imagination_config_id: selectedEntity.modules?.imagination?.id || null,
-                        movement_config_id: selectedEntity.modules?.movement?.id || null,
-                        rag_config_id: selectedEntity.modules?.rag?.id || null,
-                        stt_config_id: selectedEntity.modules?.stt?.id || null,
-                        tts_config_id: selectedEntity.modules?.tts?.id || null,
-                        vision_config_id: selectedEntity.modules?.vision?.id || null
-                    };
-                    await updateEntityMappings(newId, mappings);
-                    const sourceAlias = selectedEntity.alias || '';
-                    if (sourceAlias) {
-                        await updateEntity(newId, null, null, sourceAlias);
-                    }
-                    await loadEntities();
-                    setSuccessMessage(tes('messages.copySuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
-                } catch (error) {
-                    setErrorDialog({
-                        isOpen: true,
-                        title: tes('dialogs.copyFailed.title'),
-                        message: tes('messages.copyFailedDetail', { message: error.message }),
-                        type: 'error'
-                    });
-                }
-            }
-        });
+        try {
+            const copy = await duplicateEntity(selectedEntityId);
+            await loadEntities();
+            selectEntity(copy.id);
+            setSuccessMessage(tes('messages.copySuccess'));
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            setErrorDialog({
+                isOpen: true,
+                title: tes('dialogs.copyFailed.title'),
+                message: tes('messages.copyFailedDetail', { message: error.message }),
+                type: 'error'
+            });
+        }
     };
 
     const handleRename = () => {
@@ -583,7 +567,10 @@ const EntitySettingsView = ({ appName }) => {
                         <div className="grid grid-cols-2 gap-2">
                             <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">{tes('buttons.add')}</button>
                             <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.rename')}</button>
-                            <button onClick={handleCopy} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.copy')}</button>
+                            <button onClick={handleCopy}
+                                disabled={!selectedEntityId || isPersonaSelected}
+                                title={isPersonaSelected ? tes('buttons.copyPersonaHint') : ''}
+                                className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.copy')}</button>
                             <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-danger text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">{tes('buttons.delete')}</button>
                         </div>
 

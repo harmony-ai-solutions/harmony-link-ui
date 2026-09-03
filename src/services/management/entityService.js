@@ -107,6 +107,30 @@ export async function createPersonaEntity(id, characterProfileId, alias, { dedup
     return await resp.json();
 }
 
+/**
+ * Duplicate an AI entity in ONE atomic engine transaction
+ * (`POST /entities/:id/duplicate`, no body). The copy gets a server-derived
+ * id (copy-suffix series, soft-delete aware) and alias ("Name 2" series,
+ * live-aware), verbatim copies of the source's module mappings +
+ * lifecycle_config, and the SAME character profile linked live; its
+ * muted/disabled flags are reset. AI entities only — the engine answers
+ * 404 {"error":"entity not found"} and
+ * 400 {"error":"persona entities cannot be duplicated"} with clean bodies
+ * that `handleResponse` surfaces verbatim.
+ * @param {string} entityId - Source entity id.
+ * @returns {Promise<{id: string, character_profile_id: string|null, entity_type: string, alias: string}>}
+ *   The parsed 201 body of the NEW copy — `id` is server-derived and differs
+ *   from the source id whenever a suffix was needed (callers must use it).
+ */
+export async function duplicateEntity(entityId) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}/duplicate`, {
+        method: "POST",
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to duplicate entity");
+    return await resp.json();
+}
+
 export async function updateEntity(id, characterProfileId, lifecycleConfig, alias) {
     const body = {};
     if (characterProfileId !== undefined && characterProfileId !== null) {

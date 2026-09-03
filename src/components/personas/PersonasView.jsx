@@ -62,6 +62,12 @@ export default function PersonasView() {
     const [form, setForm] = useState({ name: '', description: '', personality: '' });
     const [savingForm, setSavingForm] = useState(false);
 
+    // View controls (search + card size) — mirror of the Characters toolbar.
+    const [searchQuery, setSearchQuery] = useState('');
+    const [cardSize, setCardSize] = useState(() => {
+        return localStorage.getItem('personaCardSize') || 'large';
+    });
+
     // Feedback / modal state
     const [successMessage, setSuccessMessage] = useState(null);
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
@@ -126,6 +132,19 @@ export default function PersonasView() {
         }
         return list;
     }, [entities, profiles, userEntityFull]);
+
+    // Filter personas by the search query — matches the display name
+    // (persona.profile?.name || persona.alias || persona.id) and the linked
+    // profile description, case-insensitive (Characters parity).
+    const filteredPersonas = useMemo(() => {
+        if (!searchQuery.trim()) return personas;
+        const query = searchQuery.toLowerCase().trim();
+        return personas.filter(persona => {
+            const name = persona.profile?.name || persona.alias || persona.id;
+            return name.toLowerCase().includes(query) ||
+                (persona.profile?.description || '').toLowerCase().includes(query);
+        });
+    }, [personas, searchQuery]);
 
     // Load primary images for persona profiles (for the row avatar).
     useEffect(() => {
@@ -304,6 +323,20 @@ export default function PersonasView() {
         return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
     };
 
+    const handleCardSizeChange = (size) => {
+        setCardSize(size);
+        localStorage.setItem('personaCardSize', size);
+    };
+
+    const getGridClasses = () => {
+        switch (cardSize) {
+            case 'small': return 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12';
+            case 'large': return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
+            case 'medium':
+            default: return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6';
+        }
+    };
+
     if (isEntityLoading && entities === null) {
         return (
             <div className="flex items-center justify-center h-96">
@@ -397,11 +430,52 @@ export default function PersonasView() {
                     )}
                 </div>
 
+                {/* Search + Card Size toolbar */}
+                <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
+                    <div className="flex items-center justify-between gap-4">
+                        {/* Search Bar */}
+                        <div data-tutorial-id="persona-search" className="search-bar-wrapper">
+                            <svg className="search-bar-icon w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                className="search-bar-input"
+                                placeholder={tes('searchPlaceholder')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                aria-label={tes('searchPlaceholder')}
+                            />
+                        </div>
+
+                        {/* Card Size Toggle */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-xs text-text-muted font-medium">{tes('cardSize')}</span>
+                            <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                {[
+                                    { size: 'small', title: tes('cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
+                                    { size: 'medium', title: tes('cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
+                                    { size: 'large', title: tes('cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
+                                ].map(({ size, title, path }) => (
+                                    <button key={size} onClick={() => handleCardSizeChange(size)}
+                                        className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+                                        title={title}>
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d={path} />
+                                        </svg>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Persona List */}
                 <div className="flex-1 p-6">
                     {personas.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                            {personas.map(persona => {
+                        filteredPersonas.length > 0 ? (
+                            <div data-tutorial-id="persona-grid" className={`grid ${getGridClasses()} gap-5`}>
+                                {filteredPersonas.map(persona => {
                                 const avatar = persona.profile?.id ? getPrimaryImage(persona.profile.id) : null;
                                 const isBuiltIn = persona.id === 'user';
                                 return (
@@ -457,6 +531,15 @@ export default function PersonasView() {
                                 );
                             })}
                         </div>
+                    ) : (
+                        <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
+                            <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <h3 className="mt-2 text-sm font-medium text-text-primary">{tes('empty.noResults')}</h3>
+                            <p className="mt-1 text-sm text-text-muted">{tes('empty.tryAdjustingSearch')}</p>
+                        </div>
+                    )
                     ) : (
                         <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
                             <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -11,6 +11,17 @@
     "saving": "Saving...",
     "cancel": "Cancel"
   },
+  "searchPlaceholder": "Search personas...",
+  "cardSize": "Card Size:",
+  "cardSizes": {
+    "small": "Small cards",
+    "medium": "Medium cards",
+    "large": "Large cards"
+  },
+  "empty": {
+    "noResults": "No matching personas",
+    "tryAdjustingSearch": "Try adjusting your search query."
+  },
   "fields": {
     "name": "Name",
     "namePlaceholder": "Persona name...",

@@ -235,7 +235,11 @@ const EntitySettingsView = ({ appName }) => {
                 return;
             }
 
-            const currentProfileId = selectedEntity.character_profile_id || '';
+            // Entity list rows embed the profile link (character_profile.id) —
+            // there is no top-level character_profile_id field, and reading it
+            // always yielded '' → the save below saw a phantom profile change
+            // and fired a redundant profile PUT on every save.
+            const currentProfileId = selectedEntity.character_profile?.id || '';
             const currentAlias = selectedEntity.alias || '';
             const newProfileId = isProfileSupported ? (selectedCharacterProfileId || null) : null;
             if (currentProfileId !== (newProfileId || '') || currentAlias !== entityAlias) {

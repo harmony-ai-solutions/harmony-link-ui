@@ -6,11 +6,54 @@ import usePersonaStore from '../../store/personaStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
-import { deriveEntityId, deriveEntityAlias } from '../../utils/entityIdUtils';
+import { deriveEntityId, deriveEntityAlias, nextEntityIdCandidate, isEntityIdConflictError } from '../../utils/entityIdUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+
+/** Max POST /entities attempts in the from-card id-conflict retry. */
+const CREATE_ENTITY_MAX_ATTEMPTS = 5;
+
+/**
+ * Bounded auto-retry around the atomic from-card entity create. The entity
+ * list only shows live rows (deletion is a soft delete that RETAINS the row's
+ * primary key), so the `deriveEntityId` result can look free among visible
+ * entities yet collide with a soft-deleted one — a conflict the client cannot
+ * foresee. The engine (source of truth) answers that with a clean 400
+ * ("entity id already exists"); on it, the id is bumped via
+ * `nextEntityIdCandidate` and the alias is RECOMPUTED for the new id (its
+ * fallback tracks the id; the visible live-alias set is static during the
+ * loop — nothing is created until an attempt succeeds). Any non-conflict
+ * error rethrows immediately; exhausting `CREATE_ENTITY_MAX_ATTEMPTS`
+ * attempts rethrows the last conflict error.
+ *
+ * Module-level (not per-render): pure orchestration over the imported
+ * derivation helpers — no component state involved.
+ *
+ * @param {Function} createFn - async (entityId, alias) => Promise; performs
+ *   the atomic create for one attempt (service call differs per path).
+ * @param {string} entityId - the first candidate id (already deduped against
+ *   visible live ids and checked for reserved/empty by `deriveEntityId`).
+ * @param {string} displayName - pretty name whose alias is derived per
+ *   attempt via `deriveEntityAlias`.
+ * @param {string[]} liveAliases - aliases of ALL visible live entities.
+ * @returns {Promise<string>} the entity id of the successful attempt.
+ */
+const createEntityFromCardWithRetry = async (createFn, entityId, displayName, liveAliases) => {
+    for (let attempt = 1; ; attempt += 1) {
+        const alias = deriveEntityAlias(displayName, entityId, liveAliases);
+        try {
+            await createFn(entityId, alias);
+            return entityId;
+        } catch (error) {
+            if (!isEntityIdConflictError(error) || attempt >= CREATE_ENTITY_MAX_ATTEMPTS) {
+                throw error;
+            }
+            entityId = nextEntityIdCandidate(entityId);
+        }
+    }
+};
 
 /**
  * Main view for managing character profiles
@@ -129,6 +172,13 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
      * the persona entity named after the copy WITH its deduped display alias
      * (single engine transaction), then open the new persona in the Personas
      * tab's editor. The old identity-prefill stash flow is retired.
+     *
+     * The create step auto-retries (bounded): an id held by a SOFT-deleted
+     * entity is invisible to the live-only entity list, so the engine's 400
+     * ("entity id already exists") bumps the id and retries — see
+     * `createEntityFromCardWithRetry`. The whole retry sequence runs INSIDE
+     * this try, so the duplicate-profile compensation below still fires
+     * exactly once if every attempt is exhausted.
      */
     const handleCreatePersonaFromCard = async (profile) => {
         if (!profile?.id) return;
@@ -137,20 +187,26 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
             newProfile = await characterService.duplicateCharacterProfile(profile.id);
             // The copy's name (e.g. "Max 2") can contain characters that are
             // invalid in an entity id or collide with an existing id — derive a
-            // safe, unique id. Its display alias is deduped the same way:
+            // safe, unique id (reserved/empty checks throw BEFORE any create
+            // attempt). Its display alias is deduped the same way:
             // entities.alias is UNIQUE among non-empty live aliases, so two
             // personas from the same profile must not share a raw name.
             const entityName = deriveEntityId(newProfile.name, (entities || []).map(e => e.id), {
                 reservedMessage: t('characters:createPersonaReservedUser'),
                 emptyMessage: t('characters:entityIdInvalidName', { name: newProfile.name }),
             });
-            const alias = deriveEntityAlias(newProfile.name, entityName, (entities || []).map(e => e.alias));
             // Atomic create (engine eb1124e): id + profile + alias in ONE
             // request — an alias collision surfaces as a clean 400 ("entity
             // alias is already in use") before anything is created, instead of
             // a mid-flow unique-index 500 after the entity already exists.
-            await entityService.createPersonaEntity(entityName, newProfile.id, alias);
-            usePersonaStore.getState().requestEditPersona(entityName);
+            // An id conflict (soft-deleted row) is retried with a bumped id.
+            const createdId = await createEntityFromCardWithRetry(
+                (id, alias) => entityService.createPersonaEntity(id, newProfile.id, alias),
+                entityName,
+                newProfile.name,
+                (entities || []).map(e => e.alias)
+            );
+            usePersonaStore.getState().requestEditPersona(createdId);
             onCreatePersonaFromCard();
         } catch (error) {
             // Compensation: once duplicateCharacterProfile resolved, the profile
@@ -180,6 +236,11 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
      * then refresh the entity list and preselect the new entity BEFORE the
      * shell switches to the Entities tab (EntitySettingsView's
      * selection-constraining effect then keeps it).
+     *
+     * The create step auto-retries (bounded): an id held by a SOFT-deleted
+     * entity is invisible to the live-only entity list, so the engine's 400
+     * ("entity id already exists") bumps the id and retries — see
+     * `createEntityFromCardWithRetry`.
      */
     const handleCreateEntityFromCard = async (profile) => {
         if (!profile?.id) return;
@@ -188,20 +249,22 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                 reservedMessage: t('characters:createEntityReservedUser'),
                 emptyMessage: t('characters:entityIdInvalidName', { name: profile.name }),
             });
-            // The alias is deduped too: entities.alias is UNIQUE among
-            // non-empty live aliases, so a second AI entity from the same
-            // profile must not reuse the raw profile name.
-            const alias = deriveEntityAlias(profile.name, entityId, (entities || []).map(e => e.alias));
             // Atomic create (engine eb1124e): id + profile + alias in ONE
             // request — an alias collision surfaces as a clean 400 ("entity
             // alias is already in use") before anything is created, instead of
             // a mid-flow unique-index 500 after the entity already exists.
-            await entityService.createEntity(entityId, profile.id, alias);
+            // An id conflict (soft-deleted row) is retried with a bumped id.
+            const createdId = await createEntityFromCardWithRetry(
+                (id, alias) => entityService.createEntity(id, profile.id, alias),
+                entityId,
+                profile.name,
+                (entities || []).map(e => e.alias)
+            );
             // Refresh first so the tab mounts with the new entity already in
             // the store — otherwise the selection constraint could override
             // the preselection while the list is still stale.
             await loadEntities();
-            selectEntity(entityId);
+            selectEntity(createdId);
             onCreateEntityFromCard();
         } catch (error) {
             alert(t('characters:createEntityFailed', { message: error.message }));

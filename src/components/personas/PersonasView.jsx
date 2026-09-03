@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import useEntityStore from '../../store/entityStore';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useModuleConfigStore from '../../store/moduleConfigStore';
+import usePersonaStore from '../../store/personaStore';
 import * as entityService from '../../services/management/entityService.js';
 import * as characterService from '../../services/management/characterService.js';
 import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
+import CharacterCardExport from '../characters/CharacterCardExport.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
@@ -230,6 +232,20 @@ export default function PersonasView() {
         setEditorProfile(null);
         setEditorLoadingProfile(false);
     };
+
+    // 2-4: when the Characters tab created a persona from a card, it stashes the
+    // new persona's id here and switches to this tab. Once the persona shows up
+    // in the (re)loaded list, open its full card editor, then clear the request
+    // so it never re-fires. Note: declared after `openEdit` — the dependency
+    // array reads it during render (no TDZ).
+    useEffect(() => {
+        const personaId = usePersonaStore.getState().requestEditPersonaId;
+        if (!personaId) return;
+        const persona = personas.find(p => p.id === personaId);
+        if (!persona) return;
+        usePersonaStore.getState().clearRequestEditPersona();
+        openEdit(persona);
+    }, [personas, openEdit]);
 
     /**
      * 2-3 persona save path (full card editor, personaMode):
@@ -499,6 +515,17 @@ export default function PersonasView() {
                                                     </span>
                                                 )}
                                             </div>
+                                            {/* 2-4: per-persona card export (mirrors the Characters UX:
+                                                PNG / JSON format choice). Anchored top-right — the
+                                                badges own the top-left. */}
+                                            {persona.profile && (
+                                                <CharacterCardExport
+                                                    profile={persona.profile}
+                                                    variant="card"
+                                                    wrapperClassName="top-2 right-2"
+                                                    menuAnchorClassName="right-0"
+                                                />
+                                            )}
                                         </div>
                                         <div className="p-4">
                                             <div className="flex items-center justify-between gap-2">

@@ -11,8 +11,9 @@ import CharacterCardExport from './CharacterCardExport';
  * @param {Function} [props.onDelete] - Callback when the delete button is clicked
  * @param {Object[]} [props.referencingEntities] - 3-2: entities (AI or persona)
  *   that link this profile live. Drives the "used by" badges.
- * @param {Function} [props.onCreatePersona] - 3-2: "Create persona from this
- *   card" — receives { name, description, personality } (copy semantics).
+ * @param {Function} [props.onCreatePersona] - 2-4: "Create persona from this
+ *   card" — receives the FULL profile so the app can duplicate it as a rich
+ *   full-card copy (all spec + Soulbits fields, images preserved).
  */
 export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona }) {
     const { t } = useTranslation('characters');
@@ -62,14 +63,11 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            // COPY semantics: identity fields only (no lore /
-                            // character_book / module configs). Source card
-                            // untouched.
-                            onCreatePersona({
-                                name: profile.name,
-                                description: profile.description,
-                                personality: profile.personality,
-                            });
+                            // 2-4: FULL-copy semantics — the app duplicates this
+                            // card (all spec + Soulbits fields, images copied with
+                            // the primary flag preserved) and opens the copy in
+                            // the persona editor. Source card untouched.
+                            onCreatePersona(profile);
                         }}
                         className="absolute bottom-2 left-2 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                         title={t('buttons.createPersona')}

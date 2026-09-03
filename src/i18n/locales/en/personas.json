@@ -53,7 +53,7 @@
     "createTitle": "Create Persona",
     "editTitle": "Edit Persona",
     "deleteTitle": "Delete Persona",
-    "deleteMessage": "Delete persona '{{name}}'?\n\nThis action cannot be undone.",
+    "deleteMessage": "Delete persona '{{name}}'?\n\nThis permanently removes the persona, its card, and card images.",
     "invalidName": "Invalid Name",
     "deleteBuiltIn": "The built-in 'user' persona cannot be deleted.",
     "errorTitles": {

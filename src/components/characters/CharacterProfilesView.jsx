@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useEntityStore from '../../store/entityStore';
+import usePersonaStore from '../../store/personaStore';
+import * as characterService from '../../services/management/characterService.js';
+import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
@@ -11,9 +14,10 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 /**
  * Main view for managing character profiles
  * @param {Object} props
- * @param {Function} [props.onCreatePersonaFromCard] - 3-2: "Create persona from
- *   this card" — receives { name, description, personality } (identity fields
- *   only, copy semantics) so the app can switch to the Personas tab prefilled.
+ * @param {Function} [props.onCreatePersonaFromCard] - 2-4: "Create persona from
+ *   this card" — the app performs the full-copy create here (duplicate profile
+ *   → persona entity → alias sync), then calls this callback so the shell can
+ *   switch to the Personas tab with the new persona open in the editor.
  */
 export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
     const { t } = useTranslation();
@@ -111,6 +115,33 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
 
     const handleDeleteCancel = () => {
         setDeleteTargetId(null);
+    };
+
+    /**
+     * 2-4: "Create persona from this card" — IMMEDIATE full copy (decision 7):
+     * duplicate the whole card via the engine 1-3 endpoint (all spec + Soulbits
+     * fields, images copied with the primary flag preserved), create the persona
+     * entity named after the copy, sync the alias, then open the new persona in
+     * the Personas tab's editor. The old identity-prefill stash flow is retired.
+     */
+    const handleCreatePersonaFromCard = async (profile) => {
+        if (!profile?.id) return;
+        try {
+            const newProfile = await characterService.duplicateCharacterProfile(profile.id);
+            const entityName = (newProfile.name || '').trim();
+            // Decision 14: the built-in 'user' id is reserved — refuse client-side
+            // even on this path (engine PK collision stays as the backstop).
+            if (entityName.toLowerCase() === 'user') {
+                throw new Error(t('characters:createPersonaReservedUser'));
+            }
+            await entityService.createPersonaEntity(entityName, newProfile.id);
+            // Sync alias so the persona displays by its name in the entity list.
+            await entityService.updateEntity(entityName, newProfile.id, null, entityName);
+            usePersonaStore.getState().requestEditPersona(entityName);
+            onCreatePersonaFromCard();
+        } catch (error) {
+            alert(t('characters:createPersonaFailed', { message: error.message }));
+        }
     };
 
     const handleImportSuccess = async (result) => {

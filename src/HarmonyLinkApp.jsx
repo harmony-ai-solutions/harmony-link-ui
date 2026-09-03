@@ -16,7 +16,6 @@ import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
-import usePersonaStore from './store/personaStore';
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
@@ -144,10 +143,11 @@ function HarmonyLinkAppInner() {
         }, 300);
     };
 
-    // 3-2: "Create persona from this card" — stash an identity-field-only prefill
-    // and flip to the Personas tab (which opens its create form prefilled).
-    const handleCreatePersonaFromCard = (prefill) => {
-        usePersonaStore.getState().setCreatePrefill(prefill);
+    // 2-4: "Create persona from this card" — the Characters tab performs the
+    // full-copy create (duplicate profile → persona entity → alias sync) and
+    // stashes the new persona id in the persona store; this callback just flips
+    // to the Personas tab, whose editor then opens on the new persona.
+    const handleCreatePersonaFromCard = () => {
         setSettingsTab(SettingsTabPersonas);
     };
 

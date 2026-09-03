@@ -103,18 +103,37 @@ export default function PersonasView() {
     const personas = useMemo(() => {
         const profileMap = {};
         (profiles || []).forEach(p => { profileMap[p.id] = p; });
+        // The engine's entity payload (EntityConfig) embeds the resolved
+        // character profile as `character_profile` — it has NO top-level
+        // `character_profile_id` field. Resolve the link defensively (same
+        // pattern as EntitySettingsView / personaProfileUtils) and join with
+        // the profiles store (fresher after edits), falling back to the
+        // embedded profile object. The normalized `character_profile_id` keeps
+        // openEdit/handlePersonaSave working off the persona object alone.
+        const resolveProfileLink = (entity) => {
+            const profileId = entity.character_profile_id || entity.character_profile?.id || null;
+            const embedded = entity.character_profile?.id ? entity.character_profile : null;
+            return {
+                profileId,
+                profile: profileMap[profileId] || embedded,
+            };
+        };
         const list = (entities || [])
             .filter(e => e.entity_type === 'user')
-            .map(e => ({ ...e, profile: profileMap[e.character_profile_id] || null }));
+            .map(e => {
+                const { profileId, profile } = resolveProfileLink(e);
+                return { ...e, character_profile_id: profileId, profile };
+            });
         // Defensive: the seeder guarantees the canonical `user` row, but if it
         // ever isn't in the cached list (e.g. mid-sync) still surface it.
         if (!list.some(e => e.id === 'user') && userEntityFull) {
+            const { profileId, profile } = resolveProfileLink(userEntityFull);
             list.unshift({
                 id: 'user',
                 entity_type: 'user',
                 alias: userEntityFull.alias || '',
-                character_profile_id: userEntityFull.character_profile_id || '',
-                profile: profileMap[userEntityFull.character_profile_id] || null,
+                character_profile_id: profileId,
+                profile,
                 modules: userEntityFull.modules,
             });
         }
@@ -262,6 +281,8 @@ export default function PersonasView() {
         const name = (payload.name || '').trim();
         const isCreate = !editingPersona;
         const isBuiltIn = editingPersona?.id === 'user';
+        // Profile whose card images need a refresh after the save (polish).
+        let savedProfileId = null;
 
         if (isCreate) {
             const nameErr = validatePersonaName(name, null);
@@ -276,6 +297,7 @@ export default function PersonasView() {
 
         if (isCreate) {
             const newProfile = await createProfile(payload);
+            savedProfileId = newProfile.id;
             await entityService.createPersonaEntity(name, newProfile.id);
             // Sync alias so the persona displays by its name in the entity list.
             await entityService.updateEntity(name, newProfile.id, null, name);
@@ -296,12 +318,19 @@ export default function PersonasView() {
             }
             if (profileId) {
                 await updateProfile(profileId, payload);
+                savedProfileId = profileId;
             }
             await entityService.updateEntity(entityId, profileId, null, name);
             setSuccessMessage(tes('messages.updateSuccess'));
         }
         setTimeout(() => setSuccessMessage(null), 3000);
         await Promise.all([loadEntities(), loadProfiles()]);
+        // Re-fetch the saved profile's images: the card's image-load effect is
+        // ref-deduped (loadedImageIds already holds this profile id), so a
+        // newly set primary image would otherwise never reach the card.
+        if (savedProfileId) {
+            loadCharacterImages(savedProfileId);
+        }
     };
 
     const handleDeleteRequest = (persona) => {

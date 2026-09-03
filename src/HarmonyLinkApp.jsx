@@ -151,6 +151,14 @@ function HarmonyLinkAppInner() {
         setSettingsTab(SettingsTabPersonas);
     };
 
+    // "Create AI entity from this card" — the Characters tab links the profile
+    // LIVE to a new AI entity (no card copy), refreshes the entity list and
+    // preselects it in the entity store; this callback just flips to the
+    // Entities tab, where the new entity is already the selection.
+    const handleCreateEntityFromCard = () => {
+        setSettingsTab(SettingsTabEntities);
+    };
+
     // On Application Loaded
     useEffect(() => {
         // Load Config on Start
@@ -361,7 +369,8 @@ function HarmonyLinkAppInner() {
                     <EntitySettingsView appName={appName}></EntitySettingsView>
                 }
                 {settingsTab === SettingsTabCharacters &&
-                    <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}></CharacterProfilesView>
+                    <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}
+                        onCreateEntityFromCard={handleCreateEntityFromCard}></CharacterProfilesView>
                 }
                 {settingsTab === SettingsTabPersonas &&
                     <PersonasView></PersonasView>

@@ -14,8 +14,11 @@ import CharacterCardExport from './CharacterCardExport';
  * @param {Function} [props.onCreatePersona] - 2-4: "Create persona from this
  *   card" — receives the FULL profile so the app can duplicate it as a rich
  *   full-card copy (all spec + Soulbits fields, images preserved).
+ * @param {Function} [props.onCreateEntity] - "Create AI entity from this card"
+ *   — receives the FULL profile; the app links it LIVE (no card copy) to a new
+ *   AI entity and switches to the Entities tab.
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
     const referenced = Array.isArray(referencingEntities) ? referencingEntities : [];
@@ -74,6 +77,25 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                    </button>
+                )}
+
+                {onCreateEntity && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // LIVE-link semantics — AI entities reference this
+                            // profile directly (no copy): the app creates the
+                            // entity, syncs the alias and opens the Entities tab.
+                            onCreateEntity(profile);
+                        }}
+                        className="absolute bottom-2 right-2 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                        title={t('buttons.createEntity')}
+                    >
+                        {/* Robot icon — mirrors the nav's Characters tab iconography. */}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v3m0 0a4 4 0 014 4v7a4 4 0 01-4 4 4 4 0 01-4-4V9a4 4 0 014-4zM3 12h2m14 0h2M5 21h14M9 13h.01M15 13h.01M9 17c.7.5 2 1 3 1s2.3-.5 3-1" />
                         </svg>
                     </button>
                 )}

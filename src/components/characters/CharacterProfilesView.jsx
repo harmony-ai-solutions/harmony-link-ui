@@ -19,11 +19,15 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
  *   this card" — the app performs the full-copy create here (duplicate profile
  *   → persona entity → alias sync), then calls this callback so the shell can
  *   switch to the Personas tab with the new persona open in the editor.
+ * @param {Function} [props.onCreateEntityFromCard] - "Create AI entity from
+ *   this card" — the app links the profile LIVE to a new AI entity (no card
+ *   copy), then calls this callback so the shell can switch to the Entities
+ *   tab with the new entity preselected.
  */
-export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
+export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard }) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
-    const { entities, loadEntities } = useEntityStore();
+    const { entities, loadEntities, selectEntity } = useEntityStore();
 
     /**
      * 3-2: map character_profile_id → the entities (AI or persona) that
@@ -146,6 +150,35 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
         }
     };
 
+    /**
+     * "Create AI entity from this card" — AI entities link profiles LIVE
+     * (engine 1:1 semantics, no card copy): derive an unused entity id from
+     * the profile name, create the entity pointing at THIS profile, sync the
+     * alias so the entity list displays by name, then refresh the entity list
+     * and preselect the new entity BEFORE the shell switches to the Entities
+     * tab (EntitySettingsView's selection-constraining effect then keeps it).
+     */
+    const handleCreateEntityFromCard = async (profile) => {
+        if (!profile?.id) return;
+        try {
+            const entityId = deriveEntityId(profile.name, (entities || []).map(e => e.id), {
+                reservedMessage: t('characters:createEntityReservedUser'),
+                emptyMessage: t('characters:entityIdInvalidName', { name: profile.name }),
+            });
+            await entityService.createEntity(entityId, profile.id);
+            // Sync alias so the entity displays by its name in the entity list.
+            await entityService.updateEntity(entityId, profile.id, null, profile.name);
+            // Refresh first so the tab mounts with the new entity already in
+            // the store — otherwise the selection constraint could override
+            // the preselection while the list is still stale.
+            await loadEntities();
+            selectEntity(entityId);
+            onCreateEntityFromCard();
+        } catch (error) {
+            alert(t('characters:createEntityFailed', { message: error.message }));
+        }
+    };
+
     const handleImportSuccess = async (result) => {
         setShowImport(false);
         await loadProfiles();
@@ -260,7 +293,8 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard }) {
                                 <CharacterProfileCard key={profile.id} profile={profile}
                                     onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
                                     referencingEntities={referencingByProfile[profile.id] || []}
-                                    onCreatePersona={handleCreatePersonaFromCard} />
+                                    onCreatePersona={handleCreatePersonaFromCard}
+                                    onCreateEntity={handleCreateEntityFromCard} />
                             ))}
                         </div>
                     ) : (

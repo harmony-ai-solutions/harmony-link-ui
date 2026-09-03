@@ -7,6 +7,7 @@
     "importCard": "Import Card",
     "createProfile": "Create Profile",
     "createPersona": "Create persona from this card",
+    "createEntity": "Create AI entity from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",
@@ -41,6 +42,8 @@
   "deleteProfile": "Delete profile",
   "createPersonaFailed": "Failed to create persona from this card: {{message}}",
   "createPersonaReservedUser": "'user' is a reserved persona name — choose a different card or rename the copy.",
+  "createEntityFailed": "Failed to create AI entity from this card: {{message}}",
+  "createEntityReservedUser": "'user' is a reserved entity id — rename the card copy first.",
   "entityIdInvalidName": "Could not derive a valid entity id from \"{{name}}\" — rename the card copy first.",
   "liveLinkHint": "Linked to an entity — changes apply immediately",
   "usedBy": {

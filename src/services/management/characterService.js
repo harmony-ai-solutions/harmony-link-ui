@@ -126,6 +126,29 @@ export async function deleteCharacterProfile(id) {
     await handleResponse(resp, "Failed to delete character profile");
 }
 
+/**
+ * Duplicate a character profile as a full-card copy. Mirrors the backend
+ * `POST /api/v1/character-profiles/:id/duplicate` route: all V3 spec + Soulbits
+ * fields are copied with a fresh id; the name is derived via the copy-suffix
+ * convention unless overridden by `overrides.name`. Returns the new profile in
+ * the same shape as GET profile (no images / is_favorite).
+ *
+ * @param {string} profileId
+ * @param {{ name?: string }} [overrides] - Optional overrides; only `name`
+ *   (non-empty string) is sent as a JSON body, otherwise no body is sent.
+ * @returns {Promise<CharacterProfile>}
+ */
+export async function duplicateCharacterProfile(profileId, overrides = {}) {
+    const name = overrides && typeof overrides.name === 'string' && overrides.name.trim() !== '' ? overrides.name : null;
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/${profileId}/duplicate`, {
+        method: "POST",
+        headers: name ? getJsonHeaders() : getAuthHeaders(),
+        ...(name ? { body: JSON.stringify({ name }) } : {})
+    });
+    await handleResponse(resp, "Failed to duplicate character profile");
+    return await resp.json();
+}
+
 // Character Card Import
 
 /**

@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import useEntityStore from '../../store/entityStore';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useModuleConfigStore from '../../store/moduleConfigStore';
-import usePersonaStore from '../../store/personaStore';
 import * as entityService from '../../services/management/entityService.js';
+import * as characterService from '../../services/management/characterService.js';
+import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
@@ -56,11 +57,12 @@ export default function PersonasView() {
     const [savingSharedModules, setSavingSharedModules] = useState(false);
     const [userEntityFull, setUserEntityFull] = useState(null);
 
-    // Persona create/edit form state
-    const [showForm, setShowForm] = useState(false);
+    // Persona card editor state (2-3): the full CharacterProfileEditor in
+    // personaMode replaces the old 3-field create/edit form.
+    const [editorOpen, setEditorOpen] = useState(false);
     const [editingPersona, setEditingPersona] = useState(null);
-    const [form, setForm] = useState({ name: '', description: '', personality: '' });
-    const [savingForm, setSavingForm] = useState(false);
+    const [editorProfile, setEditorProfile] = useState(null);
+    const [editorLoadingProfile, setEditorLoadingProfile] = useState(false);
 
     // View controls (search + card size) — mirror of the Characters toolbar.
     const [searchQuery, setSearchQuery] = useState('');
@@ -94,22 +96,6 @@ export default function PersonasView() {
                 setUserSttConfigId(sttId);
             })
             .catch(() => setUserEntityFull(null));
-    }, []);
-
-    // 3-2 prefill: if "Create persona from this card" was invoked, open the
-    // create form with the identity fields only, then clear the prefill.
-    useEffect(() => {
-        const prefill = usePersonaStore.getState().createPrefill;
-        if (prefill) {
-            setEditingPersona(null);
-            setForm({
-                name: prefill.name || '',
-                description: prefill.description || '',
-                personality: prefill.personality || '',
-            });
-            setShowForm(true);
-            usePersonaStore.getState().clearCreatePrefill();
-        }
     }, []);
 
     const personas = useMemo(() => {
@@ -200,96 +186,106 @@ export default function PersonasView() {
         }
     };
 
-    const validateName = (name) => {
-        if (!name || name.trim() === '') return tes('validation.nameRequired');
-        if (!/^[a-zA-Z0-9_-]+$/.test(name)) return tes('validation.nameInvalid');
-        if ((entities || []).find(e => e.id === name)) return tes('validation.nameExists');
+    // 2-3: the persona name doubles as the entity id. Reserved-name validation
+    // (decision 14): creating a persona named "user" is blocked client-side
+    // with a clear message; the engine PK collision stays as the backstop.
+    const validatePersonaName = (name, excludeId = null) => {
+        const trimmed = (name || '').trim();
+        if (!trimmed) return tes('validation.nameRequired');
+        if (trimmed.toLowerCase() === 'user') return tes('validation.nameReservedUser');
+        if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return tes('validation.nameInvalid');
+        if ((entities || []).find(e => e.id === trimmed && e.id !== excludeId)) return tes('validation.nameExists');
         return null;
     };
 
     const openCreate = () => {
         setEditingPersona(null);
-        setForm({ name: '', description: '', personality: '' });
-        setShowForm(true);
+        setEditorProfile(null);
+        setEditorLoadingProfile(false);
+        setEditorOpen(true);
     };
 
+    // 2-3: edit loads the FULL profile (getCharacterProfile) so untouched
+    // columns — including card_provenance — round-trip on save. Falls back to
+    // the list payload if the fetch fails (same DTO shape).
     const openEdit = (persona) => {
         setEditingPersona(persona);
-        setForm({
-            name: persona.profile?.name || persona.alias || persona.id,
-            description: persona.profile?.description || '',
-            personality: persona.profile?.personality || '',
-        });
-        setShowForm(true);
+        setEditorProfile(null);
+        setEditorLoadingProfile(true);
+        setEditorOpen(true);
+        const profileId = persona.character_profile_id || persona.profile?.id || null;
+        if (!profileId) {
+            setEditorLoadingProfile(false);
+            return;
+        }
+        characterService.getCharacterProfile(profileId)
+            .then(full => setEditorProfile(full))
+            .catch(() => setEditorProfile(persona.profile || null))
+            .finally(() => setEditorLoadingProfile(false));
     };
 
-    const handleSaveForm = async () => {
-        const name = form.name.trim();
-        const description = form.description.trim();
-        const personality = form.personality.trim();
+    const closeEditor = () => {
+        setEditorOpen(false);
+        setEditingPersona(null);
+        setEditorProfile(null);
+        setEditorLoadingProfile(false);
+    };
 
-        if (editingPersona) {
-            // EDIT = profile update + entity alias sync (identity fields only).
-            try {
-                setSavingForm(true);
-                setErrorDialog({ ...errorDialog, isOpen: false });
-                const profileId = editingPersona.character_profile_id || editingPersona.profile?.id || null;
-                if (profileId) {
-                    await updateProfile(profileId, { name, description, personality });
-                }
-                if (editingPersona.id) {
-                    await entityService.updateEntity(editingPersona.id, profileId, null, name);
-                }
-                setShowForm(false);
-                setEditingPersona(null);
-                setSuccessMessage(tes('messages.updateSuccess'));
-                setTimeout(() => setSuccessMessage(null), 3000);
-                await Promise.all([loadEntities(), loadProfiles()]);
-            } catch (error) {
-                setErrorDialog({
-                    isOpen: true,
-                    title: tes('dialogs.errorTitles.updateFailed'),
-                    message: error.message,
-                    type: 'error',
-                });
-            } finally {
-                setSavingForm(false);
+    /**
+     * 2-3 persona save path (full card editor, personaMode):
+     *  - CREATE: reserved-name check → createCharacterProfile(full) →
+     *    createPersonaEntity(name, profileId) → alias sync.
+     *  - EDIT: if the name changed → renameEntity(oldId, newId) FIRST (engine is
+     *    type-preserving; built-in 'user' is locked → nameReadOnly in the
+     *    editor), then updateCharacterProfile(profileId, full) → alias sync on
+     *    the (possibly new) id.
+     * Errors (engine 400s — collisions, built-in protection) throw so the
+     * editor surfaces them in its error UI.
+     */
+    const handlePersonaSave = async (payload) => {
+        const name = (payload.name || '').trim();
+        const isCreate = !editingPersona;
+        const isBuiltIn = editingPersona?.id === 'user';
+
+        if (isCreate) {
+            const nameErr = validatePersonaName(name, null);
+            if (nameErr) throw new Error(nameErr);
+        } else if (!isBuiltIn) {
+            const oldName = editingPersona.id;
+            if (name !== oldName) {
+                const nameErr = validatePersonaName(name, oldName);
+                if (nameErr) throw new Error(nameErr);
             }
-            return;
         }
 
-        // CREATE — name is the entity id (unique). Engine surfaces collisions.
-        const nameErr = validateName(name);
-        if (nameErr) {
-            setErrorDialog({
-                isOpen: true,
-                title: tes('dialogs.invalidName'),
-                message: nameErr,
-                type: 'error',
-            });
-            return;
-        }
-        try {
-            setSavingForm(true);
-            setErrorDialog({ ...errorDialog, isOpen: false });
-            const newProfile = await createProfile({ name, description, personality });
+        if (isCreate) {
+            const newProfile = await createProfile(payload);
             await entityService.createPersonaEntity(name, newProfile.id);
             // Sync alias so the persona displays by its name in the entity list.
             await entityService.updateEntity(name, newProfile.id, null, name);
-            setShowForm(false);
             setSuccessMessage(tes('messages.createSuccess'));
-            setTimeout(() => setSuccessMessage(null), 3000);
-            await Promise.all([loadEntities(), loadProfiles()]);
-        } catch (error) {
-            setErrorDialog({
-                isOpen: true,
-                title: tes('dialogs.errorTitles.createFailed'),
-                message: error.message,
-                type: 'error',
-            });
-        } finally {
-            setSavingForm(false);
+        } else {
+            const profileId = editingPersona.character_profile_id || editingPersona.profile?.id || null;
+            const oldName = editingPersona.id;
+            let entityId = oldName;
+            if (!isBuiltIn && name !== oldName) {
+                // Rename FIRST — the engine is type-preserving; collisions
+                // surface as 400s in the editor's error UI.
+                await entityService.renameEntity(oldName, name);
+                entityId = name;
+                // Keep the editor's persona id in sync so a retry after a
+                // partial failure (rename OK, profile update failed) never
+                // tries to rename the now-nonexistent old id again.
+                setEditingPersona(prev => (prev ? { ...prev, id: name } : prev));
+            }
+            if (profileId) {
+                await updateProfile(profileId, payload);
+            }
+            await entityService.updateEntity(entityId, profileId, null, name);
+            setSuccessMessage(tes('messages.updateSuccess'));
         }
+        setTimeout(() => setSuccessMessage(null), 3000);
+        await Promise.all([loadEntities(), loadProfiles()]);
     };
 
     const handleDeleteRequest = (persona) => {
@@ -551,59 +547,23 @@ export default function PersonasView() {
                 </div>
             </div>
 
-            {/* Create / Edit persona modal */}
-            {showForm && (
+            {/* 2-3: full card editor (personaMode) — replaces the old 3-field
+                create/edit form. Profile loading is gated so the editor never
+                flashes create-mode while the full profile is fetched. */}
+            {editorOpen && editorLoadingProfile && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="modal-content w-full max-w-lg overflow-hidden">
-                        <div className="px-6 py-4 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-accent-primary">
-                                {editingPersona ? tes('dialogs.editTitle') : tes('dialogs.createTitle')}
-                            </h2>
-                            <button onClick={() => { setShowForm(false); setEditingPersona(null); }}
-                                className="text-text-muted hover:text-text-primary transition-colors">
-                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">{tes('fields.name')}</label>
-                                <input type="text" value={form.name}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    disabled={!!editingPersona}
-                                    className="input-field w-full p-2 rounded text-sm disabled:opacity-60"
-                                    placeholder={tes('fields.namePlaceholder')} />
-                                <p className="text-xs text-text-muted mt-1">{editingPersona ? '' : tes('fields.nameHint')}</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">{tes('fields.description')}</label>
-                                <textarea value={form.description}
-                                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    rows={3} className="input-field w-full p-2 rounded text-sm"
-                                    placeholder={tes('fields.descriptionPlaceholder')} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1">{tes('fields.personality')}</label>
-                                <textarea value={form.personality}
-                                    onChange={(e) => setForm({ ...form, personality: e.target.value })}
-                                    rows={3} className="input-field w-full p-2 rounded text-sm"
-                                    placeholder={tes('fields.personalityPlaceholder')} />
-                                <p className="text-xs text-text-muted mt-1">{tes('fields.personalityHint')}</p>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 flex justify-end gap-3">
-                            <button onClick={() => { setShowForm(false); setEditingPersona(null); }}
-                                className="btn-secondary px-4 py-2 rounded-md text-sm font-medium">
-                                {tes('buttons.cancel')}
-                            </button>
-                            <button onClick={handleSaveForm} disabled={savingForm}
-                                className="btn-primary px-5 py-2 rounded-md text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                                {savingForm ? tes('buttons.saving') : tes('buttons.save')}
-                            </button>
-                        </div>
-                    </div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
                 </div>
+            )}
+            {editorOpen && !editorLoadingProfile && (
+                <CharacterProfileEditor
+                    profile={editorProfile}
+                    personaMode
+                    nameReadOnly={editingPersona?.id === 'user'}
+                    referencedEntities={editingPersona ? [editingPersona] : []}
+                    onSave={handlePersonaSave}
+                    onClose={closeEditor}
+                />
             )}
         </>
     );

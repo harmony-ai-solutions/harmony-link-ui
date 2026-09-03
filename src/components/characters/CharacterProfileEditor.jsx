@@ -100,8 +100,17 @@ function StringListEditor({ values, onChange, placeholder, addLabel }) {
  * @param {Function} props.onClose - Callback to close the editor
  * @param {Object[]} [props.referencedEntities] - 3-2: entities that link this
  *   profile live. When non-empty the header shows a muted live-link hint.
+ * @param {boolean} [props.personaMode] - 2-3: persona editing mode. Hides the
+ *   lifecycle + advanced tabs (decision 2) and, when combined with
+ *   `nameReadOnly`, locks the name field. Greeting TEST affordances are never
+ *   rendered in this mode (decision 13).
+ * @param {boolean} [props.nameReadOnly] - 2-3: make the name field read-only
+ *   (built-in 'user' persona — the engine rejects renames anyway).
+ * @param {Function} [props.onSave] - 2-3: optional save override. When provided,
+ *   the editor calls `onSave(payload)` instead of its own store save and only
+ *   closes on success; thrown errors surface in the editor's error UI.
  */
-export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [] }) {
+export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [], personaMode = false, nameReadOnly = false, onSave = null }) {
     const { t } = useTranslation('characters');
     const [activeTab, setActiveTab] = useState('basic');
     const isReferenced = Array.isArray(referencedEntities) && referencedEntities.length > 0;
@@ -347,12 +356,22 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
             extensions,
             assets,
             character_book: characterBook,
-            // NOTE: card_provenance is intentionally omitted — it is import-managed
-            // and sending a stale copy could clobber the append-only provenance.
+            // 2-3: card_provenance must round-trip. The engine's UPDATE
+            // overwrites every column, so omitting it would WIPE the
+            // import-managed provenance on save. We load it fresh when opening
+            // the editor and send the same value back unchanged (append-only
+            // semantics preserved).
+            card_provenance: cardProvenance,
         };
 
         try {
-            if (profile) {
+            if (onSave) {
+                // 2-3 persona flow: the caller owns the save (reserved-name
+                // check, rename-first, profile update, alias sync / entity
+                // create). Engine 400s propagate here and surface in the
+                // editor's error UI.
+                await onSave(payload);
+            } else if (profile) {
                 await updateProfile(profile.id, payload);
             } else {
                 await createProfile(payload);
@@ -383,11 +402,15 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
         },
         {
-            id: 'lifecycle', label: t('tabs.lifecycle'),
+            // 2-3: lifecycle + advanced are hidden for personas (decision 2) —
+            // personas never run autonomous lifecycle beats and the advanced AI
+            // behavior fields stay card-only. The values still round-trip on
+            // save via the editor's full-field state.
+            id: 'lifecycle', label: t('tabs.lifecycle'), hidden: personaMode,
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
         },
         {
-            id: 'advanced', label: t('tabs.advanced'),
+            id: 'advanced', label: t('tabs.advanced'), hidden: personaMode,
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
         },
         {
@@ -436,9 +459,14 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                 onChange={(e) => setName(e.target.value)}
                                 onBlur={(e) => validateNameAndUpdate(e.target.value)}
                                 required
+                                disabled={nameReadOnly}
+                                title={nameReadOnly ? t('personas:editor.nameLocked') : ''}
                                 placeholder={t('fields.namePlaceholder')}
-                                className="input-field w-full"
+                                className="input-field w-full disabled:opacity-60 disabled:cursor-not-allowed"
                             />
+                            {nameReadOnly && (
+                                <p className="character-editor-hint mt-1">{t('personas:editor.nameLocked')}</p>
+                            )}
                         </div>
                         <div className="character-editor-field-group">
                             <label className="character-editor-label">{t('fields.nickname')}</label>
@@ -788,7 +816,9 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-gradient-primary leading-tight">
-                                    {profile ? t('editor.editTitle') : t('editor.createTitle')}
+                                    {personaMode
+                                        ? (profile ? t('personas:dialogs.editTitle') : t('personas:dialogs.createTitle'))
+                                        : (profile ? t('editor.editTitle') : t('editor.createTitle'))}
                                 </h2>
                                 {profile && (
                                     <p className="text-xs text-text-muted mt-0.5">{profile.name}</p>

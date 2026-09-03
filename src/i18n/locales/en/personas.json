@@ -73,9 +73,13 @@
     "deleteFailed": "Failed to delete persona: {{message}}",
     "sharedModulesFailed": "Failed to save shared STT module: {{message}}"
   },
+  "editor": {
+    "nameLocked": "The built-in 'user' persona cannot be renamed."
+  },
   "validation": {
     "nameRequired": "Name is required.",
     "nameInvalid": "Name can only contain letters, numbers, hyphens, and underscores",
-    "nameExists": "A persona with this name already exists"
+    "nameExists": "A persona with this name already exists",
+    "nameReservedUser": "'user' is a reserved name — choose a different persona name."
   }
 }

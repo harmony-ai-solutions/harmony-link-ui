@@ -47,8 +47,13 @@ export default function CharacterCardExport({ profile, variant = 'card', wrapper
         </svg>
     );
 
+    // Both variants share one renderer. The panel reuses the app's proven
+    // glass dropdown treatment (.nav-menu-panel — same class as the nav group
+    // menus): translucent glass bg + heavy blur + glass border + xl shadow,
+    // which stays opaque over card art where plain bg-background-elevated read
+    // as transparent. Item focus (accent tint + accent text) reads on top.
     const items = (anchorClass) => (
-        <MenuItems className={`absolute ${anchorClass} mt-2 w-48 origin-top-right rounded-md bg-background-elevated shadow-lg ring-1 ring-black/10 focus:outline-none z-50`}>
+        <MenuItems className={`nav-menu-panel absolute ${anchorClass} mt-2 focus:outline-none`}>
             <MenuItem>
                 {({ focus }) => (
                     <button

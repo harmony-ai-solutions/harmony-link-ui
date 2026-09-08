@@ -22,16 +22,6 @@
     "noResults": "No matching personas",
     "tryAdjustingSearch": "Try adjusting your search query."
   },
-  "fields": {
-    "name": "Name",
-    "namePlaceholder": "Persona name...",
-    "nameHint": "Unique identifier used to create this persona (letters, numbers, hyphens, underscores).",
-    "description": "Description",
-    "descriptionPlaceholder": "A brief overview of this persona...",
-    "personality": "Personality",
-    "personalityPlaceholder": "Friendly, curious, witty...",
-    "personalityHint": "How this persona thinks, behaves, and interacts."
-  },
   "list": {
     "empty": "No personas yet. Create one to get started.",
     "builtIn": "Built-in",
@@ -54,7 +44,6 @@
     "editTitle": "Edit Persona",
     "deleteTitle": "Delete Persona",
     "deleteMessage": "Delete persona '{{name}}'?\n\nThis permanently removes the persona, its card, and card images.",
-    "invalidName": "Invalid Name",
     "deleteBuiltIn": "The built-in 'user' persona cannot be deleted.",
     "errorTitles": {
       "createFailed": "Create Failed",
@@ -74,12 +63,12 @@
     "sharedModulesFailed": "Failed to save shared STT module: {{message}}"
   },
   "editor": {
-    "nameLocked": "The built-in 'user' persona cannot be renamed."
+    "nameLocked": "The built-in 'user' persona has a fixed name."
   },
   "validation": {
     "nameRequired": "Name is required.",
     "nameInvalid": "Name can only contain letters, numbers, hyphens, and underscores",
     "nameExists": "A persona with this name already exists",
-    "nameReservedUser": "'user' is a reserved name — choose a different persona name."
+    "nameReservedUser": "'user' and 'deleted' are reserved names — choose a different persona name."
   }
 }

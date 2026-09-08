@@ -131,7 +131,7 @@ const entityCreationSteps = section('Entities', [
         title: 'Create an Entity',
         content: (
             <div className="space-y-2">
-                <p>Click <strong>Add</strong> to create a new entity. You'll give it a unique ID (like a username for the AI).</p>
+                <p>Click <strong>Add</strong> to create a new entity. You'll give it a name — that's all it needs.</p>
                 <p>If you already see entities listed, those are your existing ones — you can create a new one or configure an existing one.</p>
             </div>
         ),

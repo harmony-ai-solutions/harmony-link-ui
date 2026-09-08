@@ -6,7 +6,6 @@ import usePersonaStore from '../../store/personaStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
-import { deriveEntityId, deriveEntityAlias } from '../../utils/entityIdUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -125,56 +124,38 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     /**
      * 2-4: "Create persona from this card" — IMMEDIATE full copy (decision 7):
      * duplicate the whole card via the engine 1-3 endpoint (all spec + Soulbits
-     * fields, images copied with the primary flag preserved), atomically create
-     * the persona entity named after the copy WITH its deduped display alias
-     * (single engine transaction), then open the new persona in the Personas
-     * tab's editor. The old identity-prefill stash flow is retired.
+     * fields, images copied with the primary flag preserved), then create the
+     * persona entity from the copy in ONE server-derived request, then open
+     * the new persona in the Personas tab's editor. The old identity-prefill
+     * stash flow is retired.
      *
+     * D23/D66: the request carries the copy's RAW name (spaces included —
+     * never charset-validated or id-ified client-side); the engine derives
+     * the timestamped id and defaults the alias, auto-suffixed on live
+     * collision (D30). No client-side id/alias derivation remains (D59).
+     * Reserved/empty names surface as engine 400s in the alert below.
      * The create passes `dedupe_id_if_taken`: an id held by a SOFT-deleted
-     * entity is invisible to the live-only entity list, and the engine now
-     * resolves such collisions in-transaction instead of rejecting the create.
-     * Its 201 body echoes the RESOLVED id, so every follow-up uses `created.id`
-     * (the FE-derived id is only the first candidate). Any failure still runs
-     * INSIDE this try, so the duplicate-profile compensation below fires
-     * exactly once.
+     * entity is invisible to the live-only entity list, and the engine
+     * resolves such collisions in-transaction. Its 201 body echoes the
+     * RESOLVED id — the persona-editor request uses `created.id`.
      */
     const handleCreatePersonaFromCard = async (profile) => {
         if (!profile?.id) return;
         let newProfile = null;
         try {
             newProfile = await characterService.duplicateCharacterProfile(profile.id);
-            // The copy's name (e.g. "Max 2") can contain characters that are
-            // invalid in an entity id — derive a safe first-candidate id
-            // (reserved/empty checks throw BEFORE any create attempt; visible
-            // id collisions are pre-deduped so the engine rarely has to bump).
-            // Its display alias is deduped the same way: entities.alias is
-            // UNIQUE among non-empty live aliases, so two personas from the
-            // same profile must not share a raw name — and the FE-derived
-            // alias stays correct even when the server bumps the id (the
-            // alias set is live rows only, unchanged by the bump).
-            const entityName = deriveEntityId(newProfile.name, (entities || []).map(e => e.id), {
-                reservedMessage: t('characters:createPersonaReservedUser'),
-                emptyMessage: t('characters:entityIdInvalidName', { name: newProfile.name }),
-            });
-            const alias = deriveEntityAlias(newProfile.name, entityName, (entities || []).map(e => e.alias));
-            // Atomic create (engine eb1124e): id + profile + alias in ONE
-            // request — an alias collision surfaces as a clean 400 ("entity
-            // alias is already in use") before anything is created, instead of
-            // a mid-flow unique-index 500 after the entity already exists. An
-            // id conflict (soft-deleted ghost row) is resolved server-side via
-            // dedupe_id_if_taken; the 201 body echoes the RESOLVED id.
-            const created = await entityService.createPersonaEntity(entityName, newProfile.id, alias, { dedupeIdIfTaken: true });
+            const created = await entityService.createPersonaEntity(newProfile.name, newProfile.id, { dedupeIdIfTaken: true });
             usePersonaStore.getState().requestEditPersona(created.id);
             onCreatePersonaFromCard();
         } catch (error) {
             // Compensation: once duplicateCharacterProfile resolved, the profile
-            // COPY exists — so any failure after it (id/alias derivation, the
-            // atomic create, anything else) would orphan an unowned card that
-            // resurfaces in the Characters grid. Best-effort delete via the
-            // direct service (NOT the store's deleteProfile — its isLoading
-            // side-effects must not churn during error handling). Cleanup
-            // failures are swallowed/logged so they never mask the original
-            // error surfaced by the i18n'd alert below.
+            // COPY exists — so any failure after it (the atomic create,
+            // anything else) would orphan an unowned card that resurfaces in
+            // the Characters grid. Best-effort delete via the direct service
+            // (NOT the store's deleteProfile — its isLoading side-effects must
+            // not churn during error handling). Cleanup failures are
+            // swallowed/logged so they never mask the original error surfaced
+            // by the i18n'd alert below.
             if (newProfile?.id) {
                 try {
                     await characterService.deleteCharacterProfile(newProfile.id);
@@ -188,9 +169,9 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
 
     /**
      * "Create AI entity from this card" — AI entities link profiles LIVE
-     * (engine 1:1 semantics, no card copy): derive an unused entity id from
-     * the profile name, atomically create the entity pointing at THIS profile
-     * with a deduped display alias (single request: id + profile + alias),
+     * (engine 1:1 semantics, no card copy): create the entity from the
+     * profile's RAW name via the server-derived contract in ONE request
+     * (the engine derives the timestamped id and defaults the alias, D23/D30),
      * then refresh the entity list and preselect the new entity BEFORE the
      * shell switches to the Entities tab (EntitySettingsView's
      * selection-constraining effect then keeps it).
@@ -199,23 +180,12 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
      * entity is invisible to the live-only entity list, and the engine now
      * resolves such collisions in-transaction instead of rejecting the create.
      * Its 201 body echoes the RESOLVED id, so the preselection uses
-     * `created.id` (the FE-derived id is only the first candidate).
+     * `created.id`.
      */
     const handleCreateEntityFromCard = async (profile) => {
         if (!profile?.id) return;
         try {
-            const entityName = deriveEntityId(profile.name, (entities || []).map(e => e.id), {
-                reservedMessage: t('characters:createEntityReservedUser'),
-                emptyMessage: t('characters:entityIdInvalidName', { name: profile.name }),
-            });
-            const alias = deriveEntityAlias(profile.name, entityName, (entities || []).map(e => e.alias));
-            // Atomic create (engine eb1124e): id + profile + alias in ONE
-            // request — an alias collision surfaces as a clean 400 ("entity
-            // alias is already in use") before anything is created, instead of
-            // a mid-flow unique-index 500 after the entity already exists. An
-            // id conflict (soft-deleted ghost row) is resolved server-side via
-            // dedupe_id_if_taken; the 201 body echoes the RESOLVED id.
-            const created = await entityService.createEntity(entityName, profile.id, alias, { dedupeIdIfTaken: true });
+            const created = await entityService.createEntity(profile.name, profile.id, { dedupeIdIfTaken: true });
             // Refresh first so the tab mounts with the new entity already in
             // the store — otherwise the selection constraint could override
             // the preselection while the list is still stale.

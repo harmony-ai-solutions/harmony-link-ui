@@ -6,6 +6,7 @@ import useModuleConfigStore from '../../store/moduleConfigStore';
 import usePersonaStore from '../../store/personaStore';
 import * as entityService from '../../services/management/entityService.js';
 import * as characterService from '../../services/management/characterService.js';
+import { validatePersonaName } from '../../utils/personaNameUtils';
 import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
 import CharacterCardExport from '../characters/CharacterCardExport.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
@@ -207,16 +208,14 @@ export default function PersonasView() {
         }
     };
 
-    // 2-3: the persona name doubles as the entity id. Reserved-name validation
-    // (decision 14): creating a persona named "user" is blocked client-side
-    // with a clear message; the engine PK collision stays as the backstop.
-    const validatePersonaName = (name, excludeId = null) => {
-        const trimmed = (name || '').trim();
-        if (!trimmed) return tes('validation.nameRequired');
-        if (trimmed.toLowerCase() === 'user') return tes('validation.nameReservedUser');
-        if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) return tes('validation.nameInvalid');
-        if ((entities || []).find(e => e.id === trimmed && e.id !== excludeId)) return tes('validation.nameExists');
-        return null;
+    // 2-3 (D14/D33/D59): persona display-name validation lives in the pure
+    // util (node --test locked): non-empty + reserved ('user'/'deleted') +
+    // case-insensitive ALIAS-uniqueness on live rows. No charset check — the
+    // display name never becomes the id (it is server-derived). The util
+    // returns a translation KEY; this wraps it into the view's i18n'd error.
+    const personaNameError = (name, excludeId = null) => {
+        const key = validatePersonaName(name, { entities: entities || [], excludeId });
+        return key ? tes(`validation.${key}`) : null;
     };
 
     const openCreate = () => {
@@ -267,59 +266,70 @@ export default function PersonasView() {
     }, [personas, openEdit]);
 
     /**
-     * 2-3 persona save path (full card editor, personaMode):
-     *  - CREATE: reserved-name check → createCharacterProfile(full) →
-     *    createPersonaEntity(name, profileId) → alias sync.
-     *  - EDIT: if the name changed → renameEntity(oldId, newId) FIRST (engine is
-     *    type-preserving; built-in 'user' is locked → nameReadOnly in the
-     *    editor), then updateCharacterProfile(profileId, full) → alias sync on
-     *    the (possibly new) id.
-     * Errors (engine 400s — collisions, built-in protection) throw so the
-     * editor surfaces them in its error UI.
+     * 2-3 persona save path (full card editor, personaMode), D14/D23-aligned:
+     *  - CREATE: name validation (reserved user/deleted + alias-uniqueness)
+     *    → createProfile(full) → ONE derived entity create
+     *    ({ name, character_profile_id, entity_type: 'user',
+     *    dedupe_id_if_taken: true }) — the engine derives the timestamped id
+     *    and defaults the alias to the name (auto-suffixed on live collision,
+     *    D30), so today's alias round-trip is gone. If the entity create
+     *    fails, the just-created profile is deleted best-effort (orphan
+     *    compensation, mirroring CharacterProfilesView) so no unowned card
+     *    resurfaces in the Characters grid.
+     *  - EDIT: the entity id is NEVER renamed (D14). Only when the display
+     *    name changed: re-validate, then updateEntity moves the ALIAS (the
+     *    only "rename" that exists — D22). The profile update runs whenever
+     *    a profile is linked.
+     * Errors (engine 400s — collisions, reserved names, built-in protection)
+     * throw so the editor surfaces them in its error UI.
      */
     const handlePersonaSave = async (payload) => {
         const name = (payload.name || '').trim();
         const isCreate = !editingPersona;
-        const isBuiltIn = editingPersona?.id === 'user';
         // Profile whose card images need a refresh after the save (polish).
         let savedProfileId = null;
 
         if (isCreate) {
-            const nameErr = validatePersonaName(name, null);
+            const nameErr = personaNameError(name, null);
             if (nameErr) throw new Error(nameErr);
-        } else if (!isBuiltIn) {
-            const oldName = editingPersona.id;
-            if (name !== oldName) {
-                const nameErr = validatePersonaName(name, oldName);
-                if (nameErr) throw new Error(nameErr);
-            }
-        }
 
-        if (isCreate) {
             const newProfile = await createProfile(payload);
             savedProfileId = newProfile.id;
-            await entityService.createPersonaEntity(name, newProfile.id);
-            // Sync alias so the persona displays by its name in the entity list.
-            await entityService.updateEntity(name, newProfile.id, null, name);
+            try {
+                // ONE derived create (D23/D66): no client id, no alias —
+                // both are server-owned. Two network calls remain: the
+                // profile POST above necessarily precedes the entity create.
+                await entityService.createPersonaEntity(name, newProfile.id, { dedupeIdIfTaken: true });
+            } catch (error) {
+                // Compensation: the profile already exists — a failure here
+                // would orphan an unowned card that resurfaces in the
+                // Characters grid. Best-effort delete via the direct service
+                // (NOT the store's deleteProfile — its isLoading
+                // side-effects must not churn during error handling).
+                // Cleanup failures are swallowed/logged so they never mask
+                // the original error surfaced by the editor below.
+                try {
+                    await characterService.deleteCharacterProfile(newProfile.id);
+                } catch (cleanupError) {
+                    console.error('Failed to clean up persona profile after failed entity creation:', cleanupError);
+                }
+                throw error;
+            }
             setSuccessMessage(tes('messages.createSuccess'));
         } else {
-            const profileId = editingPersona.character_profile_id || editingPersona.profile?.id || null;
-            const oldName = editingPersona.id;
-            let entityId = oldName;
-            if (!isBuiltIn && name !== oldName) {
-                // Rename FIRST — the engine is type-preserving; collisions
-                // surface as 400s in the editor's error UI.
-                await entityService.renameEntity(oldName, name);
-                entityId = name;
-                // Keep the editor's persona id in sync so a retry after a
-                // partial failure (rename OK, profile update failed) never
-                // tries to rename the now-nonexistent old id again.
-                setEditingPersona(prev => (prev ? { ...prev, id: name } : prev));
+            // D14: the id is stable for life — edit only moves alias/profile.
+            const entityId = editingPersona.id;
+            const prevName = editingPersona.profile?.name || editingPersona.alias || entityId;
+            if (name !== prevName) {
+                const nameErr = personaNameError(name, entityId);
+                if (nameErr) throw new Error(nameErr);
             }
+            const profileId = editingPersona.character_profile_id || editingPersona.profile?.id || null;
             if (profileId) {
                 await updateProfile(profileId, payload);
                 savedProfileId = profileId;
             }
+            // Alias update ONLY (D22: no rename endpoint exists anymore).
             await entityService.updateEntity(entityId, profileId, null, name);
             setSuccessMessage(tes('messages.updateSuccess'));
         }

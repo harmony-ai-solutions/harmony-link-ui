@@ -7,7 +7,7 @@ import ThemedSelect from './widgets/ThemedSelect';
 import CharacterProfilePreview from './widgets/CharacterProfilePreview';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
-import { updateEntity, renameEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
+import { updateEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
 import { personaOwnedProfileIds } from '../utils/personaProfileUtils';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
@@ -220,19 +220,6 @@ const EntitySettingsView = ({ appName }) => {
         }
     }, [selectedCharacterProfileId, loadCharacterImages]);
 
-    const generateUniqueEntityId = (baseName = 'new-entity') => {
-        if (!entities) return baseName;
-        const entityIds = {};
-        entities.forEach(e => { entityIds[e.id] = true; });
-        let newName = baseName;
-        let counter = 0;
-        while (entityIds[newName]) {
-            counter++;
-            newName = `${baseName}-${counter}`;
-        }
-        return newName;
-    };
-
     const handleSave = async () => {
         try {
             setIsSaving(true);
@@ -344,43 +331,27 @@ const EntitySettingsView = ({ appName }) => {
         setEntityLifecycleConfig(newConfig);
     };
 
-    const validateEntityId = (id) => {
-        if (!id || id.trim() === '') {
-            return tes('validation.empty');
-        }
-        if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
-            return tes('validation.invalidChars');
-        }
-        if (getEntity(id)) {
-            return tes('validation.alreadyExists');
-        }
-        return null;
-    };
-
+    /**
+     * Name-only add dialog (D23): the engine derives the entity id from the
+     * name (timestamped) and defaults the alias — auto-suffixed on live
+     * collision (D30). No client-side id minting or validation remains:
+     * ids/aliases are server-owned, and reserved/empty names surface as
+     * engine 400s in the error dialog. The store selects the SERVER-echoed
+     * id from the 201 body.
+     */
     const handleAdd = () => {
-        const defaultName = generateUniqueEntityId('new-entity');
         setInputDialog({
             isOpen: true,
             title: tes('dialogs.add.title'),
             message: tes('dialogs.add.message'),
-            defaultValue: defaultName,
-            onConfirm: async (entityId) => {
+            defaultValue: '',
+            onConfirm: async (name) => {
                 setInputDialog({ ...inputDialog, isOpen: false });
-                if (!entityId) return;
-
-                const validationError = validateEntityId(entityId);
-                if (validationError) {
-                    setErrorDialog({
-                        isOpen: true,
-                        title: tes('dialogs.invalidEntityId.title'),
-                        message: validationError,
-                        type: 'error'
-                    });
-                    return;
-                }
+                const trimmedName = (name || '').trim();
+                if (!trimmedName) return;
 
                 try {
-                    await createEntity(entityId, null);
+                    await createEntity(trimmedName, null, { dedupeIdIfTaken: true });
                     setSuccessMessage(tes('messages.createSuccess'));
                     setTimeout(() => setSuccessMessage(null), 3000);
                 } catch (error) {
@@ -450,52 +421,9 @@ const EntitySettingsView = ({ appName }) => {
         }
     };
 
-    const handleRename = () => {
-        if (!selectedEntityId || !selectedEntity) return;
-        setInputDialog({
-            isOpen: true,
-            title: tes('dialogs.rename.title'),
-            message: tes('dialogs.rename.message', { entityId: selectedEntityId }),
-            defaultValue: selectedEntityId,
-            onConfirm: async (newId) => {
-                setInputDialog({ ...inputDialog, isOpen: false });
-                if (!newId || newId === selectedEntityId) return;
-                const validationError = validateEntityId(newId);
-                if (validationError) {
-                    setErrorDialog({
-                        isOpen: true,
-                        title: tes('dialogs.invalidEntityId.title'),
-                        message: validationError,
-                        type: 'error'
-                    });
-                    return;
-                }
-                setConfirmDialog({
-                    isOpen: true,
-                    title: tes('dialogs.confirmRename.title'),
-                    message: tes('dialogs.confirmRename.message', { oldId: selectedEntityId, newId: newId }),
-                    onConfirm: async () => {
-                        try {
-                            await renameEntity(selectedEntityId, newId);
-                            await loadEntities();
-                            selectEntity(newId);
-                            setSuccessMessage(tes('messages.renamedFrom', { oldId: selectedEntityId, newId: newId }));
-                            setTimeout(() => setSuccessMessage(null), 3000);
-                            setConfirmDialog({ ...confirmDialog, isOpen: false });
-                        } catch (error) {
-                            setConfirmDialog({ ...confirmDialog, isOpen: false });
-                            setErrorDialog({
-                                isOpen: true,
-                                title: tes('dialogs.renameFailed.title'),
-                                message: tes('messages.renameFailedDetail', { message: error.message }),
-                                type: 'error'
-                            });
-                        }
-                    }
-                });
-            }
-        });
-    };
+    // D22: the rename dialog + handleRename are deleted with the engine
+    // endpoint — ids are stable for life, "rename" is only an alias edit
+    // (the Entity Alias field above, saved via handleSave → updateEntity).
 
     const hasUnsavedChanges = () => {
         if (!selectedEntity) return false;
@@ -564,9 +492,10 @@ const EntitySettingsView = ({ appName }) => {
                 <div className="flex flex-1">
                     {/* Left Panel: Entity List */}
                     <div className="w-1/4 p-4 space-y-4 border-r border-white/10 min-h-[600px]">
+                        {/* D22: the Rename action is gone — Add spans the top row,
+                            Copy + Delete share the second (no empty grid cell). */}
                         <div className="grid grid-cols-2 gap-2">
-                            <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3">{tes('buttons.add')}</button>
-                            <button onClick={handleRename} disabled={!selectedEntityId} className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.rename')}</button>
+                            <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3 col-span-2">{tes('buttons.add')}</button>
                             <button onClick={handleCopy}
                                 disabled={!selectedEntityId || isPersonaSelected}
                                 title={isPersonaSelected ? tes('buttons.copyPersonaHint') : ''}
@@ -587,13 +516,16 @@ const EntitySettingsView = ({ appName }) => {
                                             ? 'bg-accent-primary/20 border-accent-primary/40 text-accent-primary font-bold shadow-sm'
                                             : 'text-text-primary hover:bg-white/5 border-transparent'
                                             }`}>
-                                        <div className="flex items-center gap-3">
+                                        {/* min-w-0 on the flex chain: long timestamped ids
+                                            truncate instead of stretching the fixed-width
+                                            panel; tooltips carry the full values. */}
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
                                             {selectedEntityId === entity.id && (
                                                 <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent-primary rounded-r-full" />
                                             )}
-                                            <span className="truncate">{entity.id}</span>
+                                            <span className="truncate min-w-0" title={entity.id}>{entity.id}</span>
                                             {entity.alias && (
-                                                <span className="text-xs text-text-muted truncate ml-1">({entity.alias})</span>
+                                                <span className="text-xs text-text-muted truncate ml-1 min-w-0" title={entity.alias}>({entity.alias})</span>
                                             )}
                                         </div>
                                         {selectedEntityId === entity.id && (

@@ -20,13 +20,17 @@ const useEntityStore = create((set, get) => ({
         }
     },
     
-    createEntity: async (id, characterProfileId) => {
+    // D23: plain passthrough of the derived-create contract — the engine
+    // derives the id from `name` and the 201 echoes the SERVER-resolved id
+    // (which can differ whenever `dedupeIdIfTaken` bumped a collision).
+    // Selection/state always key on the echoed id, never the requested name.
+    createEntity: async (name, characterProfileId, { dedupeIdIfTaken } = {}) => {
         set({ isLoading: true, error: null });
         try {
-            const newEntity = await entityService.createEntity(id, characterProfileId);
+            const newEntity = await entityService.createEntity(name, characterProfileId, { dedupeIdIfTaken });
             set(produce(state => {
                 state.entities.push(newEntity);
-                state.selectedEntityId = id;
+                state.selectedEntityId = newEntity.id;
                 state.isLoading = false;
             }));
             return newEntity;

@@ -9,6 +9,8 @@ import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
 import { personaOwnedProfileIds } from '../utils/personaProfileUtils';
+import { getEntityAvatarLetter, copyTextToClipboard } from '../utils/entityDisplayUtils';
+import { countActiveSessions, filterEntitiesByPresence } from '../utils/entitySessionUtils';
 import SettingsTooltip from "./settings/SettingsTooltip.jsx";
 import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
@@ -55,13 +57,18 @@ const EntitySettingsView = ({ appName }) => {
         deleteEntity,
         selectEntity,
         getEntity,
+        sessionsByEntity,
+        loadSessions,
+        stopSessions,
+        setEntityDisabled,
         isLoading: isEntityLoading
     } = useEntityStore();
 
     const {
         profiles: characterProfiles,
         loadProfiles: loadCharacterProfiles,
-        loadImages: loadCharacterImages
+        loadImages: loadCharacterImages,
+        images: characterImages  // Map of profileId -> image array (avatar rail)
     } = useCharacterProfileStore();
 
     const {
@@ -94,6 +101,14 @@ const EntitySettingsView = ({ appName }) => {
     // Alias state
     const [entityAlias, setEntityAlias] = useState('');
 
+    // Presence filter for the entity list ('all' | 'active') + stop-sessions
+    // in-flight flag (the poll keeps `sessionsByEntity` fresh).
+    const [presenceFilter, setPresenceFilter] = useState('all');
+    const [isStoppingSessions, setIsStoppingSessions] = useState(false);
+
+    // Read-only Entity ID row: transient "copied" feedback on the copy button
+    const [entityIdCopied, setEntityIdCopied] = useState(false);
+
     // Lifecycle config state
     const [entityLifecycleConfig, setEntityLifecycleConfig] = useState(null);
     const [isLifecycleLoaded, setIsLifecycleLoaded] = useState(false);
@@ -119,6 +134,16 @@ const EntitySettingsView = ({ appName }) => {
         loadConfigs('vision');
     }, []);
 
+    // Presence polling: the green session bubble + Active filter run off
+    // GET /entities/sessions, refreshed on mount and every 15s while this
+    // view is mounted (loadSessions is a stable zustand action and is
+    // best-effort — a failed poll keeps the previous map).
+    useEffect(() => {
+        loadSessions();
+        const interval = setInterval(loadSessions, 15000);
+        return () => clearInterval(interval);
+    }, [loadSessions]);
+
     // 3-1: the Entities tab now surfaces AI entities only. Personas (user-type
     // entities) live on the dedicated Personas tab.
     // NOTE: must be declared before the selection-constraining effect below,
@@ -127,6 +152,21 @@ const EntitySettingsView = ({ appName }) => {
         (entities || []).filter(e => (e.entity_type || 'ai') === 'ai'),
         [entities]
     );
+
+    // Presence-filtered list (ruling: All / Active segmented control above
+    // the rail). 'active' keeps only entities with ≥1 live session.
+    const visibleEntities = useMemo(
+        () => filterEntitiesByPresence(aiEntities, sessionsByEntity, presenceFilter),
+        [aiEntities, sessionsByEntity, presenceFilter]
+    );
+
+    // Selected entity's live session count — drives the Stop Sessions button
+    // enablement and the confirm dialog copy.
+    const selectedSessionCount = useMemo(
+        () => countActiveSessions(sessionsByEntity, selectedEntityId),
+        [sessionsByEntity, selectedEntityId]
+    );
+    const selectedHasSessions = selectedSessionCount > 0;
 
     // 2-2: profile ids owned by personas (referenced by ≥1 user-type entity).
     // Persona-owned cards live in the Personas tab — AI entities must never be
@@ -152,6 +192,10 @@ const EntitySettingsView = ({ appName }) => {
         }
         return getEntity(selectedEntityId);
     }, [selectedEntityId, entities, getEntity]);
+
+    // Declared AFTER the selectedEntity memo (TDZ — same constraint the
+    // constraining effect below documents).
+    const selectedIsDisabled = selectedEntity?.is_disabled === 1;
 
     // Copy guard: the engine duplicate endpoint only accepts AI entities
     // (personas answer 400 "persona entities cannot be duplicated"). The
@@ -219,6 +263,45 @@ const EntitySettingsView = ({ appName }) => {
             loadCharacterImages(selectedCharacterProfileId);
         }
     }, [selectedCharacterProfileId, loadCharacterImages]);
+
+    // Avatar rail: the entity list bubbles show each entity's character-profile
+    // picture, so images are needed for EVERY referenced profile — not just the
+    // selected one. Entities can share a card (an original and its Copy both
+    // link the same profile), so the fetch set is deduped; profiles already
+    // present in the store (including fetched-but-empty `[]` results) are not
+    // re-requested.
+    useEffect(() => {
+        const profileIds = new Set(
+            (aiEntities || [])
+                .map(e => e.character_profile?.id)
+                .filter(Boolean)
+        );
+        profileIds.forEach(profileId => {
+            if (!characterImages[profileId]) {
+                loadCharacterImages(profileId);
+            }
+        });
+    }, [aiEntities, characterImages, loadCharacterImages]);
+
+    // Primary image (base64 data_url) for an entity's linked card, or null
+    // when the entity has no profile / no images — the caller renders the
+    // letter-bubble fallback.
+    const getEntityAvatarUrl = (entity) => {
+        const profileId = entity?.character_profile?.id;
+        if (!profileId) return null;
+        const images = characterImages[profileId] || [];
+        const primary = images.find(img => img.is_primary) || images[0];
+        return primary?.data_url || null;
+    };
+
+    const handleCopyEntityId = async () => {
+        if (!selectedEntityId) return;
+        const copied = await copyTextToClipboard(selectedEntityId);
+        if (copied) {
+            setEntityIdCopied(true);
+            setTimeout(() => setEntityIdCopied(false), 2000);
+        }
+    };
 
     const handleSave = async () => {
         try {
@@ -425,6 +508,63 @@ const EntitySettingsView = ({ appName }) => {
     // endpoint — ids are stable for life, "rename" is only an alias edit
     // (the Entity Alias field above, saved via handleSave → updateEntity).
 
+    /**
+     * Force-disconnect every active session of the selected entity
+     * (POST /entities/:id/sessions/stop behind the store). Confirm first —
+     * the entity's connected devices/apps lose their live session state
+     * (they may re-register); the entity itself is untouched.
+     */
+    const handleStopSessions = () => {
+        if (!selectedEntityId || !selectedHasSessions) return;
+        setConfirmDialog({
+            isOpen: true,
+            title: tes('dialogs.confirmStopSessions.title'),
+            message: tes('dialogs.confirmStopSessions.message', { count: selectedSessionCount }),
+            onConfirm: async () => {
+                try {
+                    setIsStoppingSessions(true);
+                    const result = await stopSessions(selectedEntityId);
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                    setSuccessMessage(tes('messages.stopSessionsSuccess', { count: result?.stopped ?? 0 }));
+                    setTimeout(() => setSuccessMessage(null), 3000);
+                } catch (error) {
+                    setConfirmDialog({ ...confirmDialog, isOpen: false });
+                    setErrorDialog({
+                        isOpen: true,
+                        title: tes('dialogs.stopSessionsFailed.title'),
+                        message: tes('messages.stopSessionsFailed', { message: error.message }),
+                        type: 'error'
+                    });
+                } finally {
+                    setIsStoppingSessions(false);
+                }
+            }
+        });
+    };
+
+    /**
+     * Enable/disable toggle (PUT /entities/:id with is_disabled behind the
+     * store). The flag is the SYNCED engine column: apps see it on their next
+     * sync (their Disabled-AIs screen), and engine automation gates honour
+     * it. No confirm — a toggle is one click back.
+     */
+    const handleToggleDisabled = async () => {
+        if (!selectedEntityId || !selectedEntity) return;
+        const nextDisabled = !selectedIsDisabled;
+        try {
+            await setEntityDisabled(selectedEntityId, nextDisabled);
+            setSuccessMessage(tes(nextDisabled ? 'messages.entityDisabled' : 'messages.entityEnabled'));
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (error) {
+            setErrorDialog({
+                isOpen: true,
+                title: tes('dialogs.toggleFailed.title'),
+                message: tes('messages.toggleFailed', { message: error.message }),
+                type: 'error'
+            });
+        }
+    };
+
     const hasUnsavedChanges = () => {
         if (!selectedEntity) return false;
         const currentBackend = selectedEntity.modules?.backend?.id ? String(selectedEntity.modules.backend.id) : '';
@@ -455,7 +595,7 @@ const EntitySettingsView = ({ appName }) => {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--color-accent-primary)' }}></div>
                     <p className="text-text-muted">{t('common:status.loading')}</p>
                 </div>
             </div>
@@ -509,33 +649,82 @@ const EntitySettingsView = ({ appName }) => {
                                     {tes('entityList.totalEntities', { count: aiEntities.length })}
                                 </label>
                             </div>
-                            <div data-tutorial-id="entity-list" className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1 space-y-0.5">
-                                {aiEntities.map((entity) => (
-                                    <div key={entity.id} onClick={() => selectEntity(entity.id)}
-                                        className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-200 flex items-center justify-between group relative border ${selectedEntityId === entity.id
-                                            ? 'bg-accent-primary/20 border-accent-primary/40 text-accent-primary font-bold shadow-sm'
-                                            : 'text-text-primary hover:bg-white/5 border-transparent'
+
+                            {/* Presence filter: All | Active (segmented pill —
+                                the active segment carries the gradient).
+                                Theme vars inline: TW4 @theme carries no
+                                colors, tailwind theme utilities are no-ops. */}
+                            <div className="entity-filter-pill flex p-0.5" role="tablist" aria-label={tes('entityList.filterLabel')}>
+                                {[
+                                    { value: 'all', label: tes('entityList.filterAll') },
+                                    { value: 'active', label: tes('entityList.filterActive') },
+                                ].map(({ value, label }) => (
+                                    <button key={value} type="button" role="tab" aria-selected={presenceFilter === value}
+                                        onClick={() => setPresenceFilter(value)}
+                                        className={`flex-1 text-xs py-1.5 font-semibold cursor-pointer transition-all duration-200 ${presenceFilter === value
+                                            ? 'entity-filter-segment-active'
+                                            : 'entity-filter-segment'
                                             }`}>
-                                        {/* min-w-0 on the flex chain: long timestamped ids
-                                            truncate instead of stretching the fixed-width
-                                            panel; tooltips carry the full values. */}
-                                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            {selectedEntityId === entity.id && (
-                                                <div className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-accent-primary rounded-r-full" />
-                                            )}
-                                            <span className="truncate min-w-0" title={entity.id}>{entity.id}</span>
-                                            {entity.alias && (
-                                                <span className="text-xs text-text-muted truncate ml-1 min-w-0" title={entity.alias}>({entity.alias})</span>
-                                            )}
-                                        </div>
-                                        {selectedEntityId === entity.id && (
-                                            <svg className="w-4 h-4 text-accent-primary" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                        )}
-                                    </div>
+                                        {label}
+                                    </button>
                                 ))}
-                                {aiEntities.length === 0 && (
+                            </div>
+
+                            <div data-tutorial-id="entity-list" className="input-field w-full custom-scrollbar border-white/10 h-[384px] overflow-y-auto p-1.5 space-y-1.5">
+                                {visibleEntities.map((entity) => {
+                                    const isSelected = selectedEntityId === entity.id;
+                                    // Chat-list gradient style: avatar in a gradient
+                                    // ring (profile picture, gradient letter-bubble
+                                    // fallback), alias only — the raw timestamped id
+                                    // stays out of the rail (it remains copyable in
+                                    // the Identity Settings ID row). The green
+                                    // bubble marks entities with live sessions.
+                                    const displayName = entity.alias || entity.id;
+                                    const avatarUrl = getEntityAvatarUrl(entity);
+                                    const sessionCount = countActiveSessions(sessionsByEntity, entity.id);
+                                    return (
+                                        <button key={entity.id} type="button" onClick={() => selectEntity(entity.id)}
+                                            title={displayName}
+                                            className={`entity-row w-full text-left ${isSelected ? 'entity-row-selected' : ''}`}>
+                                            <div className="entity-row-inner px-2.5 py-2 flex items-center gap-3">
+                                                <div className="relative shrink-0">
+                                                    <div className="entity-avatar-ring">
+                                                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'var(--color-background-elevated)' }}>
+                                                            {avatarUrl ? (
+                                                                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="entity-avatar-fallback w-full h-full flex items-center justify-center">
+                                                                    <span className="text-sm font-extrabold text-white select-none">
+                                                                        {getEntityAvatarLetter(displayName) || (
+                                                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {sessionCount > 0 && (
+                                                        <span aria-label={tes('entityList.activeSessionsBadge', { count: sessionCount })}
+                                                            title={tes('entityList.activeSessionsBadge', { count: sessionCount })}
+                                                            className="entity-presence-dot absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5" />
+                                                    )}
+                                                </div>
+                                                <span className="truncate min-w-0 font-medium"
+                                                    style={{ color: isSelected ? 'var(--color-accent-primary)' : 'var(--color-text-primary)' }}>
+                                                    {displayName}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {visibleEntities.length === 0 && presenceFilter === 'active' && aiEntities.length > 0 && (
+                                    <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
+                                        {tes('entityList.noActiveEntities')}
+                                    </div>
+                                )}
+                                {visibleEntities.length === 0 && aiEntities.length === 0 && (
                                     <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
                                         {tes('entityList.noEntities')}
                                     </div>
@@ -568,10 +757,16 @@ const EntitySettingsView = ({ appName }) => {
                         ) : (
                             <div className="space-y-6 animate-fadeIn">
                                 {error && (
-                                    <div className="p-3 bg-error-bg/30 border border-error-bg rounded text-error text-sm">{error}</div>
+                                    <div className="p-3 rounded text-sm"
+                                        style={{ background: 'var(--color-error-bg)', border: '1px solid var(--color-error)', color: 'var(--color-error)' }}>
+                                        {error}
+                                    </div>
                                 )}
                                 {successMessage && (
-                                    <div className="p-3 bg-success-bg/30 border border-success-bg rounded text-success text-sm">{successMessage}</div>
+                                    <div className="p-3 rounded text-sm"
+                                        style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
+                                        {successMessage}
+                                    </div>
                                 )}
 
                                 <section className="space-y-4">
@@ -580,6 +775,26 @@ const EntitySettingsView = ({ appName }) => {
                                         <SettingsTooltip tooltipIndex={1} tooltipVisible={() => tooltipVisible} setTooltipVisible={setTooltipVisible}>
                                             {tes('sections.identityTooltip')}
                                         </SettingsTooltip>
+
+                                        {/* Session/runtime controls — right upper side:
+                                            force-disconnect + enable/disable toggle. */}
+                                        <div className="ml-auto flex items-center gap-2">
+                                            <button type="button" onClick={handleToggleDisabled}
+                                                disabled={isPersonaSelected}
+                                                title={selectedIsDisabled ? tes('buttons.enableHint') : tes('buttons.disableHint')}
+                                                className={`btn-secondary text-sm py-1.5 px-3 ${isPersonaSelected ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                {selectedIsDisabled ? tes('buttons.enable') : tes('buttons.disable')}
+                                            </button>
+                                            <button type="button" onClick={handleStopSessions}
+                                                disabled={!selectedHasSessions || isStoppingSessions}
+                                                title={tes('buttons.stopSessionsHint')}
+                                                className={`btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 ${!selectedHasSessions || isStoppingSessions ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <rect x="5" y="5" width="10" height="10" rx="1.5" />
+                                                </svg>
+                                                {isStoppingSessions ? tes('buttons.stoppingSessions') : tes('buttons.stopSessions')}
+                                            </button>
+                                        </div>
                                     </h3>
 
                                     <div className="flex items-center mb-4 w-full">
@@ -592,6 +807,35 @@ const EntitySettingsView = ({ appName }) => {
                                         <div className="w-4/5 px-3">
                                             <input type="text" value={entityAlias} onChange={(e) => setEntityAlias(e.target.value)}
                                                 className="input-field w-full p-2 rounded text-sm" placeholder={tes('fields.entityAlias.placeholder')} />
+                                        </div>
+                                    </div>
+
+                                    {/* Read-only true ID (server-owned since birth — D22/D23):
+                                        the raw timestamped id left the list rail, so it is
+                                        surfaced here for support/inspection with one-click
+                                        copy. */}
+                                    <div className="flex items-center mb-4 w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/5 px-3">
+                                            {tes('fields.entityId.label')}
+                                        </label>
+                                        <div className="w-4/5 px-3 flex items-center gap-2">
+                                            <input type="text" readOnly value={selectedEntityId || ''}
+                                                onFocus={(e) => e.target.select()}
+                                                title={selectedEntityId || ''}
+                                                className="input-field w-full p-2 rounded text-sm font-mono text-text-muted cursor-default min-w-0" />
+                                            <button type="button" onClick={handleCopyEntityId}
+                                                title={tes(entityIdCopied ? 'fields.entityId.copied' : 'fields.entityId.copy')}
+                                                className="btn-secondary shrink-0 p-2 flex items-center justify-center">
+                                                {entityIdCopied ? (
+                                                    <svg className="w-4 h-4" style={{ color: 'var(--color-success)' }} fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m-6 0h6a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                                                    </svg>
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
 

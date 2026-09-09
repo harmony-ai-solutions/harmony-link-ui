@@ -168,3 +168,56 @@ export async function resetEntityLifecycleConfig(entityId) {
     await handleResponse(resp, "Failed to reset entity lifecycle config");
     return await resp.json();
 }
+
+/**
+ * Bulk active-session listing (GET /entities/sessions). Wire shape:
+ * `{ [entityId]: [{device_type, handler_id}] }` — entities WITHOUT active
+ * sessions are absent from the map, an empty registry serializes as `{}`.
+ * Suspended (resumable, within-TTL) phone sessions are excluded engine-side:
+ * only actively connected sessions count as "active" (presence badge).
+ * @returns {Promise<Record<string, Array<{device_type: string, handler_id: string}>>>}
+ */
+export async function getEntitySessions() {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/sessions`, {
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to list entity sessions");
+    return await resp.json();
+}
+
+/**
+ * Force-disconnect EVERY session bound to the entity
+ * (POST /entities/:id/sessions/stop). Active AND suspended sessions are
+ * evicted; other entities are untouched; stopping an idle entity is a 200
+ * no-op. The response echoes `{status, stopped}` — `stopped` is the number
+ * of sessions that were bound to the entity before the eviction.
+ * @param {string} entityId
+ * @returns {Promise<{status: string, stopped: number}>}
+ */
+export async function stopEntitySessions(entityId) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}/sessions/stop`, {
+        method: "POST",
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to stop entity sessions");
+    return await resp.json();
+}
+
+/**
+ * Enable/disable toggle (PUT /entities/:id with `is_disabled`) — the same
+ * synced entity flag the apps' Disabled-AIs screens read and the engine's
+ * automation gates honour. The engine stamps updated_at so the change
+ * propagates to connected apps via sync. Omit-not-supported: always send the
+ * explicit boolean.
+ * @param {string} entityId
+ * @param {boolean} disabled
+ */
+export async function setEntityDisabled(entityId, disabled) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ is_disabled: disabled })
+    });
+    await handleResponse(resp, "Failed to update entity disabled flag");
+    return await resp.json();
+}

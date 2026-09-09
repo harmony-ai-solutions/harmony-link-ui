@@ -8,7 +8,11 @@ const useEntityStore = create((set, get) => ({
     selectedEntityId: null,
     isLoading: false,
     error: null,
-    
+    // Active sessions per entity id (GET /entities/sessions wire shape:
+    // { [entityId]: [{device_type, handler_id}] }). Entities without active
+    // sessions are absent; {} = loaded but none active, null = not loaded.
+    sessionsByEntity: null,
+
     // Actions
     loadEntities: async () => {
         set({ isLoading: true, error: null });
@@ -18,6 +22,35 @@ const useEntityStore = create((set, get) => ({
         } catch (error) {
             set({ error: error.message, isLoading: false });
         }
+    },
+
+    // Refresh the active-session map (presence badge + Active filter). Best
+    // effort: a failed poll keeps the previous map — the badge is cosmetic
+    // and the next poll tick re-fetches.
+    loadSessions: async () => {
+        try {
+            const sessionsByEntity = await entityService.getEntitySessions();
+            set({ sessionsByEntity: sessionsByEntity || {} });
+        } catch (error) {
+            if (get().sessionsByEntity === null) {
+                set({ sessionsByEntity: {} });
+            }
+        }
+    },
+
+    // Force-disconnect every session of the entity, then refresh the map.
+    // @returns {{stopped: number}} the engine response
+    stopSessions: async (id) => {
+        const result = await entityService.stopEntitySessions(id);
+        await get().loadSessions();
+        return result;
+    },
+
+    // Enable/disable toggle — persists engine-side (synced to the apps),
+    // then reloads the entity list so `is_disabled` reflects locally.
+    setEntityDisabled: async (id, disabled) => {
+        await entityService.setEntityDisabled(id, disabled);
+        await get().loadEntities();
     },
     
     // D23: plain passthrough of the derived-create contract — the engine

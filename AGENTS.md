@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **frontend** (1631 symbols, 3223 relationships, 137 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **harmony-link-ui** (2604 symbols, 4802 relationships, 221 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -24,10 +24,10 @@ This project is indexed by GitNexus as **frontend** (1631 symbols, 3223 relation
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/frontend/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/frontend/clusters` | All functional areas |
-| `gitnexus://repo/frontend/processes` | All execution flows |
-| `gitnexus://repo/frontend/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/harmony-link-ui/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/harmony-link-ui/clusters` | All functional areas |
+| `gitnexus://repo/harmony-link-ui/processes` | All execution flows |
+| `gitnexus://repo/harmony-link-ui/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 

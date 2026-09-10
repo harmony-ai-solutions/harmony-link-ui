@@ -4,12 +4,18 @@
     "brandSub": "Link",
     "tabs": {
       "general": "General",
-      "entities": "Entities",
+      "entities": "AI Entities",
       "modules": "Modules",
       "characters": "Characters",
+      "personas": "Personas",
       "integrations": "Integrations",
       "simulator": "Simulator",
       "dev": "Dev"
+    },
+    "groups": {
+      "identity": "Identity",
+      "system": "System",
+      "tools": "Tools"
     },
     "help": "Help / Restart Tutorial",
     "language": "Language",

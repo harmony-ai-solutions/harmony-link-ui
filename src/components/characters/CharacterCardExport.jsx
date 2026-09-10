@@ -16,8 +16,14 @@ import useCharacterProfileStore from '../../store/characterProfileStore';
  * @param {'card'|'editor'} [props.variant='card'] - 'card' = compact icon button
  *        (hover-revealed, like the delete button); 'editor' = labeled button for
  *        the editor modal header.
+ * @param {string} [props.wrapperClassName] - 2-4: REPLACES the card variant's
+ *        position classes (default "top-2 left-2"). Persona cards pass
+ *        "top-2 right-2" so the export button clears their top-left badges.
+ * @param {string} [props.menuAnchorClassName] - 2-4: menu anchor for the card
+ *        variant (default "left-0"; pass "right-0" with a right-positioned
+ *        wrapper so the menu stays on-card).
  */
-export default function CharacterCardExport({ profile, variant = 'card' }) {
+export default function CharacterCardExport({ profile, variant = 'card', wrapperClassName = '', menuAnchorClassName = 'left-0' }) {
     const { t } = useTranslation();
     const exportCharacterCard = useCharacterProfileStore(state => state.exportCharacterCard);
     const [busy, setBusy] = useState(null); // null | 'json' | 'png'
@@ -41,8 +47,13 @@ export default function CharacterCardExport({ profile, variant = 'card' }) {
         </svg>
     );
 
+    // Both variants share one renderer. The panel reuses the app's proven
+    // glass dropdown treatment (.nav-menu-panel — same class as the nav group
+    // menus): translucent glass bg + heavy blur + glass border + xl shadow,
+    // which stays opaque over card art where plain bg-background-elevated read
+    // as transparent. Item focus (accent tint + accent text) reads on top.
     const items = (anchorClass) => (
-        <MenuItems className={`absolute ${anchorClass} mt-2 w-48 origin-top-right rounded-md bg-background-elevated shadow-lg ring-1 ring-black/10 focus:outline-none z-50`}>
+        <MenuItems className={`nav-menu-panel absolute ${anchorClass} mt-2 focus:outline-none`}>
             <MenuItem>
                 {({ focus }) => (
                     <button
@@ -92,9 +103,11 @@ export default function CharacterCardExport({ profile, variant = 'card' }) {
     }
 
     // 'card' variant: compact icon, hover-revealed (alongside the delete button).
-    // Anchored top-left; the menu opens rightward/downward so it stays on-card.
+    // Positioned top-left by default; `wrapperClassName` replaces the position
+    // classes (e.g. "top-2 right-2" on persona cards so the button clears their
+    // badges). The menu still opens rightward/downward so it stays on-card.
     return (
-        <Menu as="div" className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Menu as="div" className={`absolute ${wrapperClassName || 'top-2 left-2'} opacity-0 group-hover:opacity-100 transition-opacity`}>
             <MenuButton
                 onClick={(e) => e.stopPropagation()}
                 disabled={!profile?.id || busy !== null}
@@ -103,7 +116,7 @@ export default function CharacterCardExport({ profile, variant = 'card' }) {
             >
                 {busy ? <span className="block w-4 h-4">{/* compact spinner */}<span className="block w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" /></span> : DownloadIcon}
             </MenuButton>
-            <div onClick={(e) => e.stopPropagation()}>{items('left-0')}</div>
+            <div onClick={(e) => e.stopPropagation()}>{items(menuAnchorClassName)}</div>
         </Menu>
     );
 }

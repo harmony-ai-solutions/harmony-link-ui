@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
+import useEntityStore from '../../store/entityStore';
+import usePersonaStore from '../../store/personaStore';
+import * as characterService from '../../services/management/characterService.js';
+import * as entityService from '../../services/management/entityService.js';
+import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
@@ -8,10 +13,38 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 
 /**
  * Main view for managing character profiles
+ * @param {Object} props
+ * @param {Function} [props.onCreatePersonaFromCard] - 2-4: "Create persona from
+ *   this card" — the app performs the full-copy create here (duplicate profile
+ *   → persona entity → alias sync), then calls this callback so the shell can
+ *   switch to the Personas tab with the new persona open in the editor.
+ * @param {Function} [props.onCreateEntityFromCard] - "Create AI entity from
+ *   this card" — the app links the profile LIVE to a new AI entity (no card
+ *   copy), then calls this callback so the shell can switch to the Entities
+ *   tab with the new entity preselected.
  */
-export default function CharacterProfilesView() {
+export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard }) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
+    const { entities, loadEntities, selectEntity } = useEntityStore();
+
+    /**
+     * 3-2: map character_profile_id → the entities (AI or persona) that
+     * reference it. Entity↔profile is a LIVE reference (edits to a profile
+     * change the linked entity's behavior immediately) — these map drives the
+     * "used by" badges and the editor's live-link hint.
+     */
+    const referencingByProfile = useMemo(() => {
+        const map = {};
+        (entities || []).forEach(entity => {
+            const pid = entity.character_profile_id || entity.character_profile?.id;
+            if (pid) {
+                if (!map[pid]) map[pid] = [];
+                map[pid].push(entity);
+            }
+        });
+        return map;
+    }, [entities]);
     const [showEditor, setShowEditor] = useState(false);
     const [showImport, setShowImport] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
@@ -21,29 +54,48 @@ export default function CharacterProfilesView() {
     });
     const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-    /** Filter profiles by search query — matches name and description */
+    /**
+     * 2-1: ids of profiles owned by personas (referenced by ≥1 user entity).
+     * Those cards are managed in the Personas tab — they must not show in this
+     * grid, must not resurface via search, and (defensively) hide even if an AI
+     * entity also references them (persona ownership wins).
+     */
+    const personaOwnedIds = useMemo(
+        () => personaOwnedProfileIds(entities, profiles),
+        [entities, profiles]
+    );
+
+    /** Profiles visible in this tab: persona-owned cards excluded. */
+    const visibleProfiles = useMemo(
+        () => (profiles || []).filter(p => !personaOwnedIds.has(p.id)),
+        [profiles, personaOwnedIds]
+    );
+
+    /** Filter visible profiles by search query — matches name and description */
     const filteredProfiles = useMemo(() => {
-        if (!searchQuery.trim()) return profiles;
+        if (!searchQuery.trim()) return visibleProfiles;
         const query = searchQuery.toLowerCase().trim();
-        return profiles.filter(p =>
+        return visibleProfiles.filter(p =>
             p.name?.toLowerCase().includes(query) ||
             p.description?.toLowerCase().includes(query)
         );
-    }, [profiles, searchQuery]);
+    }, [visibleProfiles, searchQuery]);
 
     useEffect(() => {
         loadProfiles();
-    }, [loadProfiles]);
+        // Needed for the "used by" badges / live-link hint (3-2).
+        loadEntities();
+    }, [loadProfiles, loadEntities]);
 
     useEffect(() => {
-        if (profiles && profiles.length > 0) {
-            profiles.forEach(profile => {
+        if (visibleProfiles && visibleProfiles.length > 0) {
+            visibleProfiles.forEach(profile => {
                 if (profile && profile.id) {
                     loadImages(profile.id);
                 }
             });
         }
-    }, [profiles, loadImages]);
+    }, [visibleProfiles, loadImages]);
 
     const handleEdit = (profile) => {
         setEditingProfile(profile);
@@ -67,6 +119,82 @@ export default function CharacterProfilesView() {
 
     const handleDeleteCancel = () => {
         setDeleteTargetId(null);
+    };
+
+    /**
+     * 2-4: "Create persona from this card" — IMMEDIATE full copy (decision 7):
+     * duplicate the whole card via the engine 1-3 endpoint (all spec + Soulbits
+     * fields, images copied with the primary flag preserved), then create the
+     * persona entity from the copy in ONE server-derived request, then open
+     * the new persona in the Personas tab's editor. The old identity-prefill
+     * stash flow is retired.
+     *
+     * D23/D66: the request carries the copy's RAW name (spaces included —
+     * never charset-validated or id-ified client-side); the engine derives
+     * the timestamped id and defaults the alias, auto-suffixed on live
+     * collision (D30). No client-side id/alias derivation remains (D59).
+     * Reserved/empty names surface as engine 400s in the alert below.
+     * The create passes `dedupe_id_if_taken`: an id held by a SOFT-deleted
+     * entity is invisible to the live-only entity list, and the engine
+     * resolves such collisions in-transaction. Its 201 body echoes the
+     * RESOLVED id — the persona-editor request uses `created.id`.
+     */
+    const handleCreatePersonaFromCard = async (profile) => {
+        if (!profile?.id) return;
+        let newProfile = null;
+        try {
+            newProfile = await characterService.duplicateCharacterProfile(profile.id);
+            const created = await entityService.createPersonaEntity(newProfile.name, newProfile.id, { dedupeIdIfTaken: true });
+            usePersonaStore.getState().requestEditPersona(created.id);
+            onCreatePersonaFromCard();
+        } catch (error) {
+            // Compensation: once duplicateCharacterProfile resolved, the profile
+            // COPY exists — so any failure after it (the atomic create,
+            // anything else) would orphan an unowned card that resurfaces in
+            // the Characters grid. Best-effort delete via the direct service
+            // (NOT the store's deleteProfile — its isLoading side-effects must
+            // not churn during error handling). Cleanup failures are
+            // swallowed/logged so they never mask the original error surfaced
+            // by the i18n'd alert below.
+            if (newProfile?.id) {
+                try {
+                    await characterService.deleteCharacterProfile(newProfile.id);
+                } catch (cleanupError) {
+                    console.error('Failed to clean up duplicated character profile after failed persona creation:', cleanupError);
+                }
+            }
+            alert(t('characters:createPersonaFailed', { message: error.message }));
+        }
+    };
+
+    /**
+     * "Create AI entity from this card" — AI entities link profiles LIVE
+     * (engine 1:1 semantics, no card copy): create the entity from the
+     * profile's RAW name via the server-derived contract in ONE request
+     * (the engine derives the timestamped id and defaults the alias, D23/D30),
+     * then refresh the entity list and preselect the new entity BEFORE the
+     * shell switches to the Entities tab (EntitySettingsView's
+     * selection-constraining effect then keeps it).
+     *
+     * The create passes `dedupe_id_if_taken`: an id held by a SOFT-deleted
+     * entity is invisible to the live-only entity list, and the engine now
+     * resolves such collisions in-transaction instead of rejecting the create.
+     * Its 201 body echoes the RESOLVED id, so the preselection uses
+     * `created.id`.
+     */
+    const handleCreateEntityFromCard = async (profile) => {
+        if (!profile?.id) return;
+        try {
+            const created = await entityService.createEntity(profile.name, profile.id, { dedupeIdIfTaken: true });
+            // Refresh first so the tab mounts with the new entity already in
+            // the store — otherwise the selection constraint could override
+            // the preselection while the list is still stale.
+            await loadEntities();
+            selectEntity(created.id);
+            onCreateEntityFromCard();
+        } catch (error) {
+            alert(t('characters:createEntityFailed', { message: error.message }));
+        }
     };
 
     const handleImportSuccess = async (result) => {
@@ -176,12 +304,15 @@ export default function CharacterProfilesView() {
                     <div className="flex justify-center items-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
                     </div>
-                ) : profiles.length > 0 ? (
+                ) : visibleProfiles.length > 0 ? (
                     filteredProfiles.length > 0 ? (
                         <div data-tutorial-id="char-profile-grid" className={`grid ${getGridClasses()} gap-6`}>
                             {filteredProfiles.map(profile => (
                                 <CharacterProfileCard key={profile.id} profile={profile}
-                                    onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest} />
+                                    onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
+                                    referencingEntities={referencingByProfile[profile.id] || []}
+                                    onCreatePersona={handleCreatePersonaFromCard}
+                                    onCreateEntity={handleCreateEntityFromCard} />
                             ))}
                         </div>
                     ) : (
@@ -200,6 +331,13 @@ export default function CharacterProfilesView() {
                         </svg>
                         <h3 className="mt-2 text-sm font-medium text-text-primary">{t('characters:empty.title')}</h3>
                         <p className="mt-1 text-sm text-text-muted">{t('characters:empty.getStarted')}</p>
+                        {/* 2-1: the grid may be empty because every profile is
+                            persona-owned — point at the Personas tab. */}
+                        {profiles.length > 0 && (
+                            <p className="mt-2 text-sm text-accent-secondary italic font-medium">
+                                {t('characters:empty.personaOwnedHint')}
+                            </p>
+                        )}
                         <div className="mt-6 flex justify-center gap-3">
                             <button onClick={() => setShowImport(true)} className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
                                 {t('characters:buttons.importCard')}
@@ -213,7 +351,9 @@ export default function CharacterProfilesView() {
             </div>
 
             {showEditor && (
-                <CharacterProfileEditor profile={editingProfile} onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
+                <CharacterProfileEditor profile={editingProfile}
+                    referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
+                    onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
             )}
 
             {showImport && (

@@ -1,0 +1,74 @@
+{
+  "header": {
+    "title": "Personas",
+    "subtitle": "Manage the identities linked to your account"
+  },
+  "buttons": {
+    "createPersona": "Create Persona",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel"
+  },
+  "searchPlaceholder": "Search personas...",
+  "cardSize": "Card Size:",
+  "cardSizes": {
+    "small": "Small cards",
+    "medium": "Medium cards",
+    "large": "Large cards"
+  },
+  "empty": {
+    "noResults": "No matching personas",
+    "tryAdjustingSearch": "Try adjusting your search query."
+  },
+  "list": {
+    "empty": "No personas yet. Create one to get started.",
+    "builtIn": "Built-in",
+    "personaBadge": "Persona",
+    "noProfile": "No linked profile"
+  },
+  "sharedModules": {
+    "title": "Shared user modules",
+    "description": "Applies to every persona · personas never use generation, TTS, or RAG",
+    "sttLabel": "Speech-to-Text (STT)",
+    "sttDisabled": "Disabled",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "save": "Save STT",
+    "saving": "Saving...",
+    "hint": "STT is shared across all personas. Changes apply to every persona immediately."
+  },
+  "dialogs": {
+    "createTitle": "Create Persona",
+    "editTitle": "Edit Persona",
+    "deleteTitle": "Delete Persona",
+    "deleteMessage": "Delete persona '{{name}}'?\n\nThis permanently removes the persona, its card, and card images.",
+    "deleteBuiltIn": "The built-in 'user' persona cannot be deleted.",
+    "errorTitles": {
+      "createFailed": "Create Failed",
+      "updateFailed": "Update Failed",
+      "deleteFailed": "Delete Failed",
+      "sharedModulesFailed": "Shared Modules Error"
+    }
+  },
+  "messages": {
+    "createSuccess": "Persona created successfully",
+    "updateSuccess": "Persona updated successfully",
+    "deleteSuccess": "Persona deleted successfully",
+    "sharedModulesSaved": "Shared STT module saved successfully",
+    "createFailed": "Failed to create persona: {{message}}",
+    "updateFailed": "Failed to update persona: {{message}}",
+    "deleteFailed": "Failed to delete persona: {{message}}",
+    "sharedModulesFailed": "Failed to save shared STT module: {{message}}"
+  },
+  "editor": {
+    "nameLocked": "The built-in 'user' persona has a fixed name."
+  },
+  "validation": {
+    "nameRequired": "Name is required.",
+    "nameInvalid": "Name can only contain letters, numbers, hyphens, and underscores",
+    "nameExists": "A persona with this name already exists",
+    "nameReservedUser": "'user' and 'deleted' are reserved names — choose a different persona name."
+  }
+}

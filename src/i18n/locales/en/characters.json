@@ -6,6 +6,8 @@
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
+    "createPersona": "Create persona from this card",
+    "createEntity": "Create AI entity from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",
@@ -32,11 +34,19 @@
     "title": "No profiles found",
     "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
-    "getStarted": "Get started by creating a new profile or importing a character card."
+    "getStarted": "Get started by creating a new profile or importing a character card.",
+    "personaOwnedHint": "Persona-owned cards are managed in the Personas tab."
   },
   "importTitle": "Import Character Card",
   "noDescription": "No description provided.",
   "deleteProfile": "Delete profile",
+  "createPersonaFailed": "Failed to create persona from this card: {{message}}",
+  "createEntityFailed": "Failed to create AI entity from this card: {{message}}",
+  "liveLinkHint": "Linked to an entity — changes apply immediately",
+  "usedBy": {
+    "aiPrefix": "AI · {{name}}",
+    "personaPrefix": "Persona · {{name}}"
+  },
   "import": {
     "uploading": "Importing character card...",
     "dropActive": "Drop the PNG file here",
@@ -60,7 +70,6 @@
     "droppedFieldsHint": "The imported card contained fields that are not part of the Character Card spec. They were not stored to prevent potentially unsafe content and will not be re-exported."
   },
   "clearSearch": "Clear search",
-  "deleteConfirm": "Are you sure you want to delete this character profile? This action cannot be undone.",
   "deleteFailed": "Failed to delete profile: {{message}}",
   "exportFailed": "Failed to export character card: {{message}}",
   "deleteDialog": {

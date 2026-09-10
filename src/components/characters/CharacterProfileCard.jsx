@@ -9,10 +9,19 @@ import CharacterCardExport from './CharacterCardExport';
  * @param {import('../../services/management/characterService').CharacterProfile} props.profile - The character profile to display
  * @param {Function} props.onClick - Callback when the card is clicked
  * @param {Function} [props.onDelete] - Callback when the delete button is clicked
+ * @param {Object[]} [props.referencingEntities] - 3-2: entities (AI or persona)
+ *   that link this profile live. Drives the "used by" badges.
+ * @param {Function} [props.onCreatePersona] - 2-4: "Create persona from this
+ *   card" — receives the FULL profile so the app can duplicate it as a rich
+ *   full-card copy (all spec + Soulbits fields, images preserved).
+ * @param {Function} [props.onCreateEntity] - "Create AI entity from this card"
+ *   — receives the FULL profile; the app links it LIVE (no card copy) to a new
+ *   AI entity and switches to the Entities tab.
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
+    const referenced = Array.isArray(referencingEntities) ? referencingEntities : [];
     
     return (
         <div 
@@ -52,6 +61,44 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                         </svg>
                     </button>
                 )}
+
+                {onCreatePersona && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // 2-4: FULL-copy semantics — the app duplicates this
+                            // card (all spec + Soulbits fields, images copied with
+                            // the primary flag preserved) and opens the copy in
+                            // the persona editor. Source card untouched.
+                            onCreatePersona(profile);
+                        }}
+                        className="absolute bottom-2 left-2 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                        title={t('buttons.createPersona')}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                    </button>
+                )}
+
+                {onCreateEntity && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // LIVE-link semantics — AI entities reference this
+                            // profile directly (no copy): the app creates the
+                            // entity, syncs the alias and opens the Entities tab.
+                            onCreateEntity(profile);
+                        }}
+                        className="absolute bottom-2 right-2 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                        title={t('buttons.createEntity')}
+                    >
+                        {/* Robot icon — mirrors the nav's Characters tab iconography. */}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v3m0 0a4 4 0 014 4v7a4 4 0 01-4 4 4 4 0 01-4-4V9a4 4 0 014-4zM3 12h2m14 0h2M5 21h14M9 13h.01M15 13h.01M9 17c.7.5 2 1 3 1s2.3-.5 3-1" />
+                        </svg>
+                    </button>
+                )}
             </div>
             
             <div className="p-4">
@@ -59,6 +106,24 @@ export default function CharacterProfileCard({ profile, onClick, onDelete }) {
                 <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
                     {profile.description || t('noDescription')}
                 </p>
+                {referenced.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {referenced.map(entity => (
+                            <span
+                                key={entity.id}
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    entity.entity_type === 'user'
+                                        ? 'bg-accent-primary/15 text-accent-primary'
+                                        : 'bg-accent-secondary/15 text-accent-secondary'
+                                }`}
+                            >
+                                {entity.entity_type === 'user'
+                                    ? t('usedBy.personaPrefix', { name: entity.alias || entity.id })
+                                    : t('usedBy.aiPrefix', { name: entity.alias || entity.id })}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

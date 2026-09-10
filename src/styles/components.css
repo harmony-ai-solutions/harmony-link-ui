@@ -419,6 +419,120 @@ input[type="checkbox"]:disabled:hover {
         0 0 36px var(--color-glow-accent-strong);
 }
 
+/* ── Grouped Dropdown Nav (Variant C) ─────────────────────────────
+   Additive classes for the menu triggers/panels. The panel is portaled
+   to <body> by Headless UI (anchor forces portal), so it is not clipped
+   by `.nav-glass-bar { overflow: hidden }`. All values use theme vars. */
+
+/* Caret on the group trigger — rotates when the menu is open via the
+   Headless UI Button's aria-expanded state. */
+.nav-pill-caret {
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    opacity: 0.85;
+    transition: transform 0.3s var(--ease-spring), color 0.3s var(--ease-spring);
+}
+
+.nav-pill:hover .nav-pill-caret,
+.nav-pill-active .nav-pill-caret {
+    color: var(--color-accent-primary);
+    opacity: 1;
+}
+
+.nav-pill[aria-expanded="true"] .nav-pill-caret {
+    transform: rotate(180deg);
+}
+
+/* Dropdown panel — glass, consistent with `.nav-lang-menu` */
+.nav-menu-panel {
+    z-index: 9999;
+    min-width: 210px;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--color-background-glass);
+    backdrop-filter: blur(32px) saturate(1.6);
+    -webkit-backdrop-filter: blur(32px) saturate(1.6);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-xl), 0 0 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    animation: nav-menu-panel-in 0.18s ease-out;
+}
+
+/* Opacity-only fade: the panel is positioned by Headless UI's anchor
+   logic (top/left/transform set inline), so animating transform here
+   would fight the framework. */
+@keyframes nav-menu-panel-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Menu item — icon + label + active indicator */
+.nav-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-spring);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.nav-menu-item:hover,
+.nav-menu-item-focus {
+    background: var(--color-background-hover-glass);
+    color: var(--color-text-primary);
+}
+
+.nav-menu-item-active {
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 10%, transparent);
+}
+
+.nav-menu-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    opacity: 0.85;
+    transition: all 0.3s var(--ease-spring);
+}
+
+.nav-menu-item:hover .nav-menu-item-icon,
+.nav-menu-item-focus .nav-menu-item-icon,
+.nav-menu-item-active .nav-menu-item-icon {
+    color: var(--color-accent-primary);
+    opacity: 1;
+}
+
+.nav-menu-item-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.nav-menu-item-indicator {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: var(--color-accent-primary);
+}
+
 /* Help / Tutorial button — theme-aware glass */
 .nav-help-btn {
     width: 38px;
@@ -3409,4 +3523,70 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     .toggle .toggle-thumb::after {
         transition: none;
     }
+}
+
+/* ── Entity Settings — List Rows, Presence & Filter ────────────────── */
+/* Theme-var-driven (Tailwind v4 @theme carries no colors — the dead
+   tailwind.config.js is ignored). Mirrors the chat-list gradient DNA:
+   gradient ring avatars, gradient selected row, green presence dot. */
+.entity-row {
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-lg);
+    transition: all 0.25s var(--ease-spring);
+    cursor: pointer;
+}
+
+.entity-row:hover {
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
+}
+
+.entity-row-selected {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    box-shadow: 0 0 16px var(--color-glow-accent-soft);
+}
+
+.entity-row-inner {
+    background: var(--color-background-elevated);
+    border-radius: calc(var(--radius-lg) - 3px);
+}
+
+.entity-avatar-ring {
+    background: var(--gradient-primary);
+    border-radius: 9999px;
+    padding: 2px;
+}
+
+.entity-avatar-fallback {
+    background: var(--gradient-primary);
+}
+
+.entity-presence-dot {
+    background: var(--color-success);
+    border: 2px solid var(--color-background-elevated);
+    border-radius: 9999px;
+}
+
+.entity-filter-pill {
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    border-radius: 9999px;
+}
+
+.entity-filter-segment {
+    border-radius: 9999px;
+    color: var(--color-text-muted);
+    transition: all 0.25s var(--ease-spring);
+}
+
+.entity-filter-segment:hover {
+    color: var(--color-text-primary);
+}
+
+.entity-filter-segment-active {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-radius: 9999px;
 }

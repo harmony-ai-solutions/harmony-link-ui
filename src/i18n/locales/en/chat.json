@@ -133,6 +133,14 @@
   "proactive": {
     "badge": "Messaged you"
   },
+  "wire": {
+    "title": "Wire Inspector",
+    "toggle": "Show raw event payloads (Developer mode)",
+    "count": "{{count}} frames",
+    "clear": "Clear",
+    "close": "Close",
+    "empty": "No frames captured yet. Send a message to see the raw events."
+  },
   "status": {
     "typing": "{{name}} is typing…",
     "recording": "{{name}} is recording…",

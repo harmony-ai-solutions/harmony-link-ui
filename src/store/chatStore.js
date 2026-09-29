@@ -46,6 +46,12 @@ export const useChatStore = create((set, get) => ({
     hasMore: false,
     /** Connection state of the active socket: idle|connecting|connected|reconnecting|error. */
     connectionState: 'idle',
+    /**
+     * Rolling log of raw wire frames for the Developer-mode wire inspector
+     * (Phase 3, D7). Each entry is `{ direction: 'in'|'out', at, frame }`.
+     * Capped so a long session cannot grow without bound.
+     */
+    wireFrames: [],
     /** entityId → true while that AI entity is typing. */
     typingByEntity: {},
     /** entityId → true while that AI entity is recording audio. */
@@ -145,6 +151,9 @@ export const useChatStore = create((set, get) => ({
 
         const socket = new ChatSocketService();
         socket.onEvent((type, payload) => get().handleSocketEvent(type, payload));
+        // Raw-frame tap for the Developer wire inspector (D7) — captures every
+        // frame (including heartbeat PONGs) verbatim.
+        socket.onFrame((direction, frame) => get().pushWireFrame(direction, frame));
         sockets.set(key, socket);
 
         set({ connectionState: 'connecting' });
@@ -174,8 +183,20 @@ export const useChatStore = create((set, get) => ({
         set({ connectionState: 'idle' });
     },
 
+    /** Record one raw wire frame for the Developer wire inspector (D7). */
+    pushWireFrame: (direction, frame) => {
+        const next = [...get().wireFrames, { direction, at: Date.now(), frame }];
+        // Keep only the most recent 200 frames.
+        set({ wireFrames: next.length > 200 ? next.slice(next.length - 200) : next });
+    },
+
+    /** Clear the captured wire frames. */
+    clearWireFrames: () => set({ wireFrames: [] }),
+
     /** Route an inbound socket event into state. */
     handleSocketEvent: (type, payload) => {
+        // NOTE: raw frames are captured by the socket's onFrame tap (D7), not
+        // here — capturing 'event' frames in both places would duplicate them.
         if (type === 'connected') {
             set({ connectionState: 'connected' });
             return;
@@ -370,6 +391,7 @@ export const useChatStore = create((set, get) => ({
             connectionState: 'idle',
             typingByEntity: {},
             recordingByEntity: {},
+            wireFrames: [],
             error: null,
         });
     },

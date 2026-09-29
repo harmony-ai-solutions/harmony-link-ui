@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ChevronRightIcon, ArrowDownIcon, SettingsGearIcon, RefreshIcon,
+    ChevronRightIcon, ArrowDownIcon, SettingsGearIcon, RefreshIcon, TerminalIcon,
 } from '../../constants/icons.jsx';
 import useChatStore from '../../store/chatStore.js';
 import { messageDirection, isUnreadInbound } from '../../store/chatStoreUtils.js';
@@ -13,8 +13,10 @@ import NewMessagesDivider from './NewMessagesDivider.jsx';
 import ImageLightbox from './ImageLightbox.jsx';
 import ChatPreferences from './ChatPreferences.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
+import ChatWireInspector from './ChatWireInspector.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
+import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
 
 /**
  * Chat detail screen (F2): the scrolling message timeline, typing dots (F5),
@@ -37,6 +39,13 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const setReplyMode = useChatStore((s) => s.setReplyMode);
     const loadOlderMessages = useChatStore((s) => s.loadOlderMessages);
 
+    const wireFrames = useChatStore((s) => s.wireFrames);
+    const clearWireFrames = useChatStore((s) => s.clearWireFrames);
+
+    // Developer-mode wire inspector (Phase 3, D7) — only available in Dev mode.
+    const uiMode = useUIModeStore((s) => s.mode);
+    const showWireInspector = isModeAllowed(uiMode, 'dev');
+
     const prefs = useChatPrefsStore();
     const [replyTo, setReplyTo] = useState(null);
     const [editing, setEditing] = useState(null);
@@ -44,6 +53,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const [showPrefs, setShowPrefs] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [showJump, setShowJump] = useState(false);
+    const [showWire, setShowWire] = useState(false);
 
     const scrollRef = useRef(null);
     const bottomRef = useRef(null);
@@ -149,13 +159,31 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                     </span>
                 </div>
                 <ImpersonationSelector personas={personas} value={ownEntityId} onChange={onOwnEntityChange} />
+                {showWireInspector && (
+                    <button type="button"
+                        className={`chat-detail-icon-btn ${showWire ? 'text-accent-primary' : ''}`}
+                        title={t('chat:wire.toggle')}
+                        onClick={() => setShowWire((v) => !v)}>
+                        <TerminalIcon className="w-5 h-5" />
+                    </button>
+                )}
                 <button type="button" className="chat-detail-icon-btn" title={t('chat:preferences.title')}
                     onClick={() => setShowPrefs((v) => !v)}>
                     <SettingsGearIcon className="w-5 h-5" />
                 </button>
             </div>
 
-            <div className="chat-detail-body">
+            <div className={`chat-detail-body ${showWireInspector && showWire ? 'chat-detail-body-with-wire' : ''}`}>
+                {/* Developer wire inspector (D7) — Dev mode only. */}
+                {showWireInspector && showWire && (
+                    <ChatWireInspector
+                        frames={wireFrames}
+                        onClear={clearWireFrames}
+                        onClose={() => setShowWire(false)}
+                    />
+                )}
+
+                <div className="chat-detail-main">
                 {/* Timeline */}
                 <div className="chat-timeline" ref={scrollRef} onScroll={handleScroll}>
                     {loadingOlder && (
@@ -222,6 +250,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                     onSendEmojiAction={handleSendEmojiAction}
                     disabled={connectionState !== 'connected'}
                 />
+                </div>
             </div>
 
             {/* Overlays */}

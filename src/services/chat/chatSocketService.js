@@ -106,6 +106,29 @@ export class ChatSocketService {
     }
 
     /**
+     * Register a raw-frame observer for the Developer wire inspector (D7).
+     * Unlike {@link onEvent} it receives EVERY frame verbatim, including the
+     * heartbeat PONGs the normal event path swallows. Returns an unsubscribe.
+     */
+    onFrame(listener) {
+        if (!this.frameListeners) this.frameListeners = new Set();
+        this.frameListeners.add(listener);
+        return () => this.frameListeners.delete(listener);
+    }
+
+    /** Notify raw-frame observers (never throws into the socket loop). */
+    emitFrame(direction, frame) {
+        if (!this.frameListeners) return;
+        for (const listener of this.frameListeners) {
+            try {
+                listener(direction, frame);
+            } catch {
+                /* ignore observer errors */
+            }
+        }
+    }
+
+    /**
      * Open the connection and send INIT_ENTITY.
      *
      * @param {{ entityId: string, participantIds: string[], replyMode?: string,
@@ -186,6 +209,10 @@ export class ChatSocketService {
         }
         if (!message || typeof message !== 'object') return;
 
+        // Raw-frame tap for the Developer wire inspector (D7) — captured before
+        // the PONG early-return so heartbeats are visible too.
+        this.emitFrame('in', message);
+
         if (message.event_type === 'CONNECTION_PONG') {
             this.clearHeartbeatTimeout();
             return;
@@ -214,12 +241,15 @@ export class ChatSocketService {
     sendEvent(eventType, payload, status = 'NEW') {
         if (!this.ws || !this.connected) return false;
         try {
-            this.ws.send(JSON.stringify({
+            const frame = {
                 event_id: generateEventId(),
                 event_type: eventType,
                 status,
                 payload,
-            }));
+            };
+            this.ws.send(JSON.stringify(frame));
+            // Raw-frame tap for the Developer wire inspector (D7).
+            this.emitFrame('out', frame);
             return true;
         } catch {
             return false;

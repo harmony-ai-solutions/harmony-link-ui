@@ -12,6 +12,8 @@ import developmentEn from './locales/en/development.json';
 import integrationsEn from './locales/en/integrations.json';
 import charactersEn from './locales/en/characters.json';
 import personasEn from './locales/en/personas.json';
+import chatEn from './locales/en/chat.json';
+import uiModeEn from './locales/en/uiMode.json';
 
 const resources = {
   en: {
@@ -24,6 +26,8 @@ const resources = {
     integrations: integrationsEn,
     characters: charactersEn,
     personas: personasEn,
+    chat: chatEn,
+    uiMode: uiModeEn,
   },
 };
 

@@ -27,7 +27,7 @@ The Harmony Link frontend is a React-based single-page application (SPA) that se
 ### Application Shell Layer
 - **Purpose:** Main application layout and navigation
 - Location: [`src/HarmonyLinkApp.jsx`](src/HarmonyLinkApp.jsx), [`src/HarmonySpeechEngineApp.jsx`](src/HarmonySpeechEngineApp.jsx)
-- Contains: Tab-based navigation, settings views, modal management, device approval watchers
+- Contains: Mode-filtered sidebar navigation (Simple/Pro/Dev progressive disclosure via `uiModeStore`), settings views, modal management, device approval watchers
 - Depends on: All view components, services, stores
 - Used by: main.jsx entry point
 
@@ -41,6 +41,7 @@ The Harmony Link frontend is a React-based single-page application (SPA) that se
   - [`src/components/IntegrationsView.jsx`](src/components/IntegrationsView.jsx) - External integrations
   - [`src/components/ModuleConfigurationsView.jsx`](src/components/ModuleConfigurationsView.jsx) - AI module settings
   - [`src/components/SimulatorView.jsx`](src/components/SimulatorView.jsx) - Event simulation
+  - [`src/components/chat/`](src/components/chat) - Chat tab (Simple-mode landing view + one-click Local AI / preset bundles)
   - [`src/components/characters/`](src/components/characters) - Character profile management
   - [`src/components/modules/`](src/components/modules) - Provider-specific module settings (35+ components)
   - [`src/components/sync/`](src/components/sync) - Device synchronization UI

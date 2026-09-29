@@ -2,7 +2,8 @@ import React from 'react';
 import useEntityStore from '../../store/entityStore';
 import useModuleConfigStore from '../../store/moduleConfigStore';
 import useTutorialStore from '../../store/tutorialStore';
-import { SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabIntegrations } from '../../constants.jsx';
+import useUIModeStore from '../../store/uiModeStore';
+import { SettingsTabGeneral, SettingsTabChat, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabIntegrations } from '../../constants.jsx';
 
 // ─── Helper: tag all steps in a section ──────────────────────────────────
 
@@ -828,11 +829,76 @@ const entityAssignmentSteps = section('Assignment', [
 
 // ─── Combined Step List ─────────────────────────────────────────────────
 
+// ─── Simple-mode tour (short, beginner-friendly) ─────────────────────────
+// Shown instead of the long 41-step setup tour when the UI is in Simple mode.
+// Three beats: add a character, choose how it thinks, start chatting.
+
+const simpleModeSteps = section('Getting Started', [
+    {
+        id: 'simple-welcome',
+        targetSelector: '[data-tutorial-id="nav-tab-chat"]',
+        title: 'Welcome to Harmony Link!',
+        content: (
+            <div className="space-y-2">
+                <p>This is your home base — the <strong>Chat</strong> tab. Everything you need to start talking with an AI companion lives just a few clicks away.</p>
+                <p>We'll show you the three steps: add a character, choose how it thinks, and start chatting.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+    {
+        id: 'simple-add-character',
+        targetSelector: '[data-tutorial-id="nav-tab-characters"]',
+        title: '1. Add a Character',
+        content: (
+            <div className="space-y-2">
+                <p>Characters are the personalities your AI can play. Head to the <strong>Characters</strong> tab to import a character card (a PNG from most card sites) or create one from scratch.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+    {
+        id: 'simple-choose-ai',
+        targetSelector: '[data-tutorial-id="nav-tab-characters"]',
+        title: '2. Choose How It Thinks',
+        content: (
+            <div className="space-y-2">
+                <p>Your character needs a "brain". The easiest option is <strong>Local AI (Docker)</strong> — one click and it runs on your own PC.</p>
+                <p>Prefer a cloud provider? That lives in the advanced screens, which you can unlock any time from <strong>General → Interface Mode</strong>.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabCharacters,
+    },
+    {
+        id: 'simple-start-chatting',
+        targetSelector: '[data-tutorial-id="nav-tab-chat"]',
+        title: '3. Start Chatting',
+        content: (
+            <div className="space-y-2">
+                <p>Once your character is set up, come back to <strong>Chat</strong> and say hello. That's it!</p>
+                <p>You can revisit this tour any time from the help button in the top bar.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+]);
+
 /**
  * Returns all tutorial step definitions in order.
  * The TutorialController filters by branchPath.
+ *
+ * In Simple mode we show the short, beginner-friendly tour; Pro/Dev users get
+ * the full 41-step setup walkthrough.
  */
 export function getStepDefinitions(setSettingsTab) {
+    const mode = useUIModeStore.getState().mode;
+    if (mode === 'simple') {
+        return [...simpleModeSteps];
+    }
     return [
         ...characterCreationSteps,
         ...entityCreationSteps,

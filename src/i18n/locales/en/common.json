@@ -3,24 +3,35 @@
     "brand": "Harmony",
     "brandSub": "Link",
     "tabs": {
+      "chat": "Chat",
       "general": "General",
-      "entities": "AI Entities",
+      "entities": "AI Companions",
       "modules": "Modules",
       "characters": "Characters",
-      "personas": "Personas",
+      "personas": "You",
       "integrations": "Integrations",
       "simulator": "Simulator",
       "dev": "Dev"
     },
     "groups": {
+      "chat": "Chat",
       "identity": "Identity",
       "system": "System",
       "tools": "Tools"
     },
+    "primaryNavigation": "Primary navigation",
+    "collapse": "Collapse",
+    "expand": "Expand",
     "help": "Help / Restart Tutorial",
     "language": "Language",
     "darkMode": "Switch to Dark Mode",
     "lightMode": "Switch to Light Mode"
+  },
+  "splash": {
+    "brand": "SOULBITS",
+    "brandSub": "AI",
+    "tagline": "Ignite Your Imagination",
+    "loading": "Starting up"
   },
   "footer": {
     "copyright": "©2023-2026 Project Harmony.AI"

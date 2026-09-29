@@ -11,6 +11,7 @@ import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
+import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
@@ -60,6 +61,14 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const setBgAura = useDynamicBackgroundStore((s) => s.setAuraEnabled);
     const bgAuraStyle = useDynamicBackgroundStore((s) => s.auraStyle);
     const setBgAuraStyle = useDynamicBackgroundStore((s) => s.setAuraStyle);
+
+    // UI mode — progressive disclosure (simple / pro / dev). The store is the
+    // single source of truth for the navigation filter; here we also expose the
+    // switch and persist the choice into config.general.uimode.
+    const uiMode = useUIModeStore((s) => s.mode);
+    const setStoreMode = useUIModeStore((s) => s.setMode);
+    const [modeConfirmVisible, setModeConfirmVisible] = useState(false);
+    const [pendingMode, setPendingMode] = useState(null);
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -168,6 +177,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     };
 
     const setInitialValues = () => {
+        setStoreMode(generalSettings.uimode);
         setWorkingDir(generalSettings.workingdir);
         setDataDir(generalSettings.datadir);
         setDatabaseFileName(generalSettings.databasefilename);
@@ -229,6 +239,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.notifytaskcompletion = notifyTaskCompletion;
         generalSettings.soundeffects = soundEffects;
         generalSettings.soundvolume = soundVolume;
+        generalSettings.uimode = uiMode;
         // Configure Modal Dialog whether a backup should be made
         setConfirmModalYes(() => saveSettingsWithBackup);
         setConfirmModalNo(() => saveSettingsWithoutBackup);
@@ -239,6 +250,25 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const handleAppLanguageChange = (lang) => {
         setAppLanguage(lang);
         changeLanguage(lang);
+    };
+
+    // Apply a UI mode: update the store (instant menu change) and stage the
+    // value on generalSettings so the next Save persists it.
+    const applyMode = (mode) => {
+        setStoreMode(mode);
+        generalSettings.uimode = mode;
+    };
+
+    // Selecting a mode: downgrades are safe and instant; upgrades confirm
+    // because additional screens become visible in the navigation.
+    const handleModeSelect = (mode) => {
+        if (mode === uiMode) return;
+        if (mode === 'simple') {
+            applyMode(mode);
+            return;
+        }
+        setPendingMode(mode);
+        setModeConfirmVisible(true);
     };
 
     // Export settings to JSON file
@@ -405,13 +435,47 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             )}
 
             <div className="flex-1 p-6 space-y-8 max-w-7xl">
+                {/* Interface Mode Section — progressive disclosure switch */}
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">{t('uiMode:sectionTitle')}</span>
+                    </h2>
+                    <div className="card p-5" data-tutorial-id="ui-mode-switch">
+                        <p className="text-[11px] text-text-muted mb-4">{t('uiMode:sectionDescription')}</p>
+                        <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                            {UI_MODES.map((m) => {
+                                const active = uiMode === m.id;
+                                return (
+                                    <button
+                                        key={m.id}
+                                        type="button"
+                                        onClick={() => handleModeSelect(m.id)}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                            active
+                                                ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {t(m.labelKey)}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="text-[11px] text-text-muted mt-3 leading-relaxed">
+                            {t(UI_MODES.find((m) => m.id === uiMode)?.descriptionKey || 'uiMode:modes.simple.description')}
+                        </p>
+                    </div>
+                </section>
+
                 {/* Application & Cloud Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.appAndCloud')}</span>
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
-                        {/* Left Column: Input Fields */}
+                        {/* Left Column: Input Fields — filesystem paths are a
+                            power-user concern, hidden in Simple mode. */}
+                        {isModeAllowed(uiMode, 'pro') && (
                         <div className="space-y-4">
                             <div className="flex items-center w-full">
                                 <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
@@ -459,6 +523,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                         </div>
+                        )}
 
                         {/* Right Column: Toggles */}
                         <div className="space-y-4">
@@ -492,7 +557,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </div>
                 </section>
 
-                {/* Network & Infrastructure Section */}
+                {/* Network & Infrastructure Section — ports and buffer tuning
+                    are hidden in Simple mode. */}
+                {isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.network')}</span>
@@ -557,6 +624,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Theme Selector Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
@@ -776,7 +844,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </div>
                 </section>
 
-                {/* Updates Section */}
+                {/* Updates Section — auto-update internals are hidden in Simple mode. */}
+                {isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.updates')}</span>
@@ -797,6 +866,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Notifications Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-225">
@@ -961,6 +1031,14 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             <ConfirmDialog isOpen={confirmModalVisible} title="Confirmation Required" message={confirmModalMessage}
                 onConfirm={() => { setConfirmModalVisible(false); confirmModalYes(); }}
                 onCancel={() => { setConfirmModalVisible(false); confirmModalNo(); }} />
+            <ConfirmDialog
+                isOpen={modeConfirmVisible}
+                title={t('uiMode:confirm.title', { mode: t(UI_MODES.find((m) => m.id === pendingMode)?.labelKey || 'uiMode:modes.pro.label') })}
+                message={t('uiMode:confirm.message')}
+                confirmText={t('uiMode:confirm.confirmText')}
+                cancelText={t('uiMode:confirm.cancelText')}
+                onConfirm={() => { setModeConfirmVisible(false); applyMode(pendingMode); setPendingMode(null); }}
+                onCancel={() => { setModeConfirmVisible(false); setPendingMode(null); }} />
             <DeviceManagementModal show={showDeviceManagementModal} onClose={() => setShowDeviceManagementModal(false)} />
         </div>
     );

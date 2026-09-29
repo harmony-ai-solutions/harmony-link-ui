@@ -44,6 +44,7 @@ frontend/
   - [`src/components/ModuleConfigurationsView.jsx`](src/components/ModuleConfigurationsView.jsx) - Module config
   - [`src/components/SimulatorView.jsx`](src/components/SimulatorView.jsx) - Event simulator
   - [`src/components/characters/`](src/components/characters) - Character profile management
+  - [`src/components/chat/`](src/components/chat) - Desktop chat (Phase 2): `ChatView` container, `ChatListView` (F1), `ChatDetailView` (F2–F6/F9/F13/F14), `ChatBubble`, `ChatInput`, `TypingIndicator`, `NewMessagesDivider`, `AudioBubble`, `EmojiPicker`, `ImpersonationSelector`, `ChatPreferences`, `ImageLightbox`, `LocalAISetupCard`
   - [`src/components/modals/`](src/components/modals) - Reusable dialogs
   - [`src/components/modules/`](src/components/modules) - 35+ provider-specific settings components
   - [`src/components/sync/`](src/components/sync) - Device synchronization UI
@@ -59,6 +60,8 @@ frontend/
   - [`src/services/management/moduleService.js`](src/services/management/moduleService.js) - Modules
   - [`src/services/management/syncService.js`](src/services/management/syncService.js) - Sync
   - [`src/services/management/themeService.js`](src/services/management/themeService.js) - Themes
+  - [`src/services/management/chatService.js`](src/services/management/chatService.js) - Desktop chat REST reads (conversations, messages, blobs, emoji actions)
+  - [`src/services/chat/`](src/services/chat) - Chat WebSocket client (`chatSocketService.js`) + shared audio player (`audioPlayer.js`)
   - [`src/services/storage/`](src/services/storage) - Local storage utilities
   - [`src/services/sync/`](src/services/sync) - Sync-specific services
 
@@ -69,6 +72,9 @@ frontend/
   - [`src/store/entityStore.js`](src/store/entityStore.js) - Entity state and CRUD
   - [`src/store/characterProfileStore.js`](src/store/characterProfileStore.js) - Character profiles
   - [`src/store/moduleConfigStore.js`](src/store/moduleConfigStore.js) - Module configs
+  - [`src/store/chatStore.js`](src/store/chatStore.js) - Desktop chat state (list, timeline, socket, typing) + pure [`chatStoreUtils.js`](src/store/chatStoreUtils.js) (unit-tested)
+  - [`src/store/chatPrefsStore.js`](src/store/chatPrefsStore.js) - Chat display preferences (localStorage)
+  - [`src/store/uiModeStore.js`](src/store/uiModeStore.js) - Simple/Pro/Dev UI mode
 
 ### `src/contexts/`
 - **Purpose:** React context providers

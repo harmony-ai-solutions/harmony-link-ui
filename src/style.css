@@ -2,6 +2,7 @@
 @import './styles/scrollbar.css';
 @import './styles/components.css';
 @import './styles/tutorial.css';
+@import './styles/splash.css';
 
 /* ── Tailwind v4 Theme Configuration ────────────────────────────────── */
 /* In TW4, configuration is CSS-native via @theme, NOT tailwind.config.js */
@@ -65,6 +66,24 @@ small, .text-eyebrow {
 /* All interactive elements use the portal's signature ease curve */
 *, *::before, *::after {
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Theme Switch — Instant Snap ──────────────────────────────────── */
+/* ThemeContext sets `data-theme-switching` on <html> for two frames around a
+   dark↔light (or any theme) change. During those frames ALL transitions are
+   disabled, so the token swap restyles the whole document in a single clean
+   paint instead of animating. Without this, the components' own 0.3–0.6s hover
+   transitions make the theme change *itself* animate — which is exactly what
+   reads as "slow and delayed". The flag is cleared on the next frame, so
+   normal hover animations are completely unaffected. Animating the switch (a
+   `*` transition or a View-Transition snapshot) measured slower than the plain
+   repaint, so the swap is deliberately left un-animated — this mirrors the
+   portal's approach. */
+html[data-theme-switching],
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+    transition: none !important;
 }
 
 /* ── Focus Ring ───────────────────────────────────────────────────── */

@@ -5,6 +5,7 @@ import { useI18nContext } from '../../contexts/I18nContext.jsx';
 import { SUPPORTED_LANGUAGES, LANGUAGE_MAP } from '../../i18n/i18n.js';
 import FlagIcon from './FlagIcon.jsx';
 import { GlobeIcon, CheckIcon, ChevronDownIcon } from '../../constants/icons.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Language picker for the top navigation bar.
@@ -64,22 +65,23 @@ export default function LanguagePicker({ className = '' }) {
 
     return (
         <>
-            <button
-                ref={triggerRef}
-                type="button"
-                data-tutorial-id="nav-language-picker"
-                className={`nav-help-btn nav-lang-btn ${open ? 'nav-lang-btn-active' : ''} ${className}`}
-                onClick={() => setOpen((v) => !v)}
-                aria-haspopup="listbox"
-                aria-expanded={open}
-                aria-label={t('nav.language')}
-                title={t('nav.language')}
-            >
-                <GlobeIcon className="nav-lang-icon w-4 h-4" />
-                <FlagIcon code={currentLang.flag} className="nav-lang-flag w-6 h-4" />
-                <span className="nav-lang-code">{currentLang.value.toUpperCase()}</span>
-                <ChevronDownIcon className={`nav-lang-chevron w-3.5 h-3.5 ${open ? 'rotate-180' : ''}`} />
-            </button>
+            <Tooltip content={t('nav.language')} placement="bottom">
+                <button
+                    ref={triggerRef}
+                    type="button"
+                    data-tutorial-id="nav-language-picker"
+                    className={`nav-help-btn nav-lang-btn ${open ? 'nav-lang-btn-active' : ''} ${className}`}
+                    onClick={() => setOpen((v) => !v)}
+                    aria-haspopup="listbox"
+                    aria-expanded={open}
+                    aria-label={t('nav.language')}
+                >
+                    <GlobeIcon className="nav-lang-icon w-4 h-4" />
+                    <FlagIcon code={currentLang.flag} className="nav-lang-flag w-6 h-4" />
+                    <span className="nav-lang-code">{currentLang.value.toUpperCase()}</span>
+                    <ChevronDownIcon className={`nav-lang-chevron w-3.5 h-3.5 ${open ? 'rotate-180' : ''}`} />
+                </button>
+            </Tooltip>
 
             {open &&
                 createPortal(

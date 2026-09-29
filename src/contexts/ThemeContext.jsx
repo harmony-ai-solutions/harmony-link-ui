@@ -1,9 +1,65 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentTheme, setCurrentTheme as apiSetCurrentTheme } from '../services/management/themeService';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { getCurrentTheme, setCurrentTheme as apiSetCurrentTheme, listThemes } from '../services/management/themeService';
 
 const ThemeContext = createContext();
 
 export const useTheme = () => useContext(ThemeContext);
+
+// Fallback theme (SoulBits Dark — portal Haute Goth palette). Hoisted to module
+// scope so it is a stable reference and can be reused by both the initial load
+// and the error/rollback paths without being re-created on every render.
+const FALLBACK_THEME = {
+    colors: {
+        background: {
+            base: '#0b0f19',
+            surface: '#0f1525',
+            elevated: '#151d30',
+            hover: '#1e2842'
+        },
+        accent: {
+            primary: '#b84fd0',
+            primaryHover: '#cf6be5',
+            secondary: '#4a5fcf',
+            secondaryHover: '#6b7de8'
+        },
+        status: {
+            success: '#4caf82',
+            successBg: 'rgba(76, 175, 130, 0.12)',
+            warning: '#f0a23b',
+            warningBg: 'rgba(240, 162, 59, 0.12)',
+            error: '#ef5350',
+            errorBg: 'rgba(239, 83, 80, 0.12)',
+            info: '#4d9bf0',
+            infoBg: 'rgba(77, 155, 240, 0.12)'
+        },
+        text: {
+            primary: '#f0edf6',
+            secondary: '#d2cde3',
+            muted: '#9692b0',
+            disabled: '#6b6780'
+        },
+        border: {
+            default: '#2e2355',
+            focus: '#b84fd0',
+            hover: '#3e2a6b',
+            accent: '#b84fd0'
+        },
+        gradients: {
+            primary: 'linear-gradient(to right, #b84fd0, #4a5fcf, #3a2d99)',
+            secondary: 'linear-gradient(135deg, #0b0f19 0%, #0f1525 100%)',
+            surface: 'linear-gradient(135deg, rgba(184, 79, 208, 0.10) 0%, rgba(74, 95, 207, 0.10) 100%)'
+        },
+        glass: {
+            borderGradientStart: 'rgba(255, 255, 255, 0.45)',
+            borderGradientEnd: 'rgba(184, 79, 208, 0.30)'
+        }
+    }
+};
+
+// Number of frames the `data-theme-switching` flag stays on <html>. Two frames
+// is enough for the browser to complete the full-document restyle in one clean
+// pass before we re-enable transitions.
+const THEME_SWITCH_FRAMES = 2;
 
 // Converts a #rrggbb hex colour to an "r, g, b" string for use in rgba().
 const hexToRgb = (hex) => {
@@ -98,6 +154,18 @@ export const ThemeProvider = ({ children }) => {
     const [themeConfig, setThemeConfig] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // themeId -> full theme object cache. Populated from listThemes() so a theme
+    // switch can apply its CSS variables INSTANTLY (no network round-trip) and
+    // only then persist to the backend in the background.
+    const themeCacheRef = useRef({});
+
+    // Handle for the temporary `.theme-switching` cross-fade class.
+    const transitionTimerRef = useRef(null);
+
+    // True once the initial theme has been painted, so the cross-fade only runs
+    // on user-initiated switches (never on first load / during the splash).
+    const initializedRef = useRef(false);
+
     const applyTheme = (theme) => {
         if (!theme || !theme.colors) return;
 
@@ -185,86 +253,128 @@ export const ThemeProvider = ({ children }) => {
         applyDerivedTokens(root, colors);
     };
 
+    // ── Instant-swap helper ──────────────────────────────────────────────
+    // Theme changes must be an instant token swap, not a fade. If the swap were
+    // left to animate, the components' own 0.3–0.6s hover transitions would
+    // make the theme change *itself* animate — which is exactly what reads as
+    // "slow and delayed". Instead we set `data-theme-switching` on <html> so the
+    // CSS rule in style.css disables ALL transitions for the two frames the
+    // swap takes (the theme snaps instantly), then clear the flag on the next
+    // frame so normal hover animations are unaffected. This mirrors the
+    // proven approach used by the portal.
+    const runThemeTransition = () => {
+        const root = document.documentElement;
+        if (transitionTimerRef.current) {
+            cancelAnimationFrame(transitionTimerRef.current);
+            transitionTimerRef.current = null;
+        }
+        root.setAttribute('data-theme-switching', '');
+        let remaining = THEME_SWITCH_FRAMES;
+        const clear = () => {
+            remaining -= 1;
+            if (remaining > 0) {
+                transitionTimerRef.current = requestAnimationFrame(clear);
+            } else {
+                root.removeAttribute('data-theme-switching');
+                transitionTimerRef.current = null;
+            }
+        };
+        transitionTimerRef.current = requestAnimationFrame(clear);
+    };
+
+    // Prime the cache with every available theme so subsequent switches are
+    // instant. Runs once, in parallel with the initial theme load.
+    const primeThemeCache = useCallback(async () => {
+        try {
+            const themes = await listThemes();
+            if (Array.isArray(themes)) {
+                themes.forEach((theme) => {
+                    if (theme && theme.id) themeCacheRef.current[theme.id] = theme;
+                });
+            }
+        } catch (error) {
+            // Non-fatal: switches simply fall back to fetching the theme.
+            console.warn('Failed to prime theme cache:', error);
+        }
+    }, []);
+
+    // Applies a theme to the DOM + React state. `animate` arms the two-frame
+    // instant-swap flag (skipped on first load so the initial paint never
+    // flashes). The token writes happen synchronously right after, so the whole
+    // document restyles in a single paint.
+    const applyThemeInstant = (themeId, theme, animate) => {
+        if (!theme || !theme.colors) return;
+        if (animate && !document.hidden) runThemeTransition();
+        setCurrentThemeState(themeId);
+        setThemeConfig(theme);
+        applyTheme(theme);
+    };
+
     const loadTheme = async () => {
         try {
             const { themeId, theme } = await getCurrentTheme();
+            if (theme && theme.id) themeCacheRef.current[theme.id] = theme;
             setCurrentThemeState(themeId);
             setThemeConfig(theme);
             applyTheme(theme);
         } catch (error) {
             console.error('Failed to load theme:', error);
             // Fallback to SoulBits Dark (portal Haute Goth palette)
-            const fallbackTheme = {
-                colors: {
-                    background: {
-                        base: '#0b0f19',
-                        surface: '#0f1525',
-                        elevated: '#151d30',
-                        hover: '#1e2842'
-                    },
-                    accent: {
-                        primary: '#b84fd0',
-                        primaryHover: '#cf6be5',
-                        secondary: '#4a5fcf',
-                        secondaryHover: '#6b7de8'
-                    },
-                    status: {
-                        success: '#4caf82',
-                        successBg: 'rgba(76, 175, 130, 0.12)',
-                        warning: '#f0a23b',
-                        warningBg: 'rgba(240, 162, 59, 0.12)',
-                        error: '#ef5350',
-                        errorBg: 'rgba(239, 83, 80, 0.12)',
-                        info: '#4d9bf0',
-                        infoBg: 'rgba(77, 155, 240, 0.12)'
-                    },
-                    text: {
-                        primary: '#f0edf6',
-                        secondary: '#d2cde3',
-                        muted: '#9692b0',
-                        disabled: '#6b6780'
-                    },
-                    border: {
-                        default: '#2e2355',
-                        focus: '#b84fd0',
-                        hover: '#3e2a6b',
-                        accent: '#b84fd0'
-                    },
-                    gradients: {
-                        primary: 'linear-gradient(to right, #b84fd0, #4a5fcf, #3a2d99)',
-                        secondary: 'linear-gradient(135deg, #0b0f19 0%, #0f1525 100%)',
-                        surface: 'linear-gradient(135deg, rgba(184, 79, 208, 0.10) 0%, rgba(74, 95, 207, 0.10) 100%)'
-                    },
-                    glass: {
-                        borderGradientStart: 'rgba(255, 255, 255, 0.45)',
-                        borderGradientEnd: 'rgba(184, 79, 208, 0.30)'
-                    }
-                }
-            };
-            applyTheme(fallbackTheme);
+            setCurrentThemeState('soulbits-dark');
+            setThemeConfig(FALLBACK_THEME);
+            applyTheme(FALLBACK_THEME);
         } finally {
+            initializedRef.current = true;
             setLoading(false);
         }
     };
 
     const switchTheme = async (themeId) => {
+        if (!themeId || themeId === currentTheme) return;
+
+        const previousThemeId = currentTheme;
+        const previousTheme = themeConfig;
+        const cached = themeCacheRef.current[themeId];
+
+        // 1) Instant path — paint from cache immediately (no network wait).
+        if (cached) {
+            applyThemeInstant(themeId, cached, initializedRef.current);
+        }
+
+        // 2) Persist + reconcile in the background.
         try {
             await apiSetCurrentTheme(themeId);
-            await loadTheme();
+
+            // Cache miss: fetch the theme (cached themes are already painted).
+            if (!cached) {
+                const { themeId: activeId, theme } = await getCurrentTheme();
+                if (theme && theme.id) themeCacheRef.current[theme.id] = theme;
+                applyThemeInstant(activeId || themeId, theme, initializedRef.current);
+            }
         } catch (error) {
             console.error('Failed to switch theme:', error);
+            // Roll back the optimistic paint so UI + backend stay consistent.
+            if (cached && previousThemeId && previousTheme) {
+                applyThemeInstant(previousThemeId, previousTheme, initializedRef.current);
+            }
         }
     };
 
-    const toggleDarkLight = async () => {
+    const toggleDarkLight = () => {
         // Toggle between the two official themes: soulbits-dark ↔ soulbits-light
         const target = currentTheme === 'soulbits-light' ? 'soulbits-dark' : 'soulbits-light';
-        await switchTheme(target);
+        return switchTheme(target);
     };
 
     useEffect(() => {
         loadTheme();
-    }, []);
+        primeThemeCache();
+        return () => {
+            // transitionTimerRef now holds a requestAnimationFrame handle.
+            if (transitionTimerRef.current) cancelAnimationFrame(transitionTimerRef.current);
+            document.documentElement.removeAttribute('data-theme-switching');
+        };
+    }, [primeThemeCache]);
 
     return (
         <ThemeContext.Provider value={{ currentTheme, themeConfig, switchTheme, toggleDarkLight, loading }}>

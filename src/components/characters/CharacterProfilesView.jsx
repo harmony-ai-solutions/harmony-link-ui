@@ -87,6 +87,17 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         loadEntities();
     }, [loadProfiles, loadEntities]);
 
+    // Cross-view handoff: the Chat welcome screen's "Create AI Character"
+    // button sets a one-shot flag and switches to this tab. This view mounts
+    // fresh on tab switch, so read the flag once on mount, clear it, and open
+    // the create editor (no profile → CharacterProfileEditor starts blank).
+    useEffect(() => {
+        if (!useCharacterProfileStore.getState().createProfileRequested) return;
+        useCharacterProfileStore.getState().clearRequestCreateProfile();
+        setEditingProfile(null);
+        setShowEditor(true);
+    }, []);
+
     useEffect(() => {
         if (visibleProfiles && visibleProfiles.length > 0) {
             visibleProfiles.forEach(profile => {

@@ -4,10 +4,9 @@
     "subtitle": "Talk with your AI partners"
   },
   "placeholder": {
-    "title": "Your chats will appear here",
-    "description": "Create an AI partner and connect it to an AI so you can start chatting.",
-    "addCharacter": "Create AI Partner",
-    "openSettings": "Open Settings"
+    "title": "There is no chat yet.",
+    "startChatting": "Start Chatting",
+    "createCharacter": "Create AI Character"
   },
   "localAI": {
     "title": "Local AI (Docker)",

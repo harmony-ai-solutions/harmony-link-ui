@@ -3772,6 +3772,34 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     display: flex;
     flex-direction: column;
     gap: 0.95rem;
+    /* Keep the scrollbar out of sight until the rail is hovered. The gutter
+       stays reserved (no layout shift) — only the thumb/track are transparent
+       at rest and fade in on hover below. */
+    scrollbar-color: transparent transparent;
+}
+
+/* Hide the rail's scrollbar at rest, then reveal the global glowing thumb
+   once the pointer is over the nav so the rail reads clean by default while
+   still signalling scrollability on demand. */
+.app-sidebar-scroll::-webkit-scrollbar-thumb,
+.app-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    box-shadow: none;
+}
+
+.app-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-accent-primary-rgb), 0.35);
+    box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
+}
+
+.app-sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--color-accent-primary-rgb), 0.55);
+    box-shadow: 0 0 16px 4px rgba(var(--color-accent-primary-rgb), 0.6);
+}
+
+/* Firefox has no per-state scrollbar-color, so swap it on rail hover. */
+.app-sidebar-scroll:hover {
+    scrollbar-color: rgba(var(--color-accent-primary-rgb), 0.35) rgba(var(--color-accent-primary-rgb), 0.06);
 }
 
 /* ── Group ────────────────────────────────────────────────────────── */

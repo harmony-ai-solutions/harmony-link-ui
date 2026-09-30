@@ -470,12 +470,10 @@ function HarmonyLinkAppInner() {
                         }
                     </div>
 
-                    <footer className="flex items-center justify-center bg-background-surface">
-                        <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
-                            <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
-                                {appName} {appVersion} - {t('footer.copyright')}
-                            </a>
-                        </p>
+                    <footer className="app-footer">
+                        <a href="https://project-harmony.ai/technology/" target="_blank" rel="noreferrer">
+                            {appName} {appVersion} - {t('footer.copyright')}
+                        </a>
                     </footer>
                 </main>
             </div>

@@ -1073,8 +1073,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 </section>
                 )}
 
-                {/* Action Buttons — sticky so Save/Reset stay reachable on every sub-tab */}
-                <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 pt-4 pb-3 mt-2 border-t border-white/5 bg-background-base/80 backdrop-blur-sm">
+                {/* Action Buttons — scroll with the page at the end of the settings form */}
+                <div className="flex items-center justify-end gap-3 pt-4 pb-3 mt-2 border-t border-white/5">
                     <button onClick={setInitialValues} className="btn-secondary">
                         {tc('buttons.resetChanges')}
                     </button>

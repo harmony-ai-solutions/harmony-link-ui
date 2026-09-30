@@ -3828,6 +3828,8 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 }
 
 /* ── Main content column ──────────────────────────────────────────── */
+/* The column itself scrolls, so the footer sits at the end of the
+   content and scrolls with it. */
 .app-main {
     flex: 1;
     min-width: 0;
@@ -3839,6 +3841,29 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 .app-content {
     flex: 1;
     min-width: 0;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+/* App footer — last child of the scrolling column, so it scrolls with
+   the page. Solid background keeps the version line readable. */
+.app-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1rem;
+    background: var(--color-background-surface);
+}
+
+.app-footer a {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    color: var(--color-text-muted);
+    transition: color 0.25s var(--ease-spring);
+}
+
+.app-footer a:hover {
+    color: var(--color-accent-primary);
 }
 
 /* ── Responsive: auto-collapse to the icon rail on narrower viewports ── */

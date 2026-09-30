@@ -309,7 +309,13 @@ export const UsersIcon = ({ className = defaultSize }) => (
 
 export const RobotIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v3m0 0a4 4 0 014 4v7a4 4 0 01-4 4 4 4 0 01-4-4V9a4 4 0 014-4zM3 12h2m14 0h2M5 21h14M9 13h.01M15 13h.01M9 17c.7.5 2 1 3 1s2.3-.5 3-1" />
+        <rect x="4" y="8" width="16" height="12" rx="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8V5" />
+        <circle cx="12" cy="4" r="1.5" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 14h2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 14h2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13v2" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13v2" />
     </svg>
 );
 

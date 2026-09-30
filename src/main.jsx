@@ -8,6 +8,11 @@ import HarmonySpeechEngineApp from './HarmonySpeechEngineApp.jsx'
 import SplashScreen from './components/SplashScreen.jsx'
 
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { applyStoredFontScale } from './utils/fontScale.js'
+
+// Apply the persisted font scale before the first paint so every screen (not
+// just General Settings) renders at the user's chosen size from the start.
+applyStoredFontScale()
 
 const container = document.getElementById('root')
 

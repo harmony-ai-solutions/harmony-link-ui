@@ -15,12 +15,7 @@ import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
-
-const FONT_SCALE_OPTIONS = [
-    { value: 'compact', labelKey: 'generalSettings:fields.fontScale.options.compact' },
-    { value: 'default', labelKey: 'generalSettings:fields.fontScale.options.default' },
-    { value: 'large', labelKey: 'generalSettings:fields.fontScale.options.large' },
-];
+import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale } from '../utils/fontScale.js';
 
 const NUMBER_FORMAT_OPTIONS = [
     { value: 'en', labelKey: 'generalSettings:fields.numberFormat.options.en' },
@@ -374,23 +369,17 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         });
     }, []);
 
-    // Apply font scale to document
+    // Apply the font scale to the whole document whenever the choice changes.
     useEffect(() => {
-        const scaleMap = {
-            compact: '0.85rem',
-            default: '0.9rem',
-            large: '1.0rem',
-        };
-        document.documentElement.style.fontSize = scaleMap[fontScale] || '0.9rem';
-        localStorage.setItem('harmony-font-scale', fontScale);
+        applyFontScale(fontScale);
     }, [fontScale]);
 
-    // Apply font scale on initial mount from stored value
+    // On mount, prefer the persisted choice, then fall back to the saved config.
     useEffect(() => {
-        const stored = localStorage.getItem('harmony-font-scale');
-        if (stored && ['compact', 'default', 'large'].includes(stored)) {
+        const stored = getStoredFontScale();
+        if (stored) {
             setFontScale(stored);
-        } else if (generalSettings.fontscale) {
+        } else if (isKnownFontScale(generalSettings.fontscale)) {
             setFontScale(generalSettings.fontscale);
         }
     }, []);

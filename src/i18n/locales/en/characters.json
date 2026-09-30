@@ -3,11 +3,16 @@
     "title": "AI Characters",
     "subtitle": "Manage AI character profiles"
   },
+  "menu": {
+    "title": "Character actions",
+    "editSettings": "Edit settings",
+    "deleteCharacter": "Delete character"
+  },
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
     "createPersona": "Create persona from this card",
-    "createEntity": "Create Entity from this card",
+    "createEntity": "Create AI partner from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",

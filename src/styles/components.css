@@ -475,6 +475,75 @@ input[type="checkbox"]:disabled:hover {
     }
 }
 
+/* Character-card kebab menu — compact, left-aligned, solid surface.
+   NOTE: Tailwind color utilities are no-ops in this project (the TW4 @theme
+   carries no colors), so this menu is styled with theme variables in CSS. */
+.character-card-menu {
+    position: fixed;
+    z-index: 10000;
+    width: 176px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-xl), 0 0 24px rgba(0, 0, 0, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    animation: nav-menu-panel-in 0.14s ease-out;
+}
+
+.character-card-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    text-align: left;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.character-card-menu-item:hover,
+.character-card-menu-item:focus-visible {
+    background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent);
+    color: var(--color-accent-primary);
+    outline: none;
+}
+
+.character-card-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.character-card-menu-item-danger {
+    color: var(--color-error);
+}
+
+.character-card-menu-item-danger:hover,
+.character-card-menu-item-danger:focus-visible {
+    background: color-mix(in srgb, var(--color-error) 16%, transparent);
+    color: var(--color-error);
+}
+
+.character-card-menu-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.character-card-menu-separator {
+    height: 1px;
+    margin: 3px 2px;
+    background: var(--color-border-glass);
+}
+
 /* Menu item — icon + label + active indicator */
 .nav-menu-item {
     display: flex;

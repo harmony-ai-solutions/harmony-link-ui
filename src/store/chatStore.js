@@ -58,6 +58,12 @@ export const useChatStore = create((set, get) => ({
     recordingByEntity: {},
     /** Last error message, if any. */
     error: null,
+    /**
+     * Cross-view request: set by the "Start chatting" button on a character
+     * card, consumed once by ChatView on mount to open a brand-new chat with
+     * that AI partner. Mirrors characterProfileStore.createProfileRequested.
+     */
+    startChatRequest: null,
 
     // ── Chat list ────────────────────────────────────────────────────────
 
@@ -85,6 +91,17 @@ export const useChatStore = create((set, get) => ({
             return [];
         }
     },
+
+    /**
+     * Ask the Chat tab to open a brand-new chat with `entityId`. Stashed here
+     * (not passed through navigation) because switching tabs unmounts the
+     * requesting view and remounts ChatView.
+     * @param {string} entityId - the AI partner to talk to.
+     */
+    requestStartChat: (entityId) => set({ startChatRequest: { entityId } }),
+
+    /** Clear the pending start-chat request (consumed once by ChatView). */
+    clearRequestStartChat: () => set({ startChatRequest: null }),
 
     // ── Open conversation ────────────────────────────────────────────────
 

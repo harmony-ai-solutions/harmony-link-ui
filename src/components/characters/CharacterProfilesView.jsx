@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useEntityStore from '../../store/entityStore';
 import usePersonaStore from '../../store/personaStore';
+import useChatStore from '../../store/chatStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
@@ -22,8 +23,12 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
  *   this card" — the app links the profile LIVE to a new AI entity (no card
  *   copy), then calls this callback so the shell can switch to the Entities
  *   tab with the new entity preselected.
+ * @param {Function} [props.onStartChatFromCard] - "Start chatting" on a card —
+ *   the app resolves (or creates) the AI partner for the profile, stashes a
+ *   start-chat request in chatStore, then calls this callback so the shell can
+ *   switch to the Chat tab, where the new conversation opens.
  */
-export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard }) {
+export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard, onStartChatFromCard }) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
     const { entities, loadEntities, selectEntity } = useEntityStore();
@@ -208,6 +213,34 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         }
     };
 
+    /**
+     * "Start chatting" on a card — the one-click path from a character to a
+     * conversation. A card may not yet have an AI partner: if none of the
+     * entities reference this profile LIVE, create one first (same contract as
+     * handleCreateEntityFromCard). Then stash the partner id in chatStore and
+     * ask the shell to switch to the Chat tab; ChatView consumes the request on
+     * mount and opens a brand-new conversation.
+     */
+    const handleStartChatFromCard = async (profile) => {
+        if (!profile?.id) return;
+        try {
+            const existing = (referencingByProfile[profile.id] || [])
+                .find(entity => entity.entity_type !== 'user');
+            let partnerId = existing?.id;
+            if (!partnerId) {
+                const created = await entityService.createEntity(profile.name, profile.id, { dedupeIdIfTaken: true });
+                partnerId = created.id;
+                // Refresh so the entity list (and the card's "used by" badge)
+                // reflects the freshly created partner.
+                await loadEntities();
+            }
+            useChatStore.getState().requestStartChat(partnerId);
+            onStartChatFromCard?.();
+        } catch (error) {
+            alert(t('characters:startChatFailed', { message: error.message }));
+        }
+    };
+
     const handleImportSuccess = async (result) => {
         setShowImport(false);
         await loadProfiles();
@@ -323,7 +356,8 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                                     onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
                                     referencingEntities={referencingByProfile[profile.id] || []}
                                     onCreatePersona={handleCreatePersonaFromCard}
-                                    onCreateEntity={handleCreateEntityFromCard} />
+                                    onCreateEntity={handleCreateEntityFromCard}
+                                    onStartChat={handleStartChatFromCard} />
                             ))}
                         </div>
                     ) : (

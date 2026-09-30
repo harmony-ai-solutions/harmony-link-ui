@@ -31,7 +31,38 @@ const ChatView = ({ onNavigate }) => {
     const { partners, personas } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
     useEffect(() => {
-        loadChatEntities();
+        // "Start chatting" on a character card stashes the partner id in
+        // chatStore; load the chat entities first (so the conversation can
+        // resolve a display name and the persona participant), then open it.
+        // The entities are read from the store AFTER loading (not from this
+        // render's closure, which is still empty on a fresh mount).
+        const request = useChatStore.getState().startChatRequest;
+        if (request?.entityId) {
+            useChatStore.getState().clearRequestStartChat();
+            loadChatEntities().then(() => {
+                const entities = useChatStore.getState().chatEntities || [];
+                const partner = entities.find((e) => e.id === request.entityId);
+                // D-21: include the persona we chat as so the engine resolves a
+                // private interaction and the persona identity applies.
+                const persona = entities.find((e) => e.entity_type === 'user');
+                const participantIds = Array.from(new Set([
+                    request.entityId,
+                    ...(persona ? [persona.id] : []),
+                ]));
+                const enriched = {
+                    interactionId: null,
+                    entityId: request.entityId,
+                    participantIds,
+                    partnerEntityId: request.entityId,
+                    isNew: true,
+                    title: entityDisplayName(partner) || request.entityId,
+                };
+                setOpenConversation(enriched);
+                openChat(enriched);
+            });
+        } else {
+            loadChatEntities();
+        }
     }, []);
 
     // Default the persona to the first available user entity.

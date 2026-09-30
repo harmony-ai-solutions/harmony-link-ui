@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
-import { EditIcon, TrashIcon, RobotIcon } from '../../constants/icons.jsx';
+import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
 
 /**
  * Card component for displaying a character profile summary.
@@ -31,8 +31,11 @@ import { EditIcon, TrashIcon, RobotIcon } from '../../constants/icons.jsx';
  * @param {Function} [props.onCreateEntity] - "Create AI partner from this card"
  *   — receives the FULL profile; the app links it LIVE (no card copy) to a new
  *   AI entity and switches to the Entities tab.
+ * @param {Function} [props.onStartChat] - "Start chatting" — receives the FULL
+ *   profile; the app resolves (or creates) the AI partner for it and opens a
+ *   brand-new chat in the Chat tab.
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity, onStartChat }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
     const exportCharacterCard = useCharacterProfileStore(state => state.exportCharacterCard);
@@ -118,6 +121,13 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                 <EditIcon className={iconClass} />
                 {t('menu.editSettings')}
             </button>
+
+            {onStartChat && (
+                <button type="button" onClick={runAndClose(() => onStartChat(profile))} className={rowClass()}>
+                    <MessageIcon className={iconClass} />
+                    {t('menu.startChatting')}
+                </button>
+            )}
 
             {onCreateEntity && (
                 <>
@@ -229,6 +239,17 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                             </span>
                         ))}
                     </div>
+                )}
+
+                {onStartChat && (
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onStartChat(profile); }}
+                        className="character-card-chat-btn"
+                    >
+                        <MessageIcon className="w-4 h-4" />
+                        {t('buttons.startChatting')}
+                    </button>
                 )}
             </div>
 

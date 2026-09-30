@@ -6,11 +6,13 @@
   "menu": {
     "title": "Character actions",
     "editSettings": "Edit settings",
+    "startChatting": "Start chatting",
     "deleteCharacter": "Delete character"
   },
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
+    "startChatting": "Start chatting",
     "createPersona": "Create persona from this card",
     "createEntity": "Create AI partner from this card",
     "exportCard": "Export Card",
@@ -47,6 +49,7 @@
   "deleteProfile": "Delete profile",
   "createPersonaFailed": "Failed to create persona from this card: {{message}}",
   "createEntityFailed": "Failed to create entity from this card: {{message}}",
+  "startChatFailed": "Failed to start chat: {{message}}",
   "liveLinkHint": "Linked to an entity — changes apply immediately",
   "usedBy": {
     "aiPrefix": "AI · {{name}}",

@@ -188,6 +188,14 @@ function HarmonyLinkAppInner() {
         setSettingsTab(SettingsTabEntities);
     };
 
+    // "Start chatting" on a card — the Characters tab resolves (or creates) the
+    // profile's AI partner and stashes a start-chat request in chatStore; this
+    // callback just flips to the Chat tab, whose ChatView consumes the request
+    // on mount and opens the new conversation.
+    const handleStartChatFromCard = () => {
+        setSettingsTab(SettingsTabChat);
+    };
+
     // On Application Loaded
     useEffect(() => {
         // Load Config on Start
@@ -451,7 +459,8 @@ function HarmonyLinkAppInner() {
                         }
                         {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabCharacters &&
                             <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}
-                                onCreateEntityFromCard={handleCreateEntityFromCard}></CharacterProfilesView>
+                                onCreateEntityFromCard={handleCreateEntityFromCard}
+                                onStartChatFromCard={handleStartChatFromCard}></CharacterProfilesView>
                         }
                         {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabPersonas &&
                             <PersonasView></PersonasView>

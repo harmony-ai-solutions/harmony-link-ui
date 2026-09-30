@@ -620,7 +620,7 @@ const EntitySettingsView = ({ appName }) => {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+                <div className="bg-background-surface px-6 py-4">
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(tes('header.title'))}
                     </h1>

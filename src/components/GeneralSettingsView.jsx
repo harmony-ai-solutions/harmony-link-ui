@@ -10,6 +10,7 @@ import { openSystemUrl } from '../services/management/systemService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
+import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
@@ -402,7 +403,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
+            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(tgs('header.title'))}
@@ -588,6 +589,17 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Local AI (Docker) — status + one-click start for the
+                        local inference service, plus optional response-style
+                        presets. Lives here rather than in Chat so the chat
+                        screen stays clean. */}
+                    <div className="card p-5 mt-4">
+                        <h3 className="text-sm font-bold text-text-primary mb-3">
+                            {t('chat:localAI.title')}
+                        </h3>
+                        <LocalAISetupCard />
                     </div>
                 </section>
                 )}

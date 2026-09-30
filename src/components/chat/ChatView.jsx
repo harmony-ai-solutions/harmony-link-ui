@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageIcon, RobotIcon, PlusIcon } from '../../constants/icons.jsx';
-import LocalAISetupCard from './LocalAISetupCard.jsx';
 import ChatListView from './ChatListView.jsx';
 import ChatDetailView from './ChatDetailView.jsx';
 import useChatStore from '../../store/chatStore.js';
@@ -103,7 +102,7 @@ const ChatView = ({ onNavigate }) => {
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+            <div className="bg-background-surface px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
                     <span className="text-gradient-primary">{t('chat:header.title')}</span>
                 </h1>
@@ -130,11 +129,6 @@ const ChatView = ({ onNavigate }) => {
                                 <PlusIcon className="w-4 h-4" />
                                 {t('chat:placeholder.startChatting')}
                             </button>
-                        </div>
-
-                        {/* One-click local-AI setup + preset bundles (Simple mode helpers). */}
-                        <div className="mt-4">
-                            <LocalAISetupCard />
                         </div>
                     </div>
                 ) : openConversation ? (

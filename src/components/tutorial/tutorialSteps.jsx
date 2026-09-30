@@ -861,16 +861,16 @@ const simpleModeSteps = section('Getting Started', [
     },
     {
         id: 'simple-choose-ai',
-        targetSelector: '[data-tutorial-id="nav-tab-characters"]',
+        targetSelector: '[data-tutorial-id="nav-tab-general"]',
         title: '2. Choose How It Thinks',
         content: (
             <div className="space-y-2">
-                <p>Your character needs a "brain". The easiest option is <strong>Local AI (Docker)</strong> — one click and it runs on your own PC.</p>
+                <p>Your character needs a "brain". Head to <strong>Settings → General</strong>, where the <strong>Local AI (Docker)</strong> card starts it for you in one click — it runs on your own PC.</p>
                 <p>Prefer a cloud provider? That lives in the advanced screens, which you can unlock any time from <strong>General → Interface Mode</strong>.</p>
             </div>
         ),
         placement: 'right',
-        tab: SettingsTabCharacters,
+        tab: SettingsTabGeneral,
     },
     {
         id: 'simple-start-chatting',

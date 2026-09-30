@@ -6,17 +6,18 @@ import { uploadPreset } from '../../services/management/presetService.js';
 import { LogPrint } from '../../utils/logger.js';
 
 /**
- * Local AI one-click setup card.
+ * Local AI setup card.
  *
- * Simple-mode helpers that let a beginner get a working AI without ever seeing
- * a provider form:
+ * Rendered in General Settings (General → Local AI). It lets a beginner get a
+ * working local model without ever seeing a provider form:
  *
- *  1. Local AI (Docker): shows whether the local inference integration is
- *     running and offers a one-click Start.
- *  2. Preset bundles: "Balanced", "Fast", and "High Quality" sampling presets,
- *     installed on demand through the existing preset system.
+ *  1. Shows whether a local, Docker-hosted inference service is running and
+ *     offers a one-click Start for any stopped instance.
+ *  2. Offers the bundled response-style presets, collapsed by default.
  *
  * All of this reuses existing services — no engine-side chat code involved.
+ * The card has no outer surface of its own, so the host section provides the
+ * container (card) styling.
  */
 
 // Integration names that represent a local, Docker-hosted inference server.
@@ -34,20 +35,35 @@ const LOCAL_AI_INTEGRATIONS = [
 // buttons re-upload them on demand so a fresh install works immediately.
 const PRESET_BUNDLES = ['Balanced', 'Fast', 'High Quality'];
 
+/**
+ * Whether a flattened instance entry is running.
+ *
+ * The aggregated status endpoint returns IntegrationInstance objects whose
+ * running state lives on `status` (running / partially_running / stopped /
+ * configured). `state` only exists on individual containers, so we check both
+ * to stay robust across payload shapes.
+ */
+const isInstanceRunning = (entry) => {
+    const status = entry.instance?.status;
+    if (status === 'running' || status === 'partially_running') return true;
+    return (entry.instance?.containers || []).some((c) => c.state === 'running');
+};
+
 const LocalAISetupCard = () => {
     const { t } = useTranslation();
     const { allInstances, refresh, isLoading } = useAllIntegrationInstances(10000);
 
     const [busyInstance, setBusyInstance] = useState(null);
     const [feedback, setFeedback] = useState('');
+    const [showBundles, setShowBundles] = useState(false);
 
     const localInstances = useMemo(
         () => allInstances.filter((i) => LOCAL_AI_INTEGRATIONS.includes(i.integrationName)),
         [allInstances],
     );
 
-    const running = localInstances.filter((i) => i.instance?.state === 'running' || i.instance?.running);
-    const stopped = localInstances.filter((i) => !(i.instance?.state === 'running' || i.instance?.running));
+    const running = localInstances.filter(isInstanceRunning);
+    const stopped = localInstances.filter((i) => !isInstanceRunning(i));
 
     const handleStart = async (integrationName, instanceName) => {
         const key = `${integrationName}/${instanceName}`;
@@ -78,76 +94,85 @@ const LocalAISetupCard = () => {
     };
 
     return (
-        <div className="card p-5 space-y-5">
-            {/* Local AI status */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-text-primary">{t('chat:localAI.title')}</h3>
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                        running.length > 0
-                            ? 'bg-green-500/10 text-green-400 border border-green-500/30'
-                            : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30'
-                    }`}>
-                        {running.length > 0 ? t('chat:localAI.running') : t('chat:localAI.notRunning')}
-                    </span>
-                </div>
-                <p className="text-[11px] text-text-muted leading-relaxed mb-3">
+        <div className="space-y-3">
+            {/* Status line */}
+            <div className="flex items-start justify-between gap-3">
+                <p className="text-xs text-text-muted leading-relaxed">
                     {t('chat:localAI.description')}
                 </p>
-
-                {isLoading ? (
-                    <p className="text-xs text-text-muted">{t('common:status.loading')}</p>
-                ) : localInstances.length === 0 ? (
-                    <p className="text-xs text-text-muted">{t('chat:localAI.noInstances')}</p>
-                ) : stopped.length > 0 ? (
-                    <div className="space-y-2">
-                        {stopped.slice(0, 3).map((i) => {
-                            const key = `${i.integrationName}/${i.instanceName}`;
-                            return (
-                                <div key={key} className="flex items-center justify-between gap-3 bg-background-elevated/40 rounded-lg px-3 py-2">
-                                    <span className="text-xs text-text-secondary truncate">
-                                        {i.integration?.displayName || i.integrationName} · {i.instanceName}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="btn-primary text-xs px-3 py-1"
-                                        disabled={busyInstance === key}
-                                        onClick={() => handleStart(i.integrationName, i.instanceName)}
-                                    >
-                                        {busyInstance === key ? t('common:status.loading') : t('chat:localAI.start')}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <p className="text-xs text-green-400">{t('chat:localAI.allRunning')}</p>
-                )}
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                    running.length > 0
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/30'
+                        : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30'
+                }`}>
+                    {running.length > 0 ? t('chat:localAI.running') : t('chat:localAI.notRunning')}
+                </span>
             </div>
 
-            {/* Preset bundles */}
-            <div className="pt-4 border-t border-white/5">
-                <h3 className="text-sm font-bold text-text-primary mb-1">{t('chat:localAI.bundlesTitle')}</h3>
-                <p className="text-[11px] text-text-muted leading-relaxed mb-3">
-                    {t('chat:localAI.bundlesDescription')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                    {PRESET_BUNDLES.map((name) => (
-                        <button
-                            key={name}
-                            type="button"
-                            className="btn-secondary text-xs px-3 py-1.5"
-                            onClick={() => handleApplyBundle(name)}
-                        >
-                            {name}
-                        </button>
-                    ))}
+            {isLoading ? (
+                <p className="text-xs text-text-muted">{t('common:status.loading')}</p>
+            ) : localInstances.length === 0 ? (
+                <p className="text-xs text-text-muted">{t('chat:localAI.noInstances')}</p>
+            ) : stopped.length > 0 ? (
+                <div className="space-y-2">
+                    {stopped.slice(0, 3).map((i) => {
+                        const key = `${i.integrationName}/${i.instanceName}`;
+                        return (
+                            <div key={key} className="flex items-center justify-between gap-3 bg-background-elevated/40 rounded-lg px-3 py-2">
+                                <span className="text-xs text-text-secondary truncate">
+                                    {i.integration?.displayName || i.integrationName} · {i.instanceName}
+                                </span>
+                                <button
+                                    type="button"
+                                    className="btn-primary text-xs px-3 py-1"
+                                    disabled={busyInstance === key}
+                                    onClick={() => handleStart(i.integrationName, i.instanceName)}
+                                >
+                                    {busyInstance === key ? t('common:status.loading') : t('chat:localAI.start')}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
-            </div>
+            ) : (
+                <p className="text-xs text-green-400">{t('chat:localAI.allRunning')}</p>
+            )}
 
             {feedback && (
                 <p className="text-[11px] text-accent-primary">{feedback}</p>
             )}
+
+            {/* Response-style presets — collapsed by default to keep this tidy. */}
+            <div className="pt-3 border-t border-white/5">
+                <button
+                    type="button"
+                    className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-accent-primary transition-colors"
+                    onClick={() => setShowBundles((v) => !v)}
+                    aria-expanded={showBundles}
+                >
+                    <span className="text-[10px]">{showBundles ? '▾' : '▸'}</span>
+                    {t('chat:localAI.bundlesTitle')}
+                </button>
+                {showBundles && (
+                    <div className="mt-3">
+                        <p className="text-[11px] text-text-muted leading-relaxed mb-3">
+                            {t('chat:localAI.bundlesDescription')}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {PRESET_BUNDLES.map((name) => (
+                                <button
+                                    key={name}
+                                    type="button"
+                                    className="btn-secondary text-xs px-3 py-1.5"
+                                    onClick={() => handleApplyBundle(name)}
+                                >
+                                    {name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

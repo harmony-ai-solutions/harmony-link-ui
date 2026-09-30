@@ -43,7 +43,7 @@ function DevelopmentView() {
 
     return (
         <div className="flex flex-col" style={{ height: 'calc(100vh - 6rem)' }}>
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
+            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(t('development:header.title'))}

@@ -14,10 +14,9 @@
       "dev": "Dev"
     },
     "groups": {
-      "chat": "Chat",
-      "identity": "Identity",
-      "system": "System",
-      "tools": "Tools"
+      "characters": "AI Characters",
+      "settings": "Settings",
+      "developer": "Developer"
     },
     "primaryNavigation": "Primary navigation",
     "collapse": "Collapse",

@@ -36,6 +36,16 @@ const AUTO_UPDATE_OPTIONS = [
 
 const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
 
+// General Settings is split into sub-tabs so the page is scannable instead of
+// one long scroll. Purely presentational — every section's state still lives in
+// this component, so Save/Reset keep covering all sub-tabs at once.
+const SUB_TABS = [
+    { id: 'general', labelKey: 'generalSettings:tabs.general' },
+    { id: 'appearance', labelKey: 'generalSettings:tabs.appearance' },
+    { id: 'notifications', labelKey: 'generalSettings:tabs.notifications' },
+    { id: 'dataSupport', labelKey: 'generalSettings:tabs.dataSupport' },
+];
+
 const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const { t } = useTranslation();
     const { currentTheme, switchTheme } = useTheme();
@@ -69,6 +79,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const setStoreMode = useUIModeStore((s) => s.setMode);
     const [modeConfirmVisible, setModeConfirmVisible] = useState(false);
     const [pendingMode, setPendingMode] = useState(null);
+
+    // Active General Settings sub-tab (see SUB_TABS). Defaults to General.
+    const [activeSection, setActiveSection] = useState('general');
 
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
@@ -434,8 +447,33 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 </div>
             )}
 
-            <div className="flex-1 p-6 space-y-8 max-w-7xl">
+            <div className="flex-1 p-6 pb-24 space-y-8 max-w-7xl">
+                {/* Sub-tab bar — splits the former single long scroll into
+                    scannable groups. Save/Reset (sticky, bottom) still persist
+                    every sub-tab at once. */}
+                <div className="flex flex-wrap gap-1 border-b border-white/5 pb-2">
+                    {SUB_TABS.map((tab) => {
+                        const active = activeSection === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveSection(tab.id)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                                    active
+                                        ? 'bg-accent-primary/20 text-accent-primary ring-1 ring-accent-primary/30'
+                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                }`}
+                            >
+                                {t(tab.labelKey)}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* ── Sub-tab: General ─────────────────────────────────── */}
                 {/* Interface Mode Section — progressive disclosure switch */}
+                {activeSection === 'general' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{t('uiMode:sectionTitle')}</span>
@@ -466,8 +504,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </p>
                     </div>
                 </section>
+                )}
 
                 {/* Application & Cloud Section */}
+                {activeSection === 'general' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.appAndCloud')}</span>
@@ -556,10 +596,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Network & Infrastructure Section — ports and buffer tuning
                     are hidden in Simple mode. */}
-                {isModeAllowed(uiMode, 'pro') && (
+                {activeSection === 'general' && isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.network')}</span>
@@ -627,6 +668,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 )}
 
                 {/* Theme Selector Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.appearance')}</span>
@@ -706,8 +748,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     )}
                 </section>
+                )}
 
                 {/* UI Personalization Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-175">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.uiPersonalization')}</span>
@@ -843,9 +887,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Updates Section — auto-update internals are hidden in Simple mode. */}
-                {isModeAllowed(uiMode, 'pro') && (
+                {activeSection === 'general' && isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.updates')}</span>
@@ -869,6 +914,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 )}
 
                 {/* Notifications Section */}
+                {activeSection === 'notifications' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-225">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.notifications')}</span>
@@ -940,8 +986,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Sound & Audio Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-250">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.soundAudio')}</span>
@@ -987,8 +1035,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Data & Support Section */}
+                {activeSection === 'dataSupport' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.dataSupport')}</span>
@@ -1015,9 +1065,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </button>
                     </div>
                 </section>
+                )}
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-6">
+                {/* Action Buttons — sticky so Save/Reset stay reachable on every sub-tab */}
+                <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 pt-4 pb-3 mt-2 border-t border-white/5 bg-background-base/80 backdrop-blur-sm">
                     <button onClick={setInitialValues} className="btn-secondary">
                         {tc('buttons.resetChanges')}
                     </button>

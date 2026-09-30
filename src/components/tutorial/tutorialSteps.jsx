@@ -20,7 +20,7 @@ function section(label, steps) {
 const characterCreationSteps = section('Characters', [
     {
         id: 'char-welcome',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
         title: 'Welcome to Harmony Link!',
         content: (
             <div className="space-y-2">
@@ -115,7 +115,7 @@ const characterCreationSteps = section('Characters', [
 const entityCreationSteps = section('Entities', [
     {
         id: 'entity-nav',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
         title: 'Entities — Your AI Partners',
         content: (
             <div className="space-y-2">
@@ -345,7 +345,7 @@ const entityCreationSteps = section('Entities', [
 
 const integrationBranchStep = section('Integration', {
     id: 'integration-branch-decision',
-    targetSelector: '[data-tutorial-id="nav-group-system"]',
+    targetSelector: '[data-tutorial-id="nav-group-settings"]',
     title: 'How Do You Want to Connect Your AI?',
     content: (
         <div className="space-y-3">
@@ -529,7 +529,7 @@ const integrationLocalSteps = section('Integration', [
     },
     {
         id: 'integration-summary-local',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Moving to Modules',
         content: (
             <div className="space-y-2">
@@ -548,7 +548,7 @@ const integrationLocalSteps = section('Integration', [
 const integrationCloudSteps = section('Integration', [
     {
         id: 'integration-cloud-note',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Using a Cloud Provider',
         content: (
             <div className="space-y-2">
@@ -568,7 +568,7 @@ const integrationCloudSteps = section('Integration', [
 const moduleConfigSteps = section('Modules', [
     {
         id: 'module-nav',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Module Configurations',
         content: (
             <div className="space-y-2">
@@ -694,7 +694,7 @@ const moduleConfigSteps = section('Modules', [
     },
     {
         id: 'module-summary',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Modules Covered!',
         content: (
             <div className="space-y-2">
@@ -712,7 +712,7 @@ const moduleConfigSteps = section('Modules', [
 const entityAssignmentSteps = section('Assignment', [
     {
         id: 'entity-assign-nav',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
         title: 'Assigning Modules to Your Entity',
         content: (
             <div className="space-y-2">

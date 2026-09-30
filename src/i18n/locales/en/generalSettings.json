@@ -6,6 +6,12 @@
   "buttons": {
     "manageDevices": "Manage Devices"
   },
+  "tabs": {
+    "general": "General",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "dataSupport": "Data & Support"
+  },
   "sections": {
     "appAndCloud": "Application",
     "network": "Network & Infrastructure",

@@ -50,10 +50,10 @@ function SidebarNav({ groups, settingsTab, onSelect, collapsed, onToggleCollapse
                 {groups.map((group) => (
                     <div
                         key={group.id}
-                        className="app-sidebar-group"
+                        className={`app-sidebar-group ${group.primary ? 'app-sidebar-group-primary' : ''}`}
                         data-tutorial-id={`nav-group-${group.id}`}
                     >
-                        <div className="app-sidebar-group-label">{group.label}</div>
+                        {group.label && <div className="app-sidebar-group-label">{group.label}</div>}
                         <div className="app-sidebar-group-items">
                             {group.tabs.map((tab) => {
                                 const Icon = tab.icon;
@@ -280,10 +280,15 @@ function HarmonyLinkAppInner() {
     // Every tab declares the lowest UI mode that can see it (`minMode`); the
     // menu is then filtered against the active mode so Simple users only see
     // the essentials, Pro adds power features, and Dev adds the tooling.
+    // Kept intentionally flat: a headerless primary item (Chat) at the top, then
+    // three clearly-named sections. Fewer headers than destinations avoids the
+    // "header repeats the only item" clutter that single-item groups created.
     const allNavGroups = [
         {
+            // Primary landing destination — no header, sits above the sections.
             id: 'chat',
-            label: t('nav.groups.chat'),
+            label: null,
+            primary: true,
             icon: MessageIcon,
             minMode: 'simple',
             tabs: [
@@ -291,8 +296,11 @@ function HarmonyLinkAppInner() {
             ],
         },
         {
-            id: 'identity',
-            label: t('nav.groups.identity'),
+            // AI Characters — who the AI is (character cards) and who you are
+            // (personas), plus the Pro-only entity that wires a character to AI
+            // capabilities.
+            id: 'characters',
+            label: t('nav.groups.characters'),
             icon: RobotIcon,
             minMode: 'simple',
             tabs: [
@@ -302,8 +310,10 @@ function HarmonyLinkAppInner() {
             ],
         },
         {
-            id: 'system',
-            label: t('nav.groups.system'),
+            // Settings — app preferences first, then the Pro-only screens that
+            // connect and manage the AI services.
+            id: 'settings',
+            label: t('nav.groups.settings'),
             icon: SettingsGearIcon,
             minMode: 'simple',
             tabs: [
@@ -313,8 +323,8 @@ function HarmonyLinkAppInner() {
             ],
         },
         {
-            id: 'tools',
-            label: t('nav.groups.tools'),
+            id: 'developer',
+            label: t('nav.groups.developer'),
             icon: SimulatorIcon,
             minMode: 'dev',
             tabs: [

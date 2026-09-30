@@ -3659,6 +3659,14 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     gap: 0.125rem;
 }
 
+/* Primary (headerless) group — the landing destination (e.g. Chat). A hairline
+   under it separates it from the labelled sections below without adding a header
+   that would just repeat the item's own label. */
+.app-sidebar-group-primary {
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--color-border-glass);
+}
+
 /* ── Item ─────────────────────────────────────────────────────────── */
 .app-sidebar-item {
     position: relative;

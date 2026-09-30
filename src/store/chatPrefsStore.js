@@ -18,7 +18,10 @@ export const DEFAULT_CHAT_PREFS = {
     fontSize: 'medium',
     spacing: 'comfortable',
     sound: true,
-    replyMode: 'realistic',
+    // Default to Instant: on CPU-only local inference a "realistic" reply adds
+    // ~10s of artificial typing delay on top of generation time. Users can
+    // still opt into Realistic in chat preferences.
+    replyMode: 'instant',
 };
 
 /** Load persisted prefs (best-effort; falls back to defaults). */

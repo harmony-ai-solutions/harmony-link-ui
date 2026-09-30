@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as chatService from '../services/management/chatService.js';
-import { ChatSocketService } from '../services/chat/chatSocketService.js';
+import { ChatSocketService, generateEventId } from '../services/chat/chatSocketService.js';
 import {
     mergeMessages,
     prependOlderMessages,
@@ -163,7 +163,7 @@ export const useChatStore = create((set, get) => ({
                 participantIds: conversation.participantIds?.length
                     ? conversation.participantIds
                     : [conversation.entityId],
-                replyMode: conversation.replyMode || 'realistic',
+                replyMode: conversation.replyMode || 'instant',
             });
             set({ connectionState: 'connected' });
         } catch (error) {
@@ -295,12 +295,43 @@ export const useChatStore = create((set, get) => ({
         if (!activeConversation || !content?.trim()) return false;
         const socket = sockets.get(activeConversation.entityId);
         if (!socket) return false;
-        return socket.sendText({
+
+        // Optimistic append: the engine persists the user's message but does NOT
+        // echo it back over the socket for web sessions, so the timeline must add
+        // it locally or the sent message never appears. A later REST refresh
+        // replaces this row with the engine's canonical copy.
+        const messageId = generateEventId();
+        const now = new Date().toISOString();
+        const optimistic = {
+            id: messageId,
+            entity_id: activeConversation.entityId,
+            sender_entity_id: ownEntityId,
+            interaction_id: activeConversation.interactionId || '',
+            content,
+            message_type: 'text',
+            has_audio: false,
+            has_image: false,
+            is_edited: false,
+            is_pinned: false,
+            is_read: true,
+            reply_to_message_id: replyToMessageId || '',
+            created_at: now,
+            updated_at: now,
+        };
+        set({ messages: mergeMessages(get().messages, optimistic) });
+
+        const ok = socket.sendText({
             entityId: ownEntityId,
             content,
+            messageId,
             replyToMessageId,
             additionalEffects,
         });
+        if (!ok) {
+            // Socket was not open — roll back the optimistic row.
+            set({ messages: removeMessage(get().messages, messageId) });
+        }
+        return ok;
     },
 
     /**

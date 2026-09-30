@@ -1,7 +1,9 @@
-import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import useDynamicBackgroundStore from '../store/dynamicBackgroundStore';
 import { VARIANT_SCENES } from './DynamicBackgroundVariants.jsx';
+
+const AURA_TRAIL_LENGTH = 12;
 
 /**
  * DynamicBackground — a theme-adaptive animated backdrop with selectable
@@ -28,6 +30,21 @@ import { VARIANT_SCENES } from './DynamicBackgroundVariants.jsx';
  * All colours are derived from CSS custom properties set by ThemeContext.
  * Animations are 100 % CSS for performance.
  *
+ * ── Performance contract (do not regress) ──────────────────────────────
+ * The cursor aura is moved WITHOUT React state and WITHOUT layout. A single
+ * `mousemove` handler stores the pointer position in a ref and schedules one
+ * `requestAnimationFrame`; that frame writes `--aura-x` / `--aura-y` (pixel
+ * values) straight onto the fixed aura layer's inline style. The CSS then moves
+ * the glow with `transform: translate3d(...)`, i.e. on the GPU compositor only.
+ *
+ * This matters: the aura layer is `position: fixed`, covers the viewport and
+ * sits at z-index 40 ABOVE all page content. The previous implementation
+ * animated `left`/`top` (layout properties) and called `setState` on every
+ * mouse move — which re-rendered the whole background subtree and forced a
+ * layout + repaint of a screen-covering overlay on top of everything. That is
+ * what made the entire UI visibly shake while the mouse moved, and made
+ * scrolling feel laggy. Keep this handler state-free and transform-based.
+ *
  * The background itself is rendered as a regular element (not a portal) so
  * it lives inside #root alongside #App, always behind page content
  * (z-index: 0). The mouse-following aura is portaled to document.body in a
@@ -40,19 +57,6 @@ function DynamicBackground() {
     const variant = useDynamicBackgroundStore((s) => s.variant);
     const auraEnabled = useDynamicBackgroundStore((s) => s.auraEnabled);
     const auraStyle = useDynamicBackgroundStore((s) => s.auraStyle);
-
-    // Mouse position state for the cursor-following aura
-    const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
-    const [isMoving, setIsMoving] = useState(false);
-
-    // Trail style: rolling history of recent cursor positions (oldest first)
-    const AURA_TRAIL_LENGTH = 12;
-    const [trail, setTrail] = useState(() =>
-        Array.from({ length: AURA_TRAIL_LENGTH }, () => ({ x: 0.5, y: 0.5 }))
-    );
-    const trailRef = useRef(
-        Array.from({ length: AURA_TRAIL_LENGTH }, () => ({ x: 0.5, y: 0.5 }))
-    );
 
     // Embers style: deterministic set of sparker configs (staggered delays so
     // sparks are always mid-flight, varied drift/rise/size for a natural look)
@@ -72,30 +76,102 @@ function DynamicBackground() {
         return items;
     }, []);
 
-    const handleMouseMove = useCallback((e) => {
-        const x = e.clientX / window.innerWidth;
-        const y = e.clientY / window.innerHeight;
-        setMousePos({ x, y });
-        setIsMoving(true);
+    // ── Cursor aura refs (position is written outside React) ─────────
+    const layerRef = useRef(null);
+    const trailDotRefs = useRef([]);
+    const trailBufRef = useRef([]);
+    const posRef = useRef({ x: 0, y: 0 });
+    const rafRef = useRef(0);
+    const idleRef = useRef(null);
 
-        // Trail: push current position, keep the ring buffer capped
-        const t = trailRef.current;
-        t.push({ x, y });
-        if (t.length > AURA_TRAIL_LENGTH) t.shift();
-        setTrail([...t]);
+    useEffect(() => {
+        if (!enabled || !auraEnabled) return undefined;
+
+        const centerX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
+        const centerY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
+        trailBufRef.current = Array.from(
+            { length: AURA_TRAIL_LENGTH },
+            () => ({ x: centerX, y: centerY })
+        );
+        posRef.current = { x: centerX, y: centerY };
+
+        // Paint the latest pointer position onto the DOM in one frame.
+        const paint = () => {
+            rafRef.current = 0;
+            const layer = layerRef.current;
+            const { x, y } = posRef.current;
+            const px = `${x}px`;
+            const py = `${y}px`;
+            if (layer) {
+                layer.style.setProperty('--aura-x', px);
+                layer.style.setProperty('--aura-y', py);
+            }
+            // Trail dots each keep their own (older) position from the buffer.
+            if (auraStyle === 'trail') {
+                const buf = trailBufRef.current;
+                const dots = trailDotRefs.current;
+                for (let i = 0; i < dots.length; i++) {
+                    const el = dots[i];
+                    if (!el) continue;
+                    const p = buf[i] || buf[buf.length - 1] || { x, y };
+                    el.style.setProperty('--aura-x', `${p.x}px`);
+                    el.style.setProperty('--aura-y', `${p.y}px`);
+                }
+            }
+        };
+
+        const onMove = (e) => {
+            posRef.current = { x: e.clientX, y: e.clientY };
+            if (auraStyle === 'trail') {
+                const buf = trailBufRef.current;
+                buf.push({ x: e.clientX, y: e.clientY });
+                while (buf.length > AURA_TRAIL_LENGTH) buf.shift();
+            }
+            const layer = layerRef.current;
+            if (layer) layer.style.setProperty('--aura-opacity', '0.45');
+            if (idleRef.current) clearTimeout(idleRef.current);
+            idleRef.current = setTimeout(() => {
+                if (layerRef.current) layerRef.current.style.setProperty('--aura-opacity', '0.20');
+            }, 2000);
+            if (!rafRef.current) rafRef.current = requestAnimationFrame(paint);
+        };
+
+        window.addEventListener('mousemove', onMove, { passive: true });
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+            rafRef.current = 0;
+            if (idleRef.current) clearTimeout(idleRef.current);
+        };
+    }, [enabled, auraEnabled, auraStyle]);
+
+    // Pause the CSS backdrop animations while the user scrolls.
+    //
+    // A full-viewport animated backdrop forces the app to recomposite every
+    // frame. Layered with the `backdrop-filter` "glass" panels, that reads as a
+    // visible wobble/shake while scrolling. Freezing just the backdrop's
+    // animations for the duration of the scroll removes that per-frame work;
+    // they resume ~140ms after scrolling stops, so nothing looks different when
+    // the user is not actively scrolling. The listener uses capture so it also
+    // catches scrolls from the nested `.app-main` scroller (scroll events do not
+    // bubble, but they do propagate in the capture phase).
+    useEffect(() => {
+        let idleTimer = null;
+        const onScroll = () => {
+            document.documentElement.setAttribute('data-scrolling', 'true');
+            if (idleTimer) clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                document.documentElement.removeAttribute('data-scrolling');
+                idleTimer = null;
+            }, 140);
+        };
+        window.addEventListener('scroll', onScroll, { passive: true, capture: true });
+        return () => {
+            window.removeEventListener('scroll', onScroll, { capture: true });
+            if (idleTimer) clearTimeout(idleTimer);
+            document.documentElement.removeAttribute('data-scrolling');
+        };
     }, []);
-
-    // Reset isMoving after mouse stops — keeps the aura subtle when idle
-    useEffect(() => {
-        if (!isMoving) return;
-        const timeout = setTimeout(() => setIsMoving(false), 2000);
-        return () => clearTimeout(timeout);
-    }, [isMoving, mousePos]);
-
-    useEffect(() => {
-        window.addEventListener('mousemove', handleMouseMove, { passive: true });
-        return () => window.removeEventListener('mousemove', handleMouseMove);
-    }, [handleMouseMove]);
 
     // Pre-compute floating stars (Aurora)
     const particles = useMemo(() => {
@@ -139,40 +215,26 @@ function DynamicBackground() {
         return positions;
     }, []);
 
-    const auraOpacity = isMoving ? 0.45 : 0.20;
-
-    // Render the selected mouse aura style
+    // Render the selected mouse aura style. Structure only — position/opacity
+    // are injected as CSS variables at runtime (see the effect above).
     const renderAura = () => {
         if (!auraEnabled) return null;
 
         switch (auraStyle) {
             case 'ring':
-                return (
-                    <div
-                        className="dynamic-bg-aura-ring"
-                        style={{
-                            '--aura-x': `${mousePos.x * 100}%`,
-                            '--aura-y': `${mousePos.y * 100}%`,
-                            '--aura-opacity': auraOpacity,
-                        }}
-                    />
-                );
+                return <div className="dynamic-bg-aura-ring" />;
             case 'trail': {
                 const lastIndex = AURA_TRAIL_LENGTH - 1;
                 return (
-                    <div
-                        className="dynamic-bg-aura-trail"
-                        style={{ '--aura-opacity': auraOpacity }}
-                    >
-                        {trail.map((p, i) => {
+                    <div className="dynamic-bg-aura-trail">
+                        {Array.from({ length: AURA_TRAIL_LENGTH }).map((_, i) => {
                             const t = i / lastIndex; // 0 (tail) → 1 (head, at cursor)
                             return (
                                 <span
                                     key={i}
+                                    ref={(el) => { trailDotRefs.current[i] = el; }}
                                     className="dynamic-bg-aura-trail-dot"
                                     style={{
-                                        '--aura-x': `${p.x * 100}%`,
-                                        '--aura-y': `${p.y * 100}%`,
                                         '--dot-delay': `${(i * 0.022).toFixed(3)}s`,
                                         '--dot-scale': (0.45 + t * 0.55).toFixed(2),
                                         '--dot-opacity': (0.3 + t * 0.7).toFixed(2),
@@ -185,17 +247,12 @@ function DynamicBackground() {
             }
             case 'embers':
                 return (
-                    <div
-                        className="dynamic-bg-aura-embers"
-                        style={{ '--aura-opacity': auraOpacity }}
-                    >
+                    <div className="dynamic-bg-aura-embers">
                         {embers.map((e, i) => (
                             <span
                                 key={i}
                                 className="dynamic-bg-aura-ember"
                                 style={{
-                                    '--aura-x': `${mousePos.x * 100}%`,
-                                    '--aura-y': `${mousePos.y * 100}%`,
                                     '--ember-size': e.size,
                                     '--ember-duration': e.duration,
                                     '--ember-delay': e.delay,
@@ -207,16 +264,7 @@ function DynamicBackground() {
                     </div>
                 );
             default:
-                return (
-                    <div
-                        className="dynamic-bg-aura"
-                        style={{
-                            '--aura-x': `${mousePos.x * 100}%`,
-                            '--aura-y': `${mousePos.y * 100}%`,
-                            '--aura-opacity': auraOpacity,
-                        }}
-                    />
-                );
+                return <div className="dynamic-bg-aura" />;
         }
     };
 
@@ -242,7 +290,7 @@ function DynamicBackground() {
                 Portaled to document.body so it renders ABOVE page content
                 (buttons/cards) but stays BELOW modals (z-50). */}
             {auraEnabled && createPortal(
-                <div className="dynamic-bg-aura-layer" aria-hidden="true">
+                <div ref={layerRef} className="dynamic-bg-aura-layer" aria-hidden="true">
                     {renderAura()}
                 </div>,
                 document.body

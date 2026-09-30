@@ -118,7 +118,10 @@ html {
     background: rgba(var(--color-accent-primary-rgb), 0.35);
     border-radius: 3px;
     box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
-    animation: scrollbar-shimmer 2.5s ease-in-out infinite;
+    /* NOTE: no infinite animation here on purpose. Animating the scrollbar
+       thumb's box-shadow forces the scrollbar (and content next to it) to
+       repaint every frame, which reads as a visible jitter/shake while
+       scrolling on Chromium/Windows. The static glow is kept instead. */
     transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 

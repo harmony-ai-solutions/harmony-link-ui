@@ -324,14 +324,15 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     {/* Card Size Toggle */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-text-muted font-medium">{t('characters:cardSize')}</span>
-                        <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
+                        <div className="flex gap-1">
                             {[
                                 { size: 'small', title: t('characters:cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
                                 { size: 'medium', title: t('characters:cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
                                 { size: 'large', title: t('characters:cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                             ].map(({ size, title, path }) => (
                                 <button key={size} onClick={() => handleCardSizeChange(size)}
-                                    className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
+                                    style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
+                                    className={`p-2 rounded-md transition-all ${cardSize === size ? 'bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
                                     title={title}>
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                         <path d={path} />

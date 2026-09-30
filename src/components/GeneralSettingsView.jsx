@@ -446,7 +446,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 {/* Sub-tab bar — splits the former single long scroll into
                     scannable groups. Save/Reset (sticky, bottom) still persist
                     every sub-tab at once. */}
-                <div className="flex flex-wrap gap-1 border-b border-white/5 pb-2">
+                <div className="flex flex-wrap gap-6 border-b border-white/5">
                     {SUB_TABS.map((tab) => {
                         const active = activeSection === tab.id;
                         return (
@@ -454,10 +454,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveSection(tab.id)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                                style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                className={`-mb-px px-1 py-2 text-sm transition-all whitespace-nowrap border-b-2 ${
                                     active
-                                        ? 'bg-accent-primary/20 text-accent-primary ring-1 ring-accent-primary/30'
-                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                        ? 'font-semibold border-[var(--color-accent-primary)]'
+                                        : 'text-text-muted border-transparent hover:text-text-primary'
                                 }`}
                             >
                                 {t(tab.labelKey)}
@@ -475,7 +476,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </h2>
                     <div className="card p-5" data-tutorial-id="ui-mode-switch">
                         <p className="text-[11px] text-text-muted mb-4">{t('uiMode:sectionDescription')}</p>
-                        <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                        <div className="flex flex-wrap gap-1">
                             {UI_MODES.map((m) => {
                                 const active = uiMode === m.id;
                                 return (
@@ -483,9 +484,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                         key={m.id}
                                         type="button"
                                         onClick={() => handleModeSelect(m.id)}
-                                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                        style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                        className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
                                             active
-                                                ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
                                                 : 'text-text-muted hover:text-text-primary hover:bg-white/5'
                                         }`}
                                     >
@@ -803,11 +805,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="card p-4 mt-4">
                         <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgEnabled(!dynamicBackground)}>
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                                 <div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.label')}</h3>
                                     <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.description')}</p>
@@ -822,7 +822,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
                                     {tgs('fields.dynamicBackground.variantsLabel')}
                                 </p>
-                                <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                <div className="flex flex-wrap gap-1">
                                     {BACKGROUND_VARIANTS.map((v) => {
                                         const active = bgVariant === v.id;
                                         return (
@@ -830,9 +830,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                 key={v.id}
                                                 type="button"
                                                 onClick={() => setBgVariant(v.id)}
-                                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                                className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
                                                     active
-                                                        ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                        ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
                                                         : 'text-text-muted hover:text-text-primary hover:bg-white/5'
                                                 }`}
                                             >
@@ -849,11 +850,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgAura(!bgAura)}>
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                            <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                                            </svg>
-                                        </div>
+                                        <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                        </svg>
                                         <div>
                                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.auraLabel')}</h3>
                                             <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.auraDescription')}</p>
@@ -865,11 +864,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
                             {/* Aura style picker — horizontal segmented control, text only */}
                             {bgAura && (
-                                <div className="mt-4">
+                                <div className="mt-4 pt-4 border-t border-white/5">
                                     <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
                                         {tgs('fields.dynamicBackground.auraStylesLabel')}
                                     </p>
-                                    <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                    <div className="flex flex-wrap gap-1">
                                         {AURA_STYLES.map((s) => {
                                             const active = bgAuraStyle === s.id;
                                             return (
@@ -877,9 +876,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                     key={s.id}
                                                     type="button"
                                                     onClick={() => setBgAuraStyle(s.id)}
-                                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                    style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                                    className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
                                                         active
-                                                            ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
+                                                            ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
                                                             : 'text-text-muted hover:text-text-primary hover:bg-white/5'
                                                     }`}
                                                 >
@@ -928,11 +928,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div className="card p-4 cursor-pointer group" onClick={() => setDesktopNotifications(!desktopNotifications)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
                                 <Toggle checked={desktopNotifications} onChange={(e) => setDesktopNotifications(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.desktopNotifications.label')}</h3>
@@ -940,11 +938,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                         <div className="card p-4 cursor-pointer group" onClick={() => setNotificationBadges(!notificationBadges)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
                                 <Toggle checked={notificationBadges} onChange={(e) => setNotificationBadges(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationBadges.label')}</h3>
@@ -952,11 +948,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                         <div className="card p-4 cursor-pointer group" onClick={() => setNotificationSounds(!notificationSounds)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
                                 <Toggle checked={notificationSounds} onChange={(e) => setNotificationSounds(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationSounds.label')}</h3>
@@ -978,11 +972,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             ].map(({ key, state, setter, iconD }) => (
                                 <div key={key} className="card p-4 cursor-pointer group" onClick={() => setter(!state)}>
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                            <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconD} />
-                                            </svg>
-                                        </div>
+                                        <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconD} />
+                                        </svg>
                                         <Toggle checked={state} onChange={(e) => setter(e.target.checked)} />
                                     </div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs(`fields.${key}.label`)}</h3>
@@ -1003,11 +995,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="card p-4 cursor-pointer group mb-4" onClick={() => setSoundEffects(!soundEffects)}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
                                 <div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.soundEffects.label')}</h3>
                                     <p className="text-[11px] text-text-muted">{tgs('fields.soundEffects.description')}</p>

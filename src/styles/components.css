@@ -2285,8 +2285,9 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .character-editor-tab-active {
     color: var(--color-accent-primary);
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset 0 -2px 0 var(--color-accent-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+    box-shadow: inset 0 -2px 0 var(--color-accent-primary),
+                0 0 18px var(--color-glow-accent-soft);
 }
 
 .character-editor-tab-inactive {
@@ -2926,15 +2927,24 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     z-index: 40;
     overflow: hidden;
     pointer-events: none;
+    /* Defaults live on the layer so every aura child inherits one position.
+       `DynamicBackground.jsx` overwrites these with pixel values on each
+       animation frame. */
+    --aura-x: 50vw;
+    --aura-y: 50vh;
+    --aura-opacity: 0.2;
 }
 
 .dynamic-bg-aura {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 150px;
     height: 150px;
-    transform: translate(-50%, -50%);
+    /* GPU-composited move (no layout). The element is anchored top-left and
+       translated to the cursor, so only `transform` changes per frame. */
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
+    will-change: transform;
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -2952,11 +2962,11 @@ select.custom-scrollbar::-webkit-scrollbar-track {
    A crisp glowing ring that hugs the cursor, snapping to it tightly. */
 .dynamic-bg-aura-ring {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 72px;
     height: 72px;
-    transform: translate(-50%, -50%);
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
     border-radius: 50%;
     border: 1.5px solid var(--color-accent-primary);
     box-shadow:
@@ -2965,11 +2975,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         inset 0 0 10px var(--color-glow-accent-soft);
     opacity: var(--aura-opacity, 0.55);
     filter: blur(1px);
-    transition:
-        left 0.04s linear,
-        top 0.04s linear,
-        opacity 0.4s var(--ease-spring);
-    will-change: left, top;
+    transition: opacity 0.4s var(--ease-spring);
+    will-change: transform;
     pointer-events: none;
 }
 
@@ -2985,11 +2992,13 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .dynamic-bg-aura-trail-dot {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 14px;
     height: 14px;
-    transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+    /* Anchor top-left, then translate to the dot's own (older) cursor
+       position — GPU-composited, no layout. */
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(var(--dot-scale, 1));
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -3008,10 +3017,10 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 @keyframes aura-trail-pulse {
     0%, 100% {
-        transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(var(--dot-scale, 1));
     }
     50% {
-        transform: translate(-50%, -50%) scale(calc(var(--dot-scale, 1) * 1.25));
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(calc(var(--dot-scale, 1) * 1.25));
     }
 }
 
@@ -3028,11 +3037,11 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .dynamic-bg-aura-ember {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: var(--ember-size, 9px);
     height: var(--ember-size, 9px);
-    transform: translate(-50%, -50%);
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -3054,19 +3063,19 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 @keyframes ember-rise {
     0% {
-        transform: translate(-50%, -50%) translate(0, 0) scale(0.3);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(0, 0) scale(0.3);
         opacity: 0;
     }
     15% {
-        transform: translate(-50%, -50%) translate(0, -4px) scale(1);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(0, -4px) scale(1);
         opacity: calc(var(--aura-opacity, 0.45) * 1.35);
     }
     55% {
-        transform: translate(-50%, -50%) translate(calc(var(--ember-drift, 12px) * 0.4), var(--ember-rise, -70px)) scale(0.85);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(calc(var(--ember-drift, 12px) * 0.4), var(--ember-rise, -70px)) scale(0.85);
         opacity: calc(var(--aura-opacity, 0.45) * 0.85);
     }
     100% {
-        transform: translate(-50%, -50%) translate(var(--ember-drift, 12px), var(--ember-rise, -70px)) scale(0.2);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(var(--ember-drift, 12px), var(--ember-rise, -70px)) scale(0.2);
         opacity: 0;
     }
 }
@@ -3190,6 +3199,32 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     .dynamic-bg-aura-ember {
         animation: none;
     }
+}
+
+/* Scroll performance: while the user is scrolling, freeze the animated
+   backdrop (and the cursor aura). A full-viewport animation recomposites the
+   whole app every frame; under the glass panels this shows up as a wobble.
+   `DynamicBackground.jsx` toggles `data-scrolling` on <html> and clears it
+   ~140ms after scrolling stops, so animations resume automatically. */
+html[data-scrolling="true"] .dynamic-bg *,
+html[data-scrolling="true"] .dynamic-bg-aura-layer * {
+    animation-play-state: paused !important;
+}
+
+/* The top nav bar carries the heaviest always-on blur (40px) and is fixed
+   chrome, so it re-rasterizes against freshly-scrolled content every frame.
+   While scrolling, drop just its blur (its translucent background, border and
+   glows stay), so the compositor can move the page without that extra
+   main-thread pass. It restores instantly when the scroll stops. */
+html[data-scrolling="true"] .nav-glass-bar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* The glowing scrollbar thumb repaints while it moves; skip its soft glow
+   shadow during the scroll so the scrollbar stays cheap to draw. */
+html[data-scrolling="true"] ::-webkit-scrollbar-thumb {
+    box-shadow: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3809,7 +3844,7 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 .app-sidebar-item-active {
     background: var(--color-background-hover-glass);
     border-color: var(--color-border-glow);
-    color: var(--color-text-primary);
+    color: var(--color-accent-primary);
     font-weight: 700;
     box-shadow: 0 0 18px var(--color-glow-accent-soft);
 }
@@ -3935,13 +3970,44 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 
 /* ── Main content column ──────────────────────────────────────────── */
 /* The column itself scrolls, so the footer sits at the end of the
-   content and scrolls with it. */
+   content and scrolls with it.
+
+   IMPORTANT — scroll stability (do not re-add backdrop-filter below this
+   line's scope): in Chromium, an element with `backdrop-filter` that lives
+   INSIDE a scroll container is rasterized on the main thread while the
+   scroll itself runs on the compositor thread. The two desync and the
+   content visibly SHAKES/JITTERS for the whole duration of the scroll —
+   independently of what is painted behind the glass. This app's cards,
+   buttons and inputs all use `backdrop-filter`, so scrolling any screen
+   shook. The rule below neutralises those blurs for everything inside the
+   scrolling column, which removes the jitter at the source.
+
+   The glass look is intentionally preserved where it is safe and where it
+   matters most — the fixed chrome OUTSIDE this column: the top nav bar
+   (`.nav-glass-bar`) and the sidebar rail (`.app-sidebar`), plus all modals
+   (which are portaled to <body>, outside this subtree). `isolation` is
+   deliberately used INSTEAD of a transform / `contain: paint`, because
+   those turn the element into a containing block and would break the
+   `position: fixed` chat lightbox and picker overlays rendered inside it. */
 .app-main {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    isolation: isolate;
+}
+
+/* Chromium scroll-shake guard — see note above. `!important` is required to
+   beat the per-component `backdrop-filter` declarations (and the inline
+   `backdropFilter` styles some components set). This only clears the blur;
+   the panels keep their translucent backgrounds, borders and glows, so the
+   design still reads as frosted glass. */
+.app-main *,
+.app-main *::before,
+.app-main *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 .app-content {

@@ -512,7 +512,7 @@ export default function PersonasView() {
                                     <Tooltip key={size} content={title}>
                                         <button onClick={() => handleCardSizeChange(size)}
                                             style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
-                                            className={`p-2 rounded-md transition-all ${cardSize === size ? 'bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}>
+                                            className={`settings-option-chip p-2 rounded-md ${cardSize === size ? 'settings-option-chip-active' : 'text-text-muted hover:text-text-primary'}`}>
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                                 <path d={path} />
                                             </svg>

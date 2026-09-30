@@ -2262,12 +2262,15 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .character-editor-tab-bar {
     display: flex;
+    gap: 0.375rem;
     background: transparent;
     backdrop-filter: blur(8px) saturate(1.1);
     -webkit-backdrop-filter: blur(8px) saturate(1.1);
     flex-shrink: 0;
 }
 
+/* Tab-bar chips — same treatment as the settings option chips: a subtle
+   light-grey hairline that becomes an accent border when active. */
 .character-editor-tab {
     display: inline-flex;
     align-items: center;
@@ -2275,19 +2278,22 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     padding: 0.65rem 1.25rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
     cursor: pointer;
     transition: color 0.2s var(--ease-spring),
-                background-color 0.2s var(--ease-spring);
+                background-color 0.2s var(--ease-spring),
+                border-color 0.2s var(--ease-spring),
+                box-shadow 0.2s var(--ease-spring);
     white-space: nowrap;
     position: relative;
 }
 
 .character-editor-tab-active {
     color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
     background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
-    box-shadow: inset 0 -2px 0 var(--color-accent-primary),
-                0 0 18px var(--color-glow-accent-soft);
+    box-shadow: 0 0 18px var(--color-glow-accent-soft);
 }
 
 .character-editor-tab-inactive {
@@ -2297,7 +2303,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .character-editor-tab-inactive:hover {
     color: var(--color-text-primary);
+    border-color: rgba(255, 255, 255, 0.22);
     background: rgba(255, 255, 255, 0.04);
+}
+
+/* Light themes need a darker hairline to stay visible on pale surfaces. */
+html[data-theme-mode='light'] .character-editor-tab {
+    border-color: rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme-mode='light'] .character-editor-tab-inactive:hover {
+    border-color: rgba(0, 0, 0, 0.26);
 }
 
 .character-editor-section {
@@ -3768,6 +3784,14 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Reserve the scrollbar gutter on BOTH edges. Without this, switching to
+       Developer mode adds enough nav items to make the rail scroll; the
+       vertical scrollbar then appears and steals width from the content box,
+       which shifted the centred icons to the left and shrank the item /
+       selected-tab box. Reserving the gutter keeps the content box width —
+       and therefore the icon size and position — constant whether or not the
+       rail scrolls. */
+    scrollbar-gutter: stable;
     padding: 1rem 0.7rem;
     display: flex;
     flex-direction: column;
@@ -3891,19 +3915,31 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     box-shadow: 0 0 12px var(--color-glow-accent-strong);
 }
 
+/* Fixed, mode-independent icon box. The box is sized in px (not rem) and
+   marked `!important` so it can never be overridden by the Tailwind `w-4 h-4`
+   utility on the <svg> (16px) nor scaled by the root font-size / active mode.
+   The span also reserves the same box so the icon can never be squeezed when
+   the rail is collapsed and more nav items are present (e.g. Developer mode). */
 .app-sidebar-item-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: 21px;
+    height: 21px;
     color: var(--color-text-muted);
     opacity: 0.9;
     transition: color 0.25s var(--ease-spring), filter 0.25s var(--ease-spring);
 }
 
 .app-sidebar-item-icon svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px;
+    min-height: 21px;
+    max-width: 21px;
+    max-height: 21px;
+    flex-shrink: 0;
 }
 
 .app-sidebar-item:hover .app-sidebar-item-icon {
@@ -5245,4 +5281,36 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     .chat-input-icon-btn-recording {
         animation: none;
     }
+}
+
+/* ── Settings option chips (shared segmented-control look) ─────────────
+   Used by every settings picker/segmented control (General Settings
+   sub-tabs, Interface Mode, background variant, aura style, card-size
+   pickers, Developer tab bar) so each option reads as a clickable chip:
+   a subtle light-grey hairline that becomes an accent border when active.
+   Selection itself stays accent text + a soft glow (no filled "box"). */
+.settings-option-chip {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    transition: background 0.2s var(--ease-spring), border-color 0.2s var(--ease-spring),
+                color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring);
+}
+
+.settings-option-chip:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.settings-option-chip-active {
+    border-color: var(--color-accent-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+    box-shadow: 0 0 16px var(--color-glow-accent-strong);
+}
+
+/* Light themes need a darker hairline to stay visible on pale surfaces. */
+html[data-theme-mode='light'] .settings-option-chip {
+    border-color: rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme-mode='light'] .settings-option-chip:hover {
+    border-color: rgba(0, 0, 0, 0.26);
 }

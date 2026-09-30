@@ -14,6 +14,7 @@ import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
+import Tooltip from './ui/Tooltip.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
 import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale, DEFAULT_FONT_SCALE } from '../utils/fontScale.js';
@@ -476,29 +477,29 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </h2>
                     <div className="card p-5" data-tutorial-id="ui-mode-switch">
                         <p className="text-[11px] text-text-muted mb-4">{t('uiMode:sectionDescription')}</p>
+                        {/* Compact switch — each mode's explanation lives in a
+                            themed tooltip so the row itself stays clean. */}
                         <div className="flex flex-wrap gap-1">
                             {UI_MODES.map((m) => {
                                 const active = uiMode === m.id;
                                 return (
-                                    <button
-                                        key={m.id}
-                                        type="button"
-                                        onClick={() => handleModeSelect(m.id)}
-                                        style={active ? { color: 'var(--color-accent-primary)' } : undefined}
-                                        className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
-                                            active
-                                                ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
-                                                : 'text-text-muted hover:text-text-primary hover:bg-white/5'
-                                        }`}
-                                    >
-                                        {t(m.labelKey)}
-                                    </button>
+                                    <Tooltip key={m.id} content={t(m.descriptionKey)}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleModeSelect(m.id)}
+                                            style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                            className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
+                                                active
+                                                    ? 'settings-option-chip-active font-bold'
+                                                    : 'text-text-muted hover:text-text-primary'
+                                            }`}
+                                        >
+                                            {t(m.labelKey)}
+                                        </button>
+                                    </Tooltip>
                                 );
                             })}
                         </div>
-                        <p className="text-[11px] text-text-muted mt-3 leading-relaxed">
-                            {t(UI_MODES.find((m) => m.id === uiMode)?.descriptionKey || 'uiMode:modes.simple.description')}
-                        </p>
                     </div>
                 </section>
                 )}
@@ -831,10 +832,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                 type="button"
                                                 onClick={() => setBgVariant(v.id)}
                                                 style={active ? { color: 'var(--color-accent-primary)' } : undefined}
-                                                className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
+                                                className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
                                                     active
-                                                        ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
-                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                        ? 'settings-option-chip-active font-bold'
+                                                        : 'text-text-muted hover:text-text-primary'
                                                 }`}
                                             >
                                                 {t(v.labelKey)}
@@ -877,10 +878,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                     type="button"
                                                     onClick={() => setBgAuraStyle(s.id)}
                                                     style={active ? { color: 'var(--color-accent-primary)' } : undefined}
-                                                    className={`px-3 py-1.5 rounded-md text-xs transition-all whitespace-nowrap ${
+                                                    className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
                                                         active
-                                                            ? 'font-bold bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]'
-                                                            : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                            ? 'settings-option-chip-active font-bold'
+                                                            : 'text-text-muted hover:text-text-primary'
                                                     }`}
                                                 >
                                                     {t(s.labelKey)}

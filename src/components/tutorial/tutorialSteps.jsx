@@ -24,7 +24,7 @@ const characterCreationSteps = section('Characters', [
         title: 'Welcome to Harmony Link!',
         content: (
             <div className="space-y-2">
-                <p>This quick tutorial will guide you through setting up your first AI character.</p>
+                <p>This quick tutorial will guide you through setting up your first AI partner.</p>
                 <p>Let's start by creating a character profile. We'll take you to the Characters tab now.</p>
             </div>
         ),
@@ -116,7 +116,7 @@ const entityCreationSteps = section('Entities', [
     {
         id: 'entity-nav',
         targetSelector: '[data-tutorial-id="nav-group-identity"]',
-        title: 'Entities — Your AI Companions',
+        title: 'Entities — Your AI Partners',
         content: (
             <div className="space-y-2">
                 <p>An <strong>Entity</strong> is the "body" of your AI character. It connects a character profile (identity) with modules (capabilities like speech, cognition, etc.).</p>
@@ -840,8 +840,8 @@ const simpleModeSteps = section('Getting Started', [
         title: 'Welcome to Harmony Link!',
         content: (
             <div className="space-y-2">
-                <p>This is your home base — the <strong>Chat</strong> tab. Everything you need to start talking with an AI companion lives just a few clicks away.</p>
-                <p>We'll show you the three steps: add a character, choose how it thinks, and start chatting.</p>
+                <p>This is your home base — the <strong>Chat</strong> tab. Everything you need to start talking with an AI partner lives just a few clicks away.</p>
+                <p>We'll show you the three steps: create an AI partner, choose how it thinks, and start chatting.</p>
             </div>
         ),
         placement: 'right',
@@ -850,10 +850,10 @@ const simpleModeSteps = section('Getting Started', [
     {
         id: 'simple-add-character',
         targetSelector: '[data-tutorial-id="nav-tab-characters"]',
-        title: '1. Add a Character',
+        title: '1. Create an AI Partner',
         content: (
             <div className="space-y-2">
-                <p>Characters are the personalities your AI can play. Head to the <strong>Characters</strong> tab to import a character card (a PNG from most card sites) or create one from scratch.</p>
+                <p>AI Characters are the personalities your AI can play. Head to the <strong>AI Characters</strong> tab to import a character card (a PNG from most card sites) or create one from scratch.</p>
             </div>
         ),
         placement: 'right',
@@ -878,7 +878,7 @@ const simpleModeSteps = section('Getting Started', [
         title: '3. Start Chatting',
         content: (
             <div className="space-y-2">
-                <p>Once your character is set up, come back to <strong>Chat</strong> and say hello. That's it!</p>
+                <p>Once your AI partner is set up, come back to <strong>Chat</strong> and say hello. That's it!</p>
                 <p>You can revisit this tour any time from the help button in the top bar.</p>
             </div>
         ),

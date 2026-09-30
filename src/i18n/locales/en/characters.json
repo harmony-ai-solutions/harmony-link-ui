@@ -1,13 +1,13 @@
 {
   "header": {
-    "title": "Character Profiles",
-    "subtitle": "Manage AI character identities and cards"
+    "title": "AI Characters",
+    "subtitle": "Manage AI character profiles"
   },
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
     "createPersona": "Create persona from this card",
-    "createEntity": "Create AI entity from this card",
+    "createEntity": "Create Entity from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",
@@ -41,7 +41,7 @@
   "noDescription": "No description provided.",
   "deleteProfile": "Delete profile",
   "createPersonaFailed": "Failed to create persona from this card: {{message}}",
-  "createEntityFailed": "Failed to create AI entity from this card: {{message}}",
+  "createEntityFailed": "Failed to create entity from this card: {{message}}",
   "liveLinkHint": "Linked to an entity — changes apply immediately",
   "usedBy": {
     "aiPrefix": "AI · {{name}}",
@@ -270,7 +270,7 @@
     "deleteConfirm": "Are you sure you want to delete this image?"
   },
   "lifecycle": {
-    "defaultsNote": "These are the default lifecycle settings applied when a new AI character is created from this profile. Each character (entity) created from this profile inherits these values, but they can be customized individually in that entity's detail settings.",
+    "defaultsNote": "These are the default lifecycle settings applied when a new entity is created from this profile. Each entity created from this profile inherits these values, but they can be customized individually in that entity's detail settings.",
     "beatSchedule": {
       "title": "Beat Schedule",
       "tooltip": "Controls the character's autonomous 'beat' loop — how often it thinks, reflects, or reaches out on its own when no one is talking to it, and which kinds of actions it tends toward. Higher autonomy means more independent behavior.",

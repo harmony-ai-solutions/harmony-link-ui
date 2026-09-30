@@ -5,9 +5,9 @@
     "tabs": {
       "chat": "Chat",
       "general": "General",
-      "entities": "AI Companions",
+      "entities": "Entities",
       "modules": "Modules",
-      "characters": "Characters",
+      "characters": "AI Characters",
       "personas": "You",
       "integrations": "Integrations",
       "simulator": "Simulator",

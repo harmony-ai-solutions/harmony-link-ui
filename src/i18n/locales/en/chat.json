@@ -1,12 +1,12 @@
 {
   "header": {
     "title": "Chat",
-    "subtitle": "Talk with your AI companions"
+    "subtitle": "Talk with your AI partners"
   },
   "placeholder": {
     "title": "Your chats will appear here",
-    "description": "Add a character and connect it to an AI so you can start chatting.",
-    "addCharacter": "Add a Character",
+    "description": "Create an AI partner and connect it to an AI so you can start chatting.",
+    "addCharacter": "Create AI Partner",
     "openSettings": "Open Settings"
   },
   "localAI": {
@@ -27,7 +27,7 @@
   "list": {
     "title": "Conversations",
     "empty": "No conversations yet",
-    "emptyHint": "Start a chat with one of your AI companions.",
+    "emptyHint": "Start a chat with one of your AI partners.",
     "newChat": "New Chat",
     "noMessages": "No messages yet",
     "you": "You",
@@ -35,8 +35,8 @@
     "filterAll": "All",
     "filterUnread": "Unread",
     "selectCompanion": "Who do you want to talk to?",
-    "noCompanions": "No AI companions yet. Create one in the Characters tab first.",
-    "openCharacters": "Go to Characters",
+    "noCompanions": "No AI partners yet. Create one in the AI Characters tab first.",
+    "openCharacters": "Go to AI Characters",
     "loading": "Loading conversations…",
     "failedToLoad": "Could not load conversations."
   },
@@ -113,7 +113,7 @@
   "impersonation": {
     "label": "Chatting as",
     "title": "Who are you chatting as?",
-    "description": "Choose the persona the AI companions will relate to.",
+    "description": "Choose the persona your AI partners will relate to.",
     "defaultPersona": "You",
     "apply": "Use this persona"
   },

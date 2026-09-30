@@ -4,6 +4,7 @@ import { EditIcon, TrashIcon, RefreshIcon, ClipboardIcon, SmileIcon, ImageIcon }
 import { messageDirection, conversationPreview, parseReactions, isProactiveMessage } from '../../store/chatStoreUtils.js';
 import { fetchMessageImageObjectUrl } from '../../services/management/chatService.js';
 import AudioBubble from './AudioBubble.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * One message bubble (F3) with a hover / right-click action menu (F9 / F13 /
@@ -83,45 +84,59 @@ const ChatBubble = ({
                 {/* Meta */}
                 <div className="chat-bubble-meta">
                     {message.is_edited && (
-                        <span className="chat-bubble-edited" title={t('chat:bubble.editedTooltip')}>
-                            {t('chat:bubble.edited')}
-                        </span>
+                        <Tooltip content={t('chat:bubble.editedTooltip')}>
+                            <span className="chat-bubble-edited">
+                                {t('chat:bubble.edited')}
+                            </span>
+                        </Tooltip>
                     )}
                     {timeLabel && <span>{timeLabel}</span>}
                 </div>
 
                 {/* Hover / context action menu */}
                 <div className={`chat-bubble-actions ${menuOpen ? 'chat-bubble-actions-open' : ''}`}>
-                    <button type="button" title={t('chat:actions.reply')}
-                        className="chat-bubble-action" onClick={() => { onReply?.(message); setMenuOpen(false); }}>
-                        <RefreshIcon className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" title={t('chat:actions.react')}
-                        className="chat-bubble-action" onClick={() => { onReact?.(message); setMenuOpen(false); }}>
-                        <SmileIcon className="w-3.5 h-3.5" />
-                    </button>
-                    {isOut && (
-                        <button type="button" title={t('chat:actions.edit')}
-                            className="chat-bubble-action" onClick={() => { onEdit?.(message); setMenuOpen(false); }}>
-                            <EditIcon className="w-3.5 h-3.5" />
-                        </button>
-                    )}
-                    <button type="button" title={t('chat:actions.copy')}
-                        className="chat-bubble-action" onClick={handleCopy}>
-                        <ClipboardIcon className="w-3.5 h-3.5" />
-                    </button>
-                    {isOut && isLast && (
-                        <button type="button" title={t('chat:actions.regenerate')}
-                            className="chat-bubble-action" onClick={() => { onRegenerate?.(message); setMenuOpen(false); }}>
+                    <Tooltip content={t('chat:actions.reply')}>
+                        <button type="button"
+                            className="chat-bubble-action" onClick={() => { onReply?.(message); setMenuOpen(false); }}>
                             <RefreshIcon className="w-3.5 h-3.5" />
                         </button>
+                    </Tooltip>
+                    <Tooltip content={t('chat:actions.react')}>
+                        <button type="button"
+                            className="chat-bubble-action" onClick={() => { onReact?.(message); setMenuOpen(false); }}>
+                            <SmileIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </Tooltip>
+                    {isOut && (
+                        <Tooltip content={t('chat:actions.edit')}>
+                            <button type="button"
+                                className="chat-bubble-action" onClick={() => { onEdit?.(message); setMenuOpen(false); }}>
+                                <EditIcon className="w-3.5 h-3.5" />
+                            </button>
+                        </Tooltip>
+                    )}
+                    <Tooltip content={t('chat:actions.copy')}>
+                        <button type="button"
+                            className="chat-bubble-action" onClick={handleCopy}>
+                            <ClipboardIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </Tooltip>
+                    {isOut && isLast && (
+                        <Tooltip content={t('chat:actions.regenerate')}>
+                            <button type="button"
+                                className="chat-bubble-action" onClick={() => { onRegenerate?.(message); setMenuOpen(false); }}>
+                                <RefreshIcon className="w-3.5 h-3.5" />
+                            </button>
+                        </Tooltip>
                     )}
                     {isOut && (
-                        <button type="button" title={t('chat:actions.delete')}
-                            className="chat-bubble-action chat-bubble-action-danger"
-                            onClick={() => { onDelete?.(message); setMenuOpen(false); }}>
-                            <TrashIcon className="w-3.5 h-3.5" />
-                        </button>
+                        <Tooltip content={t('chat:actions.delete')}>
+                            <button type="button"
+                                className="chat-bubble-action chat-bubble-action-danger"
+                                onClick={() => { onDelete?.(message); setMenuOpen(false); }}>
+                                <TrashIcon className="w-3.5 h-3.5" />
+                            </button>
+                        </Tooltip>
                     )}
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listEmojiActions } from '../../services/management/chatService.js';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /** A small, curated quick-reaction set (browser emoji input covers the rest). */
 export const QUICK_EMOJI = ['😀', '😂', '🥰', '😍', '😊', '😉', '😎', '🤔',
@@ -59,15 +60,15 @@ const EmojiPicker = ({ entityId, onPick, onPickAction, onClose }) => {
             ) : (
                 <div className="chat-emoji-grid">
                     {actions.map((action) => (
-                        <button
-                            key={action.id}
-                            type="button"
-                            className="chat-emoji-btn chat-emoji-btn-action"
-                            title={action.emotion_effect || action.substitution_text || ''}
-                            onClick={() => onPickAction?.(action)}
-                        >
-                            {action.emoji_native}
-                        </button>
+                        <Tooltip key={action.id} content={action.emotion_effect || action.substitution_text || ''}>
+                            <button
+                                type="button"
+                                className="chat-emoji-btn chat-emoji-btn-action"
+                                onClick={() => onPickAction?.(action)}
+                            >
+                                {action.emoji_native}
+                            </button>
+                        </Tooltip>
                     ))}
                 </div>
             )}

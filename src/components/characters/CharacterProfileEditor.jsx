@@ -9,6 +9,7 @@ import ErrorDialog from '../modals/ErrorDialog.jsx';
 import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import NumberStepper from '../ui/NumberStepper.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 // ---------------------------------------------------------------------------
 // Inline helpers (Character Card V3 data editing)
@@ -75,16 +76,17 @@ function StringListEditor({ values, onChange, placeholder, addLabel }) {
                     {values.map((value, index) => (
                         <li key={`${index}-${value}`} className="flex items-center gap-2 bg-white/5 rounded px-3 py-1.5">
                             <span className="flex-1 text-sm break-all">{value}</span>
-                            <button
-                                type="button"
-                                onClick={() => onChange(values.filter((_, i) => i !== index))}
-                                className="text-text-muted hover:text-red-400 transition-colors"
-                                title={t('editor.remove')}
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <Tooltip content={t('editor.remove')}>
+                                <button
+                                    type="button"
+                                    onClick={() => onChange(values.filter((_, i) => i !== index))}
+                                    className="text-text-muted hover:text-red-400 transition-colors"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </Tooltip>
                         </li>
                     ))}
                 </ul>
@@ -452,18 +454,19 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                 {t('fields.name')}
                                 <span className="character-editor-label-required">*</span>
                             </label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                onBlur={(e) => validateNameAndUpdate(e.target.value)}
-                                required
-                                disabled={nameReadOnly}
-                                title={nameReadOnly ? t('personas:editor.nameLocked') : ''}
-                                placeholder={t('fields.namePlaceholder')}
-                                className="input-field w-full disabled:opacity-60 disabled:cursor-not-allowed"
-                            />
+                            <Tooltip content={nameReadOnly ? t('personas:editor.nameLocked') : ''}>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    onBlur={(e) => validateNameAndUpdate(e.target.value)}
+                                    required
+                                    disabled={nameReadOnly}
+                                    placeholder={t('fields.namePlaceholder')}
+                                    className="input-field w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                                />
+                            </Tooltip>
                             {nameReadOnly && (
                                 <p className="character-editor-hint mt-1">{t('personas:editor.nameLocked')}</p>
                             )}
@@ -832,16 +835,17 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                         </div>
                         <div className="flex items-center gap-2">
                             {profile && <CharacterCardExport profile={profile} variant="editor" />}
-                            <button
-                                onClick={onClose}
-                                data-tutorial-id="char-editor-close-btn"
-                                className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5"
-                                title={t('buttons.close')}
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <Tooltip content={t('buttons.close')}>
+                                <button
+                                    onClick={onClose}
+                                    data-tutorial-id="char-editor-close-btn"
+                                    className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </Tooltip>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * CompactSelect — a small pill button that opens a dropdown menu.
@@ -41,20 +42,21 @@ function CompactSelect({ value, options, onChange, placeholder, title }) {
 
     return (
         <>
-            <button
-                ref={btnRef}
-                type="button"
-                className="log-toolbar-btn shrink-0"
-                onClick={handleOpen}
-                title={title || (selected ? selected.label : placeholder)}
-            >
-                <span className="truncate max-w-[96px]">
-                    {selected ? selected.label : placeholder}
-                </span>
-                <svg className="w-3 h-3 ml-0.5 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
+            <Tooltip content={title || (selected ? selected.label : placeholder)}>
+                <button
+                    ref={btnRef}
+                    type="button"
+                    className="log-toolbar-btn shrink-0"
+                    onClick={handleOpen}
+                >
+                    <span className="truncate max-w-[96px]">
+                        {selected ? selected.label : placeholder}
+                    </span>
+                    <svg className="w-3 h-3 ml-0.5 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+            </Tooltip>
 
             {isOpen && createPortal(
                 <>
@@ -110,16 +112,16 @@ function LevelToggles({ enabledLevels, onToggle }) {
             {LEVEL_TOGGLES.map(({ level, label, className }) => {
                 const enabled = enabledLevels.includes(level);
                 return (
-                    <button
-                        key={level}
-                        type="button"
-                        className={`log-level-toggle ${className} ${enabled ? 'log-level-toggle-on' : 'log-level-toggle-off'}`}
-                        onClick={() => onToggle(level)}
-                        title={enabled ? `Showing ${level} — click to hide` : `Hiding ${level} — click to show`}
-                        aria-pressed={enabled}
-                    >
-                        {label}
-                    </button>
+                    <Tooltip key={level} content={enabled ? `Showing ${level} — click to hide` : `Hiding ${level} — click to show`}>
+                        <button
+                            type="button"
+                            className={`log-level-toggle ${className} ${enabled ? 'log-level-toggle-on' : 'log-level-toggle-off'}`}
+                            onClick={() => onToggle(level)}
+                            aria-pressed={enabled}
+                        >
+                            {label}
+                        </button>
+                    </Tooltip>
                 );
             })}
         </div>
@@ -182,20 +184,21 @@ export default function FilterToolbar({
                 {/* Prompt Toggle — grouped with the All Components / All Entities
                     context filters, separated from the colored level toggles.
                     Binary: null (all) ↔ true (prompts only) */}
-                <button
-                    className={`log-toolbar-btn text-[9px] font-bold shrink-0 ${
-                        filters.isPrompt === true
-                            ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                            : 'bg-background-surface text-text-muted border-white/10'
-                    }`}
-                    onClick={() => {
-                        const next = filters.isPrompt === true ? null : true;
-                        onFilterChange({ ...filters, isPrompt: next, promptType: next !== true ? '' : filters.promptType });
-                    }}
-                    title={filters.isPrompt === true ? 'Showing prompts only — click to show all' : 'Showing all entries — click to show prompts only'}
-                >
-                    PROMPT
-                </button>
+                <Tooltip content={filters.isPrompt === true ? 'Showing prompts only — click to show all' : 'Showing all entries — click to show prompts only'}>
+                    <button
+                        className={`log-toolbar-btn text-[9px] font-bold shrink-0 ${
+                            filters.isPrompt === true
+                                ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                                : 'bg-background-surface text-text-muted border-white/10'
+                        }`}
+                        onClick={() => {
+                            const next = filters.isPrompt === true ? null : true;
+                            onFilterChange({ ...filters, isPrompt: next, promptType: next !== true ? '' : filters.promptType });
+                        }}
+                    >
+                        PROMPT
+                    </button>
+                </Tooltip>
 
                 {/* Prompt Type Dropdown — only visible when isPrompt is toggled active (true) */}
                 {filters.isPrompt === true && (
@@ -225,13 +228,14 @@ export default function FilterToolbar({
                 <div className="log-toolbar-divider" />
 
                 {/* Sort Order Toggle */}
-                <button
-                    className="log-toolbar-btn text-[9px] shrink-0"
-                    onClick={() => onSortOrderChange(sortOrder === 'desc' ? 'asc' : 'desc')}
-                    title={sortOrder === 'desc' ? 'Newest first — click for oldest first' : 'Oldest first — click for newest first'}
-                >
-                    {sortOrder === 'desc' ? '▼ Newest' : '▲ Oldest'}
-                </button>
+                <Tooltip content={sortOrder === 'desc' ? 'Newest first — click for oldest first' : 'Oldest first — click for newest first'}>
+                    <button
+                        className="log-toolbar-btn text-[9px] shrink-0"
+                        onClick={() => onSortOrderChange(sortOrder === 'desc' ? 'asc' : 'desc')}
+                    >
+                        {sortOrder === 'desc' ? '▼ Newest' : '▲ Oldest'}
+                    </button>
+                </Tooltip>
 
                 {/* Page Size Dropdown */}
                 <CompactSelect
@@ -246,17 +250,21 @@ export default function FilterToolbar({
                 <div className="flex-1 shrink-0" />
 
                 {/* Settings & Refresh */}
-                <button className="log-toolbar-btn shrink-0" onClick={onOpenSettings} title="Log Level Settings">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                </button>
-                <button className="log-toolbar-btn shrink-0" onClick={onRefresh} title="Refresh">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                </button>
+                <Tooltip content="Log Level Settings">
+                    <button className="log-toolbar-btn shrink-0" onClick={onOpenSettings}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                </Tooltip>
+                <Tooltip content="Refresh">
+                    <button className="log-toolbar-btn shrink-0" onClick={onRefresh}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </Tooltip>
             </div>
 
             {/* Search Bar — its own line, below the filter pills, spanning the
@@ -276,15 +284,16 @@ export default function FilterToolbar({
                         aria-label="Search logs"
                     />
                     {filters.search && (
-                        <button
-                            className="search-bar-clear"
-                            onClick={() => onFilterChange({ ...filters, search: '' })}
-                            title="Clear search"
-                        >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <Tooltip content="Clear search">
+                            <button
+                                className="search-bar-clear"
+                                onClick={() => onFilterChange({ ...filters, search: '' })}
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </Tooltip>
                     )}
                 </div>
             </div>

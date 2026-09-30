@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Card component for displaying a character profile summary.
@@ -200,21 +201,22 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
 
                 {/* Small kebab (vertical three-dot) — hover-revealed. The menu
                     itself is portaled to <body> (see `menu` above). */}
-                <button
-                    ref={btnRef}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-                    className="absolute top-2 right-2 z-30 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:scale-110"
-                    title={t('menu.title')}
-                    aria-label={t('menu.title')}
-                    aria-expanded={menuOpen}
-                >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="5" r="2" />
-                        <circle cx="12" cy="12" r="2" />
-                        <circle cx="12" cy="19" r="2" />
-                    </svg>
-                </button>
+                <Tooltip content={t('menu.title')}>
+                    <button
+                        ref={btnRef}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+                        className="absolute top-2 right-2 z-30 p-1.5 module-action-btn rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:scale-110"
+                        aria-label={t('menu.title')}
+                        aria-expanded={menuOpen}
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="5" r="2" />
+                            <circle cx="12" cy="12" r="2" />
+                            <circle cx="12" cy="19" r="2" />
+                        </svg>
+                    </button>
+                </Tooltip>
             </div>
 
             <div className="p-4">

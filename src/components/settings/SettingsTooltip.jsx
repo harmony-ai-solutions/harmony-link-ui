@@ -97,7 +97,6 @@ const SettingsTooltip = ({ tooltipIndex, tooltipVisible, setTooltipVisible, chil
                 ref={triggerRef}
                 className="relative ml-1 inline-flex items-center text-text-muted hover:text-accent-primary cursor-pointer transition-colors"
                 onClick={handleToggle}
-                title="Click for more information"
                 aria-label="More information"
             >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

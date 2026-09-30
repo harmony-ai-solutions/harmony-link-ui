@@ -74,33 +74,48 @@ const Tooltip = ({ content, placement = 'top', delay = 120, disabled = false, ch
         const w = tip.offsetWidth;
         const h = tip.offsetHeight;
 
+        // Trigger centre in viewport coordinates — the arrow should always
+        // point here, even after the bubble is clamped at a viewport edge.
+        const centerX = t.left + t.width / 2;
+        const centerY = t.top + t.height / 2;
+
         let top = 0;
         let left = 0;
         switch (placement) {
             case 'right':
-                top = t.top + t.height / 2 - h / 2;
+                top = centerY - h / 2;
                 left = t.right + GAP;
                 break;
             case 'left':
-                top = t.top + t.height / 2 - h / 2;
+                top = centerY - h / 2;
                 left = t.left - w - GAP;
                 break;
             case 'bottom':
                 top = t.bottom + GAP;
-                left = t.left + t.width / 2 - w / 2;
+                left = centerX - w / 2;
                 break;
             case 'top':
             default:
                 top = t.top - h - GAP;
-                left = t.left + t.width / 2 - w / 2;
+                left = centerX - w / 2;
                 break;
         }
 
-        // Keep the bubble inside the viewport.
-        left = Math.max(VIEWPORT_PAD, Math.min(left, window.innerWidth - w - VIEWPORT_PAD));
-        top = Math.max(VIEWPORT_PAD, Math.min(top, window.innerHeight - h - VIEWPORT_PAD));
+        // Keep the bubble inside the viewport. A trigger near an edge (e.g. the
+        // top-bar help button) forces the bubble to slide inward; the arrow is
+        // then offset so it still points at the trigger instead of the bubble's
+        // own centre — otherwise the tooltip looks misaligned.
+        const clampedLeft = Math.max(VIEWPORT_PAD, Math.min(left, window.innerWidth - w - VIEWPORT_PAD));
+        const clampedTop = Math.max(VIEWPORT_PAD, Math.min(top, window.innerHeight - h - VIEWPORT_PAD));
 
-        setCoords({ top, left });
+        // Arrow offset from the bubble centre, capped so it stays on the bubble.
+        const ARROW_PAD = 12;
+        const rawArrowX = centerX - (clampedLeft + w / 2);
+        const rawArrowY = centerY - (clampedTop + h / 2);
+        const arrowX = Math.max(-(w / 2 - ARROW_PAD), Math.min(w / 2 - ARROW_PAD, rawArrowX));
+        const arrowY = Math.max(-(h / 2 - ARROW_PAD), Math.min(h / 2 - ARROW_PAD, rawArrowY));
+
+        setCoords({ top: clampedTop, left: clampedLeft, arrowX, arrowY });
     }, [visible, placement]);
 
     // The tooltip cannot attach handlers to a non-element child — render as-is.
@@ -125,6 +140,14 @@ const Tooltip = ({ content, placement = 'top', delay = 120, disabled = false, ch
         onBlur: (e) => { children.props.onBlur?.(e); hide(); },
     });
 
+    // The arrow keeps its CSS `50%` anchor; a non-zero offset slides it along
+    // the bubble so it still points at the trigger when the bubble is clamped.
+    const arrowStyle = coords
+        ? (placement === 'top' || placement === 'bottom'
+            ? { left: `calc(50% + ${coords.arrowX}px)` }
+            : { top: `calc(50% + ${coords.arrowY}px)` })
+        : undefined;
+
     return (
         <>
             {trigger}
@@ -137,7 +160,7 @@ const Tooltip = ({ content, placement = 'top', delay = 120, disabled = false, ch
                     style={coords ? { top: coords.top, left: coords.left } : undefined}
                 >
                     {content}
-                    <span className="hl-tooltip-arrow" aria-hidden="true" />
+                    <span className="hl-tooltip-arrow" aria-hidden="true" style={arrowStyle} />
                 </div>,
                 document.body
             )}

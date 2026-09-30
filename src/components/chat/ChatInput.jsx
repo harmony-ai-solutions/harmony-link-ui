@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SmileIcon, ImageIcon, MicIcon, StopIcon } from '../../constants/icons.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Chat input box (F4) with an emoji picker (F11), a picture button (F15) and a
@@ -98,22 +99,24 @@ const ChatInput = ({ onSendText, onSendAudio, onSendImage, onSendEmojiAction, di
             {error && <div className="chat-input-error">{error}</div>}
 
             <div className="chat-input-bar">
-                <button
-                    type="button"
-                    className="chat-input-icon-btn"
-                    title={t('chat:input.emoji')}
-                    onClick={() => setShowEmoji((v) => !v)}
-                >
-                    <SmileIcon className="w-5 h-5" />
-                </button>
-                <button
-                    type="button"
-                    className="chat-input-icon-btn"
-                    title={t('chat:input.attachImage')}
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    <ImageIcon className="w-5 h-5" />
-                </button>
+                <Tooltip content={t('chat:input.emoji')}>
+                    <button
+                        type="button"
+                        className="chat-input-icon-btn"
+                        onClick={() => setShowEmoji((v) => !v)}
+                    >
+                        <SmileIcon className="w-5 h-5" />
+                    </button>
+                </Tooltip>
+                <Tooltip content={t('chat:input.attachImage')}>
+                    <button
+                        type="button"
+                        className="chat-input-icon-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <ImageIcon className="w-5 h-5" />
+                    </button>
+                </Tooltip>
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -132,15 +135,16 @@ const ChatInput = ({ onSendText, onSendAudio, onSendImage, onSendEmojiAction, di
                     disabled={disabled || recording}
                 />
 
-                <button
-                    type="button"
-                    className={`chat-input-icon-btn ${recording ? 'chat-input-icon-btn-recording' : ''}`}
-                    title={recording ? t('chat:input.stopRecording') : t('chat:input.record')}
-                    onClick={recording ? stopRecording : startRecording}
-                    disabled={disabled}
-                >
-                    {recording ? <StopIcon className="w-5 h-5" /> : <MicIcon className="w-5 h-5" />}
-                </button>
+                <Tooltip content={recording ? t('chat:input.stopRecording') : t('chat:input.record')}>
+                    <button
+                        type="button"
+                        className={`chat-input-icon-btn ${recording ? 'chat-input-icon-btn-recording' : ''}`}
+                        onClick={recording ? stopRecording : startRecording}
+                        disabled={disabled}
+                    >
+                        {recording ? <StopIcon className="w-5 h-5" /> : <MicIcon className="w-5 h-5" />}
+                    </button>
+                </Tooltip>
 
                 <button
                     type="button"

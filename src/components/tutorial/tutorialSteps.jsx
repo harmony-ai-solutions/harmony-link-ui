@@ -450,7 +450,6 @@ const integrationLocalSteps = section('Integration', [
                                 if (el) el.textContent = 'Copied!';
                                 setTimeout(() => { if (el) el.textContent = 'Copy'; }, 2000);
                             }}
-                            title="Click to copy"
                         >
                             <code className="break-all">git clone https://github.com/harmony-ai-solutions/quickstart</code>
                             <span className="copy-hint text-text-muted text-[10px] flex-shrink-0 group-hover:text-accent-primary transition-colors">Copy</span>

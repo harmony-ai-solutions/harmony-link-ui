@@ -11,6 +11,7 @@ import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Main view for managing character profiles
@@ -330,14 +331,15 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                                 { size: 'medium', title: t('characters:cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
                                 { size: 'large', title: t('characters:cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                             ].map(({ size, title, path }) => (
-                                <button key={size} onClick={() => handleCardSizeChange(size)}
-                                    style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
-                                    className={`p-2 rounded-md transition-all ${cardSize === size ? 'bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
-                                    title={title}>
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d={path} />
-                                    </svg>
-                                </button>
+                                <Tooltip key={size} content={title}>
+                                    <button onClick={() => handleCardSizeChange(size)}
+                                        style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
+                                        className={`p-2 rounded-md transition-all ${cardSize === size ? 'bg-[color-mix(in_srgb,var(--color-accent-primary)_12%,transparent)] shadow-[0_0_16px_var(--color-glow-accent-strong)]' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}>
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d={path} />
+                                        </svg>
+                                    </button>
+                                </Tooltip>
                             ))}
                         </div>
                     </div>

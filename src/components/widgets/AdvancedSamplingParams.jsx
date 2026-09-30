@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import NumberStepper from '../ui/NumberStepper.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Displays and allows editing of extended sampling parameters.
@@ -124,7 +125,11 @@ const AdvancedSamplingParams = ({ extraParams = {}, onChange, presetParams = {} 
                             <div key={key} className="flex items-center gap-2">
                                 <label className="text-xs min-w-[140px] text-text-secondary">
                                     {info.label}
-                                    {isFromPreset && <span className="ml-1 text-accent-primary" title="From preset">*</span>}
+                                    {isFromPreset && (
+                                        <Tooltip content="From preset">
+                                            <span className="ml-1 text-accent-primary">*</span>
+                                        </Tooltip>
+                                    )}
                                 </label>
                                 {inputType === 'checkbox' ? (
                                     <input
@@ -151,16 +156,17 @@ const AdvancedSamplingParams = ({ extraParams = {}, onChange, presetParams = {} 
                                         placeholder={String(displayParams[key] ?? '')}
                                     />
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={() => handleRemoveParam(key)}
-                                    className="text-xs text-text-muted hover:text-error transition-colors p-1"
-                                    title="Remove"
-                                >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+                                <Tooltip content="Remove">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveParam(key)}
+                                        className="text-xs text-text-muted hover:text-error transition-colors p-1"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </Tooltip>
                             </div>
                         );
                     })}

@@ -14,6 +14,7 @@ import ImageLightbox from './ImageLightbox.jsx';
 import ChatPreferences from './ChatPreferences.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
 import ChatWireInspector from './ChatWireInspector.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
@@ -160,17 +161,20 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                 </div>
                 <ImpersonationSelector personas={personas} value={ownEntityId} onChange={onOwnEntityChange} />
                 {showWireInspector && (
-                    <button type="button"
-                        className={`chat-detail-icon-btn ${showWire ? 'text-accent-primary' : ''}`}
-                        title={t('chat:wire.toggle')}
-                        onClick={() => setShowWire((v) => !v)}>
-                        <TerminalIcon className="w-5 h-5" />
-                    </button>
+                    <Tooltip content={t('chat:wire.toggle')}>
+                        <button type="button"
+                            className={`chat-detail-icon-btn ${showWire ? 'text-accent-primary' : ''}`}
+                            onClick={() => setShowWire((v) => !v)}>
+                            <TerminalIcon className="w-5 h-5" />
+                        </button>
+                    </Tooltip>
                 )}
-                <button type="button" className="chat-detail-icon-btn" title={t('chat:preferences.title')}
-                    onClick={() => setShowPrefs((v) => !v)}>
-                    <SettingsGearIcon className="w-5 h-5" />
-                </button>
+                <Tooltip content={t('chat:preferences.title')}>
+                    <button type="button" className="chat-detail-icon-btn"
+                        onClick={() => setShowPrefs((v) => !v)}>
+                        <SettingsGearIcon className="w-5 h-5" />
+                    </button>
+                </Tooltip>
             </div>
 
             <div className={`chat-detail-body ${showWireInspector && showWire ? 'chat-detail-body-with-wire' : ''}`}>

@@ -3,6 +3,7 @@ import usePresetStore from '../../store/presetStore.js';
 import { uploadPreset, deletePreset } from '../../services/management/presetService.js';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import ThemedSelect from './ThemedSelect';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Preset selector dropdown that loads available presets and fires onChange.
@@ -122,23 +123,25 @@ const PresetSelector = ({ value, onChange }) => {
                     className="flex-1 min-w-0"
                 />
                 {isLoading && <span className="ml-2 text-xs text-text-muted">Loading...</span>}
-                <button
-                    type="button"
-                    onClick={openUploadModal}
-                    className="module-action-btn"
-                    title="Upload or create a new preset"
-                >
-                    + Add
-                </button>
-                {value && (
+                <Tooltip content="Upload or create a new preset">
                     <button
                         type="button"
-                        onClick={requestDelete}
-                        className="module-action-btn-danger"
-                        title="Delete selected preset"
+                        onClick={openUploadModal}
+                        className="module-action-btn"
                     >
-                        Delete
+                        + Add
                     </button>
+                </Tooltip>
+                {value && (
+                    <Tooltip content="Delete selected preset">
+                        <button
+                            type="button"
+                            onClick={requestDelete}
+                            className="module-action-btn-danger"
+                        >
+                            Delete
+                        </button>
+                    </Tooltip>
                 )}
             </div>
 

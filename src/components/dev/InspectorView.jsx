@@ -13,6 +13,7 @@ import {
     normalizeEmotion, normalizeModules, normalizeMemoryLevels, formatPercent,
 } from '../../store/devtoolsUtils.js';
 import { LogError } from '../../utils/logger.js';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Developer Inspector (Phase 3, D1 / D2 / D5).
@@ -235,13 +236,13 @@ const InspectorView = () => {
                                         ) : (
                                             <div className="flex flex-wrap gap-2">
                                                 {moduleRows.map((m) => (
-                                                    <span
-                                                        key={m.name}
-                                                        className={`log-tag ${m.enabled ? 'log-tag-component' : 'opacity-40'}`}
-                                                        title={m.configId || t('development:inspector.modules.disabled')}
-                                                    >
-                                                        {m.name}
-                                                    </span>
+                                                    <Tooltip key={m.name} content={m.configId || t('development:inspector.modules.disabled')}>
+                                                        <span
+                                                            className={`log-tag ${m.enabled ? 'log-tag-component' : 'opacity-40'}`}
+                                                        >
+                                                            {m.name}
+                                                        </span>
+                                                    </Tooltip>
                                                 ))}
                                             </div>
                                         )}

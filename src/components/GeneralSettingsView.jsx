@@ -15,7 +15,7 @@ import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
-import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale } from '../utils/fontScale.js';
+import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale, DEFAULT_FONT_SCALE } from '../utils/fontScale.js';
 
 const NUMBER_FORMAT_OPTIONS = [
     { value: 'en', labelKey: 'generalSettings:fields.numberFormat.options.en' },
@@ -120,7 +120,18 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [wssPort, setWssPort] = useState(28443);
 
     // Fields — new UI
-    const [fontScale, setFontScale] = useState("default");
+    // Font scale is a locally-persisted preference (localStorage) applied
+    // globally at boot. Resolve the initial value from the stored choice first,
+    // then the saved config, so the very first render already holds the right
+    // value. Previously the state started as "default", and the apply effect
+    // below ran with that default on mount — flashing the font back to default
+    // AND overwriting the stored preference before it could be read.
+    const [fontScale, setFontScale] = useState(() => {
+        const stored = getStoredFontScale();
+        if (stored) return stored;
+        if (isKnownFontScale(generalSettings.fontscale)) return generalSettings.fontscale;
+        return DEFAULT_FONT_SCALE;
+    });
     const [appLanguage, setAppLanguage] = useState("en");
     const [numberFormat, setNumberFormat] = useState("en");
     // dynamicBackground is now read from Zustand store (see line ~52)
@@ -195,8 +206,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setClientConnectionBuffer(generalSettings.clientconnectionbuffer);
         setSinglePort(generalSettings.singleport || false);
         setWssPort(generalSettings.wssport || 28443);
-        // New fields
-        setFontScale(generalSettings.fontscale || "default");
+        // New fields — prefer the locally-persisted scale so re-entering the
+        // view (or clicking Reset) doesn't undo a choice the user already applied.
+        setFontScale(getStoredFontScale() || (isKnownFontScale(generalSettings.fontscale) ? generalSettings.fontscale : DEFAULT_FONT_SCALE));
         setAppLanguage(generalSettings.applanguage || "en");
         setNumberFormat(generalSettings.numberformat || "en");
         // dynamicBackground + variant are managed via Zustand store — skip resetting
@@ -370,19 +382,12 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     }, []);
 
     // Apply the font scale to the whole document whenever the choice changes.
+    // The initial value is already resolved from storage/config above, so this
+    // only ever persists a real user choice — it can no longer clobber the
+    // stored preference on mount.
     useEffect(() => {
         applyFontScale(fontScale);
     }, [fontScale]);
-
-    // On mount, prefer the persisted choice, then fall back to the saved config.
-    useEffect(() => {
-        const stored = getStoredFontScale();
-        if (stored) {
-            setFontScale(stored);
-        } else if (isKnownFontScale(generalSettings.fontscale)) {
-            setFontScale(generalSettings.fontscale);
-        }
-    }, []);
 
     // --- Helpers for t() keys using namespace ---
     const tgs = (key, opts) => t(`generalSettings:${key}`, opts);

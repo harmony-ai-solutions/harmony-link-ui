@@ -574,15 +574,6 @@ input[type="checkbox"]:disabled:hover {
     height: 40px;
 }
 
-.nav-lang-btn .nav-lang-icon {
-    color: var(--color-text-muted);
-    transition: color 0.35s var(--ease-spring);
-}
-
-.nav-lang-btn:hover .nav-lang-icon {
-    color: var(--color-text-primary);
-}
-
 .nav-lang-flag {
     border-radius: 3px;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
@@ -875,11 +866,6 @@ input[type="checkbox"]:disabled:hover {
         padding: 0 8px;
         border-radius: 6px;
         height: 32px;
-    }
-
-    /* Drop the globe icon on ultra-compact widths — flag + code remain */
-    .nav-lang-btn .nav-lang-icon {
-        display: none;
     }
 
     .nav-lang-btn .nav-lang-flag {

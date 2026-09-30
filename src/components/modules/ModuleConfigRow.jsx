@@ -8,6 +8,7 @@ import {
 } from '../../utils/integrationMatcher.js';
 import { controlIntegrationInstance } from '../../services/management/integrationsService.js';
 import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 // Helper: format provider display text for a config
 const getProviderDisplay = (config, moduleType) => {
@@ -159,7 +160,11 @@ export default function ModuleConfigRow({
             <div className="module-config-row-tint" />
 
             {/* ── Config sub-row ─────────────────────────────────────── */}
-            <div className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5">
+            {/* The whole sub-row toggles the inline editor, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 cursor-pointer"
+                onClick={rowToggleHandler(onToggleEditor)}
+            >
 
                 {/* [1] Config name */}
                 <span

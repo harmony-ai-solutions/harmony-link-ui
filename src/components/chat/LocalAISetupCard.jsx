@@ -146,7 +146,7 @@ const LocalAISetupCard = () => {
             <div className="pt-3 border-t border-white/5">
                 <button
                     type="button"
-                    className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-accent-primary transition-colors"
+                    className="flex items-center gap-2 w-full text-left text-xs font-semibold text-text-secondary hover:text-accent-primary transition-colors"
                     onClick={() => setShowBundles((v) => !v)}
                     aria-expanded={showBundles}
                 >

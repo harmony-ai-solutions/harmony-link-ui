@@ -3,6 +3,7 @@ import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../se
 import { openSystemUrl } from '../../services/management/systemService.js';
 import RenameInstanceModal from './RenameInstanceModal.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, onRename, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
@@ -152,7 +153,12 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             <div className="instance-row-tint" />
 
             {/* ── Main instance row ─────────────────────────────────────── */}
-            <div className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 flex-wrap">
+            {/* Clicking the row (outside its controls) toggles the container
+                details, so the small chevron is no longer the only target. */}
+            <div
+                className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 flex-wrap cursor-pointer"
+                onClick={rowToggleHandler(() => setShowContainers((v) => !v))}
+            >
 
                 {/* [1] Status dot */}
                 <span className={`flex-shrink-0 w-2 h-2 rounded-full ${getStatusDotClass(instance.status)}`} />

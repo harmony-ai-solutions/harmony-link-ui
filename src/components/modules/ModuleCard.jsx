@@ -3,6 +3,7 @@ import ModuleConfigRow from './ModuleConfigRow.jsx';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
 import { BrainIcon, SpeakerIcon, MicrophoneIcon, BookIcon, ActivityIcon, PuzzleIcon, EyeIcon, PaletteIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const MODULE_ICON_MAP = {
     brain: BrainIcon,
@@ -42,6 +43,9 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
     };
 
     const handleAddConfig = () => {
+        // Expand the list too, otherwise the new-config row it opens would be
+        // hidden while the card is collapsed (a silent no-op for the user).
+        setShowConfigs(true);
         setCreatingConfig({ mode: 'create', baseConfig: null });
     };
 
@@ -58,7 +62,11 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
             <div className="module-row-stripe" />
 
             {/* ── Main Row ──────────────────────────────────────────────── */}
-            <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+            {/* The whole row toggles the config list, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-3 pl-5 pr-4 py-3 cursor-pointer"
+                onClick={rowToggleHandler(() => setShowConfigs((v) => !v))}
+            >
 
                 {/* [1] Chevron toggle */}
                 <Tooltip content={showConfigs ? 'Hide Configurations' : 'Show Configurations'}>

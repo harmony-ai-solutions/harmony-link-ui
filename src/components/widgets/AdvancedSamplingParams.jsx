@@ -107,7 +107,7 @@ const AdvancedSamplingParams = ({ extraParams = {}, onChange, presetParams = {} 
             <button
                 type="button"
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="flex items-center gap-1 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-2"
+                className="flex items-center gap-1 w-full text-left text-sm font-medium text-text-secondary hover:text-text-primary transition-colors mb-2"
             >
                 <svg className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

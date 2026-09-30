@@ -372,7 +372,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                 <div>
                                     <button
                                         onClick={() => setShowVlAnalysis(!showVlAnalysis)}
-                                        className="flex items-center gap-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
+                                        className="flex items-center gap-2 w-full text-left text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
                                     >
                                         <svg
                                             className={`w-4 h-4 transition-transform ${showVlAnalysis ? 'rotate-90' : ''}`}

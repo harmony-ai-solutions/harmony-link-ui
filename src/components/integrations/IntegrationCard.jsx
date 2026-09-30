@@ -3,6 +3,7 @@ import { controlIntegrationInstance, getDockerStatus, renameIntegrationInstance 
 import ErrorDialog from '../modals/ErrorDialog';
 import InstanceList from './InstanceList';
 import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, onCreateInstance, onRefreshInstances }) => {
     const [showInstances, setShowInstances] = useState(false);
@@ -121,7 +122,11 @@ const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, o
             <div className="integration-row-stripe" />
 
             {/* ── Main Row ──────────────────────────────────────────────── */}
-            <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+            {/* The whole row toggles the instance list, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-3 pl-5 pr-4 py-3 cursor-pointer"
+                onClick={rowToggleHandler(() => setShowInstances((v) => !v))}
+            >
 
                 {/* [1] Chevron toggle */}
                 <Tooltip content={showInstances ? 'Hide Instances' : 'Show Instances'}>

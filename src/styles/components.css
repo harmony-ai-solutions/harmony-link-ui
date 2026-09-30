@@ -3947,24 +3947,43 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 }
 
 /* ── Collapse toggle (footer of the rail) ─────────────────────────── */
+/* Deliberately quiet at rest: the old design gave it a filled translucent
+   surface + accent border, i.e. the same visual language the app uses for a
+   *selected* control — so it always looked pressed/active. It now mirrors the
+   nav items instead (transparent at rest, glass fill only on hover), with a
+   hairline above it to separate it from the scrolling nav. */
 .app-sidebar-toggle {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.6rem;
     flex-shrink: 0;
     padding: 0.7rem 0.85rem;
     margin: 0.5rem 0.75rem 0.85rem;
-    border: 1px solid var(--color-border-glass);
-    border-radius: 10px;
-    background: var(--color-background-surface-translucent);
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
     color: var(--color-text-muted);
-    font-size: 0.75rem;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.8125rem;
     font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     cursor: pointer;
-    transition: background 0.28s var(--ease-spring), color 0.28s var(--ease-spring),
-                border-color 0.28s var(--ease-spring);
+    transition: background 0.25s var(--ease-spring), color 0.25s var(--ease-spring),
+                border-color 0.25s var(--ease-spring), transform 0.25s var(--ease-spring);
     -webkit-tap-highlight-color: transparent;
+}
+
+/* Hairline separating the toggle from the nav above (sits in the top gap). */
+.app-sidebar-toggle::before {
+    content: '';
+    position: absolute;
+    top: -0.25rem;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border-glass);
 }
 
 .app-sidebar-toggle:hover {
@@ -3973,9 +3992,21 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     color: var(--color-text-primary);
 }
 
+.app-sidebar-toggle:active {
+    transform: scale(0.985);
+}
+
+/* Keyboard-only affordance, so the transparent rest state stays clean. */
+.app-sidebar-toggle:focus-visible {
+    outline: none;
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 0 2px var(--color-glow-accent-soft);
+}
+
 .app-sidebar-toggle-icon {
     flex-shrink: 0;
-    transition: transform 0.32s var(--ease-spring);
+    color: currentColor;
+    transition: transform 0.32s var(--ease-spring), color 0.25s var(--ease-spring);
 }
 
 .app-sidebar-toggle-icon-flip {

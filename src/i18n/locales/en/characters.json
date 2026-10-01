@@ -103,12 +103,58 @@
   "tabs": {
     "basic": "Basic Info",
     "extended": "Extended Info",
+    "profile": "Profile",
     "greeting": "Greeting",
     "lorebook": "Lorebook",
     "attribution": "Attribution",
-    "advanced": "AI Behaviour",
+    "behavior": "AI Behaviour",
+    "advanced": "Advanced",
     "lifecycle": "AI Lifecycle",
     "images": "Images"
+  },
+  "tabInfo": {
+    "basic": {
+      "title": "Identity & Card",
+      "desc": "Who this AI character is, plus the card's author and metadata."
+    },
+    "greeting": {
+      "title": "Greetings & Dialogue",
+      "desc": "The opening messages and example lines the AI learns to speak from."
+    },
+    "lorebook": {
+      "title": "Lorebook",
+      "desc": "Background knowledge the AI recalls only when it is relevant."
+    },
+    "behavior": {
+      "title": "AI Behaviour",
+      "desc": "How the AI writes, how often it speaks, and how it acts on its own."
+    },
+    "advanced": {
+      "title": "Raw Card Data",
+      "desc": "Low-level card fields preserved for export. Edit with care."
+    },
+    "images": {
+      "title": "Images & Vision",
+      "desc": "Character artwork, and the vision service used to analyse it."
+    }
+  },
+  "sections": {
+    "identity": "Identity",
+    "cardInfo": "Card Info",
+    "aiPrompt": "AI Prompt",
+    "chatBehavior": "Chat Behavior",
+    "aiLifecycle": "AI Lifecycle",
+    "rawCardData": "Raw Card Data",
+    "provenance": "Card Provenance",
+    "vision": "Vision",
+    "characterImages": "Character Images",
+    "collapse": "Collapse section",
+    "expand": "Expand section"
+  },
+  "page": {
+    "back": "Back to AI Characters",
+    "sections": "Sections",
+    "modeHint": "Some advanced sections are hidden in Simple mode. Switch to Pro or Developer in Settings → General to reveal them."
   },
   "fields": {
     "name": "Name",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import { listModuleConfigs } from '../../services/management/moduleService.js';
@@ -10,6 +10,7 @@ import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import NumberStepper from '../ui/NumberStepper.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore';
 
 // ---------------------------------------------------------------------------
 // Inline helpers (Character Card V3 data editing)
@@ -95,6 +96,52 @@ function StringListEditor({ values, onChange, placeholder, addLabel }) {
     );
 }
 
+/** Small circular "?" that reveals a field's help text as a themed tooltip. */
+function InfoDot({ hint }) {
+    if (!hint) return null;
+    return (
+        <Tooltip content={hint}>
+            <span className="char-editor-info" tabIndex={0} aria-label={hint}>?</span>
+        </Tooltip>
+    );
+}
+
+/**
+ * Field label with an optional info dot. Replaces the old always-visible hint
+ * paragraph so the form reads cleanly and help text is one hover away.
+ */
+function FieldLabel({ children, hint, unit, required }) {
+    return (
+        <label className="character-editor-label">
+            {children}
+            {required && <span className="character-editor-label-required">*</span>}
+            {unit && <span className="character-editor-label-unit">{unit}</span>}
+            <InfoDot hint={hint} />
+        </label>
+    );
+}
+
+/** Collapsible section wrapper — the whole header row toggles the body. */
+function Section({ id, title, icon, open, onToggle, children }) {
+    return (
+        <div className="character-editor-section">
+            <button
+                type="button"
+                className="char-editor-section-head"
+                aria-expanded={open}
+                onClick={() => onToggle(id)}
+            >
+                {icon}
+                {title}
+                <svg className="char-editor-section-chevron w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {open && <div className="p-4">{children}</div>}
+        </div>
+    );
+}
+
 /**
  * Modal editor for character profiles
  * @param {Object} props
@@ -112,10 +159,26 @@ function StringListEditor({ values, onChange, placeholder, addLabel }) {
  *   the editor calls `onSave(payload)` instead of its own store save and only
  *   closes on success; thrown errors surface in the editor's error UI.
  */
-export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [], personaMode = false, nameReadOnly = false, onSave = null }) {
+export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [], personaMode = false, nameReadOnly = false, onSave = null, variant = 'modal' }) {
     const { t } = useTranslation('characters');
     const [activeTab, setActiveTab] = useState('basic');
     const isReferenced = Array.isArray(referencedEntities) && referencedEntities.length > 0;
+    const mode = useUIModeStore((state) => state.mode);
+    const isPage = variant === 'page';
+
+    // Collapsible sections. Core sections start open so nothing is hidden on
+    // first sight; technical/rarely-edited sections start closed to keep the
+    // form calm. The user can toggle any of them freely.
+    const [openSections, setOpenSections] = useState({
+        identity: true,
+        cardInfo: true,
+        aiPrompt: true,
+        chatBehavior: true,
+        aiLifecycle: true,
+        rawCardData: false,
+    });
+    const toggleSection = (id) =>
+        setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
 
     const createProfile = useCharacterProfileStore(state => state.createProfile);
     const updateProfile = useCharacterProfileStore(state => state.updateProfile);
@@ -386,40 +449,67 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
         }
     };
 
+    // Each tab declares the lowest UI mode that can see it (`minMode`), so the
+    // Simple/Pro/Developer setting hides advanced sections for normal users.
+    // Nothing is deleted — Pro/Dev users still reach every field.
     const tabs = [
         {
-            id: 'basic', label: t('tabs.basic'),
+            id: 'basic', label: t('tabs.profile'), minMode: 'simple',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
         },
         {
-            id: 'images', label: t('tabs.images'), hidden: !profile,
-            icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        },
-        {
-            id: 'greeting', label: t('tabs.greeting'),
+            id: 'greeting', label: t('tabs.greeting'), minMode: 'simple',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
         },
         {
-            id: 'lorebook', label: t('tabs.lorebook'),
+            id: 'lorebook', label: t('tabs.lorebook'), minMode: 'pro',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
         },
         {
-            // 2-3: lifecycle + advanced are hidden for personas (decision 2) —
-            // personas never run autonomous lifecycle beats and the advanced AI
-            // behavior fields stay card-only. The values still round-trip on
-            // save via the editor's full-field state.
-            id: 'lifecycle', label: t('tabs.lifecycle'), hidden: personaMode,
+            // 2-3: the behaviour + raw-card tabs are hidden for personas
+            // (decision 2) — personas never run autonomous lifecycle beats and
+            // the raw card fields stay card-only. The values still round-trip
+            // on save via the editor's full-field state.
+            id: 'behavior', label: t('tabs.behavior'), minMode: 'pro', personaHidden: true,
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
         },
         {
-            id: 'advanced', label: t('tabs.advanced'), hidden: personaMode,
+            id: 'advanced', label: t('tabs.advanced'), minMode: 'dev', personaHidden: true,
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
         },
         {
-            id: 'attribution', label: t('tabs.attribution'),
-            icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            id: 'images', label: t('tabs.images'), minMode: 'simple', hidden: !profile,
+            icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
         },
     ];
+
+    // Tabs actually shown: not hidden for the profile type, and permitted by
+    // the active UI mode. Memoised so the downgrade guard below only runs when
+    // the mode / profile actually change.
+    const visibleTabs = useMemo(
+        () => tabs.filter((tab) =>
+            !tab.hidden && !(personaMode && tab.personaHidden) && isModeAllowed(mode, tab.minMode),
+        ),
+        // `tabs` is rebuilt each render; its content only depends on `t`.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [mode, personaMode, profile, t],
+    );
+
+    // Downgrade safety — if the active tab became hidden (mode switched down,
+    // or persona mode), fall back to the Profile tab.
+    useEffect(() => {
+        if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+            setActiveTab('basic');
+        }
+    }, [visibleTabs, activeTab]);
+
+    // Live preview avatar — the profile's primary image, when one exists.
+    const previewImage = useMemo(() => {
+        const images = profile?.images;
+        if (!Array.isArray(images) || images.length === 0) return null;
+        const primary = images.find((img) => img.is_primary) || images[0];
+        return primary?.url || primary?.image_url || null;
+    }, [profile]);
 
     // Read-only provenance display helper. card_provenance is import-managed
     // (append-only) so it is never edited or sent back on save.
@@ -448,85 +538,165 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
         switch (activeTab) {
             case 'basic':
                 return (
-                    <div className="space-y-5">
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">
-                                {t('fields.name')}
-                                <span className="character-editor-label-required">*</span>
-                            </label>
-                            <Tooltip content={nameReadOnly ? t('personas:editor.nameLocked') : ''}>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    onBlur={(e) => validateNameAndUpdate(e.target.value)}
-                                    required
-                                    disabled={nameReadOnly}
-                                    placeholder={t('fields.namePlaceholder')}
-                                    className="input-field w-full disabled:opacity-60 disabled:cursor-not-allowed"
-                                />
-                            </Tooltip>
-                            {nameReadOnly && (
-                                <p className="character-editor-hint mt-1">{t('personas:editor.nameLocked')}</p>
-                            )}
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.nickname')}</label>
-                            <p className="character-editor-hint">{t('fields.nicknameHint')}</p>
-                            <input
-                                type="text"
-                                name="nickname"
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                placeholder={t('fields.nicknamePlaceholder')}
-                                className="input-field w-full"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.description')}</label>
-                            <p className="character-editor-hint">{t('fields.descriptionHint')}</p>
-                            <textarea
-                                name="description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                rows={3}
-                                placeholder={t('fields.descriptionPlaceholder')}
-                                className="input-field w-full resize-none"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.personality')}</label>
-                            <p className="character-editor-hint">{t('fields.personalityHint')}</p>
-                            <textarea
-                                name="personality"
-                                value={personality}
-                                onChange={(e) => setPersonality(e.target.value)}
-                                rows={4}
-                                placeholder={t('fields.personalityPlaceholder')}
-                                className="input-field w-full resize-none"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.voiceCharacteristics')}</label>
-                            <p className="character-editor-hint">{t('fields.voiceCharacteristicsHint')}</p>
-                            <textarea
-                                name="voice_characteristics"
-                                value={voiceCharacteristics}
-                                onChange={(e) => setVoiceCharacteristics(e.target.value)}
-                                rows={2}
-                                placeholder={t('fields.voiceCharacteristicsPlaceholder')}
-                                className="input-field w-full resize-none"
-                            />
-                        </div>
+                    <div className="space-y-4">
+                        <Section
+                            id="identity"
+                            title={t('sections.identity')}
+                            open={openSections.identity}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+                        >
+                            <div className="space-y-4">
+                                <div className="character-editor-field-group">
+                                    <FieldLabel required>{t('fields.name')}</FieldLabel>
+                                    <Tooltip content={nameReadOnly ? t('personas:editor.nameLocked') : ''}>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            onBlur={(e) => validateNameAndUpdate(e.target.value)}
+                                            required
+                                            disabled={nameReadOnly}
+                                            placeholder={t('fields.namePlaceholder')}
+                                            className="input-field w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                                        />
+                                    </Tooltip>
+                                    {nameReadOnly && (
+                                        <p className="character-editor-hint mt-1">{t('personas:editor.nameLocked')}</p>
+                                    )}
+                                </div>
+                                <div className="char-editor-grid-2">
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('fields.nicknameHint')}>{t('fields.nickname')}</FieldLabel>
+                                        <input
+                                            type="text"
+                                            name="nickname"
+                                            value={nickname}
+                                            onChange={(e) => setNickname(e.target.value)}
+                                            placeholder={t('fields.nicknamePlaceholder')}
+                                            className="input-field w-full"
+                                        />
+                                    </div>
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('fields.voiceCharacteristicsHint')}>{t('fields.voiceCharacteristics')}</FieldLabel>
+                                        <textarea
+                                            name="voice_characteristics"
+                                            value={voiceCharacteristics}
+                                            onChange={(e) => setVoiceCharacteristics(e.target.value)}
+                                            rows={2}
+                                            placeholder={t('fields.voiceCharacteristicsPlaceholder')}
+                                            className="input-field w-full resize-none"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.descriptionHint')}>{t('fields.description')}</FieldLabel>
+                                    <textarea
+                                        name="description"
+                                        value={description}
+                                        onChange={(e) => setDescription(e.target.value)}
+                                        rows={3}
+                                        placeholder={t('fields.descriptionPlaceholder')}
+                                        className="input-field w-full resize-none"
+                                    />
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.personalityHint')}>{t('fields.personality')}</FieldLabel>
+                                    <textarea
+                                        name="personality"
+                                        value={personality}
+                                        onChange={(e) => setPersonality(e.target.value)}
+                                        rows={4}
+                                        placeholder={t('fields.personalityPlaceholder')}
+                                        className="input-field w-full resize-none"
+                                    />
+                                </div>
+                            </div>
+                        </Section>
+
+                        <Section
+                            id="cardInfo"
+                            title={t('sections.cardInfo')}
+                            open={openSections.cardInfo}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" /></svg>}
+                        >
+                            <div className="space-y-4">
+                                <div className="char-editor-grid-2">
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('fields.creatorHint')}>{t('fields.creator')}</FieldLabel>
+                                        <input
+                                            type="text"
+                                            name="creator"
+                                            value={creator}
+                                            onChange={(e) => setCreator(e.target.value)}
+                                            placeholder={t('fields.creatorPlaceholder')}
+                                            className="input-field w-full"
+                                        />
+                                    </div>
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('fields.characterVersionHint')}>{t('fields.characterVersion')}</FieldLabel>
+                                        <input
+                                            type="text"
+                                            name="character_version"
+                                            value={characterVersion}
+                                            onChange={(e) => setCharacterVersion(e.target.value)}
+                                            placeholder={t('fields.characterVersionPlaceholder')}
+                                            className="input-field w-full"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.creatorNotesHint')}>{t('fields.creatorNotes')}</FieldLabel>
+                                    <textarea
+                                        name="creator_notes"
+                                        value={creatorNotes}
+                                        onChange={(e) => setCreatorNotes(e.target.value)}
+                                        rows={3}
+                                        placeholder={t('fields.creatorNotesPlaceholder')}
+                                        className="input-field w-full resize-none"
+                                    />
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.tagsHint')}>{t('fields.tags')}</FieldLabel>
+                                    <StringListEditor
+                                        values={tags}
+                                        onChange={setTags}
+                                        placeholder={t('fields.tagsPlaceholder')}
+                                        addLabel={t('fields.addTag')}
+                                    />
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('provenance.hint')}>{t('sections.provenance')}</FieldLabel>
+                                    <div className="char-editor-grid-2">
+                                        <div>
+                                            <span className="text-xs text-text-muted">{t('provenance.source')}</span>
+                                            <p className="text-sm break-all">{renderProvenanceField('source')}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-text-muted">{t('provenance.creationDate')}</span>
+                                            <p className="text-sm">{renderProvenanceField('creation_date')}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-text-muted">{t('provenance.modificationDate')}</span>
+                                            <p className="text-sm">{renderProvenanceField('modification_date')}</p>
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-text-muted">{t('provenance.specVersion')}</span>
+                                            <p className="text-sm">{renderProvenanceField('spec_version')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Section>
                     </div>
                 );
             case 'greeting':
                 return (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                         <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.firstMessage')}</label>
-                            <p className="character-editor-hint">{t('fields.firstMessageHint')}</p>
+                            <FieldLabel hint={t('fields.firstMessageHint')}>{t('fields.firstMessage')}</FieldLabel>
                             <textarea
                                 name="first_mes"
                                 value={firstMes}
@@ -537,8 +707,7 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                             />
                         </div>
                         <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.exampleMessage')}</label>
-                            <p className="character-editor-hint">{t('fields.exampleMessageHint')}</p>
+                            <FieldLabel hint={t('fields.exampleMessageHint')}>{t('fields.exampleMessage')}</FieldLabel>
                             <textarea
                                 name="mes_example"
                                 value={mesExample}
@@ -549,8 +718,7 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                             />
                         </div>
                         <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.alternateGreetings')}</label>
-                            <p className="character-editor-hint">{t('fields.alternateGreetingsHint')}</p>
+                            <FieldLabel hint={t('fields.alternateGreetingsHint')}>{t('fields.alternateGreetings')}</FieldLabel>
                             <StringListEditor
                                 values={alternateGreetings}
                                 onChange={setAlternateGreetings}
@@ -566,105 +734,19 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                         <LorebookEditor value={characterBook} onChange={setCharacterBook} />
                     </div>
                 );
-            case 'attribution':
-                return (
-                    <div className="space-y-5">
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.creator')}</label>
-                            <p className="character-editor-hint">{t('fields.creatorHint')}</p>
-                            <input
-                                type="text"
-                                name="creator"
-                                value={creator}
-                                onChange={(e) => setCreator(e.target.value)}
-                                placeholder={t('fields.creatorPlaceholder')}
-                                className="input-field w-full"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.creatorNotes')}</label>
-                            <p className="character-editor-hint">{t('fields.creatorNotesHint')}</p>
-                            <textarea
-                                name="creator_notes"
-                                value={creatorNotes}
-                                onChange={(e) => setCreatorNotes(e.target.value)}
-                                rows={3}
-                                placeholder={t('fields.creatorNotesPlaceholder')}
-                                className="input-field w-full resize-none"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.characterVersion')}</label>
-                            <p className="character-editor-hint">{t('fields.characterVersionHint')}</p>
-                            <input
-                                type="text"
-                                name="character_version"
-                                value={characterVersion}
-                                onChange={(e) => setCharacterVersion(e.target.value)}
-                                placeholder={t('fields.characterVersionPlaceholder')}
-                                className="input-field w-full"
-                            />
-                        </div>
-                        <div className="character-editor-field-group">
-                            <label className="character-editor-label">{t('fields.tags')}</label>
-                            <p className="character-editor-hint">{t('fields.tagsHint')}</p>
-                            <StringListEditor
-                                values={tags}
-                                onChange={setTags}
-                                placeholder={t('fields.tagsPlaceholder')}
-                                addLabel={t('fields.addTag')}
-                            />
-                        </div>
-                        <div className="character-editor-section">
-                            <div className="character-editor-section-header">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" />
-                                </svg>
-                                {t('provenance.title')}
-                            </div>
-                            <div className="space-y-2 p-4">
-                                <p className="character-editor-hint">
-                                    {t('provenance.hint')}{' '}
-                                    <span className="font-medium">{t('provenance.sourceAppendOnly')}</span>
-                                    {t('provenance.sourceAppendOnlyHint')}
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-                                    <div>
-                                        <span className="text-xs text-text-muted">{t('provenance.source')}</span>
-                                        <p className="text-sm break-all">{renderProvenanceField('source')}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-text-muted">{t('provenance.creationDate')}</span>
-                                        <p className="text-sm">{renderProvenanceField('creation_date')}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-text-muted">{t('provenance.modificationDate')}</span>
-                                        <p className="text-sm">{renderProvenanceField('modification_date')}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs text-text-muted">{t('provenance.specVersion')}</span>
-                                        <p className="text-sm">{renderProvenanceField('spec_version')}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'advanced':
+            case 'behavior':
                 return (
                     <div className="space-y-4">
-                        {/* AI Prompt section */}
-                        <div className="character-editor-section">
-                            <div className="character-editor-section-header">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                                {t('advanced.aiPromptSection')}
-                            </div>
-                            <div className="space-y-4 p-4">
+                        <Section
+                            id="aiPrompt"
+                            title={t('sections.aiPrompt')}
+                            open={openSections.aiPrompt}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                        >
+                            <div className="space-y-4">
                                 <div className="character-editor-field-group">
-                                    <label className="character-editor-label">{t('advanced.baseSystemPrompt')}</label>
-                                    <p className="character-editor-hint">{t('advanced.baseSystemPromptHint')}</p>
+                                    <FieldLabel hint={t('advanced.baseSystemPromptHint')}>{t('advanced.baseSystemPrompt')}</FieldLabel>
                                     <textarea
                                         name="base_prompt"
                                         value={basePrompt}
@@ -675,8 +757,7 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                     />
                                 </div>
                                 <div className="character-editor-field-group">
-                                    <label className="character-editor-label">{t('advanced.postHistoryInstructions')}</label>
-                                    <p className="character-editor-hint">{t('advanced.postHistoryInstructionsHint')}</p>
+                                    <FieldLabel hint={t('advanced.postHistoryInstructionsHint')}>{t('advanced.postHistoryInstructions')}</FieldLabel>
                                     <textarea
                                         name="post_history_instructions"
                                         value={postHistoryInstructions}
@@ -687,8 +768,7 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                     />
                                 </div>
                                 <div className="character-editor-field-group">
-                                    <label className="character-editor-label">{t('advanced.scenario')}</label>
-                                    <p className="character-editor-hint">{t('advanced.scenarioHint')}</p>
+                                    <FieldLabel hint={t('advanced.scenarioHint')}>{t('advanced.scenario')}</FieldLabel>
                                     <textarea
                                         name="scenario"
                                         value={scenario}
@@ -699,22 +779,18 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                     />
                                 </div>
                             </div>
-                        </div>
+                        </Section>
 
-                        {/* Chat Behavior section */}
-                        <div className="character-editor-section">
-                            <div className="character-editor-section-header">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                {t('advanced.chatBehaviorSection')}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 p-4">
+                        <Section
+                            id="chatBehavior"
+                            title={t('sections.chatBehavior')}
+                            open={openSections.chatBehavior}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
+                        >
+                            <div className="char-editor-grid-2">
                                 <div className="character-editor-field-group">
-                                    <label className="character-editor-label">
-                                        {t('advanced.typingSpeed')}
-                                        <span className="character-editor-label-unit">{t('advanced.wordsPerMinute')}</span>
-                                    </label>
+                                    <FieldLabel hint={t('advanced.typingSpeedHint')} unit={t('advanced.wordsPerMinute')}>{t('advanced.typingSpeed')}</FieldLabel>
                                     <NumberStepper
                                         name="typing_speed_wpm"
                                         value={typingSpeedWPM}
@@ -722,15 +798,10 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                         onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
                                         min={1}
                                         max={200}
-                                        className="w-full"
                                     />
-                                    <p className="character-editor-hint">{t('advanced.typingSpeedHint')}</p>
                                 </div>
                                 <div className="character-editor-field-group">
-                                    <label className="character-editor-label">
-                                        {t('advanced.audioResponseChance')}
-                                        <span className="character-editor-label-unit">0–100%</span>
-                                    </label>
+                                    <FieldLabel hint={t('advanced.audioChanceHint')} unit="%">{t('advanced.audioResponseChance')}</FieldLabel>
                                     <NumberStepper
                                         name="audio_response_chance_percent"
                                         value={audioResponseChance}
@@ -738,29 +809,72 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                         onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
                                         min={0}
                                         max={100}
-                                        className="w-full"
                                     />
-                                    <p className="character-editor-hint">{t('advanced.audioChanceHint')}</p>
                                 </div>
                             </div>
-                        </div>
+                        </Section>
+
+                        <Section
+                            id="aiLifecycle"
+                            title={t('sections.aiLifecycle')}
+                            open={openSections.aiLifecycle}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>}
+                        >
+                            <div className="space-y-4">
+                                <p className="character-editor-hint">{t('lifecycle.defaultsNote')}</p>
+                                <LifecycleConfigEditor
+                                    config={lifecycleConfig}
+                                    onChange={setLifecycleConfig}
+                                />
+                            </div>
+                        </Section>
                     </div>
                 );
-            case 'lifecycle':
+            case 'advanced':
                 return (
                     <div className="space-y-4">
-                        <div className="rounded-lg border border-accent-primary/30 bg-accent-primary/5 px-4 py-3 flex items-start gap-2.5">
-                            <svg className="w-4 h-4 text-accent-primary flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-                            </svg>
-                            <p className="text-xs text-text-secondary leading-relaxed">
-                                {t('lifecycle.defaultsNote')}
-                            </p>
-                        </div>
-                        <LifecycleConfigEditor
-                            config={lifecycleConfig}
-                            onChange={setLifecycleConfig}
-                        />
+                        <Section
+                            id="rawCardData"
+                            title={t('sections.rawCardData')}
+                            open={openSections.rawCardData}
+                            onToggle={toggleSection}
+                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>}
+                        >
+                            <div className="space-y-4">
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.groupOnlyGreetingsHint')}>{t('fields.groupOnlyGreetings')}</FieldLabel>
+                                    <StringListEditor
+                                        values={groupOnlyGreetings}
+                                        onChange={setGroupOnlyGreetings}
+                                        placeholder={t('fields.groupOnlyGreetingsPlaceholder')}
+                                        addLabel={t('fields.addGreeting')}
+                                    />
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('advanced.extensionsHint')}>{t('advanced.extensions')}</FieldLabel>
+                                    <textarea
+                                        name="extensions"
+                                        value={extensions}
+                                        onChange={(e) => setExtensions(e.target.value)}
+                                        rows={3}
+                                        placeholder="{ }"
+                                        className="input-field w-full resize-none font-mono text-sm"
+                                    />
+                                </div>
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('advanced.assetsHint')}>{t('advanced.assets')}</FieldLabel>
+                                    <textarea
+                                        name="assets"
+                                        value={assets}
+                                        onChange={(e) => setAssets(e.target.value)}
+                                        rows={3}
+                                        placeholder="[ ]"
+                                        className="input-field w-full resize-none font-mono text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </Section>
                     </div>
                 );
             case 'images':
@@ -802,6 +916,170 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
         }
     };
 
+    const headingTitle = personaMode
+        ? (profile ? t('personas:dialogs.editTitle') : t('personas:dialogs.createTitle'))
+        : (profile ? t('editor.editTitle') : t('editor.createTitle'));
+
+    // Content is wrapped in a <form> on every tab except Images (which owns its
+    // own actions), so pressing Enter in a field saves.
+    const renderContent = () => (
+        activeTab !== 'images' ? (
+            <form id="character-profile-form" onSubmit={handleSubmit}>
+                {renderTabContent()}
+            </form>
+        ) : (
+            renderTabContent()
+        )
+    );
+
+    // Primary Save action. `tutorialId` is only set on ONE instance per variant
+    // so the tutorial anchor stays unique.
+    const renderSaveButton = (tutorialId = null) => (
+        activeTab !== 'images' ? (
+            <button
+                type="submit"
+                form="character-profile-form"
+                data-tutorial-id={tutorialId || undefined}
+                disabled={saving}
+                className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {saving ? t('buttons.saving') : t('buttons.saveProfile')}
+            </button>
+        ) : (
+            <button
+                type="button"
+                onClick={(e) => handleSubmit(e)}
+                data-tutorial-id={tutorialId || undefined}
+                disabled={saving}
+                className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {saving ? t('buttons.saving') : t('buttons.saveProfile')}
+            </button>
+        )
+    );
+
+    // Distinct title + one-line description for the active tab, so each section
+    // is instantly recognisable instead of looking like the same wall of fields.
+    const activeTabInfo = tabs.find((tab) => tab.id === activeTab);
+
+    const renderError = () => error && (
+        <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--color-error)' }}>
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+        </div>
+    );
+
+    const errorDialog = (
+        <ErrorDialog
+            isOpen={isModalVisible}
+            title={t('editor.invalidInputTitle')}
+            message={modalMessage}
+            onClose={() => setIsModalVisible(false)}
+            type="error"
+        />
+    );
+
+    // ── Dedicated-page variant ──────────────────────────────────────────
+    // Full-page form: sticky top bar (back · avatar/name · Save), a horizontal
+    // tab strip beneath it, and a centred scrolling pane with a sticky footer.
+    if (isPage) {
+        return (
+            <div className="char-editor-page">
+                <div className="char-editor-page-topbar">
+                    <Tooltip content={t('page.back')}>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            data-tutorial-id="char-editor-close-btn"
+                            className="text-text-muted hover:text-text-primary transition-colors p-1.5 rounded-md hover:bg-white/5 flex-shrink-0"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                    </Tooltip>
+                    <div className="char-editor-page-avatar">
+                        {previewImage ? (
+                            <img src={previewImage} alt={name || profile?.name || ''} />
+                        ) : (
+                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="char-editor-page-title text-gradient-primary truncate">{headingTitle}</div>
+                        <div className="char-editor-page-sub truncate">
+                            {name || profile?.name || t('fields.namePlaceholder')}
+                            {profile && isReferenced && (
+                                <span className="italic"> · {t('liveLinkHint')}</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {profile && <CharacterCardExport profile={profile} variant="editor" />}
+                        {renderSaveButton('char-editor-save-btn')}
+                    </div>
+                </div>
+
+                <div className="char-editor-page-tabs">
+                    <div className="char-editor-tabbar">
+                        {visibleTabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                data-tutorial-id={`char-editor-tab-${tab.id}`}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`char-editor-tab ${activeTab === tab.id ? 'is-active' : ''}`}
+                            >
+                                {tab.icon}
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="char-editor-page-scroll">
+                    <div className="char-editor-page-pane">
+                        {activeTabInfo && (
+                            <div className="char-editor-page-tabhead">
+                                <h2 className="char-editor-page-tabtitle">
+                                    {t(`tabInfo.${activeTabInfo.id}.title`)}
+                                </h2>
+                                <p className="char-editor-page-tabdesc">
+                                    {t(`tabInfo.${activeTabInfo.id}.desc`)}
+                                </p>
+                            </div>
+                        )}
+                        {mode === 'simple' && (
+                            <p className="char-editor-page-hint mb-4">{t('page.modeHint')}</p>
+                        )}
+                        {renderContent()}
+                    </div>
+                </div>
+
+                <div className="char-editor-page-footer">
+                    <div className="flex-1">{renderError()}</div>
+                    <div className="flex gap-3 flex-shrink-0">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn-secondary px-5 py-2 text-sm font-semibold"
+                        >
+                            {t('buttons.cancel')}
+                        </button>
+                        {renderSaveButton()}
+                    </div>
+                </div>
+
+                {errorDialog}
+            </div>
+        );
+    }
+
+    // ── Modal variant (fallback — Personas tab + cross-view handoffs) ────
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="character-editor-modal w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -819,9 +1097,7 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-gradient-primary leading-tight">
-                                    {personaMode
-                                        ? (profile ? t('personas:dialogs.editTitle') : t('personas:dialogs.createTitle'))
-                                        : (profile ? t('editor.editTitle') : t('editor.createTitle'))}
+                                    {headingTitle}
                                 </h2>
                                 {profile && (
                                     <p className="text-xs text-text-muted mt-0.5">{profile.name}</p>
@@ -851,13 +1127,13 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                 </div>
 
                 {/* ── Tab Bar ────────────────────────────────────────────────── */}
-                <div className="character-editor-tab-bar">
-                    {tabs.map(tab => !tab.hidden && (
+                <div className="char-editor-tabbar">
+                    {visibleTabs.map(tab => (
                         <button
                             key={tab.id}
                             data-tutorial-id={`char-editor-tab-${tab.id}`}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`character-editor-tab ${activeTab === tab.id ? 'character-editor-tab-active' : 'character-editor-tab-inactive'}`}
+                            className={`char-editor-tab ${activeTab === tab.id ? 'is-active' : ''}`}
                         >
                             {tab.icon}
                             {tab.label}
@@ -867,27 +1143,12 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
 
                 {/* ── Tab Content ────────────────────────────────────────────── */}
                 <div className="flex-1 overflow-y-auto p-6 bg-background-base">
-                    {activeTab !== 'images' ? (
-                        <form id="character-profile-form" onSubmit={handleSubmit}>
-                            {renderTabContent()}
-                        </form>
-                    ) : (
-                        renderTabContent()
-                    )}
+                    {renderContent()}
                 </div>
 
                 {/* ── Footer ─────────────────────────────────────────────────── */}
                 <div className="character-editor-footer">
-                    <div className="flex-1">
-                        {error && (
-                            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--color-error)' }}>
-                                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {error}
-                            </div>
-                        )}
-                    </div>
+                    <div className="flex-1">{renderError()}</div>
                     <div className="flex gap-3 flex-shrink-0">
                         <button
                             type="button"
@@ -896,37 +1157,11 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                         >
                             {t('buttons.cancel')}
                         </button>
-                        {activeTab !== 'images' ? (
-                            <button
-                                type="submit"
-                                form="character-profile-form"
-                                data-tutorial-id="char-editor-save-btn"
-                                disabled={saving}
-                                className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {saving ? t('buttons.saving') : t('buttons.saveProfile')}
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={(e) => handleSubmit(e)}
-                                data-tutorial-id="char-editor-save-btn"
-                                disabled={saving}
-                                className="btn-primary px-5 py-2 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {saving ? t('buttons.saving') : t('buttons.saveProfile')}
-                            </button>
-                        )}
+                        {renderSaveButton('char-editor-save-btn')}
                     </div>
                 </div>
             </div>
-            <ErrorDialog
-                isOpen={isModalVisible}
-                title={t('editor.invalidInputTitle')}
-                message={modalMessage}
-                onClose={() => setIsModalVisible(false)}
-                type="error"
-            />
+            {errorDialog}
         </div>
     );
 }

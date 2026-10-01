@@ -273,6 +273,20 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
     };
 
+    // While editing, the editor takes over as a dedicated page — it replaces the
+    // card grid rather than covering it with a modal, so the form gets the full
+    // width/height of the content area.
+    if (showEditor) {
+        return (
+            <CharacterProfileEditor
+                variant="page"
+                profile={editingProfile}
+                referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
+                onClose={() => { setShowEditor(false); setEditingProfile(null); }}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-full">
             <div className="bg-background-surface px-6 py-4">
@@ -397,12 +411,6 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     </div>
                 )}
             </div>
-
-            {showEditor && (
-                <CharacterProfileEditor profile={editingProfile}
-                    referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
-                    onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
-            )}
 
             {showImport && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

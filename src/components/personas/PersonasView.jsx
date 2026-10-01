@@ -12,6 +12,7 @@ import CharacterCardExport from '../characters/CharacterCardExport.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * PersonasView — 3-1 (Soulbits Engine frontend).
@@ -408,7 +409,7 @@ export default function PersonasView() {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+                <div className="bg-background-surface px-6 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight">
@@ -482,7 +483,7 @@ export default function PersonasView() {
                 </div>
 
                 {/* Search + Card Size toolbar */}
-                <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
+                <div className="bg-background-surface px-6 py-4">
                     <div className="flex items-center justify-between gap-4">
                         {/* Search Bar */}
                         <div data-tutorial-id="persona-search" className="search-bar-wrapper">
@@ -502,19 +503,21 @@ export default function PersonasView() {
                         {/* Card Size Toggle */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-xs text-text-muted font-medium">{tes('cardSize')}</span>
-                            <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
+                            <div className="flex gap-1">
                                 {[
                                     { size: 'small', title: tes('cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
                                     { size: 'medium', title: tes('cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
                                     { size: 'large', title: tes('cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                                 ].map(({ size, title, path }) => (
-                                    <button key={size} onClick={() => handleCardSizeChange(size)}
-                                        className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
-                                        title={title}>
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d={path} />
-                                        </svg>
-                                    </button>
+                                    <Tooltip key={size} content={title}>
+                                        <button onClick={() => handleCardSizeChange(size)}
+                                            style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
+                                            className={`settings-option-chip p-2 rounded-md ${cardSize === size ? 'settings-option-chip-active' : 'text-text-muted hover:text-text-primary'}`}>
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d={path} />
+                                            </svg>
+                                        </button>
+                                    </Tooltip>
                                 ))}
                             </div>
                         </div>
@@ -572,8 +575,9 @@ export default function PersonasView() {
                                                     {persona.profile?.name || persona.alias || persona.id}
                                                 </h3>
                                                 {isBuiltIn && (
-                                                    <span className="text-[10px] text-text-muted italic font-medium flex-shrink-0"
-                                                        title={tes('dialogs.deleteBuiltIn')}>{tes('list.builtIn')}</span>
+                                                    <Tooltip content={tes('dialogs.deleteBuiltIn')}>
+                                                        <span className="text-[10px] text-text-muted italic font-medium flex-shrink-0">{tes('list.builtIn')}</span>
+                                                    </Tooltip>
                                                 )}
                                             </div>
                                             <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
@@ -582,11 +586,12 @@ export default function PersonasView() {
                                             <div className="flex gap-2 mt-3">
                                                 <button onClick={() => openEdit(persona)}
                                                     className="btn-secondary flex-1 text-xs py-1.5 px-2">{tes('buttons.edit')}</button>
-                                                <button onClick={() => handleDeleteRequest(persona)} disabled={isBuiltIn}
-                                                    className={`btn-danger flex-1 text-xs py-1.5 px-2 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
-                                                    title={isBuiltIn ? tes('dialogs.deleteBuiltIn') : ''}>
-                                                    {tes('buttons.delete')}
-                                                </button>
+                                                <Tooltip content={isBuiltIn ? tes('dialogs.deleteBuiltIn') : ''}>
+                                                    <button onClick={() => handleDeleteRequest(persona)} disabled={isBuiltIn}
+                                                        className={`btn-danger flex-1 text-xs py-1.5 px-2 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}>
+                                                        {tes('buttons.delete')}
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </div>

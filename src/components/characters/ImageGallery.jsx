@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import ImageUploadModal from './ImageUploadModal';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Component for displaying and managing a gallery of character images
@@ -175,23 +176,24 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         )}
 
                         {/* Three-dot menu button - top-right, subtle */}
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleMenu(image.id);
-                            }}
-                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded flex items-center justify-center
-                                bg-black/30 border border-white/10 text-white/70
-                                hover:opacity-100 hover:bg-black/60 hover:border-white/30
-                                transition-all duration-200 z-10"
-                            title={t('images.actions')}
-                        >
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="5" r="2" />
-                                <circle cx="12" cy="12" r="2" />
-                                <circle cx="12" cy="19" r="2" />
-                            </svg>
-                        </button>
+                        <Tooltip content={t('images.actions')}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMenu(image.id);
+                                }}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded flex items-center justify-center
+                                    bg-black/30 border border-white/10 text-white/70
+                                    hover:opacity-100 hover:bg-black/60 hover:border-white/30
+                                    transition-all duration-200 z-10"
+                            >
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="5" r="2" />
+                                    <circle cx="12" cy="12" r="2" />
+                                    <circle cx="12" cy="19" r="2" />
+                                </svg>
+                            </button>
+                        </Tooltip>
 
                         {/* Dropdown menu */}
                         {openMenuId === image.id && (
@@ -261,16 +263,17 @@ export default function ImageGallery({ profileId, visionConfigId }) {
 
                         {/* VL badge - bottom-right, half-transparent, passive indicator */}
                         {image.vl_model && (
-                            <div
-                                className="absolute bottom-2 right-2 bg-purple-600/50 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 pointer-events-none"
-                                title={t('images.analyzedBy', { model: image.vl_model, interpretation: image.vl_model_interpretation || '' })}
-                            >
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                VL
-                            </div>
+                            <Tooltip content={t('images.analyzedBy', { model: image.vl_model, interpretation: image.vl_model_interpretation || '' })}>
+                                <div
+                                    className="absolute bottom-2 right-2 bg-purple-600/50 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 pointer-events-none"
+                                >
+                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    VL
+                                </div>
+                            </Tooltip>
                         )}
                     </div>
                 ))}
@@ -369,7 +372,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                 <div>
                                     <button
                                         onClick={() => setShowVlAnalysis(!showVlAnalysis)}
-                                        className="flex items-center gap-2 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
+                                        className="flex items-center gap-2 w-full text-left text-xs font-medium text-text-secondary hover:text-text-primary transition-colors"
                                     >
                                         <svg
                                             className={`w-4 h-4 transition-transform ${showVlAnalysis ? 'rotate-90' : ''}`}

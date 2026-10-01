@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import ModuleConfigRow from './ModuleConfigRow.jsx';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
 import { BrainIcon, SpeakerIcon, MicrophoneIcon, BookIcon, ActivityIcon, PuzzleIcon, EyeIcon, PaletteIcon } from '../../constants/icons.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const MODULE_ICON_MAP = {
     brain: BrainIcon,
@@ -41,6 +43,9 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
     };
 
     const handleAddConfig = () => {
+        // Expand the list too, otherwise the new-config row it opens would be
+        // hidden while the card is collapsed (a silent no-op for the user).
+        setShowConfigs(true);
         setCreatingConfig({ mode: 'create', baseConfig: null });
     };
 
@@ -57,28 +62,33 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
             <div className="module-row-stripe" />
 
             {/* ── Main Row ──────────────────────────────────────────────── */}
-            <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+            {/* The whole row toggles the config list, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-3 pl-5 pr-4 py-3 cursor-pointer"
+                onClick={rowToggleHandler(() => setShowConfigs((v) => !v))}
+            >
 
                 {/* [1] Chevron toggle */}
-                <button
-                    data-tutorial-id={`module-card-expand-${moduleType}`}
-                    onClick={() => setShowConfigs(!showConfigs)}
-                    className="module-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
-                    title={showConfigs ? 'Hide Configurations' : 'Show Configurations'}
-                >
-                    <svg
-                        className="w-4 h-4"
-                        style={{
-                            transform: showConfigs ? 'rotate(90deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s ease',
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                <Tooltip content={showConfigs ? 'Hide Configurations' : 'Show Configurations'}>
+                    <button
+                        data-tutorial-id={`module-card-expand-${moduleType}`}
+                        onClick={() => setShowConfigs(!showConfigs)}
+                        className="module-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
+                        <svg
+                            className="w-4 h-4"
+                            style={{
+                                transform: showConfigs ? 'rotate(90deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease',
+                            }}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </Tooltip>
 
                 {/* [2] Module identity — emoji + name + description */}
                 <div className="flex flex-col min-w-0 flex-1">
@@ -136,13 +146,14 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                                         : 'New Configuration'}
                                 </span>
                                 <div className="flex-1" />
-                                <button
-                                    onClick={() => setCreatingConfig(null)}
-                                    className="module-action-btn-danger"
-                                    title="Cancel"
-                                >
-                                    Cancel
-                                </button>
+                                <Tooltip content="Cancel">
+                                    <button
+                                        onClick={() => setCreatingConfig(null)}
+                                        className="module-action-btn-danger"
+                                    >
+                                        Cancel
+                                    </button>
+                                </Tooltip>
                             </div>
 
                             {/* Inline editor — immediately expanded */}

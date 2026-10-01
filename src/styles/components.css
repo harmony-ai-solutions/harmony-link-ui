@@ -95,6 +95,7 @@ input[type="checkbox"]:disabled:hover {
 
 .nav-glass-bar {
     position: relative;
+    flex-shrink: 0;
     height: 4rem;
     /* Theme-adaptive glass: blends the theme's base/surface/elevated colors with transparency */
     background: linear-gradient(
@@ -474,6 +475,112 @@ input[type="checkbox"]:disabled:hover {
     }
 }
 
+/* Character-card kebab menu — compact, left-aligned, solid surface.
+   NOTE: Tailwind color utilities are no-ops in this project (the TW4 @theme
+   carries no colors), so this menu is styled with theme variables in CSS. */
+.character-card-menu {
+    position: fixed;
+    z-index: 10000;
+    width: 176px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-xl), 0 0 24px rgba(0, 0, 0, 0.22);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    animation: nav-menu-panel-in 0.14s ease-out;
+}
+
+.character-card-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    text-align: left;
+    color: var(--color-text-primary);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.character-card-menu-item:hover,
+.character-card-menu-item:focus-visible {
+    background: color-mix(in srgb, var(--color-accent-primary) 16%, transparent);
+    color: var(--color-accent-primary);
+    outline: none;
+}
+
+.character-card-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.character-card-menu-item-danger {
+    color: var(--color-error);
+}
+
+.character-card-menu-item-danger:hover,
+.character-card-menu-item-danger:focus-visible {
+    background: color-mix(in srgb, var(--color-error) 16%, transparent);
+    color: var(--color-error);
+}
+
+.character-card-menu-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.character-card-menu-separator {
+    height: 1px;
+    margin: 3px 2px;
+    background: var(--color-border-glass);
+}
+
+/* "Start chatting" CTA on a character card — the one-click path from a card
+   to a conversation. Full-width, accent-filled, sits under the description. */
+.character-card-chat-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring), letter-spacing 0.2s var(--ease-spring);
+}
+
+.character-card-chat-btn:hover {
+    transform: translateY(-1px);
+    letter-spacing: 0.04em;
+    box-shadow: 0 0 18px var(--color-glow-accent-soft), 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.character-card-chat-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.character-card-chat-btn:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+}
+
 /* Menu item — icon + label + active indicator */
 .nav-menu-item {
     display: flex;
@@ -571,15 +678,6 @@ input[type="checkbox"]:disabled:hover {
     width: auto;
     min-width: 92px;
     height: 40px;
-}
-
-.nav-lang-btn .nav-lang-icon {
-    color: var(--color-text-muted);
-    transition: color 0.35s var(--ease-spring);
-}
-
-.nav-lang-btn:hover .nav-lang-icon {
-    color: var(--color-text-primary);
 }
 
 .nav-lang-flag {
@@ -874,11 +972,6 @@ input[type="checkbox"]:disabled:hover {
         padding: 0 8px;
         border-radius: 6px;
         height: 32px;
-    }
-
-    /* Drop the globe icon on ultra-compact widths — flag + code remain */
-    .nav-lang-btn .nav-lang-icon {
-        display: none;
     }
 
     .nav-lang-btn .nav-lang-flag {
@@ -2169,12 +2262,15 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .character-editor-tab-bar {
     display: flex;
+    gap: 0.375rem;
     background: transparent;
     backdrop-filter: blur(8px) saturate(1.1);
     -webkit-backdrop-filter: blur(8px) saturate(1.1);
     flex-shrink: 0;
 }
 
+/* Tab-bar chips — same treatment as the settings option chips: a subtle
+   light-grey hairline that becomes an accent border when active. */
 .character-editor-tab {
     display: inline-flex;
     align-items: center;
@@ -2182,18 +2278,22 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     padding: 0.65rem 1.25rem;
     font-size: 0.8125rem;
     font-weight: 600;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9px;
     cursor: pointer;
     transition: color 0.2s var(--ease-spring),
-                background-color 0.2s var(--ease-spring);
+                background-color 0.2s var(--ease-spring),
+                border-color 0.2s var(--ease-spring),
+                box-shadow 0.2s var(--ease-spring);
     white-space: nowrap;
     position: relative;
 }
 
 .character-editor-tab-active {
     color: var(--color-accent-primary);
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: inset 0 -2px 0 var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+    box-shadow: 0 0 18px var(--color-glow-accent-soft);
 }
 
 .character-editor-tab-inactive {
@@ -2203,7 +2303,17 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .character-editor-tab-inactive:hover {
     color: var(--color-text-primary);
+    border-color: rgba(255, 255, 255, 0.22);
     background: rgba(255, 255, 255, 0.04);
+}
+
+/* Light themes need a darker hairline to stay visible on pale surfaces. */
+html[data-theme-mode='light'] .character-editor-tab {
+    border-color: rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme-mode='light'] .character-editor-tab-inactive:hover {
+    border-color: rgba(0, 0, 0, 0.26);
 }
 
 .character-editor-section {
@@ -2280,6 +2390,247 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     padding: 0.875rem 1.5rem;
     background: var(--color-background-glass);
     flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Character Profile Editor — reorganized layout (scoped `char-editor-*`)
+   These are deliberately separate from the shared `.character-editor-*`
+   classes (which the Dev / Simulator / RAG views also use) so the editor
+   can be restructured without disturbing those screens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tab bar: wraps instead of overflowing, and only the editor's tabs are
+   restyled (no borders, accent underline on the active tab). */
+.char-editor-tabbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-glass);
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.char-editor-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s var(--ease-spring), border-color 0.2s var(--ease-spring);
+}
+
+.char-editor-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.char-editor-tab.is-active {
+    color: var(--color-accent-primary);
+    border-bottom-color: var(--color-accent-primary);
+}
+
+/* Collapsible section header — whole row toggles the section. */
+.char-editor-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-secondary);
+    background: linear-gradient(
+        to right,
+        var(--color-background-surface-translucent),
+        transparent
+    );
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.char-editor-section-head:hover {
+    color: var(--color-text-primary);
+}
+
+.char-editor-section-head .char-editor-section-chevron {
+    margin-left: auto;
+    transition: transform 0.2s var(--ease-spring);
+    opacity: 0.7;
+}
+
+.char-editor-section-head[aria-expanded='false'] .char-editor-section-chevron {
+    transform: rotate(-90deg);
+}
+
+/* Compact, subtle info dot that opens the field's help text as a tooltip. */
+.char-editor-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-glass);
+    color: var(--color-text-muted);
+    font-size: 0.625rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+    flex-shrink: 0;
+    user-select: none;
+    transition: color 0.15s var(--ease-spring), border-color 0.15s var(--ease-spring);
+}
+
+.char-editor-info:hover {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+}
+
+/* Two-up field grid that collapses to one column on narrow modals. */
+.char-editor-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .char-editor-grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ── Dedicated-page variant ─────────────────────────────────────────
+   When rendered as a page (not a modal) the editor fills the main content
+   area: a sticky top bar, a horizontal tab strip beneath it, a centred
+   scrolling pane, and a sticky action footer. All theme-token driven. */
+
+.char-editor-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.char-editor-page-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1.5rem;
+    background: var(--color-background-surface);
+    border-bottom: 1px solid var(--color-border-glass);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.char-editor-page-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.char-editor-page-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.char-editor-page-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.char-editor-page-sub {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Tab strip under the header — reuses the editor's `.char-editor-tab` chips
+   and their own bottom hairline, so only inset it here. */
+.char-editor-page-tabs {
+    background: var(--color-background-surface);
+    padding: 0.125rem 0.75rem 0;
+}
+
+.char-editor-page-scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Wide, left-aligned content that matches the app's other settings pages
+   (`p-6 max-w-7xl`) so there is no dead space on the right. */
+.char-editor-page-pane {
+    width: 100%;
+    max-width: 80rem;
+    padding: 1.75rem 1.5rem 3rem;
+}
+
+/* Per-tab title + description — makes each section clearly different. */
+.char-editor-page-tabhead {
+    margin-bottom: 1.5rem;
+}
+
+.char-editor-page-tabtitle {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+}
+
+.char-editor-page-tabdesc {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+
+.char-editor-page-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 2rem;
+    border-top: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+    position: sticky;
+    bottom: 0;
+}
+
+.char-editor-page-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+    .char-editor-page-topbar {
+        padding: 0.75rem 1rem;
+    }
+
+    .char-editor-page-pane {
+        padding: 1.25rem 1rem 3rem;
+    }
+
+    .char-editor-page-footer {
+        padding: 0.75rem 1rem;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2833,15 +3184,24 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     z-index: 40;
     overflow: hidden;
     pointer-events: none;
+    /* Defaults live on the layer so every aura child inherits one position.
+       `DynamicBackground.jsx` overwrites these with pixel values on each
+       animation frame. */
+    --aura-x: 50vw;
+    --aura-y: 50vh;
+    --aura-opacity: 0.2;
 }
 
 .dynamic-bg-aura {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 150px;
     height: 150px;
-    transform: translate(-50%, -50%);
+    /* GPU-composited move (no layout). The element is anchored top-left and
+       translated to the cursor, so only `transform` changes per frame. */
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
+    will-change: transform;
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -2859,11 +3219,11 @@ select.custom-scrollbar::-webkit-scrollbar-track {
    A crisp glowing ring that hugs the cursor, snapping to it tightly. */
 .dynamic-bg-aura-ring {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 72px;
     height: 72px;
-    transform: translate(-50%, -50%);
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
     border-radius: 50%;
     border: 1.5px solid var(--color-accent-primary);
     box-shadow:
@@ -2872,11 +3232,8 @@ select.custom-scrollbar::-webkit-scrollbar-track {
         inset 0 0 10px var(--color-glow-accent-soft);
     opacity: var(--aura-opacity, 0.55);
     filter: blur(1px);
-    transition:
-        left 0.04s linear,
-        top 0.04s linear,
-        opacity 0.4s var(--ease-spring);
-    will-change: left, top;
+    transition: opacity 0.4s var(--ease-spring);
+    will-change: transform;
     pointer-events: none;
 }
 
@@ -2892,11 +3249,13 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .dynamic-bg-aura-trail-dot {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: 14px;
     height: 14px;
-    transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+    /* Anchor top-left, then translate to the dot's own (older) cursor
+       position — GPU-composited, no layout. */
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(var(--dot-scale, 1));
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -2915,10 +3274,10 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 @keyframes aura-trail-pulse {
     0%, 100% {
-        transform: translate(-50%, -50%) scale(var(--dot-scale, 1));
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(var(--dot-scale, 1));
     }
     50% {
-        transform: translate(-50%, -50%) scale(calc(var(--dot-scale, 1) * 1.25));
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) scale(calc(var(--dot-scale, 1) * 1.25));
     }
 }
 
@@ -2935,11 +3294,11 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 .dynamic-bg-aura-ember {
     position: absolute;
-    left: var(--aura-x, 50%);
-    top: var(--aura-y, 50%);
+    top: 0;
+    left: 0;
     width: var(--ember-size, 9px);
     height: var(--ember-size, 9px);
-    transform: translate(-50%, -50%);
+    transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%);
     border-radius: 50%;
     background: radial-gradient(
         circle at center,
@@ -2961,19 +3320,19 @@ select.custom-scrollbar::-webkit-scrollbar-track {
 
 @keyframes ember-rise {
     0% {
-        transform: translate(-50%, -50%) translate(0, 0) scale(0.3);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(0, 0) scale(0.3);
         opacity: 0;
     }
     15% {
-        transform: translate(-50%, -50%) translate(0, -4px) scale(1);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(0, -4px) scale(1);
         opacity: calc(var(--aura-opacity, 0.45) * 1.35);
     }
     55% {
-        transform: translate(-50%, -50%) translate(calc(var(--ember-drift, 12px) * 0.4), var(--ember-rise, -70px)) scale(0.85);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(calc(var(--ember-drift, 12px) * 0.4), var(--ember-rise, -70px)) scale(0.85);
         opacity: calc(var(--aura-opacity, 0.45) * 0.85);
     }
     100% {
-        transform: translate(-50%, -50%) translate(var(--ember-drift, 12px), var(--ember-rise, -70px)) scale(0.2);
+        transform: translate3d(var(--aura-x, 50vw), var(--aura-y, 50vh), 0) translate(-50%, -50%) translate(var(--ember-drift, 12px), var(--ember-rise, -70px)) scale(0.2);
         opacity: 0;
     }
 }
@@ -3097,6 +3456,32 @@ select.custom-scrollbar::-webkit-scrollbar-track {
     .dynamic-bg-aura-ember {
         animation: none;
     }
+}
+
+/* Scroll performance: while the user is scrolling, freeze the animated
+   backdrop (and the cursor aura). A full-viewport animation recomposites the
+   whole app every frame; under the glass panels this shows up as a wobble.
+   `DynamicBackground.jsx` toggles `data-scrolling` on <html> and clears it
+   ~140ms after scrolling stops, so animations resume automatically. */
+html[data-scrolling="true"] .dynamic-bg *,
+html[data-scrolling="true"] .dynamic-bg-aura-layer * {
+    animation-play-state: paused !important;
+}
+
+/* The top nav bar carries the heaviest always-on blur (40px) and is fixed
+   chrome, so it re-rasterizes against freshly-scrolled content every frame.
+   While scrolling, drop just its blur (its translucent background, border and
+   glows stay), so the compositor can move the page without that extra
+   main-thread pass. It restores instantly when the scroll stops. */
+html[data-scrolling="true"] .nav-glass-bar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* The glowing scrollbar thumb repaints while it moves; skip its soft glow
+   shadow during the scroll so the scrollbar stays cheap to draw. */
+html[data-scrolling="true"] ::-webkit-scrollbar-thumb {
+    box-shadow: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3589,4 +3974,1584 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     background: var(--gradient-primary);
     color: #fff;
     border-radius: 9999px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   App Shell — Left Sidebar Rail
+   Desktop-app navigation: a fixed vertical rail of always-visible
+   sections grouped under labelled headers, collapsible to an icon-only
+   rail. Replaces the old grouped-dropdown pill dock. All colours derive
+   from the live theme tokens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Fixed-height app shell: the header is a non-scrolling row and only the
+   main content column scrolls, so the header always stays pinned. */
+.app-shell {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.app-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: stretch;
+}
+
+/* ── Rail ─────────────────────────────────────────────────────────── */
+.app-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 264px;
+    flex-shrink: 0;
+    height: 100%;
+    background: var(--color-background-nav);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border-right: 1px solid var(--color-border-glass);
+    transition: width 0.32s var(--ease-spring);
+    z-index: 30;
+    overflow: hidden;
+}
+
+.app-sidebar-collapsed {
+    width: 76px;
+}
+
+.app-sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Reserve the scrollbar gutter on BOTH edges. Without this, switching to
+       Developer mode adds enough nav items to make the rail scroll; the
+       vertical scrollbar then appears and steals width from the content box,
+       which shifted the centred icons to the left and shrank the item /
+       selected-tab box. Reserving the gutter keeps the content box width —
+       and therefore the icon size and position — constant whether or not the
+       rail scrolls. */
+    scrollbar-gutter: stable;
+    padding: 1rem 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+    /* Keep the scrollbar out of sight until the rail is hovered. The gutter
+       stays reserved (no layout shift) — only the thumb/track are transparent
+       at rest and fade in on hover below. */
+    scrollbar-color: transparent transparent;
+}
+
+/* Hide the rail's scrollbar at rest, then reveal the global glowing thumb
+   once the pointer is over the nav so the rail reads clean by default while
+   still signalling scrollability on demand. */
+.app-sidebar-scroll::-webkit-scrollbar-thumb,
+.app-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    box-shadow: none;
+}
+
+.app-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background: rgba(var(--color-accent-primary-rgb), 0.35);
+    box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
+}
+
+.app-sidebar-scroll:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--color-accent-primary-rgb), 0.55);
+    box-shadow: 0 0 16px 4px rgba(var(--color-accent-primary-rgb), 0.6);
+}
+
+/* Firefox has no per-state scrollbar-color, so swap it on rail hover. */
+.app-sidebar-scroll:hover {
+    scrollbar-color: rgba(var(--color-accent-primary-rgb), 0.35) rgba(var(--color-accent-primary-rgb), 0.06);
+}
+
+/* ── Group ────────────────────────────────────────────────────────── */
+.app-sidebar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.app-sidebar-group-label {
+    padding: 0.4rem 0.75rem 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+    white-space: nowrap;
+    transition: opacity 0.25s var(--ease-spring), height 0.25s var(--ease-spring),
+                padding 0.25s var(--ease-spring);
+}
+
+.app-sidebar-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+/* Primary (headerless) group — the landing destination (e.g. Chat). A hairline
+   under it separates it from the labelled sections below without adding a header
+   that would just repeat the item's own label. */
+.app-sidebar-group-primary {
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--color-border-glass);
+}
+
+/* ── Item ─────────────────────────────────────────────────────────── */
+.app-sidebar-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.25s var(--ease-spring), color 0.25s var(--ease-spring),
+                border-color 0.25s var(--ease-spring), transform 0.25s var(--ease-spring);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-sidebar-item:hover {
+    background: var(--color-background-hover-glass);
+    color: var(--color-text-primary);
+}
+
+.app-sidebar-item:active {
+    transform: scale(0.985);
+}
+
+.app-sidebar-item-active {
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    color: var(--color-accent-primary);
+    font-weight: 700;
+    box-shadow: 0 0 18px var(--color-glow-accent-soft);
+}
+
+/* Active accent bar on the left edge */
+.app-sidebar-item-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 55%;
+    border-radius: 0 3px 3px 0;
+    background: var(--gradient-primary);
+    box-shadow: 0 0 12px var(--color-glow-accent-strong);
+}
+
+/* Fixed, mode-independent icon box. The box is sized in px (not rem) and
+   marked `!important` so it can never be overridden by the Tailwind `w-4 h-4`
+   utility on the <svg> (16px) nor scaled by the root font-size / active mode.
+   The span also reserves the same box so the icon can never be squeezed when
+   the rail is collapsed and more nav items are present (e.g. Developer mode). */
+.app-sidebar-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 21px;
+    height: 21px;
+    color: var(--color-text-muted);
+    opacity: 0.9;
+    transition: color 0.25s var(--ease-spring), filter 0.25s var(--ease-spring);
+}
+
+.app-sidebar-item-icon svg {
+    width: 21px !important;
+    height: 21px !important;
+    min-width: 21px;
+    min-height: 21px;
+    max-width: 21px;
+    max-height: 21px;
+    flex-shrink: 0;
+}
+
+.app-sidebar-item:hover .app-sidebar-item-icon {
+    color: var(--color-accent-primary);
+    opacity: 1;
+}
+
+.app-sidebar-item-active .app-sidebar-item-icon {
+    color: var(--color-accent-primary);
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--color-glow-accent-soft));
+}
+
+.app-sidebar-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.22s var(--ease-spring);
+}
+
+/* Collapsed rail: hide labels + headers, centre the icons */
+.app-sidebar-collapsed .app-sidebar-group-label {
+    opacity: 0;
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.app-sidebar-collapsed .app-sidebar-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    gap: 0;
+}
+
+.app-sidebar-collapsed .app-sidebar-item-label {
+    opacity: 0;
+    width: 0;
+    flex: 0 0 0;
+}
+
+/* ── Collapse toggle (footer of the rail) ─────────────────────────── */
+/* Deliberately quiet at rest: the old design gave it a filled translucent
+   surface + accent border, i.e. the same visual language the app uses for a
+   *selected* control — so it always looked pressed/active. It now mirrors the
+   nav items instead (transparent at rest, glass fill only on hover), with a
+   hairline above it to separate it from the scrolling nav. */
+.app-sidebar-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+    padding: 0.7rem 0.85rem;
+    margin: 0.5rem 0.75rem 0.85rem;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.25s var(--ease-spring), color 0.25s var(--ease-spring),
+                border-color 0.25s var(--ease-spring), transform 0.25s var(--ease-spring);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Hairline separating the toggle from the nav above (sits in the top gap). */
+.app-sidebar-toggle::before {
+    content: '';
+    position: absolute;
+    top: -0.25rem;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border-glass);
+}
+
+.app-sidebar-toggle:hover {
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+    color: var(--color-text-primary);
+}
+
+.app-sidebar-toggle:active {
+    transform: scale(0.985);
+}
+
+/* Keyboard-only affordance, so the transparent rest state stays clean. */
+.app-sidebar-toggle:focus-visible {
+    outline: none;
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 0 2px var(--color-glow-accent-soft);
+}
+
+.app-sidebar-toggle-icon {
+    flex-shrink: 0;
+    color: currentColor;
+    transition: transform 0.32s var(--ease-spring), color 0.25s var(--ease-spring);
+}
+
+.app-sidebar-toggle-icon-flip {
+    transform: rotate(180deg);
+}
+
+.app-sidebar-toggle-label {
+    transition: opacity 0.22s var(--ease-spring);
+}
+
+.app-sidebar-collapsed .app-sidebar-toggle {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.app-sidebar-collapsed .app-sidebar-toggle-label {
+    display: none;
+}
+
+/* ── Main content column ──────────────────────────────────────────── */
+/* The column itself scrolls, so the footer sits at the end of the
+   content and scrolls with it.
+
+   IMPORTANT — scroll stability (do not re-add backdrop-filter below this
+   line's scope): in Chromium, an element with `backdrop-filter` that lives
+   INSIDE a scroll container is rasterized on the main thread while the
+   scroll itself runs on the compositor thread. The two desync and the
+   content visibly SHAKES/JITTERS for the whole duration of the scroll —
+   independently of what is painted behind the glass. This app's cards,
+   buttons and inputs all use `backdrop-filter`, so scrolling any screen
+   shook. The rule below neutralises those blurs for everything inside the
+   scrolling column, which removes the jitter at the source.
+
+   The glass look is intentionally preserved where it is safe and where it
+   matters most — the fixed chrome OUTSIDE this column: the top nav bar
+   (`.nav-glass-bar`) and the sidebar rail (`.app-sidebar`), plus all modals
+   (which are portaled to <body>, outside this subtree). `isolation` is
+   deliberately used INSTEAD of a transform / `contain: paint`, because
+   those turn the element into a containing block and would break the
+   `position: fixed` chat lightbox and picker overlays rendered inside it. */
+.app-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    isolation: isolate;
+}
+
+/* Chromium scroll-shake guard — see note above. `!important` is required to
+   beat the per-component `backdrop-filter` declarations (and the inline
+   `backdropFilter` styles some components set). This only clears the blur;
+   the panels keep their translucent backgrounds, borders and glows, so the
+   design still reads as frosted glass. */
+.app-main *,
+.app-main *::before,
+.app-main *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.app-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+/* App footer — last child of the scrolling column, so it scrolls with
+   the page. Solid background keeps the version line readable. */
+.app-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.625rem 1rem;
+    background: var(--color-background-surface);
+}
+
+.app-footer a {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    color: var(--color-text-muted);
+    transition: color 0.25s var(--ease-spring);
+}
+
+.app-footer a:hover {
+    color: var(--color-accent-primary);
+}
+
+/* ── Responsive: auto-collapse to the icon rail on narrower viewports ── */
+@media (max-width: 1024px) {
+    .app-sidebar {
+        width: 76px;
+    }
+
+    .app-sidebar .app-sidebar-group-label {
+        opacity: 0;
+        height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .app-sidebar .app-sidebar-item {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+        gap: 0;
+    }
+
+    .app-sidebar .app-sidebar-item-label {
+        opacity: 0;
+        width: 0;
+        flex: 0 0 0;
+    }
+
+    .app-sidebar .app-sidebar-toggle {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .app-sidebar .app-sidebar-toggle-label {
+        display: none;
+    }
+}
+
+/* ── Tooltip (theme-adaptive, portal-rendered) ───────────────────── */
+/* Replaces the browser's native black `title` box with a glass bubble
+   that matches the rest of the UI. Rendered into document.body by
+   components/ui/Tooltip.jsx so it is never clipped by overflow:hidden. */
+.hl-tooltip {
+    position: fixed;
+    z-index: 10000;
+    max-width: 240px;
+    padding: 0.4rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid var(--color-border-glow);
+    background: var(--color-background-elevated);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    color: var(--color-text-primary);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(3px);
+    box-shadow:
+        0 0 18px var(--color-glow-accent-soft),
+        0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: opacity 0.16s var(--ease-spring), transform 0.16s var(--ease-spring);
+}
+
+.hl-tooltip-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Diamond arrow — half sits inside the bubble (same background, seamless). */
+.hl-tooltip-arrow {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    background: var(--color-background-elevated);
+    transform: rotate(45deg);
+}
+
+.hl-tooltip[data-placement="top"] .hl-tooltip-arrow {
+    bottom: -6px;
+    left: 50%;
+    margin-left: -5.5px;
+    border-right: 1px solid var(--color-border-glow);
+    border-bottom: 1px solid var(--color-border-glow);
+}
+
+.hl-tooltip[data-placement="bottom"] .hl-tooltip-arrow {
+    top: -6px;
+    left: 50%;
+    margin-left: -5.5px;
+    border-left: 1px solid var(--color-border-glow);
+    border-top: 1px solid var(--color-border-glow);
+}
+
+.hl-tooltip[data-placement="right"] .hl-tooltip-arrow {
+    left: -6px;
+    top: 50%;
+    margin-top: -5.5px;
+    border-left: 1px solid var(--color-border-glow);
+    border-bottom: 1px solid var(--color-border-glow);
+}
+
+.hl-tooltip[data-placement="left"] .hl-tooltip-arrow {
+    right: -6px;
+    top: 50%;
+    margin-top: -5.5px;
+    border-right: 1px solid var(--color-border-glow);
+    border-top: 1px solid var(--color-border-glow);
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .app-sidebar,
+    .app-sidebar-item,
+    .app-sidebar-item-icon,
+    .app-sidebar-item-label,
+    .app-sidebar-group-label,
+    .app-sidebar-toggle,
+    .app-sidebar-toggle-icon,
+    .hl-tooltip {
+        transition: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Desktop Chat (Phase 2)
+   Theme-var-driven throughout (Tailwind v4 @theme carries no colours).
+   Mirrors the chat-list gradient DNA used by .entity-row.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Chat list (F1) ───────────────────────────────────────────────── */
+.chat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    height: 100%;
+    min-height: 0;
+}
+
+.chat-list-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.chat-list-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 180px;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-list-search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.chat-list-filter {
+    padding: 0.5rem 0.9rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    transition: all 0.25s var(--ease-spring);
+}
+
+.chat-list-filter-active {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
+.chat-list-new {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.chat-list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    text-align: center;
+    padding: 4rem 1rem;
+    margin: auto;
+}
+
+.chat-list-empty-title {
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.chat-list-empty-hint {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    max-width: 26rem;
+    margin-bottom: 0.6rem;
+}
+
+.chat-list-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.chat-list-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    text-align: left;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    transition: all 0.25s var(--ease-spring);
+}
+
+.chat-list-row:hover {
+    border-color: var(--color-border-glow);
+    background: var(--color-background-hover-glass);
+}
+
+.chat-list-avatar-ring {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 9999px;
+    padding: 2px;
+    background: var(--gradient-primary);
+    display: inline-flex;
+}
+
+.chat-list-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.chat-list-avatar-fallback {
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--gradient-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.chat-list-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.chat-list-row-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.chat-list-name {
+    font-weight: 700;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-list-time {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.chat-list-preview {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-list-badge {
+    flex-shrink: 0;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.35rem;
+    border-radius: 9999px;
+    background: var(--color-accent-primary);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── New-chat picker ──────────────────────────────────────────────── */
+.chat-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.chat-picker {
+    width: min(28rem, 100%);
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.4));
+}
+
+.chat-picker-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin-bottom: 0.85rem;
+}
+
+.chat-picker-empty {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-picker-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chat-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    transition: background 0.2s var(--ease-spring);
+}
+
+.chat-picker-row:hover {
+    background: var(--color-background-hover-glass);
+}
+
+.chat-picker-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* ── Chat detail (F2) ─────────────────────────────────────────────── */
+.chat-detail {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 15rem);
+    min-height: 24rem;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-detail-font-small { font-size: 0.8125rem; }
+.chat-detail-font-medium { font-size: 0.9375rem; }
+.chat-detail-font-large { font-size: 1.0625rem; }
+
+.chat-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--color-border-glass);
+    background: var(--color-background-nav);
+}
+
+.chat-detail-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    color: var(--color-text-secondary);
+}
+
+.chat-detail-back:hover { background: var(--color-background-hover-glass); }
+
+.chat-detail-back-icon { transform: rotate(180deg); }
+
+.chat-detail-headline {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-detail-title {
+    font-weight: 700;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-detail-status {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.chat-detail-status-connected { color: var(--color-success); }
+.chat-detail-status-reconnecting { color: var(--color-warning, #f59e0b); }
+.chat-detail-status-error { color: var(--color-danger, #ef4444); }
+
+.chat-detail-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    color: var(--color-text-secondary);
+}
+
+.chat-detail-icon-btn:hover { background: var(--color-background-hover-glass); }
+
+.chat-detail-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Developer wire inspector (Phase 3, D7): body becomes a row when the panel
+   is open, so the timeline and the frame list sit side by side. */
+.chat-detail-body-with-wire {
+    flex-direction: row;
+}
+
+.chat-detail-main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-wire-inspector {
+    width: 340px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-left: 1px solid var(--color-border-glass, var(--color-border-default));
+    background: var(--color-background-surface);
+}
+
+.chat-wire-inspector-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-glass, var(--color-border-default));
+}
+
+.chat-wire-inspector-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.25rem;
+}
+
+.chat-wire-frame {
+    border-bottom: 1px solid var(--color-border-glass, var(--color-border-default));
+}
+
+.chat-wire-frame-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.chat-wire-frame-row:hover { background: var(--color-background-hover-glass); }
+
+.chat-wire-dir {
+    font-weight: 700;
+    font-size: 0.75rem;
+    width: 1rem;
+    text-align: center;
+}
+
+.chat-wire-dir-out { color: var(--color-accent-primary); }
+.chat-wire-dir-in { color: var(--color-success, #22c55e); }
+
+.chat-wire-frame-payload {
+    margin: 0;
+    padding: 0.5rem;
+    font-size: 0.625rem;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    color: var(--color-text-muted);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--color-background-base, rgba(0, 0, 0, 0.2));
+}
+
+/* Persistent Developer-mode badge (Phase 3 safety indicator). */
+.dev-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-warning, #f59e0b);
+    background: color-mix(in srgb, var(--color-warning, #f59e0b) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-warning, #f59e0b) 35%, transparent);
+}
+
+.chat-timeline {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-detail-spacing-compact .chat-timeline { gap: 0.25rem; }
+
+.chat-timeline-empty,
+.chat-timeline-loading {
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.chat-timeline-load-older {
+    align-self: center;
+    padding: 0.4rem 0.9rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-jump-latest {
+    position: absolute;
+    bottom: 5.5rem;
+    right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--gradient-primary);
+    box-shadow: 0 6px 18px var(--color-glow-accent-soft);
+    z-index: 5;
+}
+
+/* ── Bubbles (F3) ─────────────────────────────────────────────────── */
+.chat-bubble-row {
+    display: flex;
+    width: 100%;
+}
+
+.chat-bubble-row-out { justify-content: flex-end; }
+.chat-bubble-row-in { justify-content: flex-start; }
+
+.chat-bubble {
+    position: relative;
+    max-width: 72%;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radius-lg);
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chat-bubble-in {
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-out {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-text {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.chat-bubble-quote {
+    font-size: 0.75rem;
+    font-style: italic;
+    opacity: 0.8;
+    padding-left: 0.5rem;
+    border-left: 2px solid currentColor;
+}
+
+.chat-bubble-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: flex-end;
+    font-size: 0.6875rem;
+    opacity: 0.75;
+}
+
+.chat-bubble-edited { font-style: italic; }
+
+.chat-bubble-proactive {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+}
+
+.chat-bubble-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.1rem;
+}
+
+.chat-bubble-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-bubble-in .chat-bubble-reaction { background: var(--color-background-surface-translucent); }
+
+.chat-bubble-actions {
+    position: absolute;
+    top: -0.6rem;
+    display: flex;
+    gap: 0.15rem;
+    padding: 0.2rem;
+    border-radius: 9999px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s var(--ease-spring);
+    z-index: 4;
+}
+
+.chat-bubble-row-out .chat-bubble-actions { right: 0; }
+.chat-bubble-row-in .chat-bubble-actions { left: 0; }
+
+.chat-bubble:hover .chat-bubble-actions,
+.chat-bubble-actions-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.chat-bubble-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 9999px;
+    color: var(--color-text-secondary);
+}
+
+.chat-bubble-action:hover { background: var(--color-background-hover-glass); color: var(--color-text-primary); }
+.chat-bubble-action-danger:hover { color: var(--color-danger, #ef4444); }
+
+/* ── Audio bubble (F8) ────────────────────────────────────────────── */
+.chat-audio-bubble {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 12rem;
+}
+
+.chat-audio-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
+}
+
+.chat-audio-track {
+    flex: 1;
+    height: 3px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+}
+
+.chat-bubble-in .chat-audio-track { background: var(--color-border-glass); }
+
+.chat-audio-progress {
+    height: 100%;
+    background: currentColor;
+    transition: width 0.2s linear;
+}
+
+.chat-audio-duration {
+    font-size: 0.6875rem;
+    opacity: 0.85;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Images (F15) ─────────────────────────────────────────────────── */
+.chat-image-thumb {
+    display: block;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    max-width: 16rem;
+}
+
+.chat-image-thumb img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 18rem;
+    object-fit: cover;
+}
+
+.chat-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 10rem;
+    height: 6rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-hover-glass);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+
+.chat-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.chat-lightbox-image {
+    max-width: 92vw;
+    max-height: 88vh;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.chat-lightbox-fallback { color: #fff; }
+
+.chat-lightbox-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* ── Typing indicator (F5) ────────────────────────────────────────── */
+.chat-typing-row { display: flex; justify-content: flex-start; }
+
+.chat-typing-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-typing-label { font-size: 0.75rem; color: var(--color-text-muted); }
+
+.chat-typing-dots {
+    display: inline-flex;
+    gap: 0.22rem;
+    align-items: center;
+}
+
+.chat-typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-accent-primary);
+    animation: chat-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.chat-typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.chat-typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes chat-typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ── New-messages divider (F6) ────────────────────────────────────── */
+.chat-new-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+}
+
+.chat-new-divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border-glow);
+}
+
+.chat-new-divider-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-accent-primary);
+}
+
+/* ── Reply banner ─────────────────────────────────────────────────── */
+.chat-reply-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    background: var(--color-background-hover-glass);
+    border-top: 1px solid var(--color-border-glass);
+}
+
+.chat-reply-banner button {
+    font-weight: 700;
+    color: var(--color-accent-primary);
+}
+
+/* ── Input (F4) ───────────────────────────────────────────────────── */
+.chat-input-wrap {
+    border-top: 1px solid var(--color-border-glass);
+    background: var(--color-background-nav);
+}
+
+.chat-input-error {
+    padding: 0.4rem 1rem 0;
+    font-size: 0.75rem;
+    color: var(--color-danger, #ef4444);
+}
+
+.chat-input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.65rem 0.85rem;
+}
+
+.chat-input-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.chat-input-icon-btn:hover { background: var(--color-background-hover-glass); color: var(--color-text-primary); }
+
+.chat-input-icon-btn-recording {
+    background: var(--color-danger, #ef4444);
+    color: #fff;
+    animation: chat-recording-pulse 1.1s infinite ease-in-out;
+}
+
+@keyframes chat-recording-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+.chat-input-textarea {
+    flex: 1;
+    min-height: 2.25rem;
+    max-height: 8rem;
+    resize: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+.chat-input-textarea:focus { border-color: var(--color-border-glow); }
+
+.chat-input-send { flex-shrink: 0; }
+
+/* ── Emoji picker (F11) ───────────────────────────────────────────── */
+.chat-emoji-picker {
+    position: absolute;
+    bottom: 4.25rem;
+    left: 0.85rem;
+    width: min(22rem, calc(100% - 1.7rem));
+    max-height: 20rem;
+    overflow-y: auto;
+    padding: 0.75rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+}
+
+.chat-emoji-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0.35rem 0;
+}
+
+.chat-emoji-picker-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+}
+
+.chat-emoji-close { font-size: 1.1rem; color: var(--color-text-muted); line-height: 1; }
+
+.chat-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.15rem;
+}
+
+.chat-emoji-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    font-size: 1.15rem;
+    border-radius: var(--radius-md, 0.5rem);
+    transition: background 0.15s var(--ease-spring);
+}
+
+.chat-emoji-btn:hover { background: var(--color-background-hover-glass); }
+
+.chat-emoji-btn-action { background: var(--color-background-surface-translucent); }
+
+.chat-emoji-empty { font-size: 0.75rem; color: var(--color-text-muted); }
+
+/* ── Impersonation (F12) ──────────────────────────────────────────── */
+.chat-impersonation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.chat-impersonation-label { white-space: nowrap; }
+
+.chat-impersonation-select {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    color: var(--color-text-primary);
+    font-size: 0.75rem;
+    outline: none;
+}
+
+/* ── Preferences panel (F10) ──────────────────────────────────────── */
+.chat-prefs-panel {
+    position: absolute;
+    top: 3.4rem;
+    right: 0.85rem;
+    width: min(20rem, calc(100% - 1.7rem));
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.chat-prefs-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.chat-prefs-title { font-weight: 700; color: var(--color-text-primary); }
+
+.chat-prefs-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    color: var(--color-text-muted);
+}
+
+.chat-prefs-close:hover { background: var(--color-background-hover-glass); }
+
+.chat-prefs-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.chat-prefs-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.chat-prefs-segments {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border-radius: 9999px;
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-prefs-segment {
+    flex: 1;
+    padding: 0.35rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    transition: all 0.2s var(--ease-spring);
+}
+
+.chat-prefs-segment-active {
+    background: var(--gradient-primary);
+    color: #fff;
+}
+
+.chat-prefs-hint { font-size: 0.75rem; color: var(--color-text-secondary); }
+
+.chat-prefs-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+}
+
+/* ── Reduced motion for chat ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .chat-typing-dots span,
+    .chat-input-icon-btn-recording {
+        animation: none;
+    }
+}
+
+/* ── Settings option chips (shared segmented-control look) ─────────────
+   Used by every settings picker/segmented control (General Settings
+   sub-tabs, Interface Mode, background variant, aura style, card-size
+   pickers, Developer tab bar) so each option reads as a clickable chip:
+   a subtle light-grey hairline that becomes an accent border when active.
+   Selection itself stays accent text + a soft glow (no filled "box"). */
+.settings-option-chip {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: transparent;
+    transition: background 0.2s var(--ease-spring), border-color 0.2s var(--ease-spring),
+                color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring);
+}
+
+.settings-option-chip:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.settings-option-chip-active {
+    border-color: var(--color-accent-primary);
+    background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+    box-shadow: 0 0 16px var(--color-glow-accent-strong);
+}
+
+/* Light themes need a darker hairline to stay visible on pale surfaces. */
+html[data-theme-mode='light'] .settings-option-chip {
+    border-color: rgba(0, 0, 0, 0.14);
+}
+
+html[data-theme-mode='light'] .settings-option-chip:hover {
+    border-color: rgba(0, 0, 0, 0.26);
 }

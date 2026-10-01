@@ -39,9 +39,13 @@ export const ActivityIcon = ({ className = defaultSize }) => (
     </svg>
 );
 
+// Optical-size normalization: the puzzle glyph sits at (11,11) in the 24-box,
+// so it is nudged 1px right/down to align with the other nav icons.
 export const PuzzleIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+        <g transform="translate(1 1)">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+        </g>
     </svg>
 );
 
@@ -142,9 +146,14 @@ export const SmileIcon = ({ className = defaultSize }) => (
 
 /* ── Event Type Icons ─────────────────────────────────────────────────── */
 
+// Optical-size normalization: every nav glyph is scaled to the same 18-unit
+// max dimension so the sidebar icons look equal regardless of the active mode.
+// Message artwork is 18x16 → scale 18/18 = 1.
 export const MessageIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <g transform="translate(12 12) scale(1.0) translate(-12 -12)">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </g>
     </svg>
 );
 
@@ -301,26 +310,65 @@ export const HourglassIcon = ({ className = defaultSize }) => (
 
 /* ── Nav Tab Icons ───────────────────────────────────────────────────── */
 
+// Optical-size normalization: 20x16 artwork scaled 18/20 = 0.9 about the centre
+// (its 20-unit width was the widest nav glyph and read as oversized).
 export const UsersIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        <g transform="translate(12 12) scale(0.9) translate(-12 -12)">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </g>
     </svg>
 );
 
+// Optical-size normalization: 20x17.5 artwork scaled 18/20 = 0.9 and re-centred
+// (its centre is y=11.25, not 12) so it matches the other nav glyphs.
 export const RobotIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v3m0 0a4 4 0 014 4v7a4 4 0 01-4 4 4 4 0 01-4-4V9a4 4 0 014-4zM3 12h2m14 0h2M5 21h14M9 13h.01M15 13h.01M9 17c.7.5 2 1 3 1s2.3-.5 3-1" />
+        <g transform="translate(12 12) scale(0.9) translate(-12 -11.25)">
+            <rect x="4" y="8" width="16" height="12" rx="4" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8V5" />
+            <circle cx="12" cy="4" r="1.5" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2 14h2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 14h2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13v2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13v2" />
+        </g>
     </svg>
 );
 
+// Optical-size normalization: 18x16 artwork scaled 18/18 = 1.
 export const TerminalIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <g transform="translate(12 12) scale(1.0) translate(-12 -12)">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </g>
     </svg>
 );
 
+export const ImageIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+);
+
+export const ArrowDownIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+    </svg>
+);
+
+export const SearchIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+);
+
+// Optical-size normalization: 16x16 artwork scaled 18/16 = 1.125 so it is not
+// visually smaller than the other nav glyphs.
 export const SimulatorIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 16v-2m8-6h-2M6 12H4m13.657-5.657l-1.414 1.414M7.757 16.243l-1.414 1.414m9.9 0l-1.414-1.414M7.757 7.757L6.343 6.343M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <g transform="translate(12 12) scale(1.125) translate(-12 -12)">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 16v-2m8-6h-2M6 12H4m13.657-5.657l-1.414 1.414M7.757 16.243l-1.414 1.414m9.9 0l-1.414-1.414M7.757 7.757L6.343 6.343M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </g>
     </svg>
 );

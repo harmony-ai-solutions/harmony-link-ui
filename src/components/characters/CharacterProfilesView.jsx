@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import useEntityStore from '../../store/entityStore';
 import usePersonaStore from '../../store/personaStore';
+import useChatStore from '../../store/chatStore';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
@@ -10,6 +11,7 @@ import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Main view for managing character profiles
@@ -22,8 +24,12 @@ import ConfirmDialog from '../modals/ConfirmDialog.jsx';
  *   this card" — the app links the profile LIVE to a new AI entity (no card
  *   copy), then calls this callback so the shell can switch to the Entities
  *   tab with the new entity preselected.
+ * @param {Function} [props.onStartChatFromCard] - "Start chatting" on a card —
+ *   the app resolves (or creates) the AI partner for the profile, stashes a
+ *   start-chat request in chatStore, then calls this callback so the shell can
+ *   switch to the Chat tab, where the new conversation opens.
  */
-export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard }) {
+export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard, onStartChatFromCard }) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
     const { entities, loadEntities, selectEntity } = useEntityStore();
@@ -86,6 +92,17 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         // Needed for the "used by" badges / live-link hint (3-2).
         loadEntities();
     }, [loadProfiles, loadEntities]);
+
+    // Cross-view handoff: the Chat welcome screen's "Create AI Character"
+    // button sets a one-shot flag and switches to this tab. This view mounts
+    // fresh on tab switch, so read the flag once on mount, clear it, and open
+    // the create editor (no profile → CharacterProfileEditor starts blank).
+    useEffect(() => {
+        if (!useCharacterProfileStore.getState().createProfileRequested) return;
+        useCharacterProfileStore.getState().clearRequestCreateProfile();
+        setEditingProfile(null);
+        setShowEditor(true);
+    }, []);
 
     useEffect(() => {
         if (visibleProfiles && visibleProfiles.length > 0) {
@@ -197,6 +214,34 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         }
     };
 
+    /**
+     * "Start chatting" on a card — the one-click path from a character to a
+     * conversation. A card may not yet have an AI partner: if none of the
+     * entities reference this profile LIVE, create one first (same contract as
+     * handleCreateEntityFromCard). Then stash the partner id in chatStore and
+     * ask the shell to switch to the Chat tab; ChatView consumes the request on
+     * mount and opens a brand-new conversation.
+     */
+    const handleStartChatFromCard = async (profile) => {
+        if (!profile?.id) return;
+        try {
+            const existing = (referencingByProfile[profile.id] || [])
+                .find(entity => entity.entity_type !== 'user');
+            let partnerId = existing?.id;
+            if (!partnerId) {
+                const created = await entityService.createEntity(profile.name, profile.id, { dedupeIdIfTaken: true });
+                partnerId = created.id;
+                // Refresh so the entity list (and the card's "used by" badge)
+                // reflects the freshly created partner.
+                await loadEntities();
+            }
+            useChatStore.getState().requestStartChat(partnerId);
+            onStartChatFromCard?.();
+        } catch (error) {
+            alert(t('characters:startChatFailed', { message: error.message }));
+        }
+    };
+
     const handleImportSuccess = async (result) => {
         setShowImport(false);
         await loadProfiles();
@@ -228,9 +273,23 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
     };
 
+    // While editing, the editor takes over as a dedicated page — it replaces the
+    // card grid rather than covering it with a modal, so the form gets the full
+    // width/height of the content area.
+    if (showEditor) {
+        return (
+            <CharacterProfileEditor
+                variant="page"
+                profile={editingProfile}
+                referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
+                onClose={() => { setShowEditor(false); setEditingProfile(null); }}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-full">
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+            <div className="bg-background-surface px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold tracking-tight">
@@ -260,7 +319,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                 </div>
             </div>
 
-            <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
+            <div className="bg-background-surface px-6 py-4">
                 <div className="flex items-center justify-between gap-4">
                     {/* Search Bar */}
                     <div data-tutorial-id="char-search" className="search-bar-wrapper">
@@ -280,19 +339,21 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     {/* Card Size Toggle */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-text-muted font-medium">{t('characters:cardSize')}</span>
-                        <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
+                        <div className="flex gap-1">
                             {[
                                 { size: 'small', title: t('characters:cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
                                 { size: 'medium', title: t('characters:cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
                                 { size: 'large', title: t('characters:cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                             ].map(({ size, title, path }) => (
-                                <button key={size} onClick={() => handleCardSizeChange(size)}
-                                    className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
-                                    title={title}>
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d={path} />
-                                    </svg>
-                                </button>
+                                <Tooltip key={size} content={title}>
+                                    <button onClick={() => handleCardSizeChange(size)}
+                                        style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
+                                        className={`settings-option-chip p-2 rounded-md ${cardSize === size ? 'settings-option-chip-active' : 'text-text-muted hover:text-text-primary'}`}>
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d={path} />
+                                        </svg>
+                                    </button>
+                                </Tooltip>
                             ))}
                         </div>
                     </div>
@@ -312,7 +373,8 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                                     onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
                                     referencingEntities={referencingByProfile[profile.id] || []}
                                     onCreatePersona={handleCreatePersonaFromCard}
-                                    onCreateEntity={handleCreateEntityFromCard} />
+                                    onCreateEntity={handleCreateEntityFromCard}
+                                    onStartChat={handleStartChatFromCard} />
                             ))}
                         </div>
                     ) : (
@@ -349,12 +411,6 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     </div>
                 )}
             </div>
-
-            {showEditor && (
-                <CharacterProfileEditor profile={editingProfile}
-                    referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
-                    onClose={() => { setShowEditor(false); setEditingProfile(null); }} />
-            )}
 
             {showImport && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

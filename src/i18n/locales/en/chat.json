@@ -1,0 +1,152 @@
+{
+  "header": {
+    "title": "Chat",
+    "subtitle": "Talk with your AI partners"
+  },
+  "placeholder": {
+    "title": "There is no chat yet.",
+    "startChatting": "Start Chatting",
+    "createCharacter": "Create AI Character"
+  },
+  "localAI": {
+    "title": "Local AI (Docker)",
+    "description": "Run an AI model on your own PC. No cloud account needed — start the local service and you're ready to chat.",
+    "running": "Running",
+    "notRunning": "Not running",
+    "start": "Start",
+    "allRunning": "Your local AI service is running.",
+    "noInstances": "No local AI instances are configured yet. Create one from the Integrations tab (advanced mode).",
+    "startRequested": "Starting the local AI service…",
+    "startFailed": "Could not start the local AI service.",
+    "bundlesTitle": "Response Style",
+    "bundlesDescription": "Pick how your AI replies. You can change this later in the advanced settings.",
+    "bundleReady": "\"{{name}}\" preset is ready to use.",
+    "bundleFailed": "Could not install the \"{{name}}\" preset."
+  },
+  "list": {
+    "title": "Conversations",
+    "empty": "No conversations yet",
+    "emptyHint": "Start a chat with one of your AI partners.",
+    "newChat": "New Chat",
+    "noMessages": "No messages yet",
+    "you": "You",
+    "searchPlaceholder": "Search conversations",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "selectCompanion": "Who do you want to talk to?",
+    "noCompanions": "No AI partners yet. Create one in the AI Characters tab first.",
+    "openCharacters": "Go to AI Characters",
+    "loading": "Loading conversations…",
+    "failedToLoad": "Could not load conversations."
+  },
+  "conversation": {
+    "back": "Back",
+    "loadingMessages": "Loading messages…",
+    "loadOlder": "Load older messages",
+    "noMessages": "Say hello to start the conversation.",
+    "jumpToLatest": "Jump to latest",
+    "newMessages": "New messages",
+    "connection": {
+      "connecting": "Connecting…",
+      "connected": "Connected",
+      "reconnecting": "Reconnecting…",
+      "offline": "Offline"
+    }
+  },
+  "input": {
+    "placeholder": "Type a message…",
+    "placeholderTyping": "{{name}} is typing…",
+    "send": "Send",
+    "record": "Record a voice note",
+    "stopRecording": "Stop recording",
+    "attachImage": "Send a picture",
+    "emoji": "Emoji",
+    "emojiActions": "Emoji actions",
+    "sendAs": "Chatting as {{name}}",
+    "micDenied": "Microphone access was denied.",
+    "recordingFailed": "Could not record audio.",
+    "sendFailed": "Could not send the message."
+  },
+  "bubble": {
+    "edited": "edited",
+    "editedTooltip": "This message was edited",
+    "voiceMessage": "Voice message",
+    "image": "Photo",
+    "failedTranscription": "Transcription failed",
+    "retryTranscription": "Retry",
+    "play": "Play",
+    "pause": "Pause"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "regenerate": "Regenerate",
+    "reply": "Reply",
+    "copy": "Copy",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "react": "React",
+    "deleteConfirmTitle": "Delete message",
+    "deleteConfirmMessage": "Delete this message? This cannot be undone.",
+    "editTitle": "Edit message",
+    "replyingTo": "Replying to a message",
+    "cancelReply": "Cancel reply",
+    "copied": "Copied to clipboard"
+  },
+  "preferences": {
+    "title": "Chat Preferences",
+    "replyMode": "Reply style",
+    "replyModeInstant": "Instant",
+    "replyModeInstantHint": "Replies arrive right away.",
+    "replyModeRealistic": "Realistic",
+    "replyModeRealisticHint": "Replies arrive with a natural typing delay.",
+    "fontSize": "Chat font size",
+    "fontSmall": "Small",
+    "fontMedium": "Medium",
+    "fontLarge": "Large",
+    "spacing": "Message spacing",
+    "spacingComfortable": "Comfortable",
+    "spacingCompact": "Compact",
+    "soundOnMessage": "Play a sound for new messages"
+  },
+  "impersonation": {
+    "label": "Chatting as",
+    "title": "Who are you chatting as?",
+    "description": "Choose the persona your AI partners will relate to.",
+    "defaultPersona": "You",
+    "apply": "Use this persona"
+  },
+  "emoji": {
+    "quickTitle": "Quick reactions",
+    "actionsTitle": "Emoji actions",
+    "actionsDescription": "These emoji also shift the character's mood.",
+    "none": "No emoji actions are configured for this character."
+  },
+  "images": {
+    "send": "Send picture",
+    "caption": "Add a caption (optional)",
+    "viewTitle": "Image",
+    "close": "Close",
+    "failed": "Could not load the image."
+  },
+  "proactive": {
+    "badge": "Messaged you"
+  },
+  "wire": {
+    "title": "Wire Inspector",
+    "toggle": "Show raw event payloads (Developer mode)",
+    "count": "{{count}} frames",
+    "clear": "Clear",
+    "close": "Close",
+    "empty": "No frames captured yet. Send a message to see the raw events."
+  },
+  "status": {
+    "typing": "{{name}} is typing…",
+    "recording": "{{name}} is recording…",
+    "connecting": "Connecting…"
+  },
+  "errors": {
+    "notConnected": "Not connected to the engine. Reconnecting…",
+    "generic": "Something went wrong."
+  }
+}

@@ -5,6 +5,7 @@ import { validateProviderConfig, listProviderModels } from '../../services/manag
 import { HarmonySpeechEnginePlugin } from '@harmony-ai/harmonyspeech';
 import { isHarmonyLinkMode } from '../../config/appMode.js';
 import IntegrationDisplay from '../integrations/IntegrationDisplay.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 import ConfigVerificationSection from '../widgets/ConfigVerificationSection.jsx';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
@@ -715,16 +716,17 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                                         placeholder="Value"
                                         className="input-field flex-1 p-1.5 rounded text-sm"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeKvRow(index)}
-                                        className="text-text-muted hover:text-error transition-colors p-1"
-                                        title="Remove"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                                    <Tooltip content="Remove">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeKvRow(index)}
+                                            className="text-text-muted hover:text-error transition-colors p-1"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </Tooltip>
                                 </div>
                             ))}
                             <button

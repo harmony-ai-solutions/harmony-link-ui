@@ -7,6 +7,8 @@ import {
     isLocalProvider
 } from '../../utils/integrationMatcher.js';
 import { controlIntegrationInstance } from '../../services/management/integrationsService.js';
+import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 // Helper: format provider display text for a config
 const getProviderDisplay = (config, moduleType) => {
@@ -158,7 +160,11 @@ export default function ModuleConfigRow({
             <div className="module-config-row-tint" />
 
             {/* ── Config sub-row ─────────────────────────────────────── */}
-            <div className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5">
+            {/* The whole sub-row toggles the inline editor, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 cursor-pointer"
+                onClick={rowToggleHandler(onToggleEditor)}
+            >
 
                 {/* [1] Config name */}
                 <span
@@ -185,76 +191,82 @@ export default function ModuleConfigRow({
 
                 {/* [Integration Status Indicator] */}
                 {statusInfo.type === 'docker-down' && (
-                    <span
-                        className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
-                        style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                            color: 'var(--color-status-error)'
-                        }}
-                        title={statusInfo.message}
-                    >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-status-error)' }} />
-                        Docker Unavailable
-                    </span>
+                    <Tooltip content={statusInfo.message}>
+                        <span
+                            className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                            style={{
+                                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                color: 'var(--color-status-error)'
+                            }}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-status-error)' }} />
+                            Docker Unavailable
+                        </span>
+                    </Tooltip>
                 )}
 
                 {statusInfo.type === 'running' && (
-                    <span
-                        className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
-                        style={{
-                            backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                            color: 'var(--color-success)'
-                        }}
-                        title={statusInfo.message}
-                    >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
-                        Running
-                    </span>
+                    <Tooltip content={statusInfo.message}>
+                        <span
+                            className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                            style={{
+                                backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                                color: 'var(--color-success)'
+                            }}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-success)' }} />
+                            Running
+                        </span>
+                    </Tooltip>
                 )}
 
                 {statusInfo.type === 'inactive' && (
                     <span className="flex-shrink-0 inline-flex items-center gap-2">
-                        <span
-                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
-                            style={{
-                                backgroundColor: 'rgba(234, 179, 8, 0.15)',
-                                color: 'var(--color-warning)'
-                            }}
-                            title={statusInfo.message}
-                        >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
-                            Offline
-                        </span>
-                        <button
-                            onClick={handleStart}
-                            className="instance-action-btn-success text-xs py-0.5 px-2"
-                            title="Start integration"
-                        >
-                            Start
-                        </button>
+                        <Tooltip content={statusInfo.message}>
+                            <span
+                                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                                style={{
+                                    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                                    color: 'var(--color-warning)'
+                                }}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                                Offline
+                            </span>
+                        </Tooltip>
+                        <Tooltip content="Start integration">
+                            <button
+                                onClick={handleStart}
+                                className="instance-action-btn-success text-xs py-0.5 px-2"
+                            >
+                                Start
+                            </button>
+                        </Tooltip>
                     </span>
                 )}
 
                 {statusInfo.type === 'partial' && (
                     <span className="flex-shrink-0 inline-flex items-center gap-2">
-                        <span
-                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
-                            style={{
-                                backgroundColor: 'rgba(234, 179, 8, 0.15)',
-                                color: 'var(--color-warning)'
-                            }}
-                            title={statusInfo.message}
-                        >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
-                            Partial
-                        </span>
-                        <button
-                            onClick={handleStart}
-                            className="instance-action-btn-success text-xs py-0.5 px-2"
-                            title="Restart integration"
-                        >
-                            Restart
-                        </button>
+                        <Tooltip content={statusInfo.message}>
+                            <span
+                                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full"
+                                style={{
+                                    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                                    color: 'var(--color-warning)'
+                                }}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }} />
+                                Partial
+                            </span>
+                        </Tooltip>
+                        <Tooltip content="Restart integration">
+                            <button
+                                onClick={handleStart}
+                                className="instance-action-btn-success text-xs py-0.5 px-2"
+                            >
+                                Restart
+                            </button>
+                        </Tooltip>
                     </span>
                 )}
 
@@ -264,49 +276,53 @@ export default function ModuleConfigRow({
                 {/* [4] Action buttons — named text buttons + chevron */}
                 <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
 
-                    <button
-                        onClick={() => onEdit(config)}
-                        className="module-action-btn"
-                        title="Edit Configuration"
-                    >
-                        Edit
-                    </button>
+                    <Tooltip content="Edit Configuration">
+                        <button
+                            onClick={() => onEdit(config)}
+                            className="module-action-btn"
+                        >
+                            Edit
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        onClick={() => onCopy(config)}
-                        className="module-action-btn"
-                        title="Copy Configuration"
-                    >
-                        Copy
-                    </button>
+                    <Tooltip content="Copy Configuration">
+                        <button
+                            onClick={() => onCopy(config)}
+                            className="module-action-btn"
+                        >
+                            Copy
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        onClick={handleDelete}
-                        className="module-action-btn-danger"
-                        title="Delete Configuration"
-                    >
-                        Delete
-                    </button>
+                    <Tooltip content="Delete Configuration">
+                        <button
+                            onClick={handleDelete}
+                            className="module-action-btn-danger"
+                        >
+                            Delete
+                        </button>
+                    </Tooltip>
 
                     {/* Chevron toggle — expands/collapses inline editor */}
-                    <button
-                        onClick={onToggleEditor}
-                        className="module-action-btn-icon"
-                        title={isEditorOpen ? 'Hide Configuration' : 'Show Configuration'}
-                    >
-                        <svg
-                            className="w-3.5 h-3.5"
-                            style={{
-                                transform: isEditorOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                                transition: 'transform 0.2s ease',
-                            }}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    <Tooltip content={isEditorOpen ? 'Hide Configuration' : 'Show Configuration'}>
+                        <button
+                            onClick={onToggleEditor}
+                            className="module-action-btn-icon"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                            <svg
+                                className="w-3.5 h-3.5"
+                                style={{
+                                    transform: isEditorOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s ease',
+                                }}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </Tooltip>
 
                 </div>
 

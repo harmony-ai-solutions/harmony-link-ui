@@ -1,0 +1,24 @@
+{
+  "sectionTitle": "Interface Mode",
+  "sectionDescription": "Choose how much of Harmony Link you want to see. You can switch at any time.",
+  "modes": {
+    "simple": {
+      "label": "Simple",
+      "description": "Just the essentials: chat, characters, and basic settings."
+    },
+    "pro": {
+      "label": "Pro",
+      "description": "Adds entities, modules, integrations, and system settings."
+    },
+    "dev": {
+      "label": "Developer",
+      "description": "Adds the simulator and developer tools such as logs."
+    }
+  },
+  "confirm": {
+    "title": "Switch to {{mode}} mode?",
+    "message": "Advanced screens will become available in the navigation. Nothing is removed — you can switch back at any time.",
+    "confirmText": "Switch",
+    "cancelText": "Cancel"
+  }
+}

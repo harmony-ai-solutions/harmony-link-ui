@@ -12,7 +12,12 @@ const useCharacterProfileStore = create((set, get) => ({
     images: {},  // Map of profileId -> image array
     isLoading: false,
     error: null,
-    
+    // Cross-view request: set by the Chat welcome screen's "Create AI
+    // Character" button, consumed once by CharacterProfilesView to open the
+    // create editor for a brand-new profile. Mirrors personaStore's
+    // requestEditPersonaId handoff pattern.
+    createProfileRequested: false,
+
     // Actions - Character Profiles
     
     /**
@@ -313,6 +318,16 @@ const useCharacterProfileStore = create((set, get) => ({
         const images = state.images[profileId] || [];
         return images.find(a => a.is_primary) || images[0];
     },
+
+    /**
+     * Cross-view handoff: ask the Characters tab to open the create-profile
+     * editor as soon as it renders. Used by the Chat welcome screen's
+     * "Create AI Character" button.
+     */
+    requestCreateProfile: () => set({ createProfileRequested: true }),
+
+    /** Consume the pending create request (idempotent). */
+    clearRequestCreateProfile: () => set({ createProfileRequested: false }),
 }));
 
 export default useCharacterProfileStore;

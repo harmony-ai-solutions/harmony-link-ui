@@ -1,88 +1,43 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Number Stepper — Custom +/- buttons replacing native number inputs
-   Glassmorphism design matching Toggle & input-field aesthetics
+   Number Stepper — a normal text input with tiny in-field spinners.
+
+   Redesigned so it no longer looks like a long, boxed segmented bar:
+   the field itself is styled exactly like `.input-field` (same height,
+   border, radius, background), and the +/- controls are small chevrons
+   sitting inside the right edge that only fade in on hover/focus.
    ═══════════════════════════════════════════════════════════════════ */
 
 .number-stepper {
-    display: inline-flex;
-    align-items: stretch;
-    width: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    background: var(--color-background-surface-translucent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--color-border-glass);
-    transition: all 0.3s var(--ease-spring);
-}
-
-.number-stepper:focus-within {
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 0 16px var(--color-glow-accent-soft),
-                0 0 0 3px var(--color-glow-accent-soft);
-}
-
-/* ── Buttons ──────────────────────────────────────────────────────── */
-
-.number-stepper__btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 36px;
-    min-width: 36px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    transition: all 0.2s var(--ease-spring);
-    user-select: none;
-    -webkit-user-select: none;
-    position: relative;
+    width: 100%;
+    /* Numeric values are short — never let the field stretch across a wide
+       form. Callers can widen it explicitly with a utility class if needed. */
+    max-width: 9rem;
 }
 
-.number-stepper__btn:hover:not(:disabled) {
-    color: var(--color-accent-primary);
-    background: var(--color-background-hover-glass);
-}
-
-.number-stepper__btn:active:not(:disabled) {
-    transform: scale(0.92);
-    color: var(--color-accent-primary);
-}
-
-.number-stepper__btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-/* Left button — subtle right border separator */
-.number-stepper__btn--minus {
-    border-right: 1px solid var(--color-border-glass);
-    border-radius: 0;
-}
-
-/* Right button — subtle left border separator */
-.number-stepper__btn--plus {
-    border-left: 1px solid var(--color-border-glass);
-    border-radius: 0;
-}
-
-/* ── Input ────────────────────────────────────────────────────────── */
+/* ── Field ────────────────────────────────────────────────────────── */
 
 .number-stepper__input {
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    border: none;
-    background: transparent;
+    border: 1px solid var(--color-border-glass);
+    border-radius: 8px;
+    background: var(--color-background-surface-translucent);
     color: var(--color-text-primary);
     font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-    padding: 0.75rem 0.25rem;
-    text-align: center;
+    font-size: 0.85rem;
+    padding: 0.45rem 1.9rem 0.45rem 0.65rem;
+    text-align: left;
     outline: none;
     -moz-appearance: textfield;
+    transition: border-color 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring);
+}
+
+.number-stepper__input:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px var(--color-glow-accent-soft);
 }
 
 .number-stepper__input::-webkit-outer-spin-button,
@@ -96,7 +51,64 @@
 }
 
 .number-stepper__input:disabled {
-    opacity: 0.4;
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ── In-field spinners — tiny chevrons, quiet until hover/focus ────── */
+
+.number-stepper__btn {
+    position: absolute;
+    right: 4px;
+    width: 16px;
+    height: 46%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s var(--ease-spring), color 0.15s var(--ease-spring);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.number-stepper__btn--plus {
+    top: 2px;
+}
+
+.number-stepper__btn--minus {
+    bottom: 2px;
+}
+
+.number-stepper:hover .number-stepper__btn,
+.number-stepper:focus-within .number-stepper__btn {
+    opacity: 0.7;
+}
+
+/* Touch devices have no hover — keep the spinners faintly visible. */
+@media (hover: none) {
+    .number-stepper__btn {
+        opacity: 0.55;
+    }
+}
+
+.number-stepper__btn:hover:not(:disabled) {
+    opacity: 1;
+    color: var(--color-accent-primary);
+}
+
+.number-stepper__btn:active:not(:disabled) {
+    transform: scale(0.88);
+    color: var(--color-accent-primary);
+}
+
+.number-stepper__btn:disabled {
+    opacity: 0.15 !important;
     cursor: not-allowed;
 }
 
@@ -110,9 +122,8 @@
 /* ── Reduced motion ───────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-    .number-stepper,
-    .number-stepper__btn,
-    .number-stepper__input {
+    .number-stepper__input,
+    .number-stepper__btn {
         transition: none;
     }
 }

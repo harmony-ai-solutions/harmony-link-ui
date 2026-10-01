@@ -3,6 +3,7 @@ import { parseImaginationWorkflow, testImaginationGeneration } from '../../servi
 import SettingsTooltip from '../settings/SettingsTooltip.jsx';
 import ThemedSelect from './ThemedSelect';
 import NumberStepper from '../ui/NumberStepper.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 export const EMPTY_PROFILE = {
     workflowjson: '',
@@ -237,13 +238,14 @@ export default function WorkflowProfileEditor({
                             }}>
                             {name}
                             {selectedProfile === name && name !== 'default' && Object.keys(profiles).length > 1 && (
-                                <span
-                                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none transition-all hover:brightness-125"
-                                    style={{ backgroundColor: 'var(--color-error)', color: '#ffffff' }}
-                                    title={`Remove "${name}"`}
-                                    onClick={e => { e.stopPropagation(); setConfirmRemove(true); }}>
-                                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                                </span>
+                                <Tooltip content={`Remove "${name}"`}>
+                                    <span
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none transition-all hover:brightness-125"
+                                        style={{ backgroundColor: 'var(--color-error)', color: '#ffffff' }}
+                                        onClick={e => { e.stopPropagation(); setConfirmRemove(true); }}>
+                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </span>
+                                </Tooltip>
                             )}
                         </button>
                     ))}

@@ -1,10 +1,106 @@
 {
   "header": {
     "title": "Development Tools",
-    "subtitle": "Real-time log viewer, prompt inspector, and ActionGraph testing"
+    "subtitle": "Logs, entity inspector, RAG debugging and schema tools",
+    "devBadge": "Developer Mode"
   },
   "tabs": {
-    "logViewer": "Log Viewer",
+    "logViewer": "Logs",
+    "inspector": "Inspector",
+    "rag": "RAG",
+    "tools": "Tools",
     "actionGraphTester": "ActionGraph Tester"
+  },
+  "inspector": {
+    "entity": "Entity",
+    "connected": "Connected",
+    "noEntities": "No entities configured",
+    "selectEntity": "Select an entity to inspect",
+    "loading": "Loading…",
+    "tabs": {
+      "overview": "Overview",
+      "prompts": "Prompts",
+      "events": "Event Trace"
+    },
+    "modules": {
+      "title": "Modules & Capabilities",
+      "empty": "No modules are enabled for this entity.",
+      "disabled": "Disabled"
+    },
+    "sessions": {
+      "title": "Active Sessions",
+      "empty": "No active sessions."
+    },
+    "emotion": {
+      "title": "Emotion State",
+      "empty": "No emotion state yet."
+    },
+    "memory": {
+      "title": "Memories",
+      "total": "Total"
+    },
+    "conversations": {
+      "title": "Conversations",
+      "empty": "No conversations yet."
+    },
+    "prompts": {
+      "filterType": "Type",
+      "allTypes": "All types",
+      "empty": "No prompts have been logged yet."
+    },
+    "events": {
+      "hint": "A timeline of this session's events. Expand a row to see its payload.",
+      "empty": "No events recorded for this entity."
+    }
+  },
+  "rag": {
+    "entity": "Entity",
+    "collection": "Collection",
+    "selectCollection": "Select a collection…",
+    "selectCollectionHint": "Pick an entity and a collection to start debugging.",
+    "allArchetypes": "All archetypes",
+    "allCategories": "All categories",
+    "tabs": {
+      "similarity": "Similarity Test",
+      "documents": "Documents"
+    },
+    "similarity": {
+      "title": "Similarity Test",
+      "placeholder": "Type a query to find the closest documents…",
+      "run": "Run Test",
+      "testing": "Testing…",
+      "results": "{{count}} matches",
+      "noResults": "No documents matched this query."
+    },
+    "documents": {
+      "title": "Documents ({{count}})",
+      "empty": "This collection has no documents.",
+      "details": "Document Details",
+      "selectHint": "Select a document to inspect it.",
+      "content": "Content",
+      "metadata": "Metadata",
+      "embedding": "Embedding Vector ({{count}} dimensions)"
+    }
+  },
+  "tools": {
+    "rawJson": {
+      "title": "Raw JSON",
+      "description": "Show every JSON payload at full depth, everywhere in the app."
+    },
+    "tabs": {
+      "schema": "Schema",
+      "migrations": "Migrations"
+    },
+    "schema": {
+      "filter": "Filter tables and indexes…",
+      "count": "{{count}} objects",
+      "raw": "Raw Schema"
+    },
+    "migrations": {
+      "applied": "{{applied}} of {{total}} migrations applied",
+      "pending": "{{count}} pending",
+      "stateApplied": "Applied",
+      "statePending": "Pending"
+    }
   }
 }

@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
 import ErrorDialog from '../modals/ErrorDialog';
 import InstanceList from './InstanceList';
+import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, onCreateInstance, onRefreshInstances }) => {
     const [showInstances, setShowInstances] = useState(false);
@@ -120,27 +122,32 @@ const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, o
             <div className="integration-row-stripe" />
 
             {/* ── Main Row ──────────────────────────────────────────────── */}
-            <div className="relative flex items-center gap-3 pl-5 pr-4 py-3">
+            {/* The whole row toggles the instance list, not just the chevron. */}
+            <div
+                className="relative flex items-center gap-3 pl-5 pr-4 py-3 cursor-pointer"
+                onClick={rowToggleHandler(() => setShowInstances((v) => !v))}
+            >
 
                 {/* [1] Chevron toggle */}
-                <button
-                    onClick={() => setShowInstances(!showInstances)}
-                    className="integration-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
-                    title={showInstances ? 'Hide Instances' : 'Show Instances'}
-                >
-                    <svg
-                        className="w-4 h-4"
-                        style={{
-                            transform: showInstances ? 'rotate(90deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.2s ease',
-                        }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                <Tooltip content={showInstances ? 'Hide Instances' : 'Show Instances'}>
+                    <button
+                        onClick={() => setShowInstances(!showInstances)}
+                        className="integration-row-chevron flex-shrink-0 w-6 h-6 flex items-center justify-center rounded"
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
+                        <svg
+                            className="w-4 h-4"
+                            style={{
+                                transform: showInstances ? 'rotate(90deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease',
+                            }}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </Tooltip>
 
                 {/* [2] Integration identity — grows to fill available space, no forced truncation */}
                 <div className="flex flex-col min-w-0 flex-1">

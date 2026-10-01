@@ -2972,6 +2972,15 @@ export const PROVIDER_FIELD_SCHEMAS = {
                     { id: 'flac', name: 'FLAC' }
                 ]
             },
+            {
+                key: 'language',
+                label: 'Language',
+                type: 'text',
+                placeholder: 'default',
+                tooltip: 'HSE TTS language code — kitten-tts requires "default".\nEmpty omits the field (correct for language-independent voices).',
+                width: '1/2',
+                labelWidth: '1/3'
+            },
             // Imagination fields
             {
                 key: 'imageaspectratio',

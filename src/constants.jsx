@@ -8,3 +8,4 @@ export const SettingsTabModules = "modules";
 export const SettingsTabDevelopment = "development";
 export const SettingsTabIntegrations = "integrations";
 export const SettingsTabSimulator = "simulator";
+export const SettingsTabSync = "sync";

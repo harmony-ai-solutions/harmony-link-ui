@@ -7,6 +7,7 @@ import { useI18nContext } from '../contexts/I18nContext.jsx';
 import { listThemes } from '../services/management/themeService';
 import { getConfig, updateConfig } from '../services/management/configService';
 import { openSystemUrl } from '../services/management/systemService';
+import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreBackupArtifact, probeBackupTarget } from '../services/management/backupService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
@@ -316,6 +317,96 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         } catch (err) {
             LogPrint('Failed to open bug tracker: ' + err.message);
             showFeedback(t('common:notifications.bugTrackerFailed'), 'error');
+        }
+    };
+
+    // ── Backup & Restore (plan 2-6) ────────────────────────────────────────
+    // Minimal hook driving the engine's user-owned-storage backup routes. The
+    // engine produces + uploads the encrypted artifact; this UI only configures
+    // the target and triggers the run.
+    const [backupTargets, setBackupTargets] = useState([]);
+    const [backupTargetType, setBackupTargetType] = useState('local-folder');
+    const [backupDestDir, setBackupDestDir] = useState('');
+    const [backupBaseUrl, setBackupBaseUrl] = useState('');
+    const [backupUsername, setBackupUsername] = useState('');
+    const [backupPassword, setBackupPassword] = useState('');
+    const [backupRecoveryCode, setBackupRecoveryCode] = useState('');
+    const [backupDataVersion, setBackupDataVersion] = useState('');
+    const [backupBusy, setBackupBusy] = useState(false);
+    const [backupStatus, setBackupStatus] = useState('');
+
+    useEffect(() => {
+        listBackupTargets().then(setBackupTargets).catch(err => {
+            LogPrint('Failed to load backup targets: ' + err.message);
+        });
+        getBackupDataVersion().then(setBackupDataVersion).catch(err => {
+            LogPrint('Failed to load backup data version: ' + err.message);
+        });
+    }, []);
+
+    // Build the target descriptor the engine routes accept.
+    const buildBackupTarget = () => {
+        if (backupTargetType === 'webdav') {
+            return { type: 'webdav', baseUrl: backupBaseUrl, username: backupUsername, password: backupPassword };
+        }
+        return { type: backupTargetType, destDir: backupDestDir };
+    };
+
+    const handleBackupNow = async () => {
+        setBackupBusy(true);
+        setBackupStatus('');
+        try {
+            const res = await createBackupArtifact({ target: buildBackupTarget(), deviceLabel: 'Desktop' });
+            if (res.skipped) {
+                setBackupStatus(tgs('backup.upToDate'));
+            } else {
+                setBackupStatus(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }));
+            }
+            if (res.dataVersion) setBackupDataVersion(res.dataVersion);
+            showFeedback(tgs('backup.backupSuccess', {
+                objects: res.uploadedObjects ?? 0,
+                bytes: res.totalBytes ?? 0
+            }), 'success');
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.backupFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusy(false);
+        }
+    };
+
+    const handleProbeBackup = async () => {
+        setBackupBusy(true);
+        setBackupStatus('');
+        try {
+            const st = await probeBackupTarget(buildBackupTarget());
+            setBackupStatus(tgs('backup.probeOk', { detail: st?.message || st?.status || 'ok' }));
+        } catch (err) {
+            setBackupStatus(tgs('backup.probeFailed', { message: err.message }));
+        } finally {
+            setBackupBusy(false);
+        }
+    };
+
+    const handleRestoreBackup = async () => {
+        if (!backupRecoveryCode.trim()) {
+            showModal(tgs('backup.recoveryCodeRequired'));
+            return;
+        }
+        setBackupBusy(true);
+        setBackupStatus('');
+        try {
+            const res = await restoreBackupArtifact({ target: buildBackupTarget(), recoveryCode: backupRecoveryCode.trim() });
+            setBackupStatus(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }));
+            showFeedback(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), 'success');
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.restoreFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusy(false);
         }
     };
 
@@ -943,6 +1034,108 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </svg>
                             {tc('buttons.reportBug')}
                         </button>
+                    </div>
+                </section>
+
+                {/* Backup & Restore Section */}
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-275">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">{tgs('sections.backupRestore')}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        {/* Left Column: Target picker + target fields */}
+                        <div className="space-y-4">
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.targetLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <select className="input-field w-full" value={backupTargetType}
+                                        onChange={(e) => setBackupTargetType(e.target.value)}>
+                                        {backupTargets.filter(bt => bt.v1).map((bt) => (
+                                            <option key={bt.type} value={bt.type}>{bt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            {backupTargetType === 'local-folder' && (
+                                <div className="flex items-center w-full">
+                                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                        {tgs('backup.destDirLabel')}
+                                    </label>
+                                    <div className="w-2/3 px-3">
+                                        <input type="text" className="input-field w-full" placeholder="D:\\Backups"
+                                            value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
+                            {backupTargetType === 'webdav' && (
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.baseUrlLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full" placeholder="https://cloud.example.com/remote.php/dav"
+                                                value={backupBaseUrl} onChange={(e) => setBackupBaseUrl(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.usernameLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full"
+                                                value={backupUsername} onChange={(e) => setBackupUsername(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.passwordLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="password" className="input-field w-full"
+                                                value={backupPassword} onChange={(e) => setBackupPassword(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {backupTargetType !== 'local-folder' && backupTargetType !== 'webdav' && (
+                                <div className="px-3 text-xs text-text-muted">{tgs('backup.otherTargetNote')}</div>
+                            )}
+                        </div>
+
+                        {/* Right Column: Actions + recovery code + status */}
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleBackupNow} disabled={backupBusy} className="btn-primary flex items-center gap-2">
+                                    {tgs('backup.backupNow')}
+                                </button>
+                                <button onClick={handleProbeBackup} disabled={backupBusy} className="btn-secondary flex items-center gap-2">
+                                    {tgs('backup.probe')}
+                                </button>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.recoveryCodeLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" className="input-field w-full"
+                                        value={backupRecoveryCode} onChange={(e) => setBackupRecoveryCode(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleRestoreBackup} disabled={backupBusy} className="btn-secondary flex items-center gap-2">
+                                    {tgs('backup.restore')}
+                                </button>
+                            </div>
+                            <div className="px-3 text-xs text-text-muted">
+                                {tgs('backup.dataVersion')}: <span className="text-text-secondary">{backupDataVersion || '—'}</span>
+                            </div>
+                            {backupStatus && (
+                                <div className="px-3 text-xs text-text-secondary">{backupStatus}</div>
+                            )}
+                        </div>
                     </div>
                 </section>
 

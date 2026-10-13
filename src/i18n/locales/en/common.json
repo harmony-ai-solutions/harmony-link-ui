@@ -10,6 +10,7 @@
       "personas": "Personas",
       "integrations": "Integrations",
       "simulator": "Simulator",
+      "sync": "Sync",
       "dev": "Dev"
     },
     "groups": {
@@ -108,6 +109,58 @@
       "status": "Status",
       "lastSync": "Last Sync",
       "actions": "Actions"
+    }
+  },
+  "sync": {
+    "title": "Sync",
+    "subtitle": "Changeset sync between this desktop and your devices",
+    "refresh": "Refresh",
+    "loading": "Loading sync status...",
+    "loadFailed": "Could not load sync status. Is the engine running?",
+    "authorityThisDevice": "This device leads",
+    "authorityPeer": "Peer leads",
+    "authorityThisDeviceHint": "This desktop holds write authority. Connected devices send their changes here.",
+    "authorityPeerHint": "Another engine currently holds write authority for this dataset.",
+    "epochId": "Epoch",
+    "epochStatus": "Epoch state",
+    "recording": "Recording",
+    "recordingOn": "Recording changes",
+    "recordingOff": "Not recording",
+    "lastSeq": "Last seq",
+    "clientsTitle": "Connected devices",
+    "clientsCount": "{{count}} connected",
+    "noClients": "No devices are connected right now.",
+    "noClientsHint": "When a phone connects and syncs, it will appear here.",
+    "colDevice": "Device",
+    "colType": "Type",
+    "colConnectedSince": "Connected since",
+    "colLastAcked": "Last acked",
+    "seqValue": "seq {{seq}}",
+    "pendingApprovalsTitle": "Device approvals",
+    "pendingApprovalsCount": "{{count}} device(s) awaiting approval",
+    "pendingApprovalsNone": "No pending approval requests",
+    "reviewApprovals": "Review",
+    "clientRoleTitle": "This desktop as a client",
+    "clientPeer": "Peer address",
+    "clientDataset": "Dataset",
+    "clientPendingWrites": "Buffered writes",
+    "clientLastError": "Last error",
+    "epochStates": {
+      "active": "Active",
+      "pending": "Pending",
+      "yielded": "Yielded",
+      "closed": "Closed"
+    },
+    "states": {
+      "idle": "Idle",
+      "pairing": "Pairing",
+      "connecting": "Connecting",
+      "pending_approval": "Awaiting approval",
+      "rejected": "Rejected",
+      "syncing": "Syncing",
+      "promoted": "Promoted (leads)",
+      "backoff": "Reconnecting",
+      "stopped": "Stopped"
     }
   }
 }

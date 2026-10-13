@@ -11,13 +11,14 @@ import CharacterProfilesView from "./components/characters/CharacterProfilesView
 import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronDownIcon, CheckIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronDownIcon, CheckIcon, SyncIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
-import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
+import SyncStatusView from "./components/sync/SyncStatusView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
-import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
+import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
+import useOutreachNotifications from "./hooks/useOutreachNotifications.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
@@ -96,6 +97,11 @@ function NavGroupMenu({ group, settingsTab, onSelect }) {
 function HarmonyLinkAppInner() {
     const { t } = useTranslation();
     const { currentTheme, toggleDarkLight } = useTheme();
+
+    // Plan 7-12 §4 (desktop D3): subscribe to the engine's outreach
+    // notification stream and raise an OS notification when the window is
+    // unfocused. No-op outside the Wails shell (guarded runtime access).
+    useOutreachNotifications();
 
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
@@ -262,6 +268,7 @@ function HarmonyLinkAppInner() {
                 { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
                 { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
                 { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
+                { id: SettingsTabSync, label: t('nav.tabs.sync'), icon: SyncIcon },
             ],
         },
         {
@@ -386,6 +393,9 @@ function HarmonyLinkAppInner() {
                 }
                 {settingsTab === SettingsTabSimulator &&
                     <SimulatorView></SimulatorView>
+                }
+                {settingsTab === SettingsTabSync &&
+                    <SyncStatusView></SyncStatusView>
                 }
             </div>
 

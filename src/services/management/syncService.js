@@ -144,3 +144,51 @@ export async function getSyncHistory(deviceId) {
         throw error;
     }
 }
+
+/**
+ * Get the changeset-v1 SERVER (authority) status — the desktop's own sync
+ * surface: authority flag, epoch/recording state, connected clients and the
+ * pending device-approval count (plan 3-5b).
+ * @returns {Promise<Object>} The server status object
+ */
+export async function getSyncServerStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sync/server/status`, {
+            method: 'GET',
+            headers: getJsonHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch sync server status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching sync server status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get the changeset-v1 CLIENT role status — only meaningful when this desktop
+ * engine is itself configured as a client of a peer (plan 3-5). Returns the
+ * same fields the phone screen shows.
+ * @returns {Promise<Object>} The client status object
+ */
+export async function getSyncClientStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/sync/client/status`, {
+            method: 'GET',
+            headers: getJsonHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch sync client status');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching sync client status:', error);
+        throw error;
+    }
+}

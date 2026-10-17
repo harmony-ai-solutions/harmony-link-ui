@@ -15,6 +15,8 @@ import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, Simulator
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import SyncStatusView from "./components/sync/SyncStatusView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
+import ToastHost from './components/ui/ToastHost.jsx';
+import useToastStore from './store/toastStore.js';
 import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
@@ -208,8 +210,22 @@ function HarmonyLinkAppInner() {
 
         deviceApprovalWatcher.addListener(handlePendingDevices);
 
+        // A device that appears ALREADY-APPROVED (auto-approved engine-side by a
+        // LAN pairing secret, or approved manually) raises a "«name» paired"
+        // toast (plan 7-15, task W §3). The manual approval modal is unchanged.
+        const handlePairedDevice = (device) => {
+            const name = device?.device_name || device?.device_id || t('pairing.pairedToast.fallbackName');
+            useToastStore.getState().push({
+                type: 'success',
+                title: t('pairing.pairedToast.title', { name }),
+                message: t('pairing.pairedToast.message'),
+            });
+        };
+        deviceApprovalWatcher.addPairedListener(handlePairedDevice);
+
         return () => {
             deviceApprovalWatcher.removeListener(handlePendingDevices);
+            deviceApprovalWatcher.removePairedListener(handlePairedDevice);
             deviceApprovalWatcher.stop();
         };
     }, [currentDevice]);
@@ -409,6 +425,9 @@ function HarmonyLinkAppInner() {
                 onReject={handleRejectDevice}
                 show={currentDevice !== null}
             />
+
+            {/* In-app toasts (paired-device notifications, plan 7-15) */}
+            <ToastHost />
 
             <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3]">
                 <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">

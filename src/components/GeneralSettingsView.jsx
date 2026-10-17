@@ -11,6 +11,9 @@ import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreB
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
+import CloudAccountCard from './settings/CloudAccountCard.jsx';
+import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
+import useCloudAccount from '../hooks/useCloudAccount.js';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import Toggle from './ui/Toggle.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
@@ -35,6 +38,9 @@ const AUTO_UPDATE_OPTIONS = [
 ];
 
 const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
+
+// localStorage key for the persisted backup UI config (never the WebDAV password).
+const BACKUP_CONFIG_STORAGE_KEY = 'soulbitsBackupTarget';
 
 const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const { t } = useTranslation();
@@ -334,6 +340,13 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [backupDataVersion, setBackupDataVersion] = useState('');
     const [backupBusy, setBackupBusy] = useState(false);
     const [backupStatus, setBackupStatus] = useState('');
+    const [backupBrowseOpen, setBackupBrowseOpen] = useState(false);
+    const [backupConfigHydrated, setBackupConfigHydrated] = useState(false);
+
+    // Soulbits Cloud identity — lets the soulbits-cloud target surface sign-in
+    // state and gate its buttons. No polling here; the CloudAccountCard on this
+    // same screen owns the live polling surface.
+    const { account: cloudAccount } = useCloudAccount({ poll: false });
 
     useEffect(() => {
         listBackupTargets().then(setBackupTargets).catch(err => {
@@ -344,13 +357,62 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         });
     }, []);
 
-    // Build the target descriptor the engine routes accept.
+    // Hydrate the persisted backup UI config on mount. The WebDAV password is
+    // deliberately never persisted — it lives in component state only.
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(BACKUP_CONFIG_STORAGE_KEY);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    if (typeof saved.targetType === 'string' && saved.targetType) setBackupTargetType(saved.targetType);
+                    if (typeof saved.destDir === 'string') setBackupDestDir(saved.destDir);
+                    if (typeof saved.webdavBaseUrl === 'string') setBackupBaseUrl(saved.webdavBaseUrl);
+                    if (typeof saved.webdavUsername === 'string') setBackupUsername(saved.webdavUsername);
+                }
+            }
+        } catch (err) {
+            LogPrint('Failed to restore backup config: ' + err.message);
+        } finally {
+            setBackupConfigHydrated(true);
+        }
+    }, []);
+
+    // Persist the backup UI config on change (after hydration completes).
+    useEffect(() => {
+        if (!backupConfigHydrated) return;
+        try {
+            localStorage.setItem(BACKUP_CONFIG_STORAGE_KEY, JSON.stringify({
+                targetType: backupTargetType,
+                destDir: backupDestDir,
+                webdavBaseUrl: backupBaseUrl,
+                webdavUsername: backupUsername,
+            }));
+        } catch (err) {
+            LogPrint('Failed to persist backup config: ' + err.message);
+        }
+    }, [backupConfigHydrated, backupTargetType, backupDestDir, backupBaseUrl, backupUsername]);
+
+    // Build the target descriptor the engine routes accept. For soulbits-cloud
+    // the engine self-fills the service URL + PASETO from the desktop's signed-in
+    // cloud session, so we send the bare type (no destDir/credentials).
     const buildBackupTarget = () => {
+        if (backupTargetType === 'soulbits-cloud') {
+            return { type: 'soulbits-cloud' };
+        }
         if (backupTargetType === 'webdav') {
             return { type: 'webdav', baseUrl: backupBaseUrl, username: backupUsername, password: backupPassword };
         }
-        return { type: backupTargetType, destDir: backupDestDir };
+        return { type: 'local-folder', destDir: backupDestDir };
     };
+
+    // A local-folder target with no folder makes the engine write into its own
+    // process working directory; block that, and block soulbits-cloud when the
+    // desktop is not signed in (the engine's 400 is the backstop).
+    const localFolderMissing = backupTargetType === 'local-folder' && !backupDestDir.trim();
+    const cloudSignedIn = cloudAccount?.signed_in === true;
+    const soulbitsCloudSignedOut = backupTargetType === 'soulbits-cloud' && !cloudSignedIn;
+    const backupActionsDisabled = backupBusy || localFolderMissing || soulbitsCloudSignedOut;
 
     const handleBackupNow = async () => {
         setBackupBusy(true);
@@ -383,7 +445,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setBackupStatus('');
         try {
             const st = await probeBackupTarget(buildBackupTarget());
-            setBackupStatus(tgs('backup.probeOk', { detail: st?.message || st?.status || 'ok' }));
+            if (st?.available) {
+                setBackupStatus(tgs('backup.probeOk', { detail: st.account || st.detail || tgs('backup.probeDetailOk') }));
+            } else {
+                setBackupStatus(tgs('backup.probeFailed', { message: st?.detail || tgs('backup.probeDetailUnavailable') }));
+            }
         } catch (err) {
             setBackupStatus(tgs('backup.probeFailed', { message: err.message }));
         } finally {
@@ -582,6 +648,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+
+                {/* Soulbits Cloud Account Section (plan 7-15) */}
+                <CloudAccountCard />
 
                 {/* Network & Infrastructure Section */}
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
@@ -1059,15 +1128,27 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                             {backupTargetType === 'local-folder' && (
-                                <div className="flex items-center w-full">
-                                    <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
-                                        {tgs('backup.destDirLabel')}
-                                    </label>
-                                    <div className="w-2/3 px-3">
-                                        <input type="text" className="input-field w-full" placeholder="D:\\Backups"
-                                            value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.destDirLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3 flex items-center gap-2">
+                                            <input type="text" className="input-field flex-1" placeholder="D:\\Backups"
+                                                value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
+                                            <button type="button" onClick={() => setBackupBrowseOpen(true)}
+                                                className="btn-secondary whitespace-nowrap flex-shrink-0">
+                                                {tgs('backup.browse')}
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                    {localFolderMissing && (
+                                        <div className="flex w-full">
+                                            <div className="w-1/3" />
+                                            <div className="w-2/3 px-3 text-xs text-yellow-400">{tgs('backup.destDirRequired')}</div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                             {backupTargetType === 'webdav' && (
                                 <>
@@ -1100,7 +1181,21 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                     </div>
                                 </>
                             )}
-                            {backupTargetType !== 'local-folder' && backupTargetType !== 'webdav' && (
+                            {backupTargetType === 'soulbits-cloud' && (
+                                <div className="px-3 text-xs space-y-1">
+                                    {cloudSignedIn ? (
+                                        <>
+                                            <div className="text-text-secondary">
+                                                {tgs('backup.cloudSignedInAs', { account: cloudAccount.email || cloudAccount.account_hint || '—' })}
+                                            </div>
+                                            <div className="text-text-muted">{tgs('backup.cloudQuotaNote')}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-yellow-400">{tgs('backup.cloudSignInFirst')}</div>
+                                    )}
+                                </div>
+                            )}
+                            {backupTargetType !== 'local-folder' && backupTargetType !== 'webdav' && backupTargetType !== 'soulbits-cloud' && (
                                 <div className="px-3 text-xs text-text-muted">{tgs('backup.otherTargetNote')}</div>
                             )}
                         </div>
@@ -1108,10 +1203,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         {/* Right Column: Actions + recovery code + status */}
                         <div className="space-y-4">
                             <div className="flex flex-wrap items-center gap-3 px-3">
-                                <button onClick={handleBackupNow} disabled={backupBusy} className="btn-primary flex items-center gap-2">
+                                <button onClick={handleBackupNow} disabled={backupActionsDisabled} className="btn-primary flex items-center gap-2 disabled:opacity-50">
                                     {tgs('backup.backupNow')}
                                 </button>
-                                <button onClick={handleProbeBackup} disabled={backupBusy} className="btn-secondary flex items-center gap-2">
+                                <button onClick={handleProbeBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
                                     {tgs('backup.probe')}
                                 </button>
                             </div>
@@ -1125,7 +1220,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-3 px-3">
-                                <button onClick={handleRestoreBackup} disabled={backupBusy} className="btn-secondary flex items-center gap-2">
+                                <button onClick={handleRestoreBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
                                     {tgs('backup.restore')}
                                 </button>
                             </div>
@@ -1155,6 +1250,12 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 onConfirm={() => { setConfirmModalVisible(false); confirmModalYes(); }}
                 onCancel={() => { setConfirmModalVisible(false); confirmModalNo(); }} />
             <DeviceManagementModal show={showDeviceManagementModal} onClose={() => setShowDeviceManagementModal(false)} />
+            <DirectoryBrowserModal
+                isOpen={backupBrowseOpen}
+                onClose={() => setBackupBrowseOpen(false)}
+                onPathSelected={(selected) => setBackupDestDir(selected)}
+                initialPath={backupDestDir}
+            />
         </div>
     );
 }

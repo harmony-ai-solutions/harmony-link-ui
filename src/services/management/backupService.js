@@ -3,6 +3,29 @@ import { getManagementApiUrl, getApiPath, getJsonHeaders } from './baseService.j
 const API_BASE_URL = `${getManagementApiUrl()}${getApiPath()}`;
 
 /**
+ * Build an Error from a failed response, surfacing the engine's `{ error }` body
+ * detail when present (the engine returns actionable copy, e.g. a 400 telling the
+ * user to sign in for a soulbits-cloud target) and falling back to the generic
+ * message otherwise. Mirrors the cloud service's error handling.
+ *
+ * @param {Response} response
+ * @param {string} fallback
+ * @returns {Promise<Error>}
+ */
+async function readApiError(response, fallback) {
+    let detail = null;
+    try {
+        const body = await response.json();
+        detail = body?.error ?? null;
+    } catch {
+        // Non-JSON body — fall back to the generic message.
+    }
+    const err = new Error(detail || fallback);
+    err.status = response.status;
+    return err;
+}
+
+/**
  * Backup Service - API calls for the engine's user-owned-storage backup (plan 2-6).
  *
  * The engine produces the encrypted artifact and uploads it to a caller-supplied
@@ -65,7 +88,7 @@ export async function probeBackupTarget(target) {
             body: JSON.stringify(target)
         });
         if (!response.ok) {
-            throw new Error('Failed to probe backup target');
+            throw await readApiError(response, 'Failed to probe backup target');
         }
         return await response.json();
     } catch (error) {
@@ -87,7 +110,7 @@ export async function createBackupArtifact(payload) {
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
-            throw new Error('Backup failed');
+            throw await readApiError(response, 'Backup failed');
         }
         return await response.json();
     } catch (error) {
@@ -110,7 +133,7 @@ export async function restoreBackupArtifact(payload) {
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
-            throw new Error('Restore failed');
+            throw await readApiError(response, 'Restore failed');
         }
         return await response.json();
     } catch (error) {

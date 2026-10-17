@@ -418,7 +418,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setBackupBusy(true);
         setBackupStatus('');
         try {
-            const res = await createBackupArtifact({ target: buildBackupTarget(), deviceLabel: 'Desktop' });
+            const res = await createBackupArtifact({ target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') });
             if (res.skipped) {
                 setBackupStatus(tgs('backup.upToDate'));
             } else {
@@ -1134,7 +1134,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                             {tgs('backup.destDirLabel')}
                                         </label>
                                         <div className="w-2/3 px-3 flex items-center gap-2">
-                                            <input type="text" className="input-field flex-1" placeholder="D:\\Backups"
+                                            <input type="text" className="input-field flex-1" placeholder={tgs('backup.destDirPlaceholder')}
                                                 value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
                                             <button type="button" onClick={() => setBackupBrowseOpen(true)}
                                                 className="btn-secondary whitespace-nowrap flex-shrink-0">
@@ -1157,7 +1157,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                             {tgs('backup.baseUrlLabel')}
                                         </label>
                                         <div className="w-2/3 px-3">
-                                            <input type="text" className="input-field w-full" placeholder="https://cloud.example.com/remote.php/dav"
+                                            <input type="text" className="input-field w-full" placeholder={tgs('backup.baseUrlPlaceholder')}
                                                 value={backupBaseUrl} onChange={(e) => setBackupBaseUrl(e.target.value)} />
                                         </div>
                                     </div>

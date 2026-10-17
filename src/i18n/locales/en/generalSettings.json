@@ -20,9 +20,12 @@
   "backup": {
     "targetLabel": "Backup target",
     "destDirLabel": "Destination folder",
+    "destDirPlaceholder": "D:\\Backups",
+    "deviceLabel": "Desktop",
     "browse": "Browse…",
     "destDirRequired": "Choose a destination folder before backing up.",
     "baseUrlLabel": "WebDAV URL",
+    "baseUrlPlaceholder": "https://cloud.example.com/remote.php/dav",
     "usernameLabel": "Username",
     "passwordLabel": "Password",
     "otherTargetNote": "This target is configured on the device (OAuth / native module).",

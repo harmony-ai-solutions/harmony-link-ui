@@ -99,8 +99,14 @@ export async function probeBackupTarget(target) {
 
 /**
  * Create a backup artifact and upload it to the target.
- * @param {Object} payload - { target, deviceLabel?, targetAccount?, passphrase?, force?, dryRun?, includeSideObjects? }
- * @returns {Promise<Object>} { skipped, recoveryCode, recoveryCodeIsNew, dataVersion, uploadedObjects, dedupedObjects, totalBytes, manifest }
+ * @param {Object} payload - { target, deviceLabel?, targetAccount?, passphrase?, force?, dryRun?, includeSideObjects?, onConflict? }
+ *   onConflict (hosted soulbits-cloud only): "hold" (default) returns a `held`
+ *   conflict when another device wrote the cloud manifest; "overwrite" replaces it.
+ * @returns {Promise<Object>} { skipped, recoveryCode, recoveryCodeIsNew, dataVersion,
+ *   uploadedObjects, dedupedObjects, totalBytes, manifest, held? }
+ *   held (present only when the push was held): { remoteGeneration,
+ *   remoteDataVersion, remoteDeviceLabel, remoteSyncedAt,
+ *   remoteSyncGroupFingerprint }.
  */
 export async function createBackupArtifact(payload) {
     try {
@@ -138,6 +144,29 @@ export async function restoreBackupArtifact(payload) {
         return await response.json();
     } catch (error) {
         console.error('Error restoring backup artifact:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get this device's current sync-group fingerprint (empty when unpaired) — used
+ * to hint when a cloud backup belongs to a sync group this device is not part of
+ * (owner ruling 2026-10-17).
+ * @returns {Promise<string>} The fingerprint (sha256 hex) or ''
+ */
+export async function getBackupSyncGroupFingerprint() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/backup/sync-group-fingerprint`, {
+            method: 'GET',
+            headers: getJsonHeaders()
+        });
+        if (!response.ok) {
+            throw new Error('Failed to fetch sync-group fingerprint');
+        }
+        const data = await response.json();
+        return data?.fingerprint || '';
+    } catch (error) {
+        console.error('Error fetching sync-group fingerprint:', error);
         throw error;
     }
 }

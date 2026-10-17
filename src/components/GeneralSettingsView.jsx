@@ -7,10 +7,11 @@ import { useI18nContext } from '../contexts/I18nContext.jsx';
 import { listThemes } from '../services/management/themeService';
 import { getConfig, updateConfig } from '../services/management/configService';
 import { openSystemUrl } from '../services/management/systemService';
-import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreBackupArtifact, probeBackupTarget } from '../services/management/backupService';
+import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreBackupArtifact, probeBackupTarget, getBackupSyncGroupFingerprint } from '../services/management/backupService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
+import BackupConflictModal from './modals/BackupConflictModal.jsx';
 import CloudAccountCard from './settings/CloudAccountCard.jsx';
 import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
 import useCloudAccount from '../hooks/useCloudAccount.js';
@@ -352,6 +353,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [backupStatus, setBackupStatus] = useState('');
     const [backupBrowseOpen, setBackupBrowseOpen] = useState(false);
     const [backupConfigHydrated, setBackupConfigHydrated] = useState(false);
+    // Held-push conflict (owner ruling 2026-10-17): when the cloud backup was
+    // written by another device with different data, the engine HOLDS the push
+    // and returns the remote metadata; the modal lets the user decide.
+    const [backupConflict, setBackupConflict] = useState(null);
+    const [localSyncFingerprint, setLocalSyncFingerprint] = useState('');
 
     // Soulbits Cloud identity — lets the soulbits-cloud target surface sign-in
     // state and gate its buttons. No polling here; the CloudAccountCard on this
@@ -364,6 +370,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         });
         getBackupDataVersion().then(setBackupDataVersion).catch(err => {
             LogPrint('Failed to load backup data version: ' + err.message);
+        });
+        getBackupSyncGroupFingerprint().then(setLocalSyncFingerprint).catch(err => {
+            LogPrint('Failed to load sync-group fingerprint: ' + err.message);
         });
     }, []);
 
@@ -441,26 +450,36 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const soulbitsCloudSignedOut = backupTargetType === 'soulbits-cloud' && !cloudSignedIn;
     const backupActionsDisabled = backupBusy || localFolderMissing || soulbitsCloudSignedOut;
 
-    const handleBackupNow = async () => {
+    // runBackup drives one backup run. onConflict (hosted soulbits-cloud only)
+    // is undefined/"hold" for a normal run and "overwrite" when the user chose
+    // "Push mine" on the conflict modal.
+    const runBackup = async (onConflict) => {
         setBackupBusyMode('backup');
         backupStartedAtRef.current = Date.now();
         setBackupStatus('');
         try {
-            const res = await createBackupArtifact({ target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') });
+            const payload = { target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') };
+            if (onConflict) payload.onConflict = onConflict;
+            const res = await createBackupArtifact(payload);
             const seconds = backupElapsedSeconds();
-            if (res.skipped) {
+            if (res.held) {
+                // Another device wrote the cloud backup with different data — the
+                // engine held the push. Surface the conflict modal; upload nothing.
+                setBackupConflict(res.held);
+                setBackupStatus(tgs('backup.heldStatus', { device: res.held.remoteDeviceLabel || '—' }));
+            } else if (res.skipped) {
                 setBackupStatus(tgs('backup.upToDate'));
             } else {
                 setBackupStatus(withBackupDuration(tgs('backup.backupSuccess', {
                     objects: res.uploadedObjects ?? 0,
                     bytes: res.totalBytes ?? 0
                 }), seconds));
+                showFeedback(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }), 'success');
             }
             if (res.dataVersion) setBackupDataVersion(res.dataVersion);
-            showFeedback(tgs('backup.backupSuccess', {
-                objects: res.uploadedObjects ?? 0,
-                bytes: res.totalBytes ?? 0
-            }), 'success');
         } catch (err) {
             setBackupStatus(err.message);
             showFeedback(tgs('backup.backupFailed', { message: err.message }), 'error');
@@ -468,6 +487,19 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             setBackupBusyMode(null);
         }
     };
+
+    const handleBackupNow = () => runBackup(undefined);
+
+    // Conflict-modal actions (owner ruling 2026-10-17).
+    const handleConflictPushMine = () => {
+        setBackupConflict(null);
+        runBackup('overwrite');
+    };
+    const handleConflictPullTheirs = () => {
+        setBackupConflict(null);
+        handleRestoreBackup();
+    };
+    const handleConflictCancel = () => setBackupConflict(null);
 
     const handleProbeBackup = async () => {
         setBackupBusyMode('probe');
@@ -1291,6 +1323,15 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 onConfirm={() => { setConfirmModalVisible(false); confirmModalYes(); }}
                 onCancel={() => { setConfirmModalVisible(false); confirmModalNo(); }} />
             <DeviceManagementModal show={showDeviceManagementModal} onClose={() => setShowDeviceManagementModal(false)} />
+            <BackupConflictModal
+                isOpen={!!backupConflict}
+                conflict={backupConflict}
+                localFingerprint={localSyncFingerprint}
+                busy={backupBusy}
+                onPushMine={handleConflictPushMine}
+                onPullTheirs={handleConflictPullTheirs}
+                onCancel={handleConflictCancel}
+            />
             <DirectoryBrowserModal
                 isOpen={backupBrowseOpen}
                 onClose={() => setBackupBrowseOpen(false)}

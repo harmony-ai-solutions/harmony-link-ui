@@ -39,6 +39,11 @@ const AUTO_UPDATE_OPTIONS = [
 
 const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
 
+// Small inline spinner for the backup action buttons + running status line.
+const BackupSpinner = ({ className = 'w-3.5 h-3.5' }) => (
+    <span className={`block rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} />
+);
+
 // localStorage key for the persisted backup UI config (never the WebDAV password).
 const BACKUP_CONFIG_STORAGE_KEY = 'soulbitsBackupTarget';
 
@@ -338,7 +343,12 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [backupPassword, setBackupPassword] = useState('');
     const [backupRecoveryCode, setBackupRecoveryCode] = useState('');
     const [backupDataVersion, setBackupDataVersion] = useState('');
-    const [backupBusy, setBackupBusy] = useState(false);
+    // Which backup action is in flight (null = idle). Drives the per-button
+    // spinner/label swap and the ticking elapsed-time status line.
+    const [backupBusyMode, setBackupBusyMode] = useState(null);
+    const [backupElapsed, setBackupElapsed] = useState(0);
+    const backupBusy = backupBusyMode !== null;
+    const backupStartedAtRef = useRef(0);
     const [backupStatus, setBackupStatus] = useState('');
     const [backupBrowseOpen, setBackupBrowseOpen] = useState(false);
     const [backupConfigHydrated, setBackupConfigHydrated] = useState(false);
@@ -393,6 +403,23 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         }
     }, [backupConfigHydrated, backupTargetType, backupDestDir, backupBaseUrl, backupUsername]);
 
+    // Tick a 1s elapsed counter while any backup action is running; resets on
+    // each new action and cleans up when it finishes or the view unmounts.
+    useEffect(() => {
+        if (!backupBusyMode) return undefined;
+        setBackupElapsed(0);
+        const id = setInterval(() => { setBackupElapsed((n) => n + 1); }, 1000);
+        return () => clearInterval(id);
+    }, [backupBusyMode]);
+
+    // Elapsed whole seconds since the current action started (for result copy).
+    const backupElapsedSeconds = () => Math.max(0, Math.round((Date.now() - backupStartedAtRef.current) / 1000));
+
+    // Append "(Ns)" to a result line where it's cheap to show how long it took.
+    function withBackupDuration(text, seconds) {
+        return tgs('backup.tookSeconds', { text, seconds });
+    }
+
     // Build the target descriptor the engine routes accept. For soulbits-cloud
     // the engine self-fills the service URL + PASETO from the desktop's signed-in
     // cloud session, so we send the bare type (no destDir/credentials).
@@ -415,17 +442,19 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const backupActionsDisabled = backupBusy || localFolderMissing || soulbitsCloudSignedOut;
 
     const handleBackupNow = async () => {
-        setBackupBusy(true);
+        setBackupBusyMode('backup');
+        backupStartedAtRef.current = Date.now();
         setBackupStatus('');
         try {
             const res = await createBackupArtifact({ target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') });
+            const seconds = backupElapsedSeconds();
             if (res.skipped) {
                 setBackupStatus(tgs('backup.upToDate'));
             } else {
-                setBackupStatus(tgs('backup.backupSuccess', {
+                setBackupStatus(withBackupDuration(tgs('backup.backupSuccess', {
                     objects: res.uploadedObjects ?? 0,
                     bytes: res.totalBytes ?? 0
-                }));
+                }), seconds));
             }
             if (res.dataVersion) setBackupDataVersion(res.dataVersion);
             showFeedback(tgs('backup.backupSuccess', {
@@ -436,12 +465,13 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             setBackupStatus(err.message);
             showFeedback(tgs('backup.backupFailed', { message: err.message }), 'error');
         } finally {
-            setBackupBusy(false);
+            setBackupBusyMode(null);
         }
     };
 
     const handleProbeBackup = async () => {
-        setBackupBusy(true);
+        setBackupBusyMode('probe');
+        backupStartedAtRef.current = Date.now();
         setBackupStatus('');
         try {
             const st = await probeBackupTarget(buildBackupTarget());
@@ -453,7 +483,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         } catch (err) {
             setBackupStatus(tgs('backup.probeFailed', { message: err.message }));
         } finally {
-            setBackupBusy(false);
+            setBackupBusyMode(null);
         }
     };
 
@@ -462,17 +492,19 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             showModal(tgs('backup.recoveryCodeRequired'));
             return;
         }
-        setBackupBusy(true);
+        setBackupBusyMode('restore');
+        backupStartedAtRef.current = Date.now();
         setBackupStatus('');
         try {
             const res = await restoreBackupArtifact({ target: buildBackupTarget(), recoveryCode: backupRecoveryCode.trim() });
-            setBackupStatus(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }));
+            const seconds = backupElapsedSeconds();
+            setBackupStatus(withBackupDuration(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), seconds));
             showFeedback(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), 'success');
         } catch (err) {
             setBackupStatus(err.message);
             showFeedback(tgs('backup.restoreFailed', { message: err.message }), 'error');
         } finally {
-            setBackupBusy(false);
+            setBackupBusyMode(null);
         }
     };
 
@@ -1204,10 +1236,12 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         <div className="space-y-4">
                             <div className="flex flex-wrap items-center gap-3 px-3">
                                 <button onClick={handleBackupNow} disabled={backupActionsDisabled} className="btn-primary flex items-center gap-2 disabled:opacity-50">
-                                    {tgs('backup.backupNow')}
+                                    {backupBusyMode === 'backup' && <BackupSpinner />}
+                                    {backupBusyMode === 'backup' ? tgs('backup.busyBackup') : tgs('backup.backupNow')}
                                 </button>
                                 <button onClick={handleProbeBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
-                                    {tgs('backup.probe')}
+                                    {backupBusyMode === 'probe' && <BackupSpinner />}
+                                    {backupBusyMode === 'probe' ? tgs('backup.busyProbe') : tgs('backup.probe')}
                                 </button>
                             </div>
                             <div className="flex items-center w-full">
@@ -1221,9 +1255,16 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </div>
                             <div className="flex flex-wrap items-center gap-3 px-3">
                                 <button onClick={handleRestoreBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
-                                    {tgs('backup.restore')}
+                                    {backupBusyMode === 'restore' && <BackupSpinner />}
+                                    {backupBusyMode === 'restore' ? tgs('backup.busyRestore') : tgs('backup.restore')}
                                 </button>
                             </div>
+                            {backupBusyMode && (
+                                <div className="px-3 text-xs text-text-secondary flex items-center gap-2">
+                                    <BackupSpinner className="w-3 h-3" />
+                                    <span>{tgs('backup.running', { seconds: backupElapsed })}</span>
+                                </div>
+                            )}
                             <div className="px-3 text-xs text-text-muted">
                                 {tgs('backup.dataVersion')}: <span className="text-text-secondary">{backupDataVersion || '—'}</span>
                             </div>

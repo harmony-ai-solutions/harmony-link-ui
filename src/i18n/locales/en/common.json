@@ -162,5 +162,68 @@
       "backoff": "Reconnecting",
       "stopped": "Stopped"
     }
+  },
+  "cloudAccount": {
+    "title": "Soulbits Cloud Account",
+    "description": "Sign this desktop's engine into Soulbits Cloud to pair devices over the relay and authorize enrolled phones.",
+    "status": {
+      "checking": "Checking…",
+      "signedOut": "Signed out",
+      "pending": "Waiting for browser",
+      "expired": "Session expired",
+      "ready": "Ready"
+    },
+    "signIn": "Sign in to Soulbits Cloud",
+    "signInAgain": "Sign in again",
+    "signingIn": "Opening browser…",
+    "signInHint": "Your browser will open to complete sign-in.",
+    "signInFailed": "Cloud sign-in failed: {{message}}",
+    "expiredTitle": "Session expired — sign in again",
+    "expiredBody": "Your Soulbits Cloud session ended on this desktop. Sign in again to restore cloud pairing and backups — no need to sign out first.",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "signOutFailed": "Could not sign out: {{message}}",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load cloud account status.",
+    "notConfigured": "Cloud sign-in is not configured on this engine.",
+    "accountLabel": "Account",
+    "hintLabel": "Account hint",
+    "deviceLabel": "This device",
+    "deviceAuthorized": "Authorized",
+    "devicePending": "Awaiting authorization",
+    "waitingTitle": "Finish signing in in your browser",
+    "waitingBody": "Complete sign-in and click Allow in the browser tab we opened. This page updates automatically."
+  },
+  "pairing": {
+    "title": "Pair a device",
+    "subtitle": "Scan the code with the Soulbits app on your phone",
+    "entryButton": "Pair a device",
+    "tabs": {
+      "lan": "Local network",
+      "cloud": "Soulbits Cloud"
+    },
+    "generating": "Generating pairing code…",
+    "lanFailed": "Could not create a local-network pairing code.",
+    "cloudFailed": "Could not create a cloud pairing code.",
+    "scanHint": "Open Soulbits on your phone and scan this code.",
+    "expired": "Code expired",
+    "regenerate": "New code",
+    "badge": {
+      "verified": "Verified (certificate pinned)",
+      "secure": "Secure",
+      "insecureSsl": "Insecure SSL",
+      "unencrypted": "Unencrypted",
+      "cloudRelay": "Soulbits Cloud relay"
+    },
+    "cloudSignInRequiredTitle": "Sign in to Soulbits Cloud",
+    "cloudSignInHint": "Cloud pairing needs you signed in to Soulbits Cloud. Use the button below to open the sign-in page.",
+    "cloudSignInButton": "Sign in",
+    "deviceWaitTitle": "Finish signing in in your browser",
+    "deviceWaitBody": "Complete sign-in and click Allow in the browser tab we opened. This screen updates automatically.",
+    "pairedToast": {
+      "title": "{{name}} paired",
+      "message": "A device was paired with this desktop.",
+      "fallbackName": "Device"
+    }
   }
 }

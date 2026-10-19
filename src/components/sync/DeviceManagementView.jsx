@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDevices, revokeDevice, approveDevice, rejectDevice } from '../../services/management/syncService.js';
 
 /**
- * Device Management View - Shows all synced devices and allows revocation
+ * Device Management View - Shows all synced devices and allows revocation.
+ *
+ * Rendered as the `sync` destination in the left rail. The equivalent modal
+ * (components/modals/DeviceManagementModal.jsx) is kept as a compatibility
+ * entry point from General Settings.
  */
 export const DeviceManagementView = () => {
+    const { t } = useTranslation();
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -21,14 +27,14 @@ export const DeviceManagementView = () => {
             setDevices(result || []);
         } catch (err) {
             console.error('Failed to load devices:', err);
-            setError('Failed to load devices');
+            setError(t('common:deviceManagement.loadFailed'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleRevoke = async (deviceId) => {
-        if (!window.confirm('Are you sure you want to revoke access for this device?')) {
+        if (!window.confirm(t('common:deviceManagement.revokeConfirm'))) {
             return;
         }
 
@@ -37,7 +43,7 @@ export const DeviceManagementView = () => {
             await loadDevices(); // Reload list
         } catch (err) {
             console.error('Failed to revoke device:', err);
-            setError('Failed to revoke device access');
+            setError(t('common:deviceManagement.revokeFailed'));
         }
     };
 
@@ -47,7 +53,7 @@ export const DeviceManagementView = () => {
             await loadDevices(); // Reload list
         } catch (err) {
             console.error('Failed to approve device:', err);
-            setError('Failed to approve device');
+            setError(t('common:deviceApproval.failed'));
         }
     };
 
@@ -57,22 +63,22 @@ export const DeviceManagementView = () => {
             await loadDevices(); // Reload list
         } catch (err) {
             console.error('Failed to reject device:', err);
-            setError('Failed to reject device');
+            setError(t('common:deviceApproval.rejected'));
         }
     };
 
     const getStatusBadge = (device) => {
         if (device.is_approved === 1) {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">Approved</span>;
+            return <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400">{t('common:deviceManagement.status.approved')}</span>;
         } else if (device.is_approved === 2) {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400">Rejected</span>;
+            return <span className="px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400">{t('common:deviceManagement.status.rejected')}</span>;
         } else {
-            return <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-500/20 text-yellow-400">Pending</span>;
+            return <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-500/20 text-yellow-400">{t('common:deviceManagement.status.pending')}</span>;
         }
     };
 
     const formatDate = (timestamp) => {
-        if (!timestamp) return 'Never';
+        if (!timestamp) return t('common:deviceManagement.never');
         const date = new Date(timestamp * 1000);
         return date.toLocaleString();
     };
@@ -80,7 +86,7 @@ export const DeviceManagementView = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <p className="text-text-muted">Loading devices...</p>
+                <p className="text-text-muted">{t('common:deviceManagement.loadingDevices')}</p>
             </div>
         );
     }
@@ -89,8 +95,10 @@ export const DeviceManagementView = () => {
         <div className="p-6 space-y-6">
             {/* Header */}
             <div>
-                <h2 className="text-2xl font-bold text-text-primary">Synced Devices</h2>
-                <p className="text-text-muted mt-1">Manage devices that can sync with this Harmony Link instance</p>
+                <h2 className="text-2xl font-bold text-text-primary">
+                    {t('common:deviceManagement.syncedPrefix')} {t('common:deviceManagement.devices')}
+                </h2>
+                <p className="text-text-muted mt-1">{t('common:deviceManagement.subtitle')}</p>
             </div>
 
             {/* Error Alert */}
@@ -103,20 +111,20 @@ export const DeviceManagementView = () => {
             {/* Empty State */}
             {devices.length === 0 ? (
                 <div className="border border-white/10 rounded-lg p-8 text-center">
-                    <p className="text-text-muted">No devices have requested sync access yet.</p>
-                    <p className="text-text-muted text-sm mt-2">When devices request to connect, they will appear here.</p>
+                    <p className="text-text-muted">{t('common:deviceManagement.noDevices')}</p>
+                    <p className="text-text-muted text-sm mt-2">{t('common:deviceManagement.noDevicesHint')}</p>
                 </div>
             ) : (
                 <div className="overflow-x-auto rounded-lg border border-white/10">
                     <table className="w-full">
                         <thead>
                             <tr className="bg-background-elevated/50">
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Device Name</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Type</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Platform</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Status</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Last Sync</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">Actions</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.deviceName')}</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.type')}</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.platform')}</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.status')}</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.lastSync')}</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-text-primary">{t('common:deviceManagement.columns.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -138,13 +146,13 @@ export const DeviceManagementView = () => {
                                                     onClick={() => handleApprove(device.device_id)}
                                                     className="px-3 py-2 rounded text-xs font-medium bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
                                                 >
-                                                    Approve
+                                                    {t('common:deviceApproval.approve')}
                                                 </button>
                                                 <button
                                                     onClick={() => handleReject(device.device_id)}
                                                     className="px-3 py-2 rounded text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                                                 >
-                                                    Reject
+                                                    {t('common:deviceApproval.reject')}
                                                 </button>
                                             </div>
                                         )}
@@ -153,7 +161,7 @@ export const DeviceManagementView = () => {
                                                 onClick={() => handleRevoke(device.device_id)}
                                                 className="px-3 py-2 rounded text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                                             >
-                                                Revoke
+                                                {t('common:deviceManagement.revoke')}
                                             </button>
                                         )}
                                     </td>

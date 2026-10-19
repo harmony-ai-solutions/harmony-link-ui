@@ -336,6 +336,17 @@ export const RobotIcon = ({ className = defaultSize }) => (
     </svg>
 );
 
+// Two arrows chasing each other around a circle — reads as "sync" rather than
+// "refresh" (RefreshIcon is a single loop and is used for reload actions).
+export const SyncIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 0113.657-5.657L20 8" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 4v4h-4" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12a8 8 0 01-13.657 5.657L4 16" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 20v-4h4" />
+    </svg>
+);
+
 // Optical-size normalization: 18x16 artwork scaled 18/18 = 1.
 export const TerminalIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">

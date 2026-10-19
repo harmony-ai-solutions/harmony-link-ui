@@ -11,10 +11,12 @@
       "personas": "You",
       "integrations": "Integrations",
       "simulator": "Simulator",
-      "dev": "Dev"
+      "dev": "Dev",
+      "sync": "Sync"
     },
     "groups": {
       "characters": "AI Characters",
+      "conversations": "Conversations",
       "settings": "Settings",
       "developer": "Developer"
     },
@@ -100,6 +102,7 @@
     "devices": "Devices",
     "subtitle": "Manage devices that can sync with this Harmony Link instance",
     "loadFailed": "Failed to load devices",
+    "never": "Never",
     "revokeConfirm": "Are you sure you want to revoke access for this device?",
     "revokeFailed": "Failed to revoke device access",
     "loadingDevices": "Loading devices...",

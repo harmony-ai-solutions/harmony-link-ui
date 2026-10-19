@@ -10,11 +10,11 @@ import CharacterProfilesView from "./components/characters/CharacterProfilesView
 import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon, SyncIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
-import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
+import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import useUIModeStore, { isModeAllowed } from "./store/uiModeStore.js";
@@ -288,9 +288,19 @@ function HarmonyLinkAppInner() {
     // Every tab declares the lowest UI mode that can see it (`minMode`); the
     // menu is then filtered against the active mode so Simple users only see
     // the essentials, Pro adds power features, and Dev adds the tooling.
-    // Kept intentionally flat: a headerless primary item (Chat) at the top, then
-    // three clearly-named sections. Fewer headers than destinations avoids the
-    // "header repeats the only item" clutter that single-item groups created.
+    //
+    // Group order describes the mental model, not the implementation:
+    //   chat          — where you talk (headerless primary destination)
+    //   characters    — who the AI is and who you are
+    //   conversations — the inbox: every thread you are not actively reading
+    //   settings      — app preferences, then service configuration
+    //   developer     — Dev-only tooling
+    //
+    // The `conversations` group is declared ahead of its members: Phase 02 adds
+    // Archived and Disabled-AI destinations here. An empty group is dropped by
+    // the `navGroups` filter below, so declaring it now costs nothing on screen
+    // and keeps the rail stable when Phase 02 lands. Do not move `chat` into it:
+    // Chat is the one destination that must be reachable with zero clicks.
     const allNavGroups = [
         {
             // Primary landing destination — no header, sits above the sections.
@@ -318,8 +328,25 @@ function HarmonyLinkAppInner() {
             ],
         },
         {
+            // Conversations — the inbox. Intentionally empty until Phase 02
+            // populates it; see the note above.
+            id: 'conversations',
+            label: t('nav.groups.conversations'),
+            icon: MessageIcon,
+            minMode: 'simple',
+            tabs: [
+                // Phase 02: Archived chats.
+                // { id: SettingsTabArchived, label: t('nav.tabs.archived'), icon: ArchiveIcon, minMode: 'simple' },
+                // Phase 02: Disabled AI partners.
+                // { id: SettingsTabDisabledAIs, label: t('nav.tabs.disabledAIs'), icon: UsersIcon, minMode: 'simple' },
+            ],
+        },
+        {
             // Settings — app preferences first, then the Pro-only screens that
-            // connect and manage the AI services.
+            // connect and manage the AI services. Sync is the one Pro
+            // destination that also has a Simple-era entry point: the
+            // "Manage devices" modal in General Settings, kept for
+            // compatibility.
             id: 'settings',
             label: t('nav.groups.settings'),
             icon: SettingsGearIcon,
@@ -328,6 +355,7 @@ function HarmonyLinkAppInner() {
                 { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon, minMode: 'simple' },
                 { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon, minMode: 'pro' },
                 { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon, minMode: 'pro' },
+                { id: SettingsTabSync, label: t('nav.tabs.sync'), icon: SyncIcon, minMode: 'pro' },
             ],
         },
         {
@@ -473,6 +501,12 @@ function HarmonyLinkAppInner() {
                         }
                         {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabIntegrations &&
                             <IntegrationsView></IntegrationsView>
+                        }
+                        {/* Sync — first-class rail destination. The General
+                            Settings "Manage devices" modal remains as a
+                            compatibility entry point into the same data. */}
+                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabSync &&
+                            <DeviceManagementView></DeviceManagementView>
                         }
                         {isModeAllowed(uiMode, 'dev') && settingsTab === SettingsTabSimulator &&
                             <SimulatorView></SimulatorView>

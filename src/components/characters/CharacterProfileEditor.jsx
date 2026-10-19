@@ -11,6 +11,7 @@ import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import NumberStepper from '../ui/NumberStepper.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore';
+import { toast } from '../../store/toastStore.js';
 
 // ---------------------------------------------------------------------------
 // Inline helpers (Character Card V3 data editing)
@@ -434,12 +435,17 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                 // 2-3 persona flow: the caller owns the save (reserved-name
                 // check, rename-first, profile update, alias sync / entity
                 // create). Engine 400s propagate here and surface in the
-                // editor's error UI.
+                // editor's error UI — and the caller also owns success
+                // feedback, so no toast fires here to avoid a double one.
                 await onSave(payload);
-            } else if (profile) {
-                await updateProfile(profile.id, payload);
             } else {
-                await createProfile(payload);
+                if (profile) {
+                    await updateProfile(profile.id, payload);
+                } else {
+                    await createProfile(payload);
+                }
+                // A save used to close the editor silently; confirm it landed.
+                toast.success(t('common:toast.characterSaved'));
             }
             onClose();
         } catch (err) {

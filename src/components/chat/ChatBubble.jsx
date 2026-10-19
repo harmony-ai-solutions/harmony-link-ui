@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EditIcon, TrashIcon, RefreshIcon, ClipboardIcon, SmileIcon, ImageIcon } from '../../constants/icons.jsx';
 import { messageDirection, conversationPreview, parseReactions, isProactiveMessage } from '../../store/chatStoreUtils.js';
 import { fetchMessageImageObjectUrl } from '../../services/management/chatService.js';
+import { toast } from '../../store/toastStore.js';
 import AudioBubble from './AudioBubble.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 
@@ -28,7 +29,13 @@ const ChatBubble = ({
     const isOut = direction === 'out';
 
     const handleCopy = () => {
-        navigator.clipboard?.writeText(message.content || '').catch(() => {});
+        // Promise-safe: only confirm the toast once the copy actually landed,
+        // and keep it silent when the clipboard API is unavailable or rejects.
+        const text = message.content || '';
+        const write = navigator.clipboard?.writeText(text);
+        if (write && typeof write.then === 'function') {
+            write.then(() => toast.success(t('chat:actions.copied'))).catch(() => {});
+        }
         setMenuOpen(false);
     };
 

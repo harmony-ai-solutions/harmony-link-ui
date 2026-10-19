@@ -12,6 +12,7 @@ import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import { toast } from '../../store/toastStore.js';
 
 /**
  * Main view for managing character profiles
@@ -129,6 +130,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         setDeleteTargetId(null);
         try {
             await deleteProfile(id);
+            toast.success(t('common:toast.characterDeleted'));
         } catch (error) {
             alert(t('characters:deleteFailed', { message: error.message }));
         }
@@ -244,6 +246,9 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
 
     const handleImportSuccess = async (result) => {
         setShowImport(false);
+        // Import used to close silently — a themed toast confirms the card
+        // landed before the editor opens on it.
+        toast.success(t('common:toast.characterImported'));
         await loadProfiles();
         if (result && result.id) {
             const profile = getProfile(result.id);

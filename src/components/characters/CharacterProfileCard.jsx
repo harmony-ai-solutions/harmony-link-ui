@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import { toast } from '../../store/toastStore.js';
 
 /**
  * Card component for displaying a character profile summary.
@@ -97,6 +98,8 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
         setBusy(format);
         try {
             await exportCharacterCard(profile.id, format, profile.name);
+            // The card downloads straight to disk — confirm the copy landed.
+            toast.success(t('characters:toast.characterExported'));
         } catch (e) {
             // eslint-disable-next-line no-alert
             alert(t('exportFailed', { message: e.message }));

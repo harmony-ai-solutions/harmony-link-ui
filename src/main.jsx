@@ -6,6 +6,7 @@ import { isHarmonySpeechEngineMode } from './config/appMode.js'
 import HarmonyLinkApp from './HarmonyLinkApp.jsx'
 import HarmonySpeechEngineApp from './HarmonySpeechEngineApp.jsx'
 import SplashScreen from './components/SplashScreen.jsx'
+import Toaster from './components/ui/Toaster.jsx'
 
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { applyStoredFontScale } from './utils/fontScale.js'
@@ -35,6 +36,10 @@ function Root() {
             <ThemeProvider>
                 <AppComponent />
             </ThemeProvider>
+            {/* One global toast surface for the whole app. Suspended until the
+                splash has fully exited so nothing can paint underneath it —
+                the queue still fills during boot, it just stays hidden. */}
+            <Toaster suspended={!splashDone} />
             {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
         </>
     )

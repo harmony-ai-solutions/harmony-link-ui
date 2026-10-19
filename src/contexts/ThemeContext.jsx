@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { getCurrentTheme, setCurrentTheme as apiSetCurrentTheme, listThemes } from '../services/management/themeService';
+import i18n from '../i18n/i18n.js';
+import { toast } from '../store/toastStore.js';
 
 const ThemeContext = createContext();
 
@@ -346,11 +348,18 @@ export const ThemeProvider = ({ children }) => {
             await apiSetCurrentTheme(themeId);
 
             // Cache miss: fetch the theme (cached themes are already painted).
+            let applied = cached;
             if (!cached) {
                 const { themeId: activeId, theme } = await getCurrentTheme();
                 if (theme && theme.id) themeCacheRef.current[theme.id] = theme;
                 applyThemeInstant(activeId || themeId, theme, initializedRef.current);
+                applied = theme;
             }
+
+            // Switching themes repaints the whole app — confirm the new theme
+            // stuck. Uses the i18n instance directly: this provider sits above
+            // I18nProvider, so a hook is not available here.
+            toast.success(i18n.t('common:toast.themeChanged', { theme: applied?.name || themeId }));
         } catch (error) {
             console.error('Failed to switch theme:', error);
             // Roll back the optimistic paint so UI + backend stay consistent.

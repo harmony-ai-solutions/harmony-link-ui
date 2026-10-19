@@ -1,17 +1,29 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { controlIntegrationInstance, getDockerStatus, renameIntegrationInstance } from '../../services/management/integrationsService.js';
+import { toast } from '../../store/toastStore.js';
 import ErrorDialog from '../modals/ErrorDialog';
 import InstanceList from './InstanceList';
 import Tooltip from '../ui/Tooltip.jsx';
 import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const IntegrationCard = ({ integration, instances, onConfigure, onConfigFiles, onCreateInstance, onRefreshInstances }) => {
+    const { t } = useTranslation();
     const [showInstances, setShowInstances] = useState(false);
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
 
     const handleControlClick = async (integrationName, instanceName, action) => {
         try {
             await controlIntegrationInstance(integrationName, instanceName, action);
+            // Start/stop used to just refresh the status blob — confirm the
+            // action the user actually asked for. Only the success path gets a
+            // toast here; failures still go through the error dialog below.
+            if (action === 'start' || action === 'stop') {
+                const label = `${integrationName} / ${instanceName}`;
+                toast.success(t(action === 'start'
+                    ? 'common:toast.integrationStarted'
+                    : 'common:toast.integrationStopped', { name: label }));
+            }
             onRefreshInstances();
         } catch (error) {
             console.error(`Failed to perform ${action} on ${integrationName}/${instanceName}:`, error);

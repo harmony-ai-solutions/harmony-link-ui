@@ -8,6 +8,7 @@ import { listThemes } from '../services/management/themeService';
 import { getConfig, updateConfig } from '../services/management/configService';
 import { openSystemUrl } from '../services/management/systemService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
+import { toast } from '../store/toastStore.js';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
@@ -83,7 +84,8 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
 
-    // Success/error feedback for export/import
+    // Failure feedback for export/import. Successes go to the global toast
+    // queue; only failures stay inline so the user can still read them.
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [feedbackType, setFeedbackType] = useState(''); // 'success' or 'error'
 
@@ -307,7 +309,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showFeedback(t('common:notifications.exportSuccess'), 'success');
+            toast.success(t('common:notifications.exportSuccess'));
         } catch (err) {
             LogPrint('Export failed: ' + err.message);
             showFeedback(t('common:notifications.exportFailed', { message: err.message }), 'error');
@@ -340,7 +342,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
             setConfirmModalYes(() => async () => {
                 await updateConfig({ ...importedConfig, general: mergedGeneral }, true);
-                showFeedback(t('common:notifications.importSuccess'), 'success');
+                toast.success(t('common:notifications.importSuccess'));
                 // Refresh from server
                 setTimeout(async () => {
                     try {

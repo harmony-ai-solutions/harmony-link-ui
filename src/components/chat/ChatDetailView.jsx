@@ -18,6 +18,7 @@ import Tooltip from '../ui/Tooltip.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
+import { toast } from '../../store/toastStore.js';
 
 /**
  * Chat detail screen (F2): the scrolling message timeline, typing dots (F5),
@@ -131,7 +132,12 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
 
     const handleDelete = (message) => setConfirmDelete(message);
     const confirmDeleteYes = () => {
-        if (confirmDelete) deleteMessageLocal(confirmDelete.id);
+        if (confirmDelete) {
+            deleteMessageLocal(confirmDelete.id);
+            // Deletion still asks (ConfirmDialog above), but the destructive
+            // action is confirmed non-modally once it has happened.
+            toast.success(t('common:toast.messageDeleted'));
+        }
         setConfirmDelete(null);
     };
 

@@ -20,6 +20,7 @@ import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import useDockerStatus from '../hooks/useDockerStatus';
 import Tooltip from './ui/Tooltip.jsx';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
+import { toast } from '../store/toastStore.js';
 
 
 export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
@@ -95,7 +96,8 @@ const EntitySettingsView = ({ appName }) => {
     const [selectedCharacterProfileId, setSelectedCharacterProfileId] = useState('');
     const [showRAGCollections, setShowRAGCollections] = useState(false);
     const [error, setError] = useState(null);
-    const [successMessage, setSuccessMessage] = useState(null);
+    // Success feedback lives in the global toast queue (store/toastStore.js) —
+    // only the inline error banner remains, since it needs to stay on screen.
     const [isSaving, setIsSaving] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
@@ -339,8 +341,7 @@ const EntitySettingsView = ({ appName }) => {
             await updateEntityMappings(selectedEntityId, mappings);
             await loadEntities();
 
-            setSuccessMessage(tes('messages.saveSuccess'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.saveSuccess'));
         } catch (error) {
             setError(tes('messages.saveFailed', { message: error.message }));
         } finally {
@@ -392,8 +393,7 @@ const EntitySettingsView = ({ appName }) => {
                     setEntityLifecycleConfig(null);
                 }
             }
-            setSuccessMessage(tes('messages.lifecycleReset'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.lifecycleReset'));
         } catch (error) {
             setError(tes('messages.lifecycleResetFailed', { message: error.message }));
         }
@@ -404,8 +404,7 @@ const EntitySettingsView = ({ appName }) => {
         try {
             await updateEntity(selectedEntityId, null, JSON.stringify(entityLifecycleConfig));
             await loadEntities();
-            setSuccessMessage(tes('messages.lifecycleSaved'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.lifecycleSaved'));
         } catch (error) {
             setError(tes('messages.lifecycleSaveFailed', { message: error.message }));
         }
@@ -436,8 +435,7 @@ const EntitySettingsView = ({ appName }) => {
 
                 try {
                     await createEntity(trimmedName, null, { dedupeIdIfTaken: true });
-                    setSuccessMessage(tes('messages.createSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.createSuccess'));
                 } catch (error) {
                     setErrorDialog({
                         isOpen: true,
@@ -459,8 +457,7 @@ const EntitySettingsView = ({ appName }) => {
             onConfirm: async () => {
                 try {
                     await deleteEntity(selectedEntityId);
-                    setSuccessMessage(tes('messages.deleteSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.deleteSuccess'));
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
@@ -493,8 +490,7 @@ const EntitySettingsView = ({ appName }) => {
             const copy = await duplicateEntity(selectedEntityId);
             await loadEntities();
             selectEntity(copy.id);
-            setSuccessMessage(tes('messages.copySuccess'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.copySuccess'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -526,8 +522,7 @@ const EntitySettingsView = ({ appName }) => {
                     setIsStoppingSessions(true);
                     const result = await stopSessions(selectedEntityId);
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
-                    setSuccessMessage(tes('messages.stopSessionsSuccess', { count: result?.stopped ?? 0 }));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.stopSessionsSuccess', { count: result?.stopped ?? 0 }));
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                     setErrorDialog({
@@ -554,8 +549,7 @@ const EntitySettingsView = ({ appName }) => {
         const nextDisabled = !selectedIsDisabled;
         try {
             await setEntityDisabled(selectedEntityId, nextDisabled);
-            setSuccessMessage(tes(nextDisabled ? 'messages.entityDisabled' : 'messages.entityEnabled'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes(nextDisabled ? 'messages.entityDisabled' : 'messages.entityEnabled'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -764,12 +758,6 @@ const EntitySettingsView = ({ appName }) => {
                                     <div className="p-3 rounded text-sm"
                                         style={{ background: 'var(--color-error-bg)', border: '1px solid var(--color-error)', color: 'var(--color-error)' }}>
                                         {error}
-                                    </div>
-                                )}
-                                {successMessage && (
-                                    <div className="p-3 rounded text-sm"
-                                        style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
-                                        {successMessage}
                                     </div>
                                 )}
 

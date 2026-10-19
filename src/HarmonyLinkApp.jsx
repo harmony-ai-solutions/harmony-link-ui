@@ -25,6 +25,7 @@ import { I18nProvider } from './contexts/I18nContext.jsx';
 import { useTheme } from './contexts/ThemeContext';
 import LanguagePicker from './components/icons/LanguagePicker.jsx';
 import Tooltip from './components/ui/Tooltip.jsx';
+import { toast } from './store/toastStore.js';
 
 /**
  * Left sidebar rail — the primary navigation.
@@ -144,7 +145,13 @@ function HarmonyLinkAppInner() {
         // Update base config
         //LogDebug(JSON.stringify(newCompleteSettings));
         updateConfig(newCompleteSettings, createBackup)
-            .then(() => LogDebug("Successfully Updated General Settings"))
+            .then(() => {
+                LogDebug("Successfully Updated General Settings");
+                // Success feedback moved from inline banners to the global
+                // toast queue. Failures keep logging — the settings view has
+                // no decision to ask the user for.
+                toast.success(t('common:toast.settingsSaved'));
+            })
             .catch((onError) => {
                 LogError("Unable to Update General Settings");
                 LogError(onError);

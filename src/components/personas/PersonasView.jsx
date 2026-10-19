@@ -13,6 +13,7 @@ import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import { toast } from '../../store/toastStore.js';
 
 /**
  * PersonasView — 3-1 (Soulbits Engine frontend).
@@ -74,8 +75,8 @@ export default function PersonasView() {
         return localStorage.getItem('personaCardSize') || 'large';
     });
 
-    // Feedback / modal state
-    const [successMessage, setSuccessMessage] = useState(null);
+    // Feedback / modal state. Success feedback is the global toast now —
+    // only failures that need a decision keep a dialog.
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
@@ -195,8 +196,7 @@ export default function PersonasView() {
             const full = await entityService.getEntity('user');
             setUserEntityFull(full);
             setSharedModulesEdit(false);
-            setSuccessMessage(tes('messages.sharedModulesSaved'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.sharedModulesSaved'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -316,7 +316,7 @@ export default function PersonasView() {
                 }
                 throw error;
             }
-            setSuccessMessage(tes('messages.createSuccess'));
+            toast.success(tes('messages.createSuccess'));
         } else {
             // D14: the id is stable for life — edit only moves alias/profile.
             const entityId = editingPersona.id;
@@ -332,9 +332,8 @@ export default function PersonasView() {
             }
             // Alias update ONLY (D22: no rename endpoint exists anymore).
             await entityService.updateEntity(entityId, profileId, null, name);
-            setSuccessMessage(tes('messages.updateSuccess'));
+            toast.success(tes('messages.updateSuccess'));
         }
-        setTimeout(() => setSuccessMessage(null), 3000);
         await Promise.all([loadEntities(), loadProfiles()]);
         // Re-fetch the saved profile's images: the card's image-load effect is
         // ref-deduped (loadedImageIds already holds this profile id), so a
@@ -354,8 +353,7 @@ export default function PersonasView() {
                 try {
                     await deleteEntity(persona.id);
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
-                    setSuccessMessage(tes('messages.deleteSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.deleteSuccess'));
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                     setErrorDialog({
@@ -472,13 +470,6 @@ export default function PersonasView() {
                                 </button>
                             </div>
                         </div>
-                    )}
-                </div>
-
-                {/* Feedback */}
-                <div className="px-6 mt-4">
-                    {successMessage && (
-                        <div className="p-3 bg-success-bg/30 border border-success-bg rounded text-success text-sm">{successMessage}</div>
                     )}
                 </div>
 

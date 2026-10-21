@@ -7,11 +7,16 @@ import { useI18nContext } from '../contexts/I18nContext.jsx';
 import { listThemes } from '../services/management/themeService';
 import { getConfig, updateConfig } from '../services/management/configService';
 import { openSystemUrl } from '../services/management/systemService';
+import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreBackupArtifact, probeBackupTarget, getBackupSyncGroupFingerprint } from '../services/management/backupService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
 import { toast } from '../store/toastStore.js';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
+import BackupConflictModal from './modals/BackupConflictModal.jsx';
+import CloudAccountCard from './settings/CloudAccountCard.jsx';
+import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
+import useCloudAccount from '../hooks/useCloudAccount.js';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
@@ -43,6 +48,14 @@ const SUB_TABS = [
     { id: 'notifications', labelKey: 'generalSettings:tabs.notifications' },
     { id: 'dataSupport', labelKey: 'generalSettings:tabs.dataSupport' },
 ];
+
+// Small inline spinner for the backup action buttons + running status line.
+const BackupSpinner = ({ className = 'w-3.5 h-3.5' }) => (
+    <span className={`block rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} />
+);
+
+// localStorage key for the persisted backup UI config (never the WebDAV password).
+const BACKUP_CONFIG_STORAGE_KEY = 'soulbitsBackupTarget';
 
 const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const { t } = useTranslation();
@@ -373,6 +386,214 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         }
     };
 
+    // ── Backup & Restore (plan 2-6) ────────────────────────────────────────
+    // Minimal hook driving the engine's user-owned-storage backup routes. The
+    // engine produces + uploads the encrypted artifact; this UI only configures
+    // the target and triggers the run.
+    const [backupTargets, setBackupTargets] = useState([]);
+    const [backupTargetType, setBackupTargetType] = useState('local-folder');
+    const [backupDestDir, setBackupDestDir] = useState('');
+    const [backupBaseUrl, setBackupBaseUrl] = useState('');
+    const [backupUsername, setBackupUsername] = useState('');
+    const [backupPassword, setBackupPassword] = useState('');
+    const [backupRecoveryCode, setBackupRecoveryCode] = useState('');
+    const [backupDataVersion, setBackupDataVersion] = useState('');
+    // Which backup action is in flight (null = idle). Drives the per-button
+    // spinner/label swap and the ticking elapsed-time status line.
+    const [backupBusyMode, setBackupBusyMode] = useState(null);
+    const [backupElapsed, setBackupElapsed] = useState(0);
+    const backupBusy = backupBusyMode !== null;
+    const backupStartedAtRef = useRef(0);
+    const [backupStatus, setBackupStatus] = useState('');
+    const [backupBrowseOpen, setBackupBrowseOpen] = useState(false);
+    const [backupConfigHydrated, setBackupConfigHydrated] = useState(false);
+    // Held-push conflict (owner ruling 2026-10-17): when the cloud backup was
+    // written by another device with different data, the engine HOLDS the push
+    // and returns the remote metadata; the modal lets the user decide.
+    const [backupConflict, setBackupConflict] = useState(null);
+    const [localSyncFingerprint, setLocalSyncFingerprint] = useState('');
+
+    // Soulbits Cloud identity — lets the soulbits-cloud target surface sign-in
+    // state and gate its buttons. No polling here; the CloudAccountCard on this
+    // same screen owns the live polling surface.
+    const { account: cloudAccount } = useCloudAccount({ poll: false });
+
+    useEffect(() => {
+        listBackupTargets().then(setBackupTargets).catch(err => {
+            LogPrint('Failed to load backup targets: ' + err.message);
+        });
+        getBackupDataVersion().then(setBackupDataVersion).catch(err => {
+            LogPrint('Failed to load backup data version: ' + err.message);
+        });
+        getBackupSyncGroupFingerprint().then(setLocalSyncFingerprint).catch(err => {
+            LogPrint('Failed to load sync-group fingerprint: ' + err.message);
+        });
+    }, []);
+
+    // Hydrate the persisted backup UI config on mount. The WebDAV password is
+    // deliberately never persisted — it lives in component state only.
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(BACKUP_CONFIG_STORAGE_KEY);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    if (typeof saved.targetType === 'string' && saved.targetType) setBackupTargetType(saved.targetType);
+                    if (typeof saved.destDir === 'string') setBackupDestDir(saved.destDir);
+                    if (typeof saved.webdavBaseUrl === 'string') setBackupBaseUrl(saved.webdavBaseUrl);
+                    if (typeof saved.webdavUsername === 'string') setBackupUsername(saved.webdavUsername);
+                }
+            }
+        } catch (err) {
+            LogPrint('Failed to restore backup config: ' + err.message);
+        } finally {
+            setBackupConfigHydrated(true);
+        }
+    }, []);
+
+    // Persist the backup UI config on change (after hydration completes).
+    useEffect(() => {
+        if (!backupConfigHydrated) return;
+        try {
+            localStorage.setItem(BACKUP_CONFIG_STORAGE_KEY, JSON.stringify({
+                targetType: backupTargetType,
+                destDir: backupDestDir,
+                webdavBaseUrl: backupBaseUrl,
+                webdavUsername: backupUsername,
+            }));
+        } catch (err) {
+            LogPrint('Failed to persist backup config: ' + err.message);
+        }
+    }, [backupConfigHydrated, backupTargetType, backupDestDir, backupBaseUrl, backupUsername]);
+
+    // Tick a 1s elapsed counter while any backup action is running; resets on
+    // each new action and cleans up when it finishes or the view unmounts.
+    useEffect(() => {
+        if (!backupBusyMode) return undefined;
+        setBackupElapsed(0);
+        const id = setInterval(() => { setBackupElapsed((n) => n + 1); }, 1000);
+        return () => clearInterval(id);
+    }, [backupBusyMode]);
+
+    // Elapsed whole seconds since the current action started (for result copy).
+    const backupElapsedSeconds = () => Math.max(0, Math.round((Date.now() - backupStartedAtRef.current) / 1000));
+
+    // Append "(Ns)" to a result line where it's cheap to show how long it took.
+    function withBackupDuration(text, seconds) {
+        return tgs('backup.tookSeconds', { text, seconds });
+    }
+
+    // Build the target descriptor the engine routes accept. For soulbits-cloud
+    // the engine self-fills the service URL + PASETO from the desktop's signed-in
+    // cloud session, so we send the bare type (no destDir/credentials).
+    const buildBackupTarget = () => {
+        if (backupTargetType === 'soulbits-cloud') {
+            return { type: 'soulbits-cloud' };
+        }
+        if (backupTargetType === 'webdav') {
+            return { type: 'webdav', baseUrl: backupBaseUrl, username: backupUsername, password: backupPassword };
+        }
+        return { type: 'local-folder', destDir: backupDestDir };
+    };
+
+    // A local-folder target with no folder makes the engine write into its own
+    // process working directory; block that, and block soulbits-cloud when the
+    // desktop is not signed in (the engine's 400 is the backstop).
+    const localFolderMissing = backupTargetType === 'local-folder' && !backupDestDir.trim();
+    const cloudSignedIn = cloudAccount?.signed_in === true;
+    const soulbitsCloudSignedOut = backupTargetType === 'soulbits-cloud' && !cloudSignedIn;
+    const backupActionsDisabled = backupBusy || localFolderMissing || soulbitsCloudSignedOut;
+
+    // runBackup drives one backup run. onConflict (hosted soulbits-cloud only)
+    // is undefined/"hold" for a normal run and "overwrite" when the user chose
+    // "Push mine" on the conflict modal.
+    const runBackup = async (onConflict) => {
+        setBackupBusyMode('backup');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const payload = { target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') };
+            if (onConflict) payload.onConflict = onConflict;
+            const res = await createBackupArtifact(payload);
+            const seconds = backupElapsedSeconds();
+            if (res.held) {
+                // Another device wrote the cloud backup with different data — the
+                // engine held the push. Surface the conflict modal; upload nothing.
+                setBackupConflict(res.held);
+                setBackupStatus(tgs('backup.heldStatus', { device: res.held.remoteDeviceLabel || '—' }));
+            } else if (res.skipped) {
+                setBackupStatus(tgs('backup.upToDate'));
+            } else {
+                setBackupStatus(withBackupDuration(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }), seconds));
+                showFeedback(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }), 'success');
+            }
+            if (res.dataVersion) setBackupDataVersion(res.dataVersion);
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.backupFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
+    const handleBackupNow = () => runBackup(undefined);
+
+    // Conflict-modal actions (owner ruling 2026-10-17).
+    const handleConflictPushMine = () => {
+        setBackupConflict(null);
+        runBackup('overwrite');
+    };
+    const handleConflictPullTheirs = () => {
+        setBackupConflict(null);
+        handleRestoreBackup();
+    };
+    const handleConflictCancel = () => setBackupConflict(null);
+
+    const handleProbeBackup = async () => {
+        setBackupBusyMode('probe');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const st = await probeBackupTarget(buildBackupTarget());
+            if (st?.available) {
+                setBackupStatus(tgs('backup.probeOk', { detail: st.account || st.detail || tgs('backup.probeDetailOk') }));
+            } else {
+                setBackupStatus(tgs('backup.probeFailed', { message: st?.detail || tgs('backup.probeDetailUnavailable') }));
+            }
+        } catch (err) {
+            setBackupStatus(tgs('backup.probeFailed', { message: err.message }));
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
+    const handleRestoreBackup = async () => {
+        if (!backupRecoveryCode.trim()) {
+            showModal(tgs('backup.recoveryCodeRequired'));
+            return;
+        }
+        setBackupBusyMode('restore');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const res = await restoreBackupArtifact({ target: buildBackupTarget(), recoveryCode: backupRecoveryCode.trim() });
+            const seconds = backupElapsedSeconds();
+            setBackupStatus(withBackupDuration(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), seconds));
+            showFeedback(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), 'success');
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.restoreFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
     // Split themes
     const officialThemes = useMemo(() => themes.filter(t => OFFICIAL_THEME_IDS.includes(t.id)), [themes]);
     const otherThemes = useMemo(() => themes.filter(t => !OFFICIAL_THEME_IDS.includes(t.id)), [themes]);
@@ -608,6 +829,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </div>
                 </section>
                 )}
+
+                {/* Soulbits Cloud Account Section (plan 7-15) */}
+                {activeSection === 'general' && <CloudAccountCard />}
 
                 {/* Network & Infrastructure Section — ports and buffer tuning
                     are hidden in Simple mode. */}
@@ -1066,6 +1290,145 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 </section>
                 )}
 
+                {/* Backup & Restore Section */}
+                {activeSection === 'dataSupport' && (
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-275">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">{tgs('sections.backupRestore')}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        {/* Left Column: Target picker + target fields */}
+                        <div className="space-y-4">
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.targetLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <select className="input-field w-full" value={backupTargetType}
+                                        onChange={(e) => setBackupTargetType(e.target.value)}>
+                                        {backupTargets.filter(bt => bt.v1).map((bt) => (
+                                            <option key={bt.type} value={bt.type}>{bt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            {backupTargetType === 'local-folder' && (
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.destDirLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3 flex items-center gap-2">
+                                            <input type="text" className="input-field flex-1" placeholder={tgs('backup.destDirPlaceholder')}
+                                                value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
+                                            <button type="button" onClick={() => setBackupBrowseOpen(true)}
+                                                className="btn-secondary whitespace-nowrap flex-shrink-0">
+                                                {tgs('backup.browse')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {localFolderMissing && (
+                                        <div className="flex w-full">
+                                            <div className="w-1/3" />
+                                            <div className="w-2/3 px-3 text-xs text-yellow-400">{tgs('backup.destDirRequired')}</div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            {backupTargetType === 'webdav' && (
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.baseUrlLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full" placeholder={tgs('backup.baseUrlPlaceholder')}
+                                                value={backupBaseUrl} onChange={(e) => setBackupBaseUrl(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.usernameLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full"
+                                                value={backupUsername} onChange={(e) => setBackupUsername(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.passwordLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="password" className="input-field w-full"
+                                                value={backupPassword} onChange={(e) => setBackupPassword(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {backupTargetType === 'soulbits-cloud' && (
+                                <div className="px-3 text-xs space-y-1">
+                                    {cloudSignedIn ? (
+                                        <>
+                                            <div className="text-text-secondary">
+                                                {tgs('backup.cloudSignedInAs', { account: cloudAccount.email || cloudAccount.account_hint || '—' })}
+                                            </div>
+                                            <div className="text-text-muted">{tgs('backup.cloudQuotaNote')}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-yellow-400">{tgs('backup.cloudSignInFirst')}</div>
+                                    )}
+                                </div>
+                            )}
+                            {backupTargetType !== 'local-folder' && backupTargetType !== 'webdav' && backupTargetType !== 'soulbits-cloud' && (
+                                <div className="px-3 text-xs text-text-muted">{tgs('backup.otherTargetNote')}</div>
+                            )}
+                        </div>
+
+                        {/* Right Column: Actions + recovery code + status */}
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleBackupNow} disabled={backupActionsDisabled} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'backup' && <BackupSpinner />}
+                                    {backupBusyMode === 'backup' ? tgs('backup.busyBackup') : tgs('backup.backupNow')}
+                                </button>
+                                <button onClick={handleProbeBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'probe' && <BackupSpinner />}
+                                    {backupBusyMode === 'probe' ? tgs('backup.busyProbe') : tgs('backup.probe')}
+                                </button>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.recoveryCodeLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" className="input-field w-full"
+                                        value={backupRecoveryCode} onChange={(e) => setBackupRecoveryCode(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleRestoreBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'restore' && <BackupSpinner />}
+                                    {backupBusyMode === 'restore' ? tgs('backup.busyRestore') : tgs('backup.restore')}
+                                </button>
+                            </div>
+                            {backupBusyMode && (
+                                <div className="px-3 text-xs text-text-secondary flex items-center gap-2">
+                                    <BackupSpinner className="w-3 h-3" />
+                                    <span>{tgs('backup.running', { seconds: backupElapsed })}</span>
+                                </div>
+                            )}
+                            <div className="px-3 text-xs text-text-muted">
+                                {tgs('backup.dataVersion')}: <span className="text-text-secondary">{backupDataVersion || '—'}</span>
+                            </div>
+                            {backupStatus && (
+                                <div className="px-3 text-xs text-text-secondary">{backupStatus}</div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+                )}
+
                 {/* Action Buttons — scroll with the page at the end of the settings form */}
                 <div className="flex items-center justify-end gap-3 pt-4 pb-3 mt-2 border-t border-white/5">
                     <button onClick={setInitialValues} className="btn-secondary">
@@ -1090,6 +1453,21 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 onConfirm={() => { setModeConfirmVisible(false); applyMode(pendingMode); setPendingMode(null); }}
                 onCancel={() => { setModeConfirmVisible(false); setPendingMode(null); }} />
             <DeviceManagementModal show={showDeviceManagementModal} onClose={() => setShowDeviceManagementModal(false)} />
+            <BackupConflictModal
+                isOpen={!!backupConflict}
+                conflict={backupConflict}
+                localFingerprint={localSyncFingerprint}
+                busy={backupBusy}
+                onPushMine={handleConflictPushMine}
+                onPullTheirs={handleConflictPullTheirs}
+                onCancel={handleConflictCancel}
+            />
+            <DirectoryBrowserModal
+                isOpen={backupBrowseOpen}
+                onClose={() => setBackupBrowseOpen(false)}
+                onPathSelected={(selected) => setBackupDestDir(selected)}
+                initialPath={backupDestDir}
+            />
         </div>
     );
 }

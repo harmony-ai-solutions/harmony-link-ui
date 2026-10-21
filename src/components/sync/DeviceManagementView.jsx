@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDevices, revokeDevice, approveDevice, rejectDevice } from '../../services/management/syncService.js';
+import { getDevices, getSyncServerStatus, revokeDevice, approveDevice, rejectDevice } from '../../services/management/syncService.js';
+import { deviceApprovalWatcher } from '../../services/sync/deviceApprovalWatcher.js';
 
 /**
  * Device Management View - Shows all synced devices and allows revocation.
@@ -8,22 +9,51 @@ import { getDevices, revokeDevice, approveDevice, rejectDevice } from '../../ser
  * Rendered as the `sync` destination in the left rail. The equivalent modal
  * (components/modals/DeviceManagementModal.jsx) is kept as a compatibility
  * entry point from General Settings.
+ *
+ * Data sources (merge §5.3): the roster + per-device actions stay on the
+ * rows-v1 `GET /api/sync/devices`; the changeset-v1 `GET
+ * /api/sync/server/status` `clients[]` is merged in by `device_id` so a
+ * connected device shows its live connected-at time and last-acked seq.
  */
 export const DeviceManagementView = () => {
     const { t } = useTranslation();
     const [devices, setDevices] = useState([]);
+    const [liveById, setLiveById] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         loadDevices();
+        // Keep the live-connection columns fresh while the screen is open.
+        const id = setInterval(loadLiveStatus, 5000);
+        // A device approved out-of-band (LAN/cloud pairing) must surface here.
+        const onPaired = () => { loadDevices(); };
+        deviceApprovalWatcher.addPairedListener(onPaired);
+        return () => {
+            clearInterval(id);
+            deviceApprovalWatcher.removePairedListener(onPaired);
+        };
     }, []);
+
+    const loadLiveStatus = async () => {
+        try {
+            const status = await getSyncServerStatus();
+            const map = {};
+            (status?.clients || []).forEach((client) => {
+                map[client.device_id] = client;
+            });
+            setLiveById(map);
+        } catch {
+            // The authority view is additive; the roster still stands alone.
+            setLiveById({});
+        }
+    };
 
     const loadDevices = async () => {
         try {
             setLoading(true);
             setError(null);
-            const result = await getDevices();
+            const [result] = await Promise.all([getDevices(), loadLiveStatus()]);
             setDevices(result || []);
         } catch (err) {
             console.error('Failed to load devices:', err);
@@ -83,6 +113,13 @@ export const DeviceManagementView = () => {
         return date.toLocaleString();
     };
 
+    // connected_at from the changeset-v1 status is an ISO/RFC3339 string.
+    const formatDateTime = (value) => {
+        if (!value) return t('common:deviceManagement.never');
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? t('common:deviceManagement.never') : date.toLocaleString();
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
@@ -137,7 +174,14 @@ export const DeviceManagementView = () => {
                                         {getStatusBadge(device)}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-text-muted">
-                                        {formatDate(device.last_sync_timestamp)}
+                                        {liveById[device.device_id] ? (
+                                            <>
+                                                {formatDateTime(liveById[device.device_id].connected_at)}
+                                                <span className="block text-xs">
+                                                    {t('sync.seqValue', { seq: liveById[device.device_id].last_seq_acked })}
+                                                </span>
+                                            </>
+                                        ) : formatDate(device.last_sync_timestamp)}
                                     </td>
                                     <td className="px-6 py-4 text-sm">
                                         {device.is_approved === 0 && (

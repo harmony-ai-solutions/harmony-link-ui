@@ -13,6 +13,8 @@ import DynamicBackground from "./components/DynamicBackground.jsx";
 import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon, SyncIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
+import SyncStatusView from "./components/sync/SyncStatusView.jsx";
+import useOutreachNotifications from "./hooks/useOutreachNotifications.js";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
@@ -104,6 +106,11 @@ function SidebarNav({ groups, settingsTab, onSelect, collapsed, onToggleCollapse
 function HarmonyLinkAppInner() {
     const { t } = useTranslation();
     const { currentTheme, toggleDarkLight } = useTheme();
+
+    // Plan 7-12 §4 (desktop D3): subscribe to the engine's outreach
+    // notification stream and raise an OS notification when the window is
+    // unfocused. No-op outside the Wails shell (guarded runtime access).
+    useOutreachNotifications();
 
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
@@ -251,8 +258,20 @@ function HarmonyLinkAppInner() {
 
         deviceApprovalWatcher.addListener(handlePendingDevices);
 
+        // A device that appears ALREADY-APPROVED (auto-approved engine-side by a
+        // LAN pairing secret, or approved manually) raises a "«name» paired"
+        // toast (plan 7-15, task W §3). The manual approval modal is unchanged.
+        const handlePairedDevice = (device) => {
+            const name = device?.device_name || device?.device_id || t('pairing.pairedToast.fallbackName');
+            toast.success(t('pairing.pairedToast.title', { name }), {
+                message: t('pairing.pairedToast.message'),
+            });
+        };
+        deviceApprovalWatcher.addPairedListener(handlePairedDevice);
+
         return () => {
             deviceApprovalWatcher.removeListener(handlePendingDevices);
+            deviceApprovalWatcher.removePairedListener(handlePairedDevice);
             deviceApprovalWatcher.stop();
         };
     }, [currentDevice]);
@@ -509,12 +528,18 @@ function HarmonyLinkAppInner() {
                         {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabIntegrations &&
                             <IntegrationsView></IntegrationsView>
                         }
-                        {/* Sync — first-class rail destination. The General
-                            Settings "Manage devices" modal remains as a
-                            compatibility entry point into the same data. */}
-                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabSync &&
-                            <DeviceManagementView></DeviceManagementView>
-                        }
+                        {/* Sync — first-class rail destination. Her device
+                            roster + per-device actions (rows-v1 `sync_devices`)
+                            come first; parity's changeset-v1 authority/client
+                            status + pairing panel follows as a second section.
+                            The General Settings "Manage devices" modal remains
+                            as a compatibility entry point into the same data. */}
+                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabSync && (
+                            <>
+                                <DeviceManagementView></DeviceManagementView>
+                                <SyncStatusView></SyncStatusView>
+                            </>
+                        )}
                         {isModeAllowed(uiMode, 'dev') && settingsTab === SettingsTabSimulator &&
                             <SimulatorView></SimulatorView>
                         }

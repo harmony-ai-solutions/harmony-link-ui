@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PlayIcon, PauseIcon } from '../../constants/icons.jsx';
 import { toggle as togglePlayback, subscribe, getState, formatDuration } from '../../services/chat/audioPlayer.js';
-import { fetchMessageAudioObjectUrl } from '../../services/management/chatService.js';
+import { fetchMessageAudioObjectUrl } from '../../services/management/chatReadService.js';
 
 /**
  * Audio bubble (F8): a play/pause button, a progress bar and a duration label.

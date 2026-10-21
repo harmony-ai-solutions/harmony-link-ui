@@ -6,7 +6,7 @@
  * playing a new voice note always stops the previous one and memory stays flat.
  *
  * Playback sources are object URLs fetched lazily from the blob endpoint
- * (chatService.fetchMessageAudioObjectUrl) — audio is never inlined in the
+ * (chatReadService.fetchMessageAudioObjectUrl) — audio is never inlined in the
  * timeline payload.
  */
 

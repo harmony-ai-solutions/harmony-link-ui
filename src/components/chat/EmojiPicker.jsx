@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { listEmojiActions } from '../../services/management/chatService.js';
+import { listEmojiActions } from '../../services/management/chatReadService.js';
 import Tooltip from '../ui/Tooltip.jsx';
 
 /** A small, curated quick-reaction set (browser emoji input covers the rest). */

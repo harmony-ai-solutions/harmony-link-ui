@@ -13,6 +13,8 @@ import {
   sortConversations,
   upsertConversation,
   removeConversation,
+  conversationKey,
+  normalizeChatConversation,
   setEntityFlag,
   isAnyTyping,
   partitionChatEntities,
@@ -110,24 +112,88 @@ test('truncatePreview caps long strings with an ellipsis', () => {
 
 test('sortConversations orders by most recent activity', () => {
   const list = [
-    { interaction_id: 'old', last_activity_at: '2026-01-01T00:00:00Z' },
-    { interaction_id: 'new', last_activity_at: '2026-01-03T00:00:00Z' },
+    { participant_key: 'a+b', interaction_id: 'old', last_activity_at: '2026-01-01T00:00:00Z' },
+    { participant_key: 'a+c', interaction_id: 'new', last_activity_at: '2026-01-03T00:00:00Z' },
   ];
-  assert.deepEqual(sortConversations(list).map((c) => c.interaction_id), ['new', 'old']);
+  assert.deepEqual(sortConversations(list).map((c) => c.participant_key), ['a+c', 'a+b']);
 });
 
 test('upsertConversation inserts, replaces and re-sorts', () => {
-  const list = [{ interaction_id: 'a', last_activity_at: '2026-01-01T00:00:00Z' }];
-  const inserted = upsertConversation(list, { interaction_id: 'b', last_activity_at: '2026-01-02T00:00:00Z' });
-  assert.deepEqual(inserted.map((c) => c.interaction_id), ['b', 'a']);
-  const replaced = upsertConversation(inserted, { interaction_id: 'a', last_activity_at: '2026-01-05T00:00:00Z' });
-  assert.deepEqual(replaced.map((c) => c.interaction_id), ['a', 'b']);
+  const list = [{ participant_key: 'a+b', interaction_id: 'i1', last_activity_at: '2026-01-01T00:00:00Z' }];
+  const inserted = upsertConversation(list, { participant_key: 'a+c', interaction_id: 'i2', last_activity_at: '2026-01-02T00:00:00Z' });
+  assert.deepEqual(inserted.map((c) => c.participant_key), ['a+c', 'a+b']);
+  const replaced = upsertConversation(inserted, { participant_key: 'a+b', interaction_id: 'i1', last_activity_at: '2026-01-05T00:00:00Z' });
+  assert.deepEqual(replaced.map((c) => c.participant_key), ['a+b', 'a+c']);
   assert.equal(replaced.length, 2);
 });
 
-test('removeConversation drops by interaction id', () => {
-  const list = [{ interaction_id: 'a' }, { interaction_id: 'b' }];
-  assert.deepEqual(removeConversation(list, 'a').map((c) => c.interaction_id), ['b']);
+test('removeConversation drops by participant key', () => {
+  const list = [{ participant_key: 'a+b' }, { participant_key: 'a+c' }];
+  assert.deepEqual(removeConversation(list, 'a+b').map((c) => c.participant_key), ['a+c']);
+});
+
+// Regression (D3): the engine mints a NEW interaction when the participant set
+// changes, so participant_key : interactions is 1:many. Threads must be keyed
+// by participant_key — a new interaction id for the same pair REPLACES the row
+// instead of adding a duplicate thread.
+test('upsertConversation keys on participant_key, not interaction_id', () => {
+  const list = [{ participant_key: 'a+b', interaction_id: 'i1', last_activity_at: '2026-01-01T00:00:00Z' }];
+  const reopened = upsertConversation(list, {
+    participant_key: 'a+b',
+    interaction_id: 'i2', // new interaction, same conversation
+    last_activity_at: '2026-01-09T00:00:00Z',
+  });
+  assert.equal(reopened.length, 1);
+  assert.equal(reopened[0].interaction_id, 'i2');
+
+  // Rows without a participant_key cannot identify a thread and are ignored.
+  assert.equal(upsertConversation(list, { interaction_id: 'i3' }).length, 1);
+
+  // Same interaction id under a different key is a different conversation.
+  const two = upsertConversation(reopened, { participant_key: 'a+c', interaction_id: 'i2' });
+  assert.equal(two.length, 2);
+});
+
+test('conversationKey exposes the participant key only', () => {
+  assert.equal(conversationKey({ participant_key: 'a+b', interaction_id: 'i1' }), 'a+b');
+  assert.equal(conversationKey({ interaction_id: 'i1' }), '');
+  assert.equal(conversationKey(null), '');
+});
+
+test('normalizeChatConversation derives the partner and parses participant_ids', () => {
+  const row = {
+    interaction_id: 'i9',
+    participant_key: 'a+b',
+    interaction_scope: 'private',
+    participant_ids: '["a","b"]',
+    unread_count: 2,
+    last_message: {
+      id: 'm1',
+      entity_id: 'a',
+      sender_entity_id: 'b',
+      interaction_id: 'i8',
+      content: 'hi',
+      message_type: 'text',
+      audio_mime_type: 'audio/mpeg',
+      created_at: '2026-01-02T00:00:00Z',
+    },
+  };
+  const conv = normalizeChatConversation(row, 'a');
+  assert.equal(conv.participant_key, 'a+b');
+  assert.equal(conv.entity_id, 'a');
+  assert.deepEqual(conv.participant_ids, ['a', 'b']);
+  assert.equal(conv.partner_entity_id, 'b');
+  assert.equal(conv.unread_count, 2);
+  assert.equal(conv.last_activity_at, '2026-01-02T00:00:00Z');
+  assert.equal(conv.last_message.has_audio, true);
+  assert.equal(conv.last_message.has_image, false);
+});
+
+test('normalizeChatConversation tolerates a malformed participant_ids column', () => {
+  const conv = normalizeChatConversation({ participant_key: 'a+b', participant_ids: 'not json' }, 'a');
+  assert.deepEqual(conv.participant_ids, []);
+  assert.equal(conv.partner_entity_id, '');
+  assert.equal(conv.last_message, null);
 });
 
 test('setEntityFlag sets true and deletes when false', () => {

@@ -150,7 +150,7 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                         const timeLabel = time ? new Date(time).toLocaleDateString() : '';
 
                         return (
-                            <li key={conversation.interaction_id}>
+                            <li key={conversation.participant_key}>
                                 <button
                                     type="button"
                                     className="chat-list-row"

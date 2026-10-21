@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as chatService from '../services/management/chatService.js';
+import * as chatReadService from '../services/management/chatReadService.js';
 import { ChatSocketService, generateEventId } from '../services/chat/chatSocketService.js';
 import {
     mergeMessages,
@@ -20,6 +20,11 @@ import {
  * pure list logic lives in chatStoreUtils.js (unit-tested with `node --test`);
  * this store is the stateful, service-aware wrapper.
  *
+ * Conversation identity: threads are keyed by `participant_key` (the sorted
+ * participant set), matching the engine — a membership change mints a NEW
+ * interaction, so `interactionId` is a NAVIGATION handle only and all history
+ * reads address the participant key (they span every interaction of the key).
+ *
  * Message perspective: timelines are stored from the AI entity's perspective
  * (sender_entity_id === ownEntityId means "the user/persona spoke"), matching
  * the engine. The UI derives bubble side from messageDirection().
@@ -36,7 +41,7 @@ export const useChatStore = create((set, get) => ({
     listEntityId: null,
     /** Chat-entity options: AI partners + personas (from the engine). */
     chatEntities: [],
-    /** The open conversation (interaction) or null. */
+    /** The open conversation or null. `interactionId` is navigation only. */
     activeConversation: null,
     /** The timeline for the open conversation (oldest → newest). */
     messages: [],
@@ -44,6 +49,8 @@ export const useChatStore = create((set, get) => ({
     loadingOlder: false,
     /** Whether an older page likely exists for the open conversation. */
     hasMore: false,
+    /** Opaque engine scrollback cursor for the open conversation (next older page). */
+    nextCursor: null,
     /** Connection state of the active socket: idle|connecting|connected|reconnecting|error. */
     connectionState: 'idle',
     /**
@@ -70,7 +77,7 @@ export const useChatStore = create((set, get) => ({
     /** Load the entities available for chat (partners + personas). */
     loadChatEntities: async () => {
         try {
-            const chatEntities = await chatService.listChatEntities();
+            const chatEntities = await chatReadService.listChatEntities();
             set({ chatEntities });
             return chatEntities;
         } catch (error) {
@@ -79,11 +86,11 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    /** Load the chat-list rows for an AI entity. */
+    /** Load the chat-list rows for an AI entity (one row per participant_key). */
     loadConversations: async (entityId) => {
         set({ listEntityId: entityId, error: null });
         try {
-            const conversations = await chatService.listConversations(entityId);
+            const conversations = await chatReadService.listConversations(entityId);
             set({ conversations });
             return conversations;
         } catch (error) {
@@ -106,11 +113,15 @@ export const useChatStore = create((set, get) => ({
     // ── Open conversation ────────────────────────────────────────────────
 
     /**
-     * Open a conversation: reset the timeline, load the newest page, then open
-     * the live socket.
+     * Open a conversation: reset the timeline, load the newest page by
+     * `participantKey`, mark it read, then open the live socket.
      *
-     * @param {{ interactionId: string, entityId: string, participantIds: string[],
-     *   replyMode?: string }} conversation
+     * `interactionId` is carried for navigation/debug only — a brand-new chat
+     * has none yet (the engine resolves it on INIT_ENTITY) and a re-keyed chat
+     * resolves the CURRENT interaction for the same participant set.
+     *
+     * @param {{ interactionId?: string|null, participantKey?: string, entityId: string,
+     *   participantIds: string[], replyMode?: string }} conversation
      */
     openConversation: async (conversation) => {
         get().closeSocket();
@@ -118,43 +129,89 @@ export const useChatStore = create((set, get) => ({
             activeConversation: conversation,
             messages: [],
             hasMore: false,
+            nextCursor: null,
             typingByEntity: {},
             recordingByEntity: {},
             connectionState: 'idle',
             error: null,
         });
 
-        if (conversation.interactionId) {
-            await get().loadInitialMessages(conversation.interactionId);
+        if (conversation.participantKey) {
+            await get().loadInitialMessages(conversation);
+            // Badge hygiene: parity's read write is participant_key scoped, the
+            // exact same scope as CountUnreadByParticipantKeys. Fire-and-forget
+            // so a failed stamp never blocks opening the chat.
+            get().markActiveConversationRead();
         }
         await get().connectSocket(conversation);
     },
 
-    /** Load the newest page of messages for an interaction. */
-    loadInitialMessages: async (interactionId) => {
+    /**
+     * Load the newest page of messages for the conversation's participant_key.
+     * @param {{ entityId: string, participantKey?: string }} conversation
+     */
+    loadInitialMessages: async (conversation) => {
+        const { entityId, participantKey } = conversation || {};
+        if (!entityId || !participantKey) return;
         try {
-            const { messages, hasMore } = await chatService.listMessages(interactionId, { limit: 50 });
-            set({ messages: mergeMessages([], messages), hasMore });
+            const { messages, hasMore, nextCursor } = await chatReadService.listMessages(
+                entityId,
+                participantKey,
+                { limit: 50 }
+            );
+            set({ messages: mergeMessages([], messages), hasMore, nextCursor });
         } catch (error) {
             set({ error: error.message });
         }
     },
 
-    /** Load an older page (scroll-up) and prepend it without losing pages. */
+    /**
+     * Load an older page (scroll-up) and prepend it without losing pages.
+     *
+     * The engine's `before` cursor is OPAQUE (the raw stored created_at text of
+     * the oldest loaded row) — it is passed back verbatim from `nextCursor` and
+     * never rebuilt from a parsed timestamp.
+     */
     loadOlderMessages: async () => {
-        const { activeConversation, messages, hasMore, loadingOlder } = get();
-        if (!activeConversation?.interactionId || loadingOlder || !hasMore) return;
-        const oldest = messages[0];
-        if (!oldest) return;
+        const { activeConversation, messages, hasMore, loadingOlder, nextCursor } = get();
+        if (!activeConversation?.participantKey || !activeConversation?.entityId) return;
+        if (loadingOlder || !hasMore || !nextCursor) return;
         set({ loadingOlder: true });
         try {
-            const { messages: older, hasMore: more } = await chatService.listMessages(
-                activeConversation.interactionId,
-                { before: oldest.created_at, limit: 50 }
+            const { messages: older, hasMore: more, nextCursor: cursor } = await chatReadService.listMessages(
+                activeConversation.entityId,
+                activeConversation.participantKey,
+                { before: nextCursor, limit: 50 }
             );
-            set({ messages: prependOlderMessages(messages, older), hasMore: more, loadingOlder: false });
+            set({
+                messages: prependOlderMessages(messages, older),
+                hasMore: more,
+                nextCursor: cursor,
+                loadingOlder: false,
+            });
         } catch (error) {
             set({ error: error.message, loadingOlder: false });
+        }
+    },
+
+    /**
+     * Mark the open conversation read (participant_key scoped) and clear its
+     * local unread badge optimistically. Re-reads converge on the next
+     * loadConversations().
+     */
+    markActiveConversationRead: async ({ upToMessageId } = {}) => {
+        const { activeConversation, conversations } = get();
+        const { entityId, participantKey } = activeConversation || {};
+        if (!entityId || !participantKey) return;
+        const existing = conversations.find((c) => c.participant_key === participantKey);
+        if (existing && existing.unread_count > 0) {
+            set({ conversations: upsertConversation(conversations, { ...existing, unread_count: 0 }) });
+        }
+        try {
+            await chatReadService.markConversationRead(entityId, participantKey, { upToMessageId });
+        } catch (error) {
+            // The badge re-syncs from the engine on the next list load.
+            set({ error: error.message });
         }
     },
 
@@ -236,8 +293,9 @@ export const useChatStore = create((set, get) => ({
         const data = payload.payload || {};
 
         // INIT_ENTITY resolves the canonical interaction id (critical for a new
-        // chat, where we opened with interactionId = null). Persist it so later
-        // REST refreshes and pagination target the right thread.
+        // chat, where we opened with interactionId = null). It is kept as a
+        // NAVIGATION handle only — the timeline and scrollback are addressed by
+        // the conversation's participant_key, never by the interaction id.
         if (eventType === 'INIT_ENTITY' && payload.status === 'SUCCESS' && data.interaction_id) {
             const current = get().activeConversation;
             if (current && current.interactionId !== data.interaction_id) {
@@ -411,16 +469,19 @@ export const useChatStore = create((set, get) => ({
 
     // ── Chat-list maintenance ────────────────────────────────────────────
 
-    /** Reorder/update the chat list when a message arrives for a thread. */
-    touchConversation: (interactionId, patch = {}) => {
-        const existing = get().conversations.find((c) => c.interaction_id === interactionId);
+    /**
+     * Reorder/update a chat row when a message arrives for it.
+     * @param {string} participantKey - the conversation identity
+     */
+    touchConversation: (participantKey, patch = {}) => {
+        const existing = get().conversations.find((c) => c.participant_key === participantKey);
         if (!existing) return;
         set({ conversations: upsertConversation(get().conversations, { ...existing, ...patch }) });
     },
 
     /** Drop a conversation from the list (delete thread). */
-    dropConversation: (interactionId) => {
-        set({ conversations: removeConversation(get().conversations, interactionId) });
+    dropConversation: (participantKey) => {
+        set({ conversations: removeConversation(get().conversations, participantKey) });
     },
 
     /** The newest message of the open timeline (helper for the UI). */
@@ -436,6 +497,7 @@ export const useChatStore = create((set, get) => ({
             messages: [],
             loadingOlder: false,
             hasMore: false,
+            nextCursor: null,
             connectionState: 'idle',
             typingByEntity: {},
             recordingByEntity: {},

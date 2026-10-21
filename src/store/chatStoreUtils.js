@@ -151,19 +151,29 @@ export function sortConversations(conversations) {
     );
 }
 
-/** Insert or replace a conversation (keyed by interaction_id), keeping order. */
+/**
+ * The identity of a conversation: its `participant_key`.
+ *
+ * The engine mints a NEW interaction whenever the participant set changes, so
+ * participant_key : interactions is 1:many — the interaction id is a
+ * navigation handle only and must never identify a thread in the list.
+ */
+export function conversationKey(conversation) {
+    return conversation?.participant_key || '';
+}
+
+/** Insert or replace a conversation (keyed by participant_key), keeping order. */
 export function upsertConversation(conversations, conversation) {
-    if (!conversation || !conversation.interaction_id) return conversations || [];
-    const list = (conversations || []).filter(
-        (c) => c.interaction_id !== conversation.interaction_id
-    );
+    const key = conversationKey(conversation);
+    if (!key) return conversations || [];
+    const list = (conversations || []).filter((c) => conversationKey(c) !== key);
     list.push(conversation);
     return sortConversations(list);
 }
 
-/** Drop a conversation from the list by interaction id. */
-export function removeConversation(conversations, interactionId) {
-    return (conversations || []).filter((c) => c.interaction_id !== interactionId);
+/** Drop a conversation from the list by participant key. */
+export function removeConversation(conversations, participantKey) {
+    return (conversations || []).filter((c) => conversationKey(c) !== participantKey);
 }
 
 /**
@@ -206,6 +216,109 @@ export function partitionChatEntities(entities) {
         }
     }
     return { partners, personas };
+}
+
+/**
+ * Parse the engine's `participant_ids` value. The chat-list row carries the raw
+ * JSON array text (the interactions table stores it as a string); the
+ * interaction/WS shapes carry a real array. Both are accepted, and anything
+ * malformed degrades to an empty array (never throws).
+ *
+ * @param {string|string[]|null|undefined} raw
+ * @returns {string[]}
+ */
+export function parseParticipantIds(raw) {
+    if (Array.isArray(raw)) return raw.filter(Boolean);
+    if (!raw || typeof raw !== 'string') return [];
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * The other participant of a private thread: the first participant that is not
+ * the POV entity. Group/world threads may have none (the UI falls back to the
+ * entity id).
+ *
+ * @param {string[]} participantIds
+ * @param {string} entityId
+ * @returns {string}
+ */
+export function derivePartnerEntityId(participantIds, entityId) {
+    for (const id of participantIds || []) {
+        if (id && id !== entityId) return id;
+    }
+    return '';
+}
+
+/**
+ * Normalise one parity `ConversationMessageSync` row into the flat message
+ * shape the store/bubbles consume.
+ *
+ * Parity carries media as mime-type presence rather than `has_audio` /
+ * `has_image` booleans, so those are derived here. `is_read` is passed through
+ * as-is (null when the projection omits it) — {@link isUnreadInbound} treats
+ * anything but `false` as read.
+ *
+ * @param {object|null|undefined} msg
+ * @returns {object|null}
+ */
+export function normalizeChatMessage(msg) {
+    if (!msg || !msg.id) return null;
+    const audioMime = msg.audio_mime_type || '';
+    const imageMime = msg.image_mime_type || '';
+    return {
+        id: msg.id,
+        entity_id: msg.entity_id || '',
+        sender_entity_id: msg.sender_entity_id || msg.entity_id || '',
+        interaction_id: msg.interaction_id || '',
+        content: msg.content || '',
+        message_type: msg.message_type || 'text',
+        audio_duration: msg.audio_duration || 0,
+        has_audio: !!audioMime,
+        audio_mime_type: audioMime,
+        has_image: !!imageMime,
+        image_mime_type: imageMime,
+        is_edited: !!msg.is_edited,
+        edit_of_message_id: msg.edit_of_message_id || '',
+        reply_to_message_id: msg.reply_to_message_id || '',
+        reactions_json: msg.reactions_json || '',
+        is_pinned: !!msg.is_pinned,
+        is_read: typeof msg.is_read === 'boolean' ? msg.is_read : null,
+        created_at: msg.created_at || '',
+        updated_at: msg.updated_at || msg.created_at || '',
+    };
+}
+
+/**
+ * Normalise one parity chat-list row into the shape the chat list renders. The
+ * POV entity id is not on the row (it is the request path parameter), so the
+ * caller supplies it.
+ *
+ * @param {object} row
+ * @param {string} entityId
+ * @returns {object}
+ */
+export function normalizeChatConversation(row, entityId) {
+    const participantIds = parseParticipantIds(row?.participant_ids);
+    const lastMessage = normalizeChatMessage(row?.last_message);
+    return {
+        interaction_id: row?.interaction_id || '',
+        participant_key: row?.participant_key || '',
+        entity_id: entityId,
+        participant_ids: participantIds,
+        partner_entity_id: derivePartnerEntityId(participantIds, entityId),
+        scope: row?.interaction_scope || 'private',
+        last_activity_at: row?.last_message_at || lastMessage?.created_at || null,
+        unread_count: row?.unread_count || 0,
+        pinned: !!row?.pinned,
+        archived: !!row?.archived,
+        reply_mode: row?.reply_mode || 'realistic',
+        last_message: lastMessage,
+    };
 }
 
 /** Derive the deterministic participant_key for a private pair. */

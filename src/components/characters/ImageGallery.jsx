@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import ImageUploadModal from './ImageUploadModal';
 import Tooltip from '../ui/Tooltip.jsx';
+import CharacterImage from '../common/CharacterImage.jsx';
 
 /**
  * Component for displaying and managing a gallery of character images
@@ -153,8 +154,9 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                         onClick={() => setLightboxImage(image)}
                     >
                         {/* Main image - clickable for lightbox */}
-                        <img
-                            src={image.data_url}
+                        <CharacterImage
+                            profileId={profileId}
+                            imageId={image.id}
                             alt={image.description || t('images.characterImageAlt')}
                             className="w-full aspect-square object-cover"
                         />
@@ -343,8 +345,10 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                 className="rounded-lg overflow-hidden"
                                 style={{ background: 'var(--color-background-base)' }}
                             >
-                                <img
-                                    src={currentEditImage.data_url}
+                                <CharacterImage
+                                    profileId={profileId}
+                                    imageId={currentEditImage.id}
+                                    variant={null}
                                     alt={t('images.currentImageAlt')}
                                     className="w-full object-contain"
                                     style={{ maxHeight: 'clamp(12rem, calc(70vh - 28rem), 50vh)' }}
@@ -434,6 +438,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
             {/* Lightbox Modal */}
             {lightboxImage && createPortal(
                 <LightboxModal
+                    profileId={profileId}
                     image={lightboxImage}
                     images={images}
                     onClose={() => setLightboxImage(null)}
@@ -448,12 +453,13 @@ export default function ImageGallery({ profileId, visionConfigId }) {
 /**
  * Lightbox modal with navigation arrows and fading description overlay
  * @param {Object} props
+ * @param {string} props.profileId - ID of the character profile
  * @param {Object} props.image - Current image to display
  * @param {Array} props.images - All images in gallery for navigation
  * @param {Function} props.onClose - Close handler
  * @param {Function} props.onNavigate - Navigate to another image
  */
-function LightboxModal({ image, images, onClose, onNavigate }) {
+function LightboxModal({ profileId, image, images, onClose, onNavigate }) {
     const { t } = useTranslation('characters');
     const [showOverlay, setShowOverlay] = useState(true);
     const currentIndex = images.findIndex(img => img.id === image.id);
@@ -543,9 +549,11 @@ function LightboxModal({ image, images, onClose, onNavigate }) {
                 {currentIndex + 1} / {images.length}
             </div>
 
-            {/* Image */}
-            <img
-                src={image.data_url}
+            {/* Image — full-size original (the grid/editor use the small thumb) */}
+            <CharacterImage
+                profileId={profileId}
+                imageId={image.id}
+                variant={null}
                 alt={image.description || t('images.characterImageAlt')}
                 className="max-w-[90vw] max-h-[90vh] object-contain"
                 onClick={(e) => e.stopPropagation()}

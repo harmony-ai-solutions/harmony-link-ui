@@ -9,6 +9,7 @@ import * as characterService from '../../services/management/characterService.js
 import { validatePersonaName } from '../../utils/personaNameUtils';
 import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
 import CharacterCardExport from '../characters/CharacterCardExport.jsx';
+import CharacterImage from '../common/CharacterImage.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
@@ -527,16 +528,19 @@ export default function PersonasView() {
                                     <div key={persona.id}
                                         className="rounded-xl border border-white/10 bg-background-surface/30 backdrop-blur-sm overflow-hidden group hover:border-accent-primary/40 transition-all duration-200">
                                         <div className="aspect-[3/4] relative bg-elevated">
-                                            {avatar ? (
-                                                <img src={avatar?.data_url} alt={persona.profile?.name || persona.id}
-                                                    className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-text-disabled">
-                                                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                    </svg>
-                                                </div>
-                                            )}
+                                            <CharacterImage
+                                                profileId={persona.profile?.id}
+                                                imageId={avatar?.id}
+                                                alt={persona.profile?.name || persona.id}
+                                                className="w-full h-full object-cover"
+                                                fallback={(
+                                                    <div className="w-full h-full flex items-center justify-center text-text-disabled">
+                                                        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            />
                                             <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity" />
                                             <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-secondary/15 text-accent-secondary">

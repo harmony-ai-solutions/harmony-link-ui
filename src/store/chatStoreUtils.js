@@ -144,11 +144,16 @@ export function truncatePreview(text, max = 80) {
     return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-/** Sort conversations by most-recent activity (descending). */
+/**
+ * Sort conversations the way the app's inbox does: pinned threads first, then
+ * most-recent activity (descending). Sorting is stable, so rows with the same
+ * timestamp keep their incoming order.
+ */
 export function sortConversations(conversations) {
-    return (conversations || []).slice().sort(
-        (a, b) => toTime(b.last_activity_at) - toTime(a.last_activity_at)
-    );
+    return (conversations || []).slice().sort((a, b) => {
+        if (!!a?.pinned !== !!b?.pinned) return a?.pinned ? -1 : 1;
+        return toTime(b.last_activity_at) - toTime(a.last_activity_at);
+    });
 }
 
 /**
@@ -174,6 +179,68 @@ export function upsertConversation(conversations, conversation) {
 /** Drop a conversation from the list by participant key. */
 export function removeConversation(conversations, participantKey) {
     return (conversations || []).filter((c) => conversationKey(c) !== participantKey);
+}
+
+/**
+ * Merge per-companion chat-list pages into ONE inbox list (the app's chat-list
+ * semantics).
+ *
+ * The engine lists conversations from a POV entity's perspective, so a private
+ * thread between companion A and the persona appears only in A's list — the
+ * desktop inbox therefore fetches one page per AI partner and merges them.
+ * Group/world participant sets can legitimately appear in more than one
+ * partner's page under the SAME participant_key, so rows are deduped by that
+ * key: the freshest copy wins and the unread badges are combined with max() so
+ * a duplicate can never hide unread messages.
+ *
+ * @param {Array<Array<object>>} pages - one array of conversation rows per partner
+ * @returns {Array<object>} deduped, sorted rows (pinned first, then recency)
+ */
+export function mergeConversations(pages) {
+    const byKey = new Map();
+    for (const page of pages || []) {
+        for (const row of page || []) {
+            const key = conversationKey(row);
+            if (!key) continue;
+            const existing = byKey.get(key);
+            if (!existing) {
+                byKey.set(key, row);
+                continue;
+            }
+            const rowIsFresher = toTime(row.last_activity_at) >= toTime(existing.last_activity_at);
+            const fresher = rowIsFresher ? row : existing;
+            byKey.set(key, {
+                ...fresher,
+                unread_count: Math.max(existing.unread_count || 0, row.unread_count || 0),
+            });
+        }
+    }
+    return sortConversations([...byKey.values()]);
+}
+
+/**
+ * Fold `Promise.allSettled`-style results from the per-partner chat-list
+ * loads into one inbox. A single failing partner must not blank the list: its
+ * page is skipped and only the failure count is reported.
+ *
+ * @param {Array<{status: 'fulfilled'|'rejected', value?: object[], reason?: any}>} results
+ * @returns {{ conversations: object[], failures: number, total: number }}
+ */
+export function mergeConversationPages(results) {
+    const pages = [];
+    let failures = 0;
+    for (const result of results || []) {
+        if (result?.status === 'fulfilled') {
+            pages.push(result.value);
+        } else {
+            failures += 1;
+        }
+    }
+    return {
+        conversations: mergeConversations(pages),
+        failures,
+        total: (results || []).length,
+    };
 }
 
 /**
@@ -252,6 +319,95 @@ export function derivePartnerEntityId(participantIds, entityId) {
         if (id && id !== entityId) return id;
     }
     return '';
+}
+
+/**
+ * The companion that OWNS a chat-list row: the AI entity whose `/chat-list`
+ * page produced it (`conversation.entity_id`). Rows must be named and
+ * avatar'd by this entity — `partner_entity_id` is the row's POV partner (the
+ * persona "user" for a private companion thread), never the companion.
+ *
+ * @param {object|null|undefined} conversation
+ * @param {Record<string, object>} entityById
+ * @returns {object|null}
+ */
+export function conversationCompanion(conversation, entityById) {
+    const id = conversation?.entity_id;
+    return (id && entityById && entityById[id]) || null;
+}
+
+/** Display name for a chat-list row — always the owning AI companion. */
+export function conversationDisplayName(conversation, entityById) {
+    return entityDisplayName(conversationCompanion(conversation, entityById)) || conversation?.entity_id || '';
+}
+
+/** Linked character-profile id for a chat-list row's companion (avatar). */
+export function conversationAvatarProfileId(conversation, entityById) {
+    return conversationCompanion(conversation, entityById)?.character_profile_id || '';
+}
+
+/**
+ * The persona (entity_type 'user') participating in a conversation, or '' when
+ * the row does not expose a persona participant. Used for "You" direction and
+ * for keeping the inbox to conversations the user is actually part of.
+ *
+ * @param {object|null|undefined} conversation
+ * @param {Record<string, object>} entityById
+ * @returns {string}
+ */
+export function conversationPersonaEntityId(conversation, entityById) {
+    for (const id of conversation?.participant_ids || []) {
+        if (entityById?.[id]?.entity_type === 'user') return id;
+    }
+    return '';
+}
+
+/**
+ * Keep only conversations that include one of the known personas. The app's
+ * inbox is the persona's perspective; a per-companion merge can also surface
+ * companion↔companion DMs, which are not the user's threads (and opening one
+ * would force the persona into the participant set, minting a new interaction).
+ *
+ * Rows with an empty/malformed participant set are kept — an unknown set must
+ * never be hidden.
+ *
+ * @param {Array<object>} conversations
+ * @param {Iterable<string>} personaIds
+ * @returns {Array<object>}
+ */
+export function filterConversationsForPersonas(conversations, personaIds) {
+    const ids = personaIds instanceof Set ? personaIds : new Set(personaIds || []);
+    if (ids.size === 0) return conversations || [];
+    return (conversations || []).filter((conversation) => {
+        const participantIds = Array.isArray(conversation?.participant_ids)
+            ? conversation.participant_ids
+            : [];
+        if (participantIds.length === 0) return true;
+        return participantIds.some((id) => ids.has(id));
+    });
+}
+
+/**
+ * Whether a chat-list row's last message was sent by the persona we chat AS
+ * ("You").
+ *
+ * Rows are listed from the AI companion's POV, so `sender_entity_id ===
+ * conversation.entity_id` is the COMPANION speaking (incoming), not the user.
+ * The persona sender is resolved from `participant_ids` (preferred, correct in
+ * groups too), then `partner_entity_id`. Matches the app inbox, which prefixes
+ * "You" when the sender is the impersonated persona.
+ *
+ * @param {object|null|undefined} conversation
+ * @param {Record<string, object>} [entityById]
+ * @returns {boolean}
+ */
+export function isConversationLastMessageOutgoing(conversation, entityById) {
+    const sender = conversation?.last_message?.sender_entity_id;
+    if (!sender) return false;
+    const personaId = conversationPersonaEntityId(conversation, entityById);
+    if (personaId) return sender === personaId;
+    if (conversation?.partner_entity_id) return sender === conversation.partner_entity_id;
+    return sender !== conversation?.entity_id;
 }
 
 /**

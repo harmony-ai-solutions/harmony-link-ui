@@ -2,13 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageIcon, RobotIcon, PlusIcon, SearchIcon } from '../../constants/icons.jsx';
 import useChatStore from '../../store/chatStore.js';
-import { partitionChatEntities, entityDisplayName, conversationPreview, truncatePreview } from '../../store/chatStoreUtils.js';
+import {
+    partitionChatEntities,
+    entityDisplayName,
+    conversationPreview,
+    conversationDisplayName,
+    conversationAvatarProfileId,
+    isConversationLastMessageOutgoing,
+    truncatePreview,
+} from '../../store/chatStoreUtils.js';
 import useEntityStore from '../../store/entityStore.js';
-import * as characterService from '../../services/management/characterService.js';
+import CharacterImage from '../common/CharacterImage.jsx';
 
 /**
- * Chat list (F1): every conversation for the selected AI companion, with the
- * last message, an unread badge and a "New Chat" picker.
+ * Chat list (F1) — the desktop inbox, mirroring the mobile app: every
+ * conversation across ALL enabled AI companions, one row per participant_key,
+ * named and avatar'd by its AI companion, with the last message, an unread
+ * badge and a "New Chat" picker.
  *
  * @param {{ onOpenConversation: (conversation: object) => void,
  *   onNavigate: (tab: string) => void }} props
@@ -18,11 +28,9 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
     const [search, setSearch] = useState('');
     const [unreadOnly, setUnreadOnly] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
-    const [avatarByProfile, setAvatarByProfile] = useState({});
 
     const conversations = useChatStore((s) => s.conversations);
     const chatEntities = useChatStore((s) => s.chatEntities);
-    const listEntityId = useChatStore((s) => s.listEntityId);
     const loadChatEntities = useChatStore((s) => s.loadChatEntities);
     const loadConversations = useChatStore((s) => s.loadConversations);
     const entities = useEntityStore((s) => s.entities);
@@ -30,38 +38,22 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
 
     const { partners } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
-    // Load chat entities + entity list once.
-    useEffect(() => {
-        loadChatEntities();
-        if (entities === null) loadEntities();
-    }, []);
-
-    // Default the list to the first available AI companion.
-    useEffect(() => {
-        if (!listEntityId && partners.length > 0) {
-            loadConversations(partners[0].id);
-        }
-    }, [partners, listEntityId]);
-
-    // Load primary avatars for the partners' character profiles.
+    // Load chat entities + entity list once, then the merged inbox: one
+    // /chat-list per enabled AI companion, merged by participant_key. Chat
+    // entities must be loaded first because the merged inbox derives its
+    // partner ids from them.
     useEffect(() => {
         let active = true;
+        if (entities === null) loadEntities();
         (async () => {
-            const map = {};
-            for (const partner of partners) {
-                if (!partner.character_profile_id) continue;
-                try {
-                    const images = await characterService.listImages(partner.character_profile_id);
-                    const primary = images?.find((i) => i.is_primary) || images?.[0];
-                    if (primary?.data_url) map[partner.character_profile_id] = primary.data_url;
-                } catch {
-                    /* avatar is cosmetic — ignore failures */
-                }
+            const loaded = await loadChatEntities();
+            if (!active) return;
+            if (partitionChatEntities(loaded).partners.length > 0) {
+                await loadConversations();
             }
-            if (active) setAvatarByProfile(map);
         })();
         return () => { active = false; };
-    }, [partners]);
+    }, []);
 
     const entityById = useMemo(() => {
         const map = {};
@@ -69,19 +61,12 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
         return map;
     }, [chatEntities]);
 
-    const avatarForEntity = (entityId) => {
-        const option = entityById[entityId];
-        const profileId = option?.character_profile_id;
-        return profileId ? avatarByProfile[profileId] : null;
-    };
-
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
         return conversations.filter((c) => {
             if (unreadOnly && !c.unread_count) return false;
             if (!term) return true;
-            const partner = entityById[c.partner_entity_id];
-            const name = entityDisplayName(partner).toLowerCase();
+            const name = conversationDisplayName(c, entityById).toLowerCase();
             const preview = conversationPreview(c.last_message).toLowerCase();
             return name.includes(term) || preview.includes(term);
         });
@@ -140,11 +125,12 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
             ) : (
                 <ul className="chat-list-rows">
                     {filtered.map((conversation) => {
-                        const partner = entityById[conversation.partner_entity_id];
-                        const avatar = avatarForEntity(conversation.partner_entity_id);
-                        const name = entityDisplayName(partner) || conversation.partner_entity_id;
+                        // Name/avatar by the AI companion that OWNS the row, not
+                        // by partner_entity_id (the persona "user").
+                        const name = conversationDisplayName(conversation, entityById);
+                        const avatarProfileId = conversationAvatarProfileId(conversation, entityById);
                         const preview = conversationPreview(conversation.last_message);
-                        const isOutgoing = conversation.last_message?.sender_entity_id === conversation.entity_id;
+                        const isOutgoing = isConversationLastMessageOutgoing(conversation, entityById);
                         const previewPrefix = isOutgoing ? `${t('chat:list.you')}: ` : '';
                         const time = conversation.last_message?.created_at;
                         const timeLabel = time ? new Date(time).toLocaleDateString() : '';
@@ -163,9 +149,12 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                                     })}
                                 >
                                     <span className="chat-list-avatar-ring">
-                                        {avatar
-                                            ? <img src={avatar} alt={name} className="chat-list-avatar" />
-                                            : <span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
+                                        <CharacterImage
+                                            profileId={avatarProfileId}
+                                            alt={name}
+                                            className="chat-list-avatar"
+                                            fallback={<span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
+                                        />
                                     </span>
                                     <span className="chat-list-body">
                                         <span className="chat-list-row-top">
@@ -197,7 +186,7 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                         ) : (
                             <ul className="chat-picker-list">
                                 {partners.map((partner) => {
-                                    const avatar = avatarForEntity(partner.id);
+                                    const name = entityDisplayName(partner);
                                     return (
                                         <li key={partner.id}>
                                             <button
@@ -206,11 +195,14 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                                                 onClick={() => { setShowPicker(false); startNewChat(partner); }}
                                             >
                                                 <span className="chat-list-avatar-ring">
-                                                    {avatar
-                                                        ? <img src={avatar} alt={entityDisplayName(partner)} className="chat-list-avatar" />
-                                                        : <span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
+                                                    <CharacterImage
+                                                        profileId={partner.character_profile_id}
+                                                        alt={name}
+                                                        className="chat-list-avatar"
+                                                        fallback={<span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
+                                                    />
                                                 </span>
-                                                <span className="chat-picker-name">{entityDisplayName(partner)}</span>
+                                                <span className="chat-picker-name">{name}</span>
                                             </button>
                                         </li>
                                     );

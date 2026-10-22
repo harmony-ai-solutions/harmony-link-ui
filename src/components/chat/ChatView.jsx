@@ -6,6 +6,7 @@ import ChatDetailView from './ChatDetailView.jsx';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
+import CharacterImage from '../common/CharacterImage.jsx';
 
 /**
  * Chat tab container (Phase 2).
@@ -77,12 +78,20 @@ const ChatView = ({ onNavigate }) => {
         // D-21: the participant set must include the persona we chat as so the
         // engine resolves a private interaction and the persona identity applies.
         // A brand-new chat (from the picker) arrives with only the partner id.
-        const persona = ownEntityId || personas[0]?.id;
+        //
+        // The merged inbox spans several personas, so when the row already names
+        // a persona participant, chat AS that persona (and speak as them) —
+        // never add a second persona to an existing private pair, which would
+        // mint a new group interaction.
+        const rowPersona = (conversation.participantIds || [])
+            .find((id) => personas.some((p) => p.id === id));
+        const persona = rowPersona || ownEntityId || personas[0]?.id;
         const participantIds = Array.from(new Set([
             conversation.entityId,
             ...(conversation.participantIds || []),
             ...(persona ? [persona] : []),
         ])).filter(Boolean);
+        if (rowPersona && rowPersona !== ownEntityId) setOwnEntityId(rowPersona);
         const enriched = {
             ...conversation,
             participantIds,
@@ -123,9 +132,9 @@ const ChatView = ({ onNavigate }) => {
     const handleBack = () => {
         closeSocket();
         setOpenConversation(null);
-        // Refresh the list so the newest message shows.
-        const listEntityId = useChatStore.getState().listEntityId;
-        if (listEntityId) loadConversations(listEntityId);
+        // Refresh the inbox so the newest message shows (all companions —
+        // `loadConversations()` defaults to the merged app-style list).
+        loadConversations();
     };
 
     const hasCompanions = partners.length > 0;
@@ -208,7 +217,12 @@ const ChatView = ({ onNavigate }) => {
                                             onClick={() => startNewChat(partner)}
                                         >
                                             <span className="chat-list-avatar-ring">
-                                                <span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>
+                                                <CharacterImage
+                                                    profileId={partner.character_profile_id}
+                                                    alt={entityDisplayName(partner)}
+                                                    className="chat-list-avatar"
+                                                    fallback={<span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
+                                                />
                                             </span>
                                             <span className="chat-picker-name">{entityDisplayName(partner)}</span>
                                         </button>

@@ -14,6 +14,14 @@ import {
   upsertConversation,
   removeConversation,
   conversationKey,
+  mergeConversations,
+  mergeConversationPages,
+  conversationDisplayName,
+  conversationAvatarProfileId,
+  isConversationLastMessageOutgoing,
+  conversationPersonaEntityId,
+  filterConversationsForPersonas,
+  entityDisplayName,
   normalizeChatConversation,
   setEntityFlag,
   isAnyTyping,
@@ -225,3 +233,128 @@ test('toTime parses timestamps and treats garbage as zero', () => {
   assert.equal(toTime('not-a-date'), 0);
   assert.equal(toTime(null), 0);
 });
+
+// ── App-style inbox: per-companion pages merged into one list ──────────────
+
+const conv = (participantKey, entityId, extra = {}) => ({
+  participant_key: participantKey,
+  entity_id: entityId,
+  unread_count: 0,
+  last_activity_at: '2026-01-01T00:00:00Z',
+  ...extra,
+});
+
+test('sortConversations keeps pinned threads above newer unpinned ones', () => {
+  const list = [
+    conv('a+b', 'a', { last_activity_at: '2026-01-03T00:00:00Z' }),
+    conv('a+c', 'a', { pinned: true, last_activity_at: '2026-01-01T00:00:00Z' }),
+  ];
+  assert.deepEqual(sortConversations(list).map((c) => c.participant_key), ['a+c', 'a+b']);
+});
+
+test('mergeConversations merges per-companion pages into one inbox', () => {
+  const merged = mergeConversations([
+    [conv('ai1:user', 'ai1', { last_activity_at: '2026-01-02T00:00:00Z' })],
+    [conv('ai2:user', 'ai2', { last_activity_at: '2026-01-03T00:00:00Z' })],
+  ]);
+  assert.deepEqual(merged.map((c) => c.participant_key), ['ai2:user', 'ai1:user']);
+});
+
+test('mergeConversations dedupes by participant_key: freshest row wins, unread is max', () => {
+  const merged = mergeConversations([
+    [conv('ai1:ai2:user', 'ai1', { unread_count: 1, last_activity_at: '2026-01-01T00:00:00Z', interaction_id: 'old' })],
+    [conv('ai1:ai2:user', 'ai1', { unread_count: 3, last_activity_at: '2026-01-05T00:00:00Z', interaction_id: 'new' })],
+  ]);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].interaction_id, 'new');
+  assert.equal(merged[0].unread_count, 3);
+  // Rows without a participant_key cannot identify a thread and are ignored.
+  assert.equal(mergeConversations([[conv('', 'ai1')]]).length, 0);
+});
+
+test('mergeConversationPages tolerates a failing companion', () => {
+  const result = mergeConversationPages([
+    { status: 'fulfilled', value: [conv('ai1:user', 'ai1')] },
+    { status: 'rejected', reason: new Error('engine unavailable') },
+  ]);
+  assert.equal(result.total, 2);
+  assert.equal(result.failures, 1);
+  assert.deepEqual(result.conversations.map((c) => c.participant_key), ['ai1:user']);
+});
+
+test('a chat row is named and avatar\'d by its AI companion, not the persona partner', () => {
+  const entityById = {
+    ai1: { id: 'ai1', display_name: 'Claire', character_profile_id: 'profile-claire' },
+    user: { id: 'user', display_name: 'Me', character_profile_id: 'profile-me' },
+  };
+  const conversation = normalizeChatConversation(
+    {
+      participant_key: 'ai1:user',
+      participant_ids: '["ai1","user"]',
+      last_message: { id: 'm1', sender_entity_id: 'ai1', content: 'hello', created_at: '2026-01-02T00:00:00Z' },
+    },
+    'ai1'
+  );
+
+  assert.equal(conversation.partner_entity_id, 'user');
+  assert.equal(conversationDisplayName(conversation, entityById), 'Claire');
+  assert.equal(conversationAvatarProfileId(conversation, entityById), 'profile-claire');
+  // Falls back to the owning entity id when the entity is unknown.
+  assert.equal(conversationDisplayName(conversation, {}), 'ai1');
+  assert.equal(conversationAvatarProfileId(conversation, {}), '');
+  // entityDisplayName keeps its display_name → alias → id precedence.
+  assert.equal(entityDisplayName({ alias: 'Alias' }), 'Alias');
+});
+
+test('last-message direction labels the persona as "You", never the companion', () => {
+  const row = (sender) => normalizeChatConversation(
+    {
+      participant_key: 'ai1:user',
+      participant_ids: '["ai1","user"]',
+      last_message: { id: 'm1', sender_entity_id: sender, content: 'hi', created_at: '2026-01-02T00:00:00Z' },
+    },
+    'ai1'
+  );
+
+  // The persona spoke → outgoing ("You:").
+  assert.equal(isConversationLastMessageOutgoing(row('user')), true);
+  // The companion spoke → incoming (no prefix).
+  assert.equal(isConversationLastMessageOutgoing(row('ai1')), false);
+  assert.equal(isConversationLastMessageOutgoing({ last_message: null }), false);
+});
+
+test('direction resolves the persona from participants in a group thread too', () => {
+  const entityById = {
+    ai1: { id: 'ai1', entity_type: 'ai' },
+    ai2: { id: 'ai2', entity_type: 'ai' },
+    user: { id: 'user', entity_type: 'user' },
+  };
+  // participant order puts ai2 first, so partner_entity_id would be ai2 — the
+  // persona must still win for "You".
+  const group = normalizeChatConversation(
+    {
+      participant_key: 'ai1:ai2:user',
+      participant_ids: '["ai1","ai2","user"]',
+      last_message: { id: 'm1', sender_entity_id: 'user', content: 'hi', created_at: '2026-01-02T00:00:00Z' },
+    },
+    'ai1'
+  );
+  assert.equal(conversationPersonaEntityId(group, entityById), 'user');
+  assert.equal(isConversationLastMessageOutgoing(group, entityById), true);
+  assert.equal(isConversationLastMessageOutgoing({ ...group, last_message: { sender_entity_id: 'ai2' } }, entityById), false);
+});
+
+test('filterConversationsForPersonas drops companion-only DMs but keeps unknowns', () => {
+  const rows = [
+    { participant_key: 'ai1:user', participant_ids: ['ai1', 'user'] },
+    { participant_key: 'ai1:ai2', participant_ids: ['ai1', 'ai2'] },
+    { participant_key: 'legacy', participant_ids: [] }, // unparseable → keep
+  ];
+  assert.deepEqual(
+    filterConversationsForPersonas(rows, ['user']).map((r) => r.participant_key),
+    ['ai1:user', 'legacy']
+  );
+  // No known personas → no filtering.
+  assert.equal(filterConversationsForPersonas(rows, []).length, 3);
+});
+

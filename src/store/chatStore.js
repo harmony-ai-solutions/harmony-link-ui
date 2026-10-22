@@ -8,6 +8,9 @@ import {
     removeMessage,
     upsertConversation,
     removeConversation,
+    mergeConversationPages,
+    filterConversationsForPersonas,
+    partitionChatEntities,
     setEntityFlag,
     lastMessage,
 } from './chatStoreUtils.js';
@@ -25,6 +28,12 @@ import {
  * interaction, so `interactionId` is a NAVIGATION handle only and all history
  * reads address the participant key (they span every interaction of the key).
  *
+ * Chat list: the desktop inbox mirrors the mobile app — it loads the
+ * `/chat-list` page of EVERY enabled AI companion (in parallel), merges the
+ * rows by `participant_key`, and names/avatars each row by the AI companion
+ * that owns it (`conversation.entity_id`). `partner_entity_id` is the persona
+ * "user" on a private companion thread and is deliberately NOT the row label.
+ *
  * Message perspective: timelines are stored from the AI entity's perspective
  * (sender_entity_id === ownEntityId means "the user/persona spoke"), matching
  * the engine. The UI derives bubble side from messageDirection().
@@ -35,9 +44,13 @@ const sockets = new Map();
 
 export const useChatStore = create((set, get) => ({
     // ── State ────────────────────────────────────────────────────────────
-    /** Chat-list rows for the selected AI entity. */
+    /** Chat-list rows for the inbox (all companions, or one when filtered). */
     conversations: [],
-    /** Entity id whose threads are currently listed. */
+    /**
+     * Optional companion filter for the inbox. `null` = "All companions"
+     * (the default, app-style merged list); a set id lists just that AI's
+     * threads. The detail view is addressed by participant_key either way.
+     */
     listEntityId: null,
     /** Chat-entity options: AI partners + personas (from the engine). */
     chatEntities: [],
@@ -86,17 +99,47 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    /** Load the chat-list rows for an AI entity (one row per participant_key). */
-    loadConversations: async (entityId) => {
-        set({ listEntityId: entityId, error: null });
-        try {
-            const conversations = await chatReadService.listConversations(entityId);
-            set({ conversations });
-            return conversations;
-        } catch (error) {
-            set({ error: error.message });
+    /**
+     * Load the inbox rows. Without an `entityId` this loads the chat-list of
+     * EVERY enabled AI companion in parallel and merges them (one row per
+     * participant_key, named by its owning companion) — the app's chat-list
+     * semantics. With an `entityId` it lists just that companion's threads
+     * (the optional per-companion filter).
+     *
+     * A failing companion must not blank the inbox: pages settle independently
+     * and the error is surfaced only when EVERY page failed.
+     *
+     * @param {string|null} [entityId] - optional companion filter
+     * @returns {Promise<Array<object>>}
+     */
+    loadConversations: async (entityId = null) => {
+        set({ listEntityId: entityId || null, error: null });
+        const { partners, personas } = partitionChatEntities(get().chatEntities);
+        const ids = entityId ? [entityId] : partners.map((entity) => entity.id);
+        if (ids.length === 0) {
+            set({ conversations: [] });
             return [];
         }
+
+        const settled = await Promise.allSettled(
+            ids.map((id) => chatReadService.listConversations(id))
+        );
+        const { conversations: merged, failures, total } = mergeConversationPages(settled);
+        // Mirror the app inbox: only conversations the user's persona takes
+        // part in (a per-companion merge also sees companion↔companion DMs).
+        // Rows with an unparseable participant set are kept.
+        const conversations = filterConversationsForPersonas(
+            merged,
+            personas.map((persona) => persona.id)
+        );
+        const firstFailure = settled.find((result) => result.status === 'rejected');
+        set({
+            conversations,
+            error: total > 0 && failures === total
+                ? firstFailure?.reason?.message || 'Failed to load conversations'
+                : null,
+        });
+        return conversations;
     },
 
     /**

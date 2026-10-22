@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
 import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import CharacterImage from '../common/CharacterImage.jsx';
 import { toast } from '../../store/toastStore.js';
 
 /**
@@ -186,19 +187,19 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                 className="aspect-[3/4] relative bg-elevated overflow-hidden"
                 style={{ borderTopLeftRadius: 'var(--radius-xl)', borderTopRightRadius: 'var(--radius-xl)' }}
             >
-                {primaryImage ? (
-                    <img
-                        src={primaryImage.data_url}
-                        alt={profile.name}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full flex items-center justify-center text-text-disabled">
-                        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </div>
-                )}
+                <CharacterImage
+                    profileId={profile.id}
+                    imageId={primaryImage?.id}
+                    alt={profile.name}
+                    className="w-full h-full object-cover"
+                    fallback={(
+                        <div className="w-full h-full flex items-center justify-center text-text-disabled">
+                            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                    )}
+                />
 
                 <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none" />
 

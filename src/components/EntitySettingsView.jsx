@@ -5,6 +5,7 @@ import useModuleConfigStore from '../store/moduleConfigStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
 import ThemedSelect from './widgets/ThemedSelect';
 import CharacterProfilePreview from './widgets/CharacterProfilePreview';
+import CharacterImage from './common/CharacterImage.jsx';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
@@ -286,15 +287,15 @@ const EntitySettingsView = ({ appName }) => {
         });
     }, [aiEntities, characterImages, loadCharacterImages]);
 
-    // Primary image (base64 data_url) for an entity's linked card, or null
-    // when the entity has no profile / no images — the caller renders the
-    // letter-bubble fallback.
-    const getEntityAvatarUrl = (entity) => {
+    // Primary image for an entity's linked card, or null when the entity has no
+    // profile / no images — the caller renders the letter-bubble fallback.
+    // Metadata-only since 1.8.0: the image object carries `id` (bytes are
+    // loaded as an object URL by <CharacterImage>), never `data_url`.
+    const getEntityAvatarImage = (entity) => {
         const profileId = entity?.character_profile?.id;
         if (!profileId) return null;
         const images = characterImages[profileId] || [];
-        const primary = images.find(img => img.is_primary) || images[0];
-        return primary?.data_url || null;
+        return images.find(img => img.is_primary) || images[0] || null;
     };
 
     const handleCopyEntityId = async () => {
@@ -676,7 +677,7 @@ const EntitySettingsView = ({ appName }) => {
                                     // the Identity Settings ID row). The green
                                     // bubble marks entities with live sessions.
                                     const displayName = entity.alias || entity.id;
-                                    const avatarUrl = getEntityAvatarUrl(entity);
+                                    const avatarImage = getEntityAvatarImage(entity);
                                     const sessionCount = countActiveSessions(sessionsByEntity, entity.id);
                                     return (
                                         <Tooltip key={entity.id} content={displayName}>
@@ -686,19 +687,23 @@ const EntitySettingsView = ({ appName }) => {
                                                     <div className="relative shrink-0">
                                                         <div className="entity-avatar-ring">
                                                             <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'var(--color-background-elevated)' }}>
-                                                                {avatarUrl ? (
-                                                                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <div className="entity-avatar-fallback w-full h-full flex items-center justify-center">
-                                                                        <span className="text-sm font-extrabold text-white select-none">
-                                                                            {getEntityAvatarLetter(displayName) || (
-                                                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                                                                </svg>
-                                                                            )}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
+                                                                <CharacterImage
+                                                                    profileId={entity?.character_profile?.id}
+                                                                    imageId={avatarImage?.id}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    fallback={(
+                                                                        <div className="entity-avatar-fallback w-full h-full flex items-center justify-center">
+                                                                            <span className="text-sm font-extrabold text-white select-none">
+                                                                                {getEntityAvatarLetter(displayName) || (
+                                                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                />
                                                             </div>
                                                         </div>
                                                         {sessionCount > 0 && (

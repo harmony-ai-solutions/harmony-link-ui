@@ -5,6 +5,7 @@
   },
   "placeholder": {
     "title": "There is no chat yet.",
+    "description": "Create an AI partner to start talking, or pick one of the characters you already have.",
     "startChatting": "Start Chatting",
     "createCharacter": "Create AI Character"
   },
@@ -14,7 +15,9 @@
     "running": "Running",
     "notRunning": "Not running",
     "start": "Start",
+    "starting": "Starting…",
     "allRunning": "Your local AI service is running.",
+    "noInstancesTitle": "No local AI service yet",
     "noInstances": "No local AI instances are configured yet. Create one from the Integrations tab (advanced mode).",
     "startRequested": "Starting the local AI service…",
     "startFailed": "Could not start the local AI service.",
@@ -27,6 +30,8 @@
     "title": "Conversations",
     "empty": "No conversations yet",
     "emptyHint": "Start a chat with one of your AI partners.",
+    "noMatches": "No conversations match this filter",
+    "noMatchesHint": "Try a different search, or show all conversations again.",
     "newChat": "New Chat",
     "noMessages": "No messages yet",
     "you": "You",
@@ -34,6 +39,7 @@
     "filterAll": "All",
     "filterUnread": "Unread",
     "selectCompanion": "Who do you want to talk to?",
+    "noCompanionsTitle": "No AI partners yet",
     "noCompanions": "No AI partners yet. Create one in the AI Characters tab first.",
     "openCharacters": "Go to AI Characters",
     "loading": "Loading conversations…",
@@ -44,6 +50,7 @@
     "loadingMessages": "Loading messages…",
     "loadOlder": "Load older messages",
     "noMessages": "Say hello to start the conversation.",
+    "noMessagesHint": "Your first message opens the conversation.",
     "jumpToLatest": "Jump to latest",
     "newMessages": "New messages",
     "connection": {

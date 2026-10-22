@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ModuleConfigRow from './ModuleConfigRow.jsx';
 import ModuleConfigInlineEditor from './ModuleConfigInlineEditor.jsx';
-import { BrainIcon, SpeakerIcon, MicrophoneIcon, BookIcon, ActivityIcon, PuzzleIcon, EyeIcon, PaletteIcon } from '../../constants/icons.jsx';
+import { BrainIcon, SpeakerIcon, MicrophoneIcon, BookIcon, ActivityIcon, PuzzleIcon, EyeIcon, PaletteIcon, PlusIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
 import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const MODULE_ICON_MAP = {
@@ -23,6 +26,7 @@ const ModuleIcon = ({ iconKey, className = "w-4 h-4 mr-1.5 flex-shrink-0" }) => 
 };
 
 export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading, onCreate, onEdit, onCopy, onDelete, onSaveNew, allInstances, onInstancesRefresh, dockerStatus }) {
+    const { t } = useTranslation();
     const [showConfigs, setShowConfigs] = useState(false);
     const [expandedConfigIds, setExpandedConfigIds] = useState(new Set());
     const [creatingConfig, setCreatingConfig] = useState(null);
@@ -101,17 +105,17 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
                     </span>
                 </div>
 
-                {/* [3] Config count pill — centered in its own fixed-width zone */}
+                {/* [3] Config count pill — centered in its own fixed-width zone.
+                    While loading, a skeleton pill stands in for the count so the
+                    row keeps its height and the pill does not read as "0". */}
                 <div className="flex items-center justify-center flex-shrink-0 w-48">
                     {isLoading ? (
-                        <span className="text-xs italic" style={{ color: 'var(--color-text-muted)' }}>
-                            Loading…
-                        </span>
+                        <Skeleton inline width="5.5rem" height="1.15rem" radius="9999px" />
                     ) : (
                         <span className="module-count-pill text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">
                             {configCount === 0
-                                ? 'No configs'
-                                : `${configCount} config${configCount !== 1 ? 's' : ''}`}
+                                ? t('moduleConfig:card.noConfigs')
+                                : t('moduleConfig:card.configCount', { count: configCount })}
                         </span>
                     )}
                 </div>
@@ -176,9 +180,14 @@ export default function ModuleCard({ moduleType, moduleInfo, configs, isLoading,
 
                     {/* Existing config rows or empty state */}
                     {configs.length === 0 && !creatingConfig ? (
-                        <div className="pl-14 py-2.5 text-xs italic" style={{ color: 'var(--color-text-muted)' }}>
-                            No configurations. Click "+ Add Config" to get started.
-                        </div>
+                        <EmptyState
+                            size="compact"
+                            icon={PlusIcon}
+                            title={t('moduleConfig:card.empty.title')}
+                            description={t('moduleConfig:card.empty.description')}
+                            actionLabel={t('moduleConfig:card.empty.action')}
+                            onAction={handleAddConfig}
+                        />
                     ) : (
                         <div className="flex flex-col">
                             {configs.map((config) => (

@@ -12,5 +12,11 @@
   "stopAll": {
     "title": "Stop All Running Instances",
     "message": "This will stop {{count}} running instance(s):\n\n{{instances}}\n\nAre you sure you want to proceed?"
+  },
+  "empty": {
+    "title": "No integrations found",
+    "description": "The quickstart repository is configured but it contains no integrations. Re-scan it, or point the app at a different checkout.",
+    "rescan": "Re-scan repository",
+    "changeRepo": "Change repository"
   }
 }

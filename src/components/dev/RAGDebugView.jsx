@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshIcon, BookIcon } from '../../constants/icons.jsx';
+import { RefreshIcon, BookIcon, MagnifierIcon } from '../../constants/icons.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import ConfigurableJsonViewer from '../widgets/ConfigurableJsonViewer.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
 import {
     getEntityRAGCollections,
     getEntityRAGCollectionDocuments,
@@ -179,7 +181,7 @@ const RAGDebugView = () => {
                         value={selectedCollection}
                         onChange={setSelectedCollection}
                         options={[
-                            { value: '', label: collectionsLoading ? t('development:inspector.loading') : t('development:rag.selectCollection') },
+                            { value: '', label: collectionsLoading ? t('development:rag.loadingCollections') : t('development:rag.selectCollection') },
                             ...collections.map((c) => ({ value: c.name || c, label: c.name || c })),
                         ]}
                     />
@@ -208,7 +210,11 @@ const RAGDebugView = () => {
 
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 space-y-4">
                 {!selectedCollection && (
-                    <p className="text-sm text-text-muted">{t('development:rag.selectCollectionHint')}</p>
+                    <EmptyState
+                        icon={BookIcon}
+                        title={t('development:rag.selectCollectionHint')}
+                        description={t('development:rag.selectCollectionDescription')}
+                    />
                 )}
 
                 {/* ── Similarity test ── */}
@@ -254,7 +260,11 @@ const RAGDebugView = () => {
                                 </div>
                                 <div className="p-4 space-y-2">
                                     {(results.results || []).length === 0 ? (
-                                        <p className="text-xs text-text-muted">{t('development:rag.similarity.noResults')}</p>
+                                        <EmptyState
+                                            size="compact"
+                                            icon={MagnifierIcon}
+                                            title={t('development:rag.similarity.noResults')}
+                                        />
                                     ) : results.results.map((r, i) => (
                                         <div key={i} className="card-surface rounded p-3">
                                             <div className="flex items-center justify-between mb-1">
@@ -284,9 +294,24 @@ const RAGDebugView = () => {
                                 {t('development:rag.documents.title', { count: documents.length })}
                             </div>
                             <div className="p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                                {documentsLoading && <p className="text-xs text-text-muted p-2">{t('development:inspector.loading')}</p>}
+                                {documentsLoading && (
+                                    <div className="space-y-1 p-1" aria-busy="true">
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                            <div key={index} className="p-2 space-y-1.5">
+                                                <Skeleton className="ui-skeleton-line" width="45%" />
+                                                <Skeleton className="ui-skeleton-line" width="80%" height="0.6rem" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 {!documentsLoading && documents.length === 0 && (
-                                    <p className="text-xs text-text-muted p-2">{t('development:rag.documents.empty')}</p>
+                                    <EmptyState
+                                        size="compact"
+                                        icon={BookIcon}
+                                        title={t('development:rag.documents.empty')}
+                                        actionLabel={t('development:rag.reload')}
+                                        onAction={loadDocuments}
+                                    />
                                 )}
                                 {documents.map((doc) => (
                                     <button

@@ -59,6 +59,9 @@
     "resetChanges": "Reset Changes",
     "saveSettings": "Save Settings"
   },
+  "emptyState": {
+    "clearFilters": "Clear filters"
+  },
   "status": {
     "loading": "Loading...",
     "connected": "Connected",

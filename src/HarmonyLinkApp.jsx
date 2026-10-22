@@ -15,6 +15,7 @@ import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import SyncStatusView from "./components/sync/SyncStatusView.jsx";
 import useOutreachNotifications from "./hooks/useOutreachNotifications.js";
+import { HealthIndicator, HealthBanner, useEngineHealth } from "./components/ui/EngineHealth.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
 import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
@@ -111,6 +112,11 @@ function HarmonyLinkAppInner() {
     // notification stream and raise an OS notification when the window is
     // unfocused. No-op outside the Wails shell (guarded runtime access).
     useOutreachNotifications();
+
+    // Plan 01-6: own the engine-health poller for the whole shell. Called ONCE
+    // here — the indicator and the banner are pure subscribers, so rendering
+    // both does not double the polling or the socket subscription.
+    useEngineHealth();
 
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
@@ -444,6 +450,11 @@ function HarmonyLinkAppInner() {
 
                     {/* Action buttons — fixed right */}
                     <div className="flex items-center gap-4 flex-shrink-0 ml-auto z-10">
+                        {/* Engine health — the answer to "is the engine there?".
+                            Sits directly LEFT of the language picker so it is
+                            part of the same cluster of "global app state". */}
+                        <HealthIndicator />
+
                         {/* Language Picker */}
                         <LanguagePicker />
 
@@ -495,6 +506,13 @@ function HarmonyLinkAppInner() {
                 />
 
                 <main className="app-main">
+                    {/* Engine-health banner — rendered only while Offline.
+                        Deliberately IN the scrolling column's flow (not an
+                        overlay): navigation and cached views must stay usable
+                        while the engine is down (plan task 01-6, step 4), so
+                        this pushes content down instead of covering it. */}
+                    <HealthBanner />
+
                     <div className="app-content">
                         {/* Render guards: a view only renders when its tab is
                             permitted in the current mode, so hidden tabs can

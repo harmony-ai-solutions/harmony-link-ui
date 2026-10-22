@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getSyncServerStatus, getSyncClientStatus } from '../../services/management/syncService.js';
+import {
+    getSyncServerStatus,
+    getSyncClientStatus,
+    getSyncGroupKeyStatus,
+    initSyncGroup,
+} from '../../services/management/syncService.js';
+import useCloudAccount from '../../hooks/useCloudAccount.js';
 import { deviceApprovalWatcher } from '../../services/sync/deviceApprovalWatcher.js';
 import PairDeviceModal from '../modals/PairDeviceModal.jsx';
 import { LogError } from '../../utils/logger.js';
@@ -67,11 +73,15 @@ function Field({ label, children }) {
 
 export const SyncStatusView = () => {
     const { t } = useTranslation();
+    const { account } = useCloudAccount();
 
     const [server, setServer] = useState(null);
     const [client, setClient] = useState(null);
+    const [keyStatus, setKeyStatus] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [cloudBusy, setCloudBusy] = useState(false);
+    const [cloudError, setCloudError] = useState(null);
     const [showPairModal, setShowPairModal] = useState(false);
     const inFlightRef = useRef(false);
 
@@ -79,14 +89,17 @@ export const SyncStatusView = () => {
         if (inFlightRef.current) return;
         inFlightRef.current = true;
         try {
-            const [serverStatus, clientStatus] = await Promise.all([
+            const [serverStatus, clientStatus, groupStatus] = await Promise.all([
                 getSyncServerStatus(),
                 // The client role is optional on the desktop — a failure here
                 // must not blank the authority view.
                 getSyncClientStatus().catch(() => null),
+                // The group key is optional too (cloud sync may be off).
+                getSyncGroupKeyStatus().catch(() => null),
             ]);
             setServer(serverStatus);
             setClient(clientStatus);
+            setKeyStatus(groupStatus);
             setError(null);
         } catch (err) {
             LogError('Failed to load sync status', err);
@@ -107,6 +120,26 @@ export const SyncStatusView = () => {
     const epoch = server?.epoch || null;
     const pendingApprovals = server?.pending_approvals_count ?? 0;
     const authority = server?.authority === true;
+
+    // Cloud sync (contract 1.9.0): only a signed-in, authorized desktop can own
+    // the account's sync group. Minting the group is what makes pairing possible
+    // at all, so this is the entry point the pair modal points at.
+    const cloudAccountReady = account?.signed_in === true && account?.device_authorized === true;
+    const hasGroupKey = keyStatus?.has_key === true;
+
+    const turnOnCloudSync = async () => {
+        setCloudBusy(true);
+        setCloudError(null);
+        try {
+            await initSyncGroup();
+            await refresh();
+        } catch (err) {
+            LogError('Failed to turn on cloud sync', err);
+            setCloudError(err.message || t('sync.cloud.onFailed'));
+        } finally {
+            setCloudBusy(false);
+        }
+    };
 
     const reviewApprovals = () => {
         // Reuse the existing watcher → the global DeviceApprovalModal opens on
@@ -245,6 +278,72 @@ export const SyncStatusView = () => {
                             {t('sync.reviewApprovals')}
                         </button>
                     </div>
+
+                    {/* Cloud sync (contract 1.9.0) — only a signed-in,
+                        authorized desktop can own the account's sync group. */}
+                    {cloudAccountReady && (
+                        <div className="rounded-lg border border-white/10 bg-background-elevated/30 p-6">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-text-primary">
+                                        {t('sync.cloud.title')}
+                                    </h3>
+                                    <p className="text-text-muted text-sm mt-1">
+                                        {hasGroupKey
+                                            ? t('sync.cloud.onHint')
+                                            : t('sync.cloud.offHint')}
+                                    </p>
+                                </div>
+                                <span
+                                    className={`px-2.5 py-1 rounded text-xs font-semibold flex-shrink-0 ${hasGroupKey
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-white/10 text-text-muted'}`}
+                                >
+                                    {hasGroupKey ? t('sync.cloud.on') : t('sync.cloud.off')}
+                                </span>
+                            </div>
+
+                            <div className="mt-4 divide-y divide-white/5">
+                                <Field label={t('sync.cloud.account')}>
+                                    {account?.email || account?.account_hint || '—'}
+                                </Field>
+                                <Field label={t('sync.cloud.key')}>
+                                    {hasGroupKey
+                                        ? (keyStatus?.fingerprint || t('sync.cloud.keyReady'))
+                                        : t('sync.cloud.keyMissing')}
+                                </Field>
+                            </div>
+
+                            {!hasGroupKey && (
+                                <div className="mt-4 flex items-center justify-between gap-4">
+                                    <p className="text-text-muted text-sm">
+                                        {t('sync.cloud.initHint')}
+                                    </p>
+                                    <button
+                                        onClick={turnOnCloudSync}
+                                        disabled={cloudBusy}
+                                        className={`px-4 py-2 rounded text-sm font-medium transition-colors ${cloudBusy
+                                            ? 'bg-white/5 text-text-muted cursor-not-allowed'
+                                            : 'btn-primary'}`}
+                                    >
+                                        {cloudBusy ? t('sync.cloud.turningOn') : t('sync.cloud.turnOn')}
+                                    </button>
+                                </div>
+                            )}
+
+                            {cloudError && (
+                                <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                                    <p className="text-red-400 text-sm">{cloudError}</p>
+                                </div>
+                            )}
+
+                            {!hasGroupKey && (
+                                <p className="text-text-muted text-xs mt-3">
+                                    {t('sync.cloud.pairHint')}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* This desktop's own client role (optional) */}
                     {client?.enabled && (

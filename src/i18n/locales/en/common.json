@@ -185,6 +185,22 @@
     "clientDataset": "Dataset",
     "clientPendingWrites": "Buffered writes",
     "clientLastError": "Last error",
+    "cloud": {
+      "title": "Cloud sync",
+      "on": "On",
+      "off": "Off",
+      "onHint": "This desktop owns your account's sync group. Paired devices join it through the Soulbits Cloud relay.",
+      "offHint": "Turn cloud sync on to create your account's sync group, so phones can pair with this desktop.",
+      "account": "Account",
+      "key": "Sync key",
+      "keyReady": "Ready",
+      "keyMissing": "Not created yet",
+      "initHint": "Cloud sync is off. It takes one click and enables pairing.",
+      "turnOn": "Turn on cloud sync",
+      "turningOn": "Turning on…",
+      "onFailed": "Could not turn on cloud sync.",
+      "pairHint": "After cloud sync is on, open \"Pair a device\" and use the Soulbits Cloud tab."
+    },
     "epochStates": {
       "active": "Active",
       "pending": "Pending",
@@ -260,6 +276,8 @@
     "cloudSignInButton": "Sign in",
     "deviceWaitTitle": "Finish signing in in your browser",
     "deviceWaitBody": "Complete sign-in and click Allow in the browser tab we opened. This screen updates automatically.",
+    "cloudGroupRequiredTitle": "Turn on cloud sync first",
+    "cloudGroupRequiredHint": "Cloud pairing needs your account's sync group. Open the Sync view and click \"Turn on cloud sync\", then this screen will show the code automatically.",
     "pairedToast": {
       "title": "{{name}} paired",
       "message": "A device was paired with this desktop.",

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshIcon, CheckIcon, WarningIcon } from '../../constants/icons.jsx';
+import { RefreshIcon, CheckIcon, WarningIcon, BookIcon } from '../../constants/icons.jsx';
 import Toggle from '../ui/Toggle.jsx';
 import JsonViewer from '../widgets/JsonViewer.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
 import useDevToolsStore from '../../store/devtoolsStore.js';
 import { getDevSchema, getDevMigrations } from '../../services/management/devtoolsService.js';
 import { summarizeMigrations } from '../../store/devtoolsUtils.js';
@@ -130,11 +132,29 @@ const DevToolsView = () => {
                             </button>
                         </div>
 
-                        {schemaLoading && <p className="text-sm text-text-muted">{t('development:inspector.loading')}</p>}
+                        {schemaLoading && (
+                            <div className="space-y-2" aria-busy="true">
+                                {Array.from({ length: 6 }).map((_, index) => (
+                                    <div key={index} className="flex items-center gap-3 px-2 py-1.5">
+                                        <Skeleton inline width="10rem" height="0.65rem" />
+                                        <Skeleton inline width={`${20 + ((index * 17) % 40)}%`} height="0.65rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {schemaError && (
                             <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 text-sm">
                                 {schemaError}
                             </div>
+                        )}
+                        {!schemaLoading && !schemaError && Object.keys(groupedSchema).length === 0 && (
+                            <EmptyState
+                                icon={BookIcon}
+                                title={t('development:tools.schema.empty')}
+                                description={t('development:tools.schema.emptyHint')}
+                                actionLabel={t('development:tools.schema.reload')}
+                                onAction={loadSchema}
+                            />
                         )}
 
                         {Object.entries(groupedSchema).map(([type, rows]) => (
@@ -188,7 +208,17 @@ const DevToolsView = () => {
                             </button>
                         </div>
 
-                        {migrationsLoading && <p className="text-sm text-text-muted">{t('development:inspector.loading')}</p>}
+                        {migrationsLoading && (
+                            <div className="space-y-2" aria-busy="true">
+                                {Array.from({ length: 6 }).map((_, index) => (
+                                    <div key={index} className="flex items-center gap-3 px-2 py-1.5">
+                                        <Skeleton inline width="1rem" height="1rem" radius="9999px" />
+                                        <Skeleton inline width="2rem" height="0.65rem" />
+                                        <Skeleton inline width={`${30 + ((index * 11) % 45)}%`} height="0.65rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         <section className="character-editor-section">
                             <div className="p-2">

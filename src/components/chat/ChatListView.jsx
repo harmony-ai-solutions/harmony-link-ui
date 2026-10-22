@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageIcon, RobotIcon, PlusIcon, SearchIcon } from '../../constants/icons.jsx';
 import useChatStore from '../../store/chatStore.js';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
 import {
     partitionChatEntities,
     entityDisplayName,
@@ -31,10 +33,16 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
 
     const conversations = useChatStore((s) => s.conversations);
     const chatEntities = useChatStore((s) => s.chatEntities);
+    const loadingConversations = useChatStore((s) => s.loadingConversations);
     const loadChatEntities = useChatStore((s) => s.loadChatEntities);
     const loadConversations = useChatStore((s) => s.loadConversations);
     const entities = useEntityStore((s) => s.entities);
     const loadEntities = useEntityStore((s) => s.loadEntities);
+
+    // The inbox is still loading when either the conversations themselves are
+    // in flight or the chat-entity list they are derived from has not arrived
+    // (an empty `chatEntities` array is indistinguishable from "not fetched").
+    const [entitiesFetched, setEntitiesFetched] = useState(false);
 
     const { partners } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
@@ -48,6 +56,7 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
         (async () => {
             const loaded = await loadChatEntities();
             if (!active) return;
+            setEntitiesFetched(true);
             if (partitionChatEntities(loaded).partners.length > 0) {
                 await loadConversations();
             }
@@ -112,16 +121,34 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                 </button>
             </div>
 
-            {filtered.length === 0 ? (
-                <div className="chat-list-empty">
-                    <MessageIcon className="w-8 h-8 text-accent-primary" />
-                    <p className="chat-list-empty-title">{t('chat:list.empty')}</p>
-                    <p className="chat-list-empty-hint">{t('chat:list.emptyHint')}</p>
-                    <button type="button" className="btn-secondary" onClick={() => onNavigate?.('characters')}>
-                        <RobotIcon className="w-4 h-4" />
-                        {t('chat:list.openCharacters')}
-                    </button>
+            {!entitiesFetched || loadingConversations ? (
+                /* Row-shaped skeletons, matching `.chat-list-row` so the list
+                   does not jump when the rows arrive. */
+                <div className="chat-list-rows" aria-busy="true">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <div key={index} className="ui-skeleton-row">
+                            <Skeleton className="ui-skeleton-circle" width="46px" height="46px" />
+                            <div className="ui-skeleton-row-body">
+                                <Skeleton className="ui-skeleton-line" width="45%" />
+                                <Skeleton className="ui-skeleton-line" width="75%" height="0.6rem" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
+            ) : filtered.length === 0 ? (
+                <EmptyState
+                    icon={MessageIcon}
+                    title={conversations.length > 0 ? t('chat:list.noMatches') : t('chat:list.empty')}
+                    description={conversations.length > 0
+                        ? t('chat:list.noMatchesHint')
+                        : t('chat:list.emptyHint')}
+                    actionLabel={conversations.length > 0
+                        ? t('common:emptyState.clearFilters')
+                        : t('chat:list.openCharacters')}
+                    onAction={() => (conversations.length > 0
+                        ? (setSearch(''), setUnreadOnly(false))
+                        : onNavigate?.('characters'))}
+                />
             ) : (
                 <ul className="chat-list-rows">
                     {filtered.map((conversation) => {
@@ -182,7 +209,14 @@ const ChatListView = ({ onOpenConversation, onNavigate }) => {
                     <div className="chat-picker" onClick={(e) => e.stopPropagation()}>
                         <h3 className="chat-picker-title">{t('chat:list.selectCompanion')}</h3>
                         {partners.length === 0 ? (
-                            <p className="chat-picker-empty">{t('chat:list.noCompanions')}</p>
+                            <EmptyState
+                                size="compact"
+                                icon={RobotIcon}
+                                title={t('chat:list.noCompanionsTitle')}
+                                description={t('chat:list.noCompanions')}
+                                actionLabel={t('chat:list.openCharacters')}
+                                onAction={() => { setShowPicker(false); onNavigate?.('characters'); }}
+                            />
                         ) : (
                             <ul className="chat-picker-list">
                                 {partners.map((partner) => {

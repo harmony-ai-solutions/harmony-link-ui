@@ -15,6 +15,9 @@ import ChatPreferences from './ChatPreferences.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
 import ChatWireInspector from './ChatWireInspector.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { MessageIcon } from '../../constants/icons.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
@@ -29,6 +32,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const { t } = useTranslation();
     const messages = useChatStore((s) => s.messages);
     const hasMore = useChatStore((s) => s.hasMore);
+    const loadingMessages = useChatStore((s) => s.loadingMessages);
     const loadingOlder = useChatStore((s) => s.loadingOlder);
     const connectionState = useChatStore((s) => s.connectionState);
     const typingByEntity = useChatStore((s) => s.typingByEntity);
@@ -208,8 +212,34 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         </button>
                     )}
 
-                    {messages.length === 0 && !loadingOlder && (
-                        <p className="chat-timeline-empty">{t('chat:conversation.noMessages')}</p>
+                    {/* First page in flight: bubble-shaped placeholders. An
+                        empty timeline and a not-yet-loaded one are otherwise
+                        identical, so the first paint of a busy chat looked
+                        like "this conversation has no messages". */}
+                    {loadingMessages && messages.length === 0 && (
+                        <div className="space-y-2" aria-busy="true">
+                            {[62, 44, 74, 52, 38].map((width, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex ${index % 2 === 0 ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <Skeleton
+                                        className="ui-skeleton-bubble"
+                                        width={`${width}%`}
+                                        height={index % 3 === 0 ? '3.25rem' : '2.25rem'}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {messages.length === 0 && !loadingOlder && !loadingMessages && (
+                        <EmptyState
+                            size="compact"
+                            icon={MessageIcon}
+                            title={t('chat:conversation.noMessages')}
+                            description={t('chat:conversation.noMessagesHint')}
+                        />
                     )}
 
                     {messages.map((message, index) => (

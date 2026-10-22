@@ -15,6 +15,9 @@ import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { MagnifierIcon, UsersIcon } from '../../constants/icons.jsx';
 import { toast } from '../../store/toastStore.js';
 
 /**
@@ -383,12 +386,23 @@ export default function PersonasView() {
         }
     };
 
+    // Loading: the card grid's column count is known, so render its shape
+    // instead of a spinner — the header stays visible so the page does not
+    // flash empty and then jump.
     if (isEntityLoading && entities === null) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
-                    <p className="text-text-muted">{t('common:status.loading')}</p>
+            <div className="flex flex-col min-h-full">
+                <PageHeader title={tes('header.title')} subtitle={tes('header.subtitle')} />
+                <div className="flex-1 p-6" aria-busy="true">
+                    <div className={`grid ${getGridClasses()} gap-5`}>
+                        {Array.from({ length: 8 }).map((_, index) => (
+                            <div key={index} className="ui-skeleton-card">
+                                <Skeleton className="ui-skeleton-card-media" height="auto" />
+                                <Skeleton className="ui-skeleton-line" width="70%" />
+                                <Skeleton className="ui-skeleton-line" width="45%" height="0.6rem" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -583,21 +597,21 @@ export default function PersonasView() {
                             })}
                         </div>
                     ) : (
-                        <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
-                            <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <h3 className="mt-2 text-sm font-medium text-text-primary">{tes('empty.noResults')}</h3>
-                            <p className="mt-1 text-sm text-text-muted">{tes('empty.tryAdjustingSearch')}</p>
-                        </div>
+                        <EmptyState
+                            icon={MagnifierIcon}
+                            title={tes('empty.noResults')}
+                            description={tes('empty.tryAdjustingSearch')}
+                            actionLabel={t('common:emptyState.clearFilters')}
+                            onAction={() => setSearchQuery('')}
+                        />
                     )
                     ) : (
-                        <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
-                            <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <h3 className="mt-2 text-sm font-medium text-text-primary">{tes('list.empty')}</h3>
-                        </div>
+                        <EmptyState
+                            icon={UsersIcon}
+                            title={tes('list.empty')}
+                            actionLabel={tes('buttons.createPersona')}
+                            onAction={openCreate}
+                        />
                     )}
                 </div>
             </div>

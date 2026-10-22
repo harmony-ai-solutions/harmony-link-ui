@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Tree from 'rc-tree';
 import 'rc-tree/assets/index.css';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { FolderIcon } from '../../constants/icons.jsx';
 
 const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loading = false, loadedKeysRef = new Set() }) => {
   const [expandedKeys, setExpandedKeys] = useState([]);
@@ -170,18 +173,27 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
   };
 
   if (loading) {
+    // A tree is a vertical stack of rows; show that instead of a sentence.
     return (
-      <div className="flex items-center justify-center p-4">
-        <div style={{ color: 'var(--color-text-muted)' }}>Loading directory structure...</div>
+      <div className="p-4 space-y-2" aria-busy="true">
+        {[58, 42, 50, 35, 46].map((width, index) => (
+          <div key={index} className="flex items-center gap-2" style={{ paddingLeft: `${(index % 3) * 12}px` }}>
+            <Skeleton inline width="0.9rem" height="0.9rem" radius="0.2rem" />
+            <Skeleton inline width={`${width}%`} height="0.7rem" />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (!treeData) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div style={{ color: 'var(--color-text-muted)' }}>No directory data available</div>
-      </div>
+      <EmptyState
+        size="compact"
+        icon={FolderIcon}
+        title="No directory data"
+        description="Choose a repository folder to browse its contents."
+      />
     );
   }
 

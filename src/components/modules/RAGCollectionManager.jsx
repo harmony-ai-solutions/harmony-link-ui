@@ -15,6 +15,9 @@ import {
 import ConfigurableJsonViewer from "../widgets/ConfigurableJsonViewer.jsx";
 import ThemedSelect from "../widgets/ThemedSelect";
 import Tooltip from "../ui/Tooltip.jsx";
+import EmptyState from "../ui/EmptyState.jsx";
+import Skeleton from "../ui/Skeleton.jsx";
+import { BookIcon, WarningIcon } from "../../constants/icons.jsx";
 
 const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
     // Track whether the modal is currently open so in-flight requests
@@ -334,17 +337,22 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                             <div>
                                 <h4 className="text-lg font-medium text-text-primary mb-4">Collections Overview</h4>
                                 {collectionsLoading ? (
-                                    <div className="text-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{borderBottomColor: 'var(--color-accent-primary)'}}></div>
-                                        <p className="text-text-secondary mt-2">Loading collections...</p>
+                                    /* The overview is a card grid, so show cards. */
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true">
+                                        {Array.from({ length: 3 }).map((_, index) => (
+                                            <div key={index} className="card rounded-lg p-4 space-y-2">
+                                                <Skeleton className="ui-skeleton-line" width="55%" />
+                                                <Skeleton className="ui-skeleton-line" width="70%" height="0.6rem" />
+                                                <Skeleton className="ui-skeleton-line" width="60%" height="0.6rem" />
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : collections.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-text-secondary">No collections found for this entity.</p>
-                                        <p className="text-text-muted text-sm mt-2">
-                                            Collections are created automatically when actions are synced to the RAG module.
-                                        </p>
-                                    </div>
+                                    <EmptyState
+                                        icon={BookIcon}
+                                        title="No collections found for this entity."
+                                        description="Collections are created automatically when actions are synced to the RAG module."
+                                    />
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {collections.map(collection => (
@@ -392,25 +400,36 @@ const RAGCollectionManager = ({ entityId, isOpen, onClose, onError }) => {
                                     Grouped View {selectedCollection ? `- ${selectedCollection}` : ''}
                                 </h4>
                                 {!selectedCollection ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-text-secondary">Select a collection from the Overview tab to view groups.</p>
-                                    </div>
+                                    <EmptyState
+                                        icon={BookIcon}
+                                        title="No collection selected"
+                                        description="Select a collection from the Overview tab to view groups."
+                                        actionLabel="Go to Overview"
+                                        onAction={() => setActiveTab('overview')}
+                                    />
                                 ) : groupedLoading ? (
-                                    <div className="text-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{borderBottomColor: 'var(--color-accent-primary)'}}></div>
-                                        <p className="text-text-secondary mt-2">Loading groups...</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" aria-busy="true">
+                                        {Array.from({ length: 4 }).map((_, index) => (
+                                            <div key={index} className="card rounded-lg p-4 space-y-2">
+                                                <Skeleton className="ui-skeleton-line" width="45%" />
+                                                <Skeleton className="ui-skeleton-line" width="75%" height="0.6rem" />
+                                                <Skeleton className="ui-skeleton-line" width="60%" height="0.6rem" />
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : groupedView && !groupedView.supported ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-text-secondary">
-                                            Grouped view is not supported for the {selectedCollection} collection.
-                                            This collection uses a different document structure.
-                                        </p>
-                                    </div>
+                                    <EmptyState
+                                        icon={WarningIcon}
+                                        title="Grouped view unavailable"
+                                        description={`Grouped view is not supported for the ${selectedCollection} collection. This collection uses a different document structure.`}
+                                    />
                                 ) : !groupedView || Object.keys(groupedView.groups || {}).length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-text-secondary">No groups found in this collection.</p>
-                                    </div>
+                                    <EmptyState
+                                        icon={BookIcon}
+                                        title="No groups found in this collection."
+                                        actionLabel="Reload"
+                                        onAction={() => loadGroupedView(selectedCollection)}
+                                    />
                                 ) : (
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                         {/* Groups Tree */}

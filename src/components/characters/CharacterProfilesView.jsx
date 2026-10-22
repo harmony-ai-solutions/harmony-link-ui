@@ -13,6 +13,9 @@ import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { MagnifierIcon, UsersIcon } from '../../constants/icons.jsx';
 import { toast } from '../../store/toastStore.js';
 
 /**
@@ -355,8 +358,18 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
 
             <div className="flex-1 p-6">
                 {isLoading && profiles.length === 0 ? (
-                    <div className="flex justify-center items-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
+                    /* The grid size is known, so show where the cards will land
+                       instead of a spinner. `getGridClasses()` keeps the column
+                       count identical to the real grid (and to the card-size
+                       toggle), so nothing shifts when the profiles arrive. */
+                    <div className={`grid ${getGridClasses()} gap-6`} aria-busy="true">
+                        {Array.from({ length: 8 }).map((_, index) => (
+                            <div key={index} className="ui-skeleton-card">
+                                <Skeleton className="ui-skeleton-card-media" height="auto" />
+                                <Skeleton className="ui-skeleton-line" width="70%" />
+                                <Skeleton className="ui-skeleton-line" width="45%" height="0.6rem" />
+                            </div>
+                        ))}
                     </div>
                 ) : visibleProfiles.length > 0 ? (
                     filteredProfiles.length > 0 ? (
@@ -371,37 +384,28 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-24">
-                            <svg className="w-16 h-16 text-text-muted/25 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <p className="text-lg font-semibold text-text-primary mb-1.5">{t('characters:empty.noResults')}</p>
-                            <p className="text-sm text-text-muted">{t('characters:empty.tryAdjustingSearch')}</p>
-                        </div>
+                        <EmptyState
+                            icon={MagnifierIcon}
+                            title={t('characters:empty.noResults')}
+                            description={t('characters:empty.tryAdjustingSearch')}
+                            actionLabel={t('common:emptyState.clearFilters')}
+                            onAction={() => setSearchQuery('')}
+                        />
                     )
                 ) : (
-                    <div className="text-center py-20 bg-background-surface/30 rounded-lg border-2 border-dashed border-white/10">
-                        <svg className="mx-auto h-12 w-12 text-text-disabled" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <h3 className="mt-2 text-sm font-medium text-text-primary">{t('characters:empty.title')}</h3>
-                        <p className="mt-1 text-sm text-text-muted">{t('characters:empty.getStarted')}</p>
-                        {/* 2-1: the grid may be empty because every profile is
-                            persona-owned — point at the Personas tab. */}
-                        {profiles.length > 0 && (
-                            <p className="mt-2 text-sm text-accent-secondary italic font-medium">
-                                {t('characters:empty.personaOwnedHint')}
-                            </p>
-                        )}
-                        <div className="mt-6 flex justify-center gap-3">
-                            <button onClick={() => setShowImport(true)} className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
-                                {t('characters:buttons.importCard')}
-                            </button>
-                            <button onClick={() => { setEditingProfile(null); setShowEditor(true); }} className="btn-primary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
-                                {t('characters:buttons.createProfile')}
-                            </button>
-                        </div>
-                    </div>
+                    <EmptyState
+                        icon={UsersIcon}
+                        title={t('characters:empty.title')}
+                        description={profiles.length > 0
+                            /* 2-1: the grid may be empty because every profile is
+                               persona-owned — point at the Personas tab. */
+                            ? `${t('characters:empty.getStarted')} ${t('characters:empty.personaOwnedHint')}`
+                            : t('characters:empty.getStarted')}
+                        actionLabel={t('characters:buttons.createProfile')}
+                        onAction={() => { setEditingProfile(null); setShowEditor(true); }}
+                        secondaryLabel={t('characters:buttons.importCard')}
+                        onSecondary={() => setShowImport(true)}
+                    />
                 )}
             </div>
 

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageIcon, RobotIcon, PlusIcon } from '../../constants/icons.jsx';
+import { MessageIcon, RobotIcon } from '../../constants/icons.jsx';
 import ChatListView from './ChatListView.jsx';
 import ChatDetailView from './ChatDetailView.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
@@ -157,24 +158,21 @@ const ChatView = ({ onNavigate }) => {
 
             <div className="flex-1 p-6">
                 {!hasCompanions ? (
-                    <div className="max-w-2xl mx-auto">
-                        <div className="text-center py-16">
-                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-2xl bg-accent-primary/10 mb-6">
-                                <MessageIcon className="w-9 h-9 text-accent-primary" />
-                            </div>
-                            <h2 className="text-xl font-bold text-text-primary mb-8">
-                                {t('chat:placeholder.title')}
-                            </h2>
-                            <button
-                                type="button"
-                                onClick={() => setShowPicker(true)}
-                                className="btn-primary inline-flex items-center gap-2"
-                            >
-                                <PlusIcon className="w-4 h-4" />
-                                {t('chat:placeholder.startChatting')}
-                            </button>
-                        </div>
-                    </div>
+                    /* Chat landing: there are literally no AI partners yet, so
+                       both next steps are real — create one, or talk to an
+                       existing character card. Same shape as every other
+                       empty view (EmptyState), which is what Phase 01 task 3
+                       asked this screen to keep. */
+                    <EmptyState
+                        className="mx-auto max-w-2xl"
+                        icon={MessageIcon}
+                        title={t('chat:placeholder.title')}
+                        description={t('chat:placeholder.description')}
+                        actionLabel={t('chat:placeholder.startChatting')}
+                        onAction={() => setShowPicker(true)}
+                        secondaryLabel={t('chat:placeholder.createCharacter')}
+                        onSecondary={handleCreateCharacter}
+                    />
                 ) : openConversation ? (
                     <ChatDetailView
                         conversation={openConversation}
@@ -200,17 +198,14 @@ const ChatView = ({ onNavigate }) => {
                     <div className="chat-picker" onClick={(e) => e.stopPropagation()}>
                         <h3 className="chat-picker-title">{t('chat:list.selectCompanion')}</h3>
                         {partners.length === 0 ? (
-                            <>
-                                <p className="chat-picker-empty">{t('chat:list.noCompanions')}</p>
-                                <button
-                                    type="button"
-                                    onClick={handleCreateCharacter}
-                                    className="btn-primary inline-flex items-center gap-2"
-                                >
-                                    <PlusIcon className="w-4 h-4" />
-                                    {t('chat:placeholder.createCharacter')}
-                                </button>
-                            </>
+                            <EmptyState
+                                size="compact"
+                                icon={RobotIcon}
+                                title={t('chat:list.noCompanionsTitle')}
+                                description={t('chat:list.noCompanions')}
+                                actionLabel={t('chat:placeholder.createCharacter')}
+                                onAction={handleCreateCharacter}
+                            />
                         ) : (
                             <ul className="chat-picker-list">
                                 {partners.map((partner) => (

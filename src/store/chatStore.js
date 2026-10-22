@@ -47,6 +47,13 @@ export const useChatStore = create((set, get) => ({
     /** Chat-list rows for the inbox (all companions, or one when filtered). */
     conversations: [],
     /**
+     * True while the inbox is being fetched (or while the chat entities that
+     * the inbox is derived from are still loading). Presentation-only: the
+     * list renders row-shaped skeletons for this window, because an empty
+     * inbox and a still-loading inbox looked identical otherwise.
+     */
+    loadingConversations: false,
+    /**
      * Optional companion filter for the inbox. `null` = "All companions"
      * (the default, app-style merged list); a set id lists just that AI's
      * threads. The detail view is addressed by participant_key either way.
@@ -58,6 +65,14 @@ export const useChatStore = create((set, get) => ({
     activeConversation: null,
     /** The timeline for the open conversation (oldest → newest). */
     messages: [],
+    /**
+     * True while the FIRST page of the open conversation is being fetched.
+     * Presentation-only: the detail view renders message-shaped skeletons for
+     * this window instead of an empty timeline (which is indistinguishable
+     * from "this chat genuinely has no messages"). Older pages use
+     * `loadingOlder`.
+     */
+    loadingMessages: false,
     /** True while an older page is being fetched. */
     loadingOlder: false,
     /** Whether an older page likely exists for the open conversation. */
@@ -113,11 +128,11 @@ export const useChatStore = create((set, get) => ({
      * @returns {Promise<Array<object>>}
      */
     loadConversations: async (entityId = null) => {
-        set({ listEntityId: entityId || null, error: null });
+        set({ listEntityId: entityId || null, error: null, loadingConversations: true });
         const { partners, personas } = partitionChatEntities(get().chatEntities);
         const ids = entityId ? [entityId] : partners.map((entity) => entity.id);
         if (ids.length === 0) {
-            set({ conversations: [] });
+            set({ conversations: [], loadingConversations: false });
             return [];
         }
 
@@ -135,6 +150,7 @@ export const useChatStore = create((set, get) => ({
         const firstFailure = settled.find((result) => result.status === 'rejected');
         set({
             conversations,
+            loadingConversations: false,
             error: total > 0 && failures === total
                 ? firstFailure?.reason?.message || 'Failed to load conversations'
                 : null,
@@ -171,6 +187,7 @@ export const useChatStore = create((set, get) => ({
         set({
             activeConversation: conversation,
             messages: [],
+            loadingMessages: false,
             hasMore: false,
             nextCursor: null,
             typingByEntity: {},
@@ -196,15 +213,16 @@ export const useChatStore = create((set, get) => ({
     loadInitialMessages: async (conversation) => {
         const { entityId, participantKey } = conversation || {};
         if (!entityId || !participantKey) return;
+        set({ loadingMessages: true });
         try {
             const { messages, hasMore, nextCursor } = await chatReadService.listMessages(
                 entityId,
                 participantKey,
                 { limit: 50 }
             );
-            set({ messages: mergeMessages([], messages), hasMore, nextCursor });
+            set({ messages: mergeMessages([], messages), hasMore, nextCursor, loadingMessages: false });
         } catch (error) {
-            set({ error: error.message });
+            set({ error: error.message, loadingMessages: false });
         }
     },
 
@@ -538,6 +556,7 @@ export const useChatStore = create((set, get) => ({
             listEntityId: null,
             activeConversation: null,
             messages: [],
+            loadingMessages: false,
             loadingOlder: false,
             hasMore: false,
             nextCursor: null,

@@ -115,7 +115,7 @@ export const MODULE_DEFAULTS = {
             speed: 1.0,
             format: "flac"
         },
-        [PROVIDERS.HARMONYSPEECH]: {
+        [PROVIDERS.SOULVOICE]: {
             endpoint: "",
             apikey: "",
             voiceconfigfile: "",
@@ -152,7 +152,7 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: ""
         },
-        [PROVIDERS.HARMONYSPEECH]: {
+        [PROVIDERS.SOULVOICE]: {
             endpoint: "",
             apikey: "",
             model: "faster-whisper-large-v3-turbo"
@@ -172,7 +172,7 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: ""
         },
-        [PROVIDERS.HARMONYSPEECH]: {
+        [PROVIDERS.SOULVOICE]: {
             endpoint: "",
             apikey: "",
             model: "silero_vad"

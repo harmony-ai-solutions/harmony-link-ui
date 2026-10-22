@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SettingsTooltip from '../settings/SettingsTooltip.jsx';
 import { LogDebug } from '../../utils/logger.js';
 import { validateProviderConfig, listProviderModels } from '../../services/management/configService.js';
@@ -21,6 +22,44 @@ import useHarmonySpeechClient from '../../hooks/useHarmonySpeechClient.js';
 import PresetSelector from '../widgets/PresetSelector.jsx';
 import AdvancedSamplingParams from '../widgets/AdvancedSamplingParams.jsx';
 import usePresetStore from '../../store/presetStore.js';
+
+/**
+ * VerifyResult.state → i18n key in the moduleConfig namespace.
+ *
+ * The engine's verify probe answers a six-state taxonomy
+ * (valid | invalid | throttled | blocked | scope_limited | unreachable).
+ * A non-valid state is a legitimate verdict, so each one gets its own
+ * explanation instead of a generic "invalid".
+ */
+const VERIFY_STATE_MESSAGE_KEYS = {
+    valid: 'validation.states.valid',
+    invalid: 'validation.states.invalid',
+    throttled: 'validation.states.throttled',
+    blocked: 'validation.states.blocked',
+    scope_limited: 'validation.states.scopeLimited',
+    unreachable: 'validation.states.unreachable',
+};
+
+/**
+ * Map a VerifyResult ({state, detail?, payload?}) onto the editor's
+ * {status, message} validation state. `detail` (the provider's own error text)
+ * is appended when present; a valid verdict may carry the engine version.
+ */
+const describeVerifyResult = (result, t) => {
+    const state = result?.state || 'unreachable';
+    const message = t(VERIFY_STATE_MESSAGE_KEYS[state] || VERIFY_STATE_MESSAGE_KEYS.unreachable);
+    if (state === 'valid') {
+        const version = result?.payload?.version;
+        return {
+            status: 'success',
+            message: version ? `${message} ${t('validation.version', { version })}` : message,
+        };
+    }
+    return {
+        status: 'error',
+        message: result?.detail ? `${message} ${t('validation.detail', { detail: result.detail })}` : message,
+    };
+};
 
 /**
  * HarmonySpeech Model Select component
@@ -48,6 +87,7 @@ const HarmonySpeechModelSelect = ({ endpoint, mode, apiKey, value, onChange }) =
  * @param {function} saveSettingsFunc - Callback with updated settings object
  */
 const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings, saveSettingsFunc }) => {
+    const { t } = useTranslation('moduleConfig');
     const schema = PROVIDER_FIELD_SCHEMAS[schemaId];
     
     if (!schema) {
@@ -330,7 +370,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
         if (!schema.hasModelFetch) return;
         
         setModelsLoading(true);
-        setAvailableModels([{ id: 'loading', name: 'Loading models...' }]);
+        setAvailableModels([{ id: 'loading', name: t('validation.loadingModels') }]);
         
         try {
             const result = await listProviderModels(moduleType, providerId, currentSettings);
@@ -348,11 +388,11 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     saveSettingsFunc(updatedSettings);
                 }
             } else {
-                setAvailableModels([{ id: 'none', name: 'No models available' }]);
+                setAvailableModels([{ id: 'none', name: result.error || t('validation.noModels') }]);
             }
         } catch (error) {
             LogDebug('Failed to fetch models:', error);
-            setAvailableModels([{ id: 'error', name: 'Failed to load models' }]);
+            setAvailableModels([{ id: 'error', name: t('validation.modelsFailed') }]);
         } finally {
             setModelsLoading(false);
         }
@@ -360,18 +400,16 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
 
     // Handle config validation
     const handleValidateConfig = async () => {
-        setValidationState({ status: 'loading', message: 'Validating configuration...' });
+        setValidationState({ status: 'loading', message: t('validation.loading') });
 
         try {
             // Check if schema has harmonySpeechMode for dual-mode validation
             if (schema.harmonySpeechMode) {
                 if (isHarmonyLinkMode()) {
-                    // Harmony Link mode: Use Management API validation
+                    // Harmony Link mode: use the management verify probe
+                    // (VerifyResult six-state verdict, not a boolean)
                     const result = await validateProviderConfig(moduleType, providerId, moduleSettings);
-                    setValidationState({
-                        status: result.valid ? 'success' : 'error',
-                        message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
-                    });
+                    setValidationState(describeVerifyResult(result, t));
                 } else {
                     // Speech Engine mode: Test by fetching available models
                     const endpoint = getNestedValue(moduleSettings, 'endpoint');
@@ -410,17 +448,14 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     }
                 }
             } else {
-                // Default validation
+                // Default validation: the same verify probe, six-state verdict
                 const result = await validateProviderConfig(moduleType, providerId, moduleSettings);
-                setValidationState({
-                    status: result.valid ? 'success' : 'error',
-                    message: result.valid ? 'Configuration is valid!' : result.error || 'Configuration validation failed'
-                });
+                setValidationState(describeVerifyResult(result, t));
             }
         } catch (error) {
             setValidationState({
                 status: 'error',
-                message: 'Validation failed: ' + error.message
+                message: t('validation.failed', { message: error.message })
             });
         }
     };
@@ -869,7 +904,7 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
                     </div>
                 );
 
-            case 'harmonyspeech-model-select':
+            case 'soulvoice-model-select':
                 const endpoint = getNestedValue(moduleSettings, 'endpoint');
                 const mode = schema.harmonySpeechMode || 'tts';
                 return (

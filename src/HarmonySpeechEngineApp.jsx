@@ -55,27 +55,27 @@ function HarmonySpeechEngineApp() {
         <div className="bg-neutral-900 p-4">
           {activeTab === TABS.TTS && (
             <ModularConfigEditor
-              schemaId="harmonyspeech_tts"
+              schemaId="soulvoice_tts"
               moduleType="tts"
-              providerId="harmonyspeech"
+              providerId="soulvoice"
               initialSettings={ttsSettings}
               saveSettingsFunc={setTtsSettings}
             />
           )}
           {activeTab === TABS.STT && (
             <ModularConfigEditor
-              schemaId="harmonyspeech_stt"
+              schemaId="soulvoice_stt"
               moduleType="stt"
-              providerId="harmonyspeech"
+              providerId="soulvoice"
               initialSettings={sttSettings}
               saveSettingsFunc={setSttSettings}
             />
           )}
           {activeTab === TABS.VAD && (
             <ModularConfigEditor
-              schemaId="harmonyspeech_vad"
+              schemaId="soulvoice_vad"
               moduleType="stt"
-              providerId="harmonyspeech"
+              providerId="soulvoice"
               initialSettings={vadSettings}
               saveSettingsFunc={setVadSettings}
             />

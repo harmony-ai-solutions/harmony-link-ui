@@ -5694,3 +5694,122 @@ html[data-theme-mode='light'] .hl-toast {
         animation: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Shared Page Header (.ui-page-header*)
+   Rendered by components/ui/PageHeader.jsx for every top-level view.
+   One surface, one title scale, one subtitle treatment, actions always
+   right-aligned — the nine views can no longer drift apart.
+
+   Rules that must not regress:
+   1. The surface is SOLID (`--color-background-surface`). The blurred
+      `bg-background-surface/30 backdrop-blur-sm` variant caused the
+      Chromium scroll shake inside `.app-main` (see the scroll-shake note
+      above) and was replaced once already. There is deliberately no
+      `backdrop-filter` here — `.app-main *` would neutralise it anyway.
+   2. `.ui-page-header-sticky` uses `position: sticky` and NOTHING else.
+      No `transform`, `filter`, `backdrop-filter`, `perspective`,
+      `contain` or `will-change`: every one of those would make the header
+      a containing block for `position: fixed` descendants, re-anchoring
+      the chat lightbox (`.chat-lightbox`) and chat pickers
+      (`.chat-picker-backdrop`) to the header instead of the viewport.
+      `.app-main` is `isolation: isolate` for the same reason — a stacking
+      context, not a containing block.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ui-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 1rem 1.5rem;
+    background: var(--color-background-surface);
+    /* No border by default — matches the pre-existing header look exactly,
+       so converting a view produces no visual diff while it is not sticky. */
+}
+
+/* Sticky variant: pins to the top of the `.app-main` scroll column. The
+   hairline appears only here, where it separates the pinned header from
+   content sliding underneath it. */
+.ui-page-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    border-bottom: 1px solid var(--color-border-glass);
+}
+
+.ui-page-header-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.ui-page-header-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--color-accent-primary);
+}
+
+.ui-page-header-icon-svg {
+    width: 1.375rem;
+    height: 1.375rem;
+}
+
+.ui-page-header-text {
+    min-width: 0;
+}
+
+/* Beats the global `h1` clamp: the header title is a fixed 2xl step so all
+   nine views render at the same size at every window width. */
+.ui-page-header-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: var(--color-text-primary);
+}
+
+/* One line, never wrapped: a long subtitle truncates instead of pushing the
+   actions onto a second row. */
+.ui-page-header-subtitle {
+    margin: 0.125rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ui-page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* Light themes: the surface token is pale, so darken the pinned hairline. */
+html[data-theme-mode='light'] .ui-page-header-sticky {
+    border-bottom-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Narrow windows: let the title use the full row and drop the actions
+   underneath it instead of squeezing both. */
+@media (max-width: 700px) {
+    .ui-page-header {
+        padding: 0.875rem 1rem;
+    }
+
+    .ui-page-header-actions {
+        width: 100%;
+        margin-left: 0;
+    }
+}

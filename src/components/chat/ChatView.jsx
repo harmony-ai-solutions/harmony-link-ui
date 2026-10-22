@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MessageIcon, RobotIcon, PlusIcon } from '../../constants/icons.jsx';
 import ChatListView from './ChatListView.jsx';
 import ChatDetailView from './ChatDetailView.jsx';
+import PageHeader from '../ui/PageHeader.jsx';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
@@ -141,15 +142,18 @@ const ChatView = ({ onNavigate }) => {
 
     return (
         <div className="flex flex-col min-h-full">
-            {/* View Header */}
-            <div className="bg-background-surface px-6 py-4">
-                <h1 className="text-2xl font-extrabold tracking-tight">
-                    <span className="text-gradient-primary">{t('chat:header.title')}</span>
-                </h1>
-                <p className="text-xs text-text-muted mt-0.5 font-medium">
-                    {t('chat:header.subtitle')}
-                </p>
-            </div>
+            {/* Chat used to be the odd one out: its header sat above a scroll
+                container of its own instead of scrolling with the content like
+                every other view now does. It shares the same non-sticky header
+                as the other eight, so all nine behave identically.
+                `PageHeader` also accepts `sticky` if a view ever needs it —
+                `.ui-page-header-sticky` is position: sticky only, which leaves
+                the fixed chat lightbox and pickers this view renders inside the
+                scroll column anchored to the viewport. */}
+            <PageHeader
+                title={t('chat:header.title')}
+                subtitle={t('chat:header.subtitle')}
+            />
 
             <div className="flex-1 p-6">
                 {!hasCompanions ? (

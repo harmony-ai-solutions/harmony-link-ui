@@ -14,6 +14,7 @@ import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import PageHeader from '../ui/PageHeader.jsx';
 import { toast } from '../../store/toastStore.js';
 
 /**
@@ -368,12 +369,6 @@ export default function PersonasView() {
         });
     };
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     const handleCardSizeChange = (size) => {
         setCardSize(size);
         localStorage.setItem('personaCardSize', size);
@@ -408,16 +403,10 @@ export default function PersonasView() {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface px-6 py-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-extrabold tracking-tight">
-                                {colorFirstWord(tes('header.title'))}
-                            </h1>
-                            <p className="text-xs text-text-muted mt-0.5 font-medium">
-                                {tes('header.subtitle')}
-                            </p>
-                        </div>
+                <PageHeader
+                    title={tes('header.title')}
+                    subtitle={tes('header.subtitle')}
+                    actions={(
                         <button data-tutorial-id="persona-create-btn" onClick={openCreate}
                             className="btn-primary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
                             <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -425,8 +414,8 @@ export default function PersonasView() {
                             </svg>
                             {tes('buttons.createPersona')}
                         </button>
-                    </div>
-                </div>
+                    )}
+                />
 
                 {/* Shared user modules card (tab-level, STT-only) */}
                 <div data-tutorial-id="persona-shared-modules-card" className="mx-6 mt-6 p-5 rounded-xl border border-white/10 bg-background-surface/30 backdrop-blur-sm">

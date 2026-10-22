@@ -12,6 +12,7 @@ import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import PageHeader from '../ui/PageHeader.jsx';
 import { toast } from '../../store/toastStore.js';
 
 /**
@@ -272,12 +273,6 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         }
     };
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     // While editing, the editor takes over as a dedicated page — it replaces the
     // card grid rather than covering it with a modal, so the form gets the full
     // width/height of the content area.
@@ -294,18 +289,11 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
 
     return (
         <div className="flex flex-col min-h-full">
-            <div className="bg-background-surface px-6 py-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-extrabold tracking-tight">
-                            {colorFirstWord(t('characters:header.title'))}
-                        </h1>
-                        <p className="text-xs text-text-muted mt-0.5 font-medium">
-                            {t('characters:header.subtitle')}
-                        </p>
-                    </div>
-                    
-                    <div className="flex gap-3">
+            <PageHeader
+                title={t('characters:header.title')}
+                subtitle={t('characters:header.subtitle')}
+                actions={(
+                    <>
                         <button data-tutorial-id="char-import-btn" onClick={() => setShowImport(true)}
                             className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
                             <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -320,9 +308,9 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                             </svg>
                             {t('characters:buttons.createProfile')}
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </>
+                )}
+            />
 
             <div className="bg-background-surface px-6 py-4">
                 <div className="flex items-center justify-between gap-4">

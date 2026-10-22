@@ -268,5 +268,26 @@
       "message": "A device was paired with this desktop.",
       "fallbackName": "Device"
     }
+  },
+  "health": {
+    "checking": "Checking…",
+    "connected": "Connected",
+    "degraded": "Degraded",
+    "offline": "Offline",
+    "detail": {
+      "allOk": "Engine reachable. Live chat events are flowing.",
+      "probing": "Reaching the engine…",
+      "socketDown": "Engine reachable, but the live chat socket is {{socketState}}. Messages will not arrive until it reconnects.",
+      "managementDown": "The management API is not answering, so data cannot be refreshed. Cached content stays readable.",
+      "eventServerDown": "The event server is not answering, so live chat and sync are unavailable. Cached content stays readable."
+    },
+    "banner": {
+      "title": "Engine is offline",
+      "default": "Harmony Link cannot reach its engine. Cached content is still readable; actions that need fresh data will fail until the connection returns.",
+      "managementDown": "The management API is not answering. Characters, settings and messages cannot be refreshed until it returns.",
+      "eventServerDown": "The event server is not answering. Live chat, presence and sync are unavailable until it returns.",
+      "retry": "Retry",
+      "retrying": "Retrying…"
+    }
   }
 }

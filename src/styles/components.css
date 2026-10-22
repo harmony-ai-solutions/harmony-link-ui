@@ -4374,6 +4374,210 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     color: var(--color-accent-primary);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Engine Health — top-bar pill + offline banner (plan task 01-6)
+
+   A dead engine and an empty database used to look identical. The pill
+   answers "is the engine there?" in one word and the banner appears only
+   while it is not. Colour semantics are the ones the chat detail view
+   already uses (`.chat-detail-status-connected` / `-reconnecting` /
+   `-error`): green = fine, amber = degraded, red = offline.
+
+   The pill lives in `.nav-glass-bar`, which is fixed chrome OUTSIDE the
+   scrolling column, so it may use real glass. The banner lives inside
+   `.app-main`, where `.app-main * { backdrop-filter: none !important }`
+   applies by design (see the scroll-shake note above) — so it is drawn
+   with a plain tinted surface and must not rely on blur.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.app-health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 30px;
+    padding: 0 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface-translucent);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    user-select: none;
+    transition: border-color 0.25s var(--ease-spring), background 0.25s var(--ease-spring);
+}
+
+/* Status dot — coloured by the pill's state modifier, not by a status class. */
+.app-health-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+    background: var(--color-text-muted);
+    transition: background 0.25s var(--ease-spring), box-shadow 0.25s var(--ease-spring);
+}
+
+.app-health-pill-connected {
+    border-color: color-mix(in srgb, var(--color-success) 38%, transparent);
+    background: var(--color-success-bg);
+}
+
+.app-health-pill-connected .app-health-dot {
+    background: var(--color-success);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.app-health-pill-degraded {
+    border-color: color-mix(in srgb, var(--color-warning) 38%, transparent);
+    background: var(--color-warning-bg);
+}
+
+.app-health-pill-degraded .app-health-dot {
+    background: var(--color-warning);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--color-warning) 60%, transparent);
+    animation: app-health-pulse 2s var(--ease-spring) infinite;
+}
+
+.app-health-pill-offline {
+    border-color: color-mix(in srgb, var(--color-error) 42%, transparent);
+    background: var(--color-error-bg);
+}
+
+.app-health-pill-offline .app-health-dot {
+    background: var(--color-error);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--color-error) 60%, transparent);
+}
+
+/* The label reuses the chat status colours, so both surfaces agree. */
+.app-health-label {
+    line-height: 1;
+}
+
+/* ── Offline banner ───────────────────────────────────────────────── */
+/* In normal flow (NOT fixed/absolute): the task requires that navigation
+   and every cached view stay usable while offline, so the banner pushes
+   content down instead of covering it. */
+.app-health-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
+    padding: 0.6rem 1.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
+    background: var(--color-error-bg);
+    color: var(--color-text-primary);
+}
+
+.app-health-banner-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    color: var(--color-error);
+    background: color-mix(in srgb, var(--color-error) 16%, transparent);
+}
+
+.app-health-banner-icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.app-health-banner-text {
+    min-width: 0;
+    flex: 1;
+}
+
+.app-health-banner-title {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--color-text-primary);
+}
+
+.app-health-banner-desc {
+    margin-top: 0.1rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--color-text-secondary);
+}
+
+.app-health-banner-err {
+    color: var(--color-text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+}
+
+.app-health-banner-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.app-health-banner-retry:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.app-health-spin {
+    animation: app-health-spin 0.9s linear infinite;
+}
+
+@keyframes app-health-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+@keyframes app-health-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Reduced motion: no pulsing dot, no spinning refresh glyph. */
+@media (prefers-reduced-motion: reduce) {
+    .app-health-pill-degraded .app-health-dot,
+    .app-health-spin {
+        animation: none;
+    }
+}
+
+/* Very narrow windows: the banner's description would crowd the button. */
+@media (max-width: 720px) {
+    .app-health-banner {
+        padding: 0.5rem 0.75rem;
+        gap: 0.6rem;
+    }
+
+    .app-health-banner-err {
+        display: none;
+    }
+
+    .app-health-pill {
+        height: 26px;
+        padding: 0 0.45rem;
+    }
+}
+
+/* At the smallest sizes the pill's text would squeeze the language picker. */
+@media (max-width: 520px) {
+    .app-health-label {
+        display: none;
+    }
+
+    .app-health-pill {
+        height: 26px;
+        padding: 0 0.5rem;
+    }
+}
+
 /* ── Responsive: auto-collapse to the icon rail on narrower viewports ── */
 @media (max-width: 1024px) {
     .app-sidebar {

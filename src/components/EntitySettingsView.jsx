@@ -20,6 +20,7 @@ import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import useDockerStatus from '../hooks/useDockerStatus';
 import Tooltip from './ui/Tooltip.jsx';
+import PageHeader from './ui/PageHeader.jsx';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 import { toast } from '../store/toastStore.js';
 
@@ -598,12 +599,6 @@ const EntitySettingsView = ({ appName }) => {
         );
     }
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     return (
         <>
             <ErrorDialog isOpen={errorDialog.isOpen} title={errorDialog.title} message={errorDialog.message}
@@ -616,14 +611,10 @@ const EntitySettingsView = ({ appName }) => {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface px-6 py-4">
-                    <h1 className="text-2xl font-extrabold tracking-tight">
-                        {colorFirstWord(tes('header.title'))}
-                    </h1>
-                    <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        {tes('header.subtitle')}
-                    </p>
-                </div>
+                <PageHeader
+                    title={tes('header.title')}
+                    subtitle={tes('header.subtitle')}
+                />
 
                 <div className="flex flex-1">
                     {/* Left Panel: Entity List */}

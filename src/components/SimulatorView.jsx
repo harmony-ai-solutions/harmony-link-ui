@@ -20,16 +20,11 @@ import TTSTab from './simulator/tabs/TTSTab';
 import STTTab from './simulator/tabs/STTTab';
 import RAGTab from './simulator/tabs/RAGTab';
 import CognitionTab from './simulator/tabs/CognitionTab';
+import PageHeader from './ui/PageHeader.jsx';
 
 function SimulatorView() {
     const { t } = useTranslation();
     const ts = (key, opts) => t(`simulator:${key}`, opts);
-
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
 
     const [entities, setEntities] = useState([]);
     const [selectedEntity, setSelectedEntity] = useState('');
@@ -410,26 +405,22 @@ function SimulatorView() {
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-extrabold tracking-tight">
-                        {colorFirstWord(ts('header.title'))}
-                    </h1>
-                    <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        {ts('header.subtitle')}
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className={statusBadgeClasses[connectionStatus] || statusBadgeClasses.disconnected}>
-                        {(statusLabels[connectionStatus] || connectionStatus).toUpperCase()}
-                    </div>
-                    {selectedEntity && (
-                        <div className="text-sm text-text-secondary">
-                            {ts('entityLabel')}: <span className="text-accent-primary font-medium">{selectedEntity}</span>
+            <PageHeader
+                title={ts('header.title')}
+                subtitle={ts('header.subtitle')}
+                actions={(
+                    <>
+                        <div className={statusBadgeClasses[connectionStatus] || statusBadgeClasses.disconnected}>
+                            {(statusLabels[connectionStatus] || connectionStatus).toUpperCase()}
                         </div>
-                    )}
-                </div>
-            </div>
+                        {selectedEntity && (
+                            <div className="text-sm text-text-secondary">
+                                {ts('entityLabel')}: <span className="text-accent-primary font-medium">{selectedEntity}</span>
+                            </div>
+                        )}
+                    </>
+                )}
+            />
 
             {/* Tab Bar — matching DevelopmentView sub-tab design */}
             <div className="character-editor-tab-bar">

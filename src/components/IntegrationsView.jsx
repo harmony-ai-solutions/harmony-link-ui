@@ -10,16 +10,11 @@ import YAMLConfigEditor from './integrations/YAMLConfigEditor';
 import ConfigFilesModal from './integrations/ConfigFilesModal';
 import CreateInstanceModal from './integrations/CreateInstanceModal';
 import ConfirmDialog from './modals/ConfirmDialog';
+import PageHeader from './ui/PageHeader.jsx';
 import { toast } from '../store/toastStore.js';
 
 const IntegrationsView = () => {
   const { t } = useTranslation();
-
-  const colorFirstWord = (text) => {
-    const spaceIdx = text.indexOf(' ');
-    if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-    return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-  };
 
   const [integrations, setIntegrations] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -183,14 +178,10 @@ const IntegrationsView = () => {
   if (!quickstartPathConfigured) {
     return (
       <div className="flex flex-col min-h-full">
-        <div className="bg-background-surface px-6 py-4">
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            {colorFirstWord(t('integrations:header.title'))}
-          </h1>
-          <p className="text-xs text-text-muted mt-0.5 font-medium">
-            {t('integrations:header.subtitle')}
-          </p>
-        </div>
+        <PageHeader
+          title={t('integrations:header.title')}
+          subtitle={t('integrations:header.subtitle')}
+        />
         <div className="flex-1 p-6">
           <div data-tutorial-id="integration-quickstart">
             <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
@@ -202,14 +193,10 @@ const IntegrationsView = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="bg-background-surface px-6 py-4">
-        <h1 className="text-2xl font-extrabold tracking-tight">
-          {colorFirstWord(t('integrations:header.title'))}
-        </h1>
-        <p className="text-xs text-text-muted mt-0.5 font-medium">
-          {t('integrations:header.subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('integrations:header.title')}
+        subtitle={t('integrations:header.subtitle')}
+      />
 
       <div className="flex-1 p-6 space-y-6">
         <div className="flex items-start gap-3">

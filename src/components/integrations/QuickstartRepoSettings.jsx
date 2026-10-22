@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { setQuickstartRepoPath } from '../../services/management/integrationsService.js';
 import DirectoryBrowserModal from './DirectoryBrowserModal';
 import { openSystemUrl } from '../../services/management/systemService.js';
+import Tooltip from '../ui/Tooltip.jsx';
 
 const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
   const [path, setPath] = useState(currentPath || '');
@@ -75,15 +76,16 @@ const QuickstartRepoSettings = ({ onPathSet, currentPath }) => {
           </div>
 
           {/* GitHub button */}
-          <button
-            data-tutorial-id="quickstart-github-btn"
-            onClick={handleOpenGitHub}
-            disabled={githubLoading}
-            className="btn-website-link py-1 px-3 text-xs rounded flex-shrink-0 disabled:opacity-50"
-            title="Open GitHub repository"
-          >
-            {githubLoading ? '…' : 'GitHub'}
-          </button>
+          <Tooltip content="Open GitHub repository">
+            <button
+              data-tutorial-id="quickstart-github-btn"
+              onClick={handleOpenGitHub}
+              disabled={githubLoading}
+              className="btn-website-link py-1 px-3 text-xs rounded flex-shrink-0 disabled:opacity-50"
+            >
+              {githubLoading ? '…' : 'GitHub'}
+            </button>
+          </Tooltip>
         </div>
 
         {/* ── Path Configuration Area ─────────────────────────────────── */}

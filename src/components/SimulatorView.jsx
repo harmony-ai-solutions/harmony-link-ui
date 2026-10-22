@@ -410,7 +410,7 @@ function SimulatorView() {
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
+            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(ts('header.title'))}

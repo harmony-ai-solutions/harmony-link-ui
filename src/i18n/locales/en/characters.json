@@ -1,13 +1,20 @@
 {
   "header": {
-    "title": "Character Profiles",
-    "subtitle": "Manage AI character identities and cards"
+    "title": "AI Characters",
+    "subtitle": "Manage AI character profiles"
+  },
+  "menu": {
+    "title": "Character actions",
+    "editSettings": "Edit settings",
+    "startChatting": "Start chatting",
+    "deleteCharacter": "Delete character"
   },
   "buttons": {
     "importCard": "Import Card",
     "createProfile": "Create Profile",
+    "startChatting": "Start chatting",
     "createPersona": "Create persona from this card",
-    "createEntity": "Create AI entity from this card",
+    "createEntity": "Create AI partner from this card",
     "exportCard": "Export Card",
     "exportAsJson": "Export as JSON",
     "exportAsPng": "Export as PNG (ccv3)",
@@ -41,7 +48,8 @@
   "noDescription": "No description provided.",
   "deleteProfile": "Delete profile",
   "createPersonaFailed": "Failed to create persona from this card: {{message}}",
-  "createEntityFailed": "Failed to create AI entity from this card: {{message}}",
+  "createEntityFailed": "Failed to create entity from this card: {{message}}",
+  "startChatFailed": "Failed to start chat: {{message}}",
   "liveLinkHint": "Linked to an entity — changes apply immediately",
   "usedBy": {
     "aiPrefix": "AI · {{name}}",
@@ -95,12 +103,58 @@
   "tabs": {
     "basic": "Basic Info",
     "extended": "Extended Info",
+    "profile": "Profile",
     "greeting": "Greeting",
     "lorebook": "Lorebook",
     "attribution": "Attribution",
-    "advanced": "AI Behaviour",
+    "behavior": "AI Behaviour",
+    "advanced": "Advanced",
     "lifecycle": "AI Lifecycle",
     "images": "Images"
+  },
+  "tabInfo": {
+    "basic": {
+      "title": "Identity & Card",
+      "desc": "Who this AI character is, plus the card's author and metadata."
+    },
+    "greeting": {
+      "title": "Greetings & Dialogue",
+      "desc": "The opening messages and example lines the AI learns to speak from."
+    },
+    "lorebook": {
+      "title": "Lorebook",
+      "desc": "Background knowledge the AI recalls only when it is relevant."
+    },
+    "behavior": {
+      "title": "AI Behaviour",
+      "desc": "How the AI writes, how often it speaks, and how it acts on its own."
+    },
+    "advanced": {
+      "title": "Raw Card Data",
+      "desc": "Low-level card fields preserved for export. Edit with care."
+    },
+    "images": {
+      "title": "Images & Vision",
+      "desc": "Character artwork, and the vision service used to analyse it."
+    }
+  },
+  "sections": {
+    "identity": "Identity",
+    "cardInfo": "Card Info",
+    "aiPrompt": "AI Prompt",
+    "chatBehavior": "Chat Behavior",
+    "aiLifecycle": "AI Lifecycle",
+    "rawCardData": "Raw Card Data",
+    "provenance": "Card Provenance",
+    "vision": "Vision",
+    "characterImages": "Character Images",
+    "collapse": "Collapse section",
+    "expand": "Expand section"
+  },
+  "page": {
+    "back": "Back to AI Characters",
+    "sections": "Sections",
+    "modeHint": "Some advanced sections are hidden in Simple mode. Switch to Pro or Developer in Settings → General to reveal them."
   },
   "fields": {
     "name": "Name",
@@ -270,7 +324,7 @@
     "deleteConfirm": "Are you sure you want to delete this image?"
   },
   "lifecycle": {
-    "defaultsNote": "These are the default lifecycle settings applied when a new AI character is created from this profile. Each character (entity) created from this profile inherits these values, but they can be customized individually in that entity's detail settings.",
+    "defaultsNote": "These are the default lifecycle settings applied when a new entity is created from this profile. Each entity created from this profile inherits these values, but they can be customized individually in that entity's detail settings.",
     "beatSchedule": {
       "title": "Beat Schedule",
       "tooltip": "Controls the character's autonomous 'beat' loop — how often it thinks, reflects, or reaches out on its own when no one is talking to it, and which kinds of actions it tends toward. Higher autonomy means more independent behavior.",

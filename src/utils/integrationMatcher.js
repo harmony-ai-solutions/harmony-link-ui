@@ -9,7 +9,7 @@
 // Provider -> URL field name mapping
 export const PROVIDER_URL_FIELDS = {
     openaicompatible: 'baseurl',
-    harmonyspeech: 'endpoint',
+    soulvoice: 'endpoint',
     comfyui: 'baseurl',
     ollama: 'baseurl'
 };

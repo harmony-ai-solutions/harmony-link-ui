@@ -13,7 +13,8 @@
     background: rgba(var(--color-accent-primary-rgb), 0.35);
     border-radius: 4px;
     box-shadow: 0 0 8px 2px rgba(var(--color-accent-primary-rgb), 0.3);
-    animation: scrollbar-shimmer 2.5s ease-in-out infinite;
+    /* No infinite animation: animating the thumb's box-shadow repaints the
+       scrollbar every frame and causes visible scroll jitter. Static glow only. */
     transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 

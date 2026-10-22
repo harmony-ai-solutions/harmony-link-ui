@@ -203,6 +203,7 @@ const DirectoryTree = ({ treeData, onSelect, onLoadChildren, selectedPath, loadi
         selectedKeys={selectedPath ? [selectedPath] : []}
         onExpand={handleExpand}
         onSelect={handleSelect}
+        expandAction="click"
         showLine={true}
         showIcon={false}
         className="custom-tree"

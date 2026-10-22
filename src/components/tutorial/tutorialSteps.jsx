@@ -2,7 +2,8 @@ import React from 'react';
 import useEntityStore from '../../store/entityStore';
 import useModuleConfigStore from '../../store/moduleConfigStore';
 import useTutorialStore from '../../store/tutorialStore';
-import { SettingsTabGeneral, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabIntegrations } from '../../constants.jsx';
+import useUIModeStore from '../../store/uiModeStore';
+import { SettingsTabGeneral, SettingsTabChat, SettingsTabEntities, SettingsTabCharacters, SettingsTabModules, SettingsTabIntegrations } from '../../constants.jsx';
 
 // ─── Helper: tag all steps in a section ──────────────────────────────────
 
@@ -19,11 +20,11 @@ function section(label, steps) {
 const characterCreationSteps = section('Characters', [
     {
         id: 'char-welcome',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
         title: 'Welcome to Harmony Link!',
         content: (
             <div className="space-y-2">
-                <p>This quick tutorial will guide you through setting up your first AI character.</p>
+                <p>This quick tutorial will guide you through setting up your first AI partner.</p>
                 <p>Let's start by creating a character profile. We'll take you to the Characters tab now.</p>
             </div>
         ),
@@ -114,8 +115,8 @@ const characterCreationSteps = section('Characters', [
 const entityCreationSteps = section('Entities', [
     {
         id: 'entity-nav',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
-        title: 'Entities — Your AI Companions',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
+        title: 'Entities — Your AI Partners',
         content: (
             <div className="space-y-2">
                 <p>An <strong>Entity</strong> is the "body" of your AI character. It connects a character profile (identity) with modules (capabilities like speech, cognition, etc.).</p>
@@ -344,7 +345,7 @@ const entityCreationSteps = section('Entities', [
 
 const integrationBranchStep = section('Integration', {
     id: 'integration-branch-decision',
-    targetSelector: '[data-tutorial-id="nav-group-system"]',
+    targetSelector: '[data-tutorial-id="nav-group-settings"]',
     title: 'How Do You Want to Connect Your AI?',
     content: (
         <div className="space-y-3">
@@ -449,7 +450,6 @@ const integrationLocalSteps = section('Integration', [
                                 if (el) el.textContent = 'Copied!';
                                 setTimeout(() => { if (el) el.textContent = 'Copy'; }, 2000);
                             }}
-                            title="Click to copy"
                         >
                             <code className="break-all">git clone https://github.com/harmony-ai-solutions/quickstart</code>
                             <span className="copy-hint text-text-muted text-[10px] flex-shrink-0 group-hover:text-accent-primary transition-colors">Copy</span>
@@ -528,7 +528,7 @@ const integrationLocalSteps = section('Integration', [
     },
     {
         id: 'integration-summary-local',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Moving to Modules',
         content: (
             <div className="space-y-2">
@@ -547,7 +547,7 @@ const integrationLocalSteps = section('Integration', [
 const integrationCloudSteps = section('Integration', [
     {
         id: 'integration-cloud-note',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Using a Cloud Provider',
         content: (
             <div className="space-y-2">
@@ -567,7 +567,7 @@ const integrationCloudSteps = section('Integration', [
 const moduleConfigSteps = section('Modules', [
     {
         id: 'module-nav',
-        targetSelector: '[data-tutorial-id="nav-group-system"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Module Configurations',
         content: (
             <div className="space-y-2">
@@ -693,7 +693,7 @@ const moduleConfigSteps = section('Modules', [
     },
     {
         id: 'module-summary',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-settings"]',
         title: 'Modules Covered!',
         content: (
             <div className="space-y-2">
@@ -711,7 +711,7 @@ const moduleConfigSteps = section('Modules', [
 const entityAssignmentSteps = section('Assignment', [
     {
         id: 'entity-assign-nav',
-        targetSelector: '[data-tutorial-id="nav-group-identity"]',
+        targetSelector: '[data-tutorial-id="nav-group-characters"]',
         title: 'Assigning Modules to Your Entity',
         content: (
             <div className="space-y-2">
@@ -828,11 +828,76 @@ const entityAssignmentSteps = section('Assignment', [
 
 // ─── Combined Step List ─────────────────────────────────────────────────
 
+// ─── Simple-mode tour (short, beginner-friendly) ─────────────────────────
+// Shown instead of the long 41-step setup tour when the UI is in Simple mode.
+// Three beats: add a character, choose how it thinks, start chatting.
+
+const simpleModeSteps = section('Getting Started', [
+    {
+        id: 'simple-welcome',
+        targetSelector: '[data-tutorial-id="nav-tab-chat"]',
+        title: 'Welcome to Harmony Link!',
+        content: (
+            <div className="space-y-2">
+                <p>This is your home base — the <strong>Chat</strong> tab. Everything you need to start talking with an AI partner lives just a few clicks away.</p>
+                <p>We'll show you the three steps: create an AI partner, choose how it thinks, and start chatting.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+    {
+        id: 'simple-add-character',
+        targetSelector: '[data-tutorial-id="nav-tab-characters"]',
+        title: '1. Create an AI Partner',
+        content: (
+            <div className="space-y-2">
+                <p>AI Characters are the personalities your AI can play. Head to the <strong>AI Characters</strong> tab to import a character card (a PNG from most card sites) or create one from scratch.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+    {
+        id: 'simple-choose-ai',
+        targetSelector: '[data-tutorial-id="nav-tab-general"]',
+        title: '2. Choose How It Thinks',
+        content: (
+            <div className="space-y-2">
+                <p>Your character needs a "brain". Head to <strong>Settings → General</strong>, where the <strong>Local AI (Docker)</strong> card starts it for you in one click — it runs on your own PC.</p>
+                <p>Prefer a cloud provider? That lives in the advanced screens, which you can unlock any time from <strong>General → Interface Mode</strong>.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabGeneral,
+    },
+    {
+        id: 'simple-start-chatting',
+        targetSelector: '[data-tutorial-id="nav-tab-chat"]',
+        title: '3. Start Chatting',
+        content: (
+            <div className="space-y-2">
+                <p>Once your AI partner is set up, come back to <strong>Chat</strong> and say hello. That's it!</p>
+                <p>You can revisit this tour any time from the help button in the top bar.</p>
+            </div>
+        ),
+        placement: 'right',
+        tab: SettingsTabChat,
+    },
+]);
+
 /**
  * Returns all tutorial step definitions in order.
  * The TutorialController filters by branchPath.
+ *
+ * In Simple mode we show the short, beginner-friendly tour; Pro/Dev users get
+ * the full 41-step setup walkthrough.
  */
 export function getStepDefinitions(setSettingsTab) {
+    const mode = useUIModeStore.getState().mode;
+    if (mode === 'simple') {
+        return [...simpleModeSteps];
+    }
     return [
         ...characterCreationSteps,
         ...entityCreationSteps,

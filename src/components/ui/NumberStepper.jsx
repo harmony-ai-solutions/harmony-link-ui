@@ -99,8 +99,8 @@ const NumberStepper = ({
                 aria-label="Decrease value"
                 tabIndex={-1}
             >
-                <svg width="12" height="2" viewBox="0 0 12 2" fill="none" aria-hidden="true">
-                    <path d="M0 1h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M1 3.5L5 7.5L9 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </button>
             <input
@@ -123,8 +123,8 @@ const NumberStepper = ({
                 aria-label="Increase value"
                 tabIndex={-1}
             >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M6 0v12M0 6h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M1 6.5L5 2.5L9 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </button>
         </div>

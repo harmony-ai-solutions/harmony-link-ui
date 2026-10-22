@@ -4,6 +4,7 @@ import { fetchLogs, fetchLogComponents, fetchLogEntities, fetchLogPromptTypes, g
 import LogEntry from './LogEntry.jsx';
 import FilterToolbar from './FilterToolbar.jsx';
 import LogLevelSettings from './LogLevelSettings.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 1000];
 
@@ -384,13 +385,14 @@ export default function LogViewer() {
                     )}
 
                     {/* Auto-scroll toggle */}
-                    <button
-                        className={`module-action-btn text-xs ${autoScroll ? 'text-accent-primary' : ''}`}
-                        onClick={() => setAutoScroll(prev => !prev)}
-                        title={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
-                    >
-                        {autoScroll ? 'Auto' : 'Manual'}
-                    </button>
+                    <Tooltip content={autoScroll ? 'Auto-scroll ON' : 'Auto-scroll OFF'}>
+                        <button
+                            className={`module-action-btn text-xs ${autoScroll ? 'text-accent-primary' : ''}`}
+                            onClick={() => setAutoScroll(prev => !prev)}
+                        >
+                            {autoScroll ? 'Auto' : 'Manual'}
+                        </button>
+                    </Tooltip>
                 </div>
                 <div className="flex items-center gap-2">
                     <button

@@ -6,6 +6,12 @@
   "buttons": {
     "manageDevices": "Manage Devices"
   },
+  "tabs": {
+    "general": "General",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "dataSupport": "Data & Support"
+  },
   "sections": {
     "appAndCloud": "Application",
     "network": "Network & Infrastructure",
@@ -14,7 +20,53 @@
     "updates": "Updates",
     "notifications": "Notifications",
     "soundAudio": "Sound & Audio",
-    "dataSupport": "Data & Support"
+    "dataSupport": "Data & Support",
+    "backupRestore": "Backup & Restore"
+  },
+  "backup": {
+    "targetLabel": "Backup target",
+    "destDirLabel": "Destination folder",
+    "destDirPlaceholder": "D:\\Backups",
+    "deviceLabel": "Desktop",
+    "browse": "Browse…",
+    "destDirRequired": "Choose a destination folder before backing up.",
+    "baseUrlLabel": "WebDAV URL",
+    "baseUrlPlaceholder": "https://cloud.example.com/remote.php/dav",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "otherTargetNote": "This target is configured on the device (OAuth / native module).",
+    "cloudSignedInAs": "Backups will use this Soulbits Cloud account: {{account}}.",
+    "cloudQuotaNote": "Uses your plan's cloud storage quota.",
+    "cloudSignInFirst": "Sign in to Soulbits Cloud first — use the Soulbits Cloud card above.",
+    "backupNow": "Back up now",
+    "busyBackup": "Backing up…",
+    "busyRestore": "Restoring…",
+    "busyProbe": "Testing…",
+    "running": "Running… {{seconds}}s",
+    "tookSeconds": "{{text}} ({{seconds}}s)",
+    "probe": "Test connection",
+    "restore": "Restore from backup",
+    "recoveryCodeLabel": "Recovery code",
+    "recoveryCodeRequired": "Enter your backup recovery code to restore.",
+    "dataVersion": "Data version",
+    "upToDate": "Up to date — nothing changed since the last backup.",
+    "backupSuccess": "Backup complete: {{objects}} objects, {{bytes}} bytes.",
+    "backupFailed": "Backup failed: {{message}}",
+    "probeOk": "Target reachable ({{detail}}).",
+    "probeFailed": "Target unreachable: {{message}}",
+    "probeDetailOk": "connection ok",
+    "probeDetailUnavailable": "no response",
+    "restoreSuccess": "Restored {{rows}} rows into {{dir}} (adopted on next engine start).",
+    "restoreFailed": "Restore failed: {{message}}",
+    "heldStatus": "Cloud backup held — \"{{device}}\" has a different backup. Choose how to resolve it.",
+    "conflict": {
+      "title": "Cloud backup conflict",
+      "body": "Cloud backup from \"{{device}}\" ({{syncedAt}}, generation {{generation}}) holds different data.",
+      "syncGroupHint": "This backup belongs to a sync group this device is not part of — pair the devices to keep data in sync.",
+      "pushMine": "Push mine (replace cloud backup)",
+      "pullTheirs": "Pull theirs (restore, replaces local data)",
+      "cancel": "Cancel"
+    }
   },
   "fields": {
     "workingDir": {

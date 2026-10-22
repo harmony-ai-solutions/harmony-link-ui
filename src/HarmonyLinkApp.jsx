@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { getConfig, updateConfig, getAppName, getAppVersion } from "./services/management/configService.js";
 import EntitySettingsView from "./components/EntitySettingsView.jsx";
 import GeneralSettingsView from "./components/GeneralSettingsView.jsx";
@@ -11,81 +10,92 @@ import CharacterProfilesView from "./components/characters/CharacterProfilesView
 import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronDownIcon, CheckIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon, SyncIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
+import SyncStatusView from "./components/sync/SyncStatusView.jsx";
+import useOutreachNotifications from "./hooks/useOutreachNotifications.js";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
-import { SettingsTabMain, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator } from './constants.jsx'
+import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
+import useUIModeStore, { isModeAllowed } from "./store/uiModeStore.js";
+import ChatView from "./components/chat/ChatView.jsx";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
 import { useTheme } from './contexts/ThemeContext';
 import LanguagePicker from './components/icons/LanguagePicker.jsx';
+import Tooltip from './components/ui/Tooltip.jsx';
+import { toast } from './store/toastStore.js';
 
 /**
- * A single grouped navigation dropdown trigger + panel.
+ * Left sidebar rail — the primary navigation.
  *
- * Variant C: replaces the flat 8-pill dock with grouped dropdown menus.
- * - Trigger is styled like the existing `.nav-pill`; its label follows
- *   "show the active tab if one in this group is active, else the group label".
- * - Panel is a Headless UI Menu portaled to <body> (via `anchor`, which forces
- *   `portal`) so `.nav-glass-bar { overflow: hidden }` never clips it.
+ * Desktop-app layout (VS Code / Discord style): a fixed vertical rail of
+ * always-visible sections grouped under labelled headers. Replaces the old
+ * grouped-dropdown pill dock, which hid destinations behind menus.
+ *
+ * - Collapsible to a compact icon-only rail (state persisted to localStorage).
+ * - Auto-collapses to the icon rail on narrow viewports (see CSS @media).
+ * - Preserves the tutorial anchors `data-tutorial-id="nav-group-*"` /
+ *   `"nav-tab-*"` that the onboarding tour targets.
  */
-function NavGroupMenu({ group, settingsTab, onSelect }) {
-    const activeTabInGroup = group.tabs.find((tab) => tab.id === settingsTab) || null;
-    const triggerLabel = activeTabInGroup ? activeTabInGroup.label : group.label;
-    const TriggerIcon = activeTabInGroup ? activeTabInGroup.icon : group.icon;
-    const isActive = activeTabInGroup !== null;
+function SidebarNav({ groups, settingsTab, onSelect, collapsed, onToggleCollapse }) {
+    const { t } = useTranslation();
 
     return (
-        <Menu>
-            <MenuButton
-                data-tutorial-id={`nav-group-${group.id}`}
-                className={`nav-pill ${isActive ? 'nav-pill-active' : ''}`}
-            >
-                <span className="nav-pill-icon">
-                    <TriggerIcon className="w-4 h-4" />
-                </span>
-                <span className="nav-pill-label">{triggerLabel}</span>
-                <ChevronDownIcon className="nav-pill-caret w-3.5 h-3.5" />
-                {isActive && <span className="nav-pill-glow" />}
-            </MenuButton>
+        <aside
+            className={`app-sidebar ${collapsed ? 'app-sidebar-collapsed' : ''}`}
+            aria-label={t('nav.primaryNavigation')}
+        >
+            <div className="app-sidebar-scroll">
+                {groups.map((group) => (
+                    <div
+                        key={group.id}
+                        className={`app-sidebar-group ${group.primary ? 'app-sidebar-group-primary' : ''}`}
+                        data-tutorial-id={`nav-group-${group.id}`}
+                    >
+                        {group.label && <div className="app-sidebar-group-label">{group.label}</div>}
+                        <div className="app-sidebar-group-items">
+                            {group.tabs.map((tab) => {
+                                const Icon = tab.icon;
+                                const active = settingsTab === tab.id;
+                                return (
+                                    <Tooltip key={tab.id} content={tab.label} placement="right" disabled={!collapsed}>
+                                        <button
+                                            type="button"
+                                            data-tutorial-id={`nav-tab-${tab.id}`}
+                                            onClick={() => onSelect(tab.id)}
+                                            className={`app-sidebar-item ${active ? 'app-sidebar-item-active' : ''}`}
+                                            aria-current={active ? 'page' : undefined}
+                                        >
+                                            <span className="app-sidebar-item-icon">
+                                                <Icon className="w-4 h-4" />
+                                            </span>
+                                            <span className="app-sidebar-item-label">{tab.label}</span>
+                                        </button>
+                                    </Tooltip>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-            <MenuItems
-                anchor={{ to: 'bottom start', gap: 8 }}
-                modal={false}
-                className="nav-menu-panel"
-            >
-                {group.tabs.map((tab) => {
-                    const TabIcon = tab.icon;
-                    const tabActive = settingsTab === tab.id;
-                    return (
-                        <MenuItem key={tab.id}>
-                            {({ focus }) => (
-                                <button
-                                    type="button"
-                                    data-tutorial-id={`nav-tab-${tab.id}`}
-                                    onClick={() => onSelect(tab.id)}
-                                    className={`nav-menu-item ${tabActive ? 'nav-menu-item-active' : ''} ${focus ? 'nav-menu-item-focus' : ''}`}
-                                >
-                                    <span className="nav-menu-item-icon">
-                                        <TabIcon className="w-4 h-4" />
-                                    </span>
-                                    <span className="nav-menu-item-label">{tab.label}</span>
-                                    {tabActive && (
-                                        <span className="nav-menu-item-indicator">
-                                            <CheckIcon className="w-3.5 h-3.5" />
-                                        </span>
-                                    )}
-                                </button>
-                            )}
-                        </MenuItem>
-                    );
-                })}
-            </MenuItems>
-        </Menu>
+            <Tooltip content={collapsed ? t('nav.expand') : t('nav.collapse')} placement="right" disabled={!collapsed}>
+                <button
+                    type="button"
+                    className="app-sidebar-toggle"
+                    onClick={onToggleCollapse}
+                    aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
+                    aria-expanded={!collapsed}
+                >
+                    <ChevronRightIcon className={`app-sidebar-toggle-icon w-4 h-4 ${collapsed ? '' : 'app-sidebar-toggle-icon-flip'}`} />
+                    <span className="app-sidebar-toggle-label">{t('nav.collapse')}</span>
+                </button>
+            </Tooltip>
+        </aside>
     );
 }
 
@@ -97,12 +107,39 @@ function HarmonyLinkAppInner() {
     const { t } = useTranslation();
     const { currentTheme, toggleDarkLight } = useTheme();
 
+    // Plan 7-12 §4 (desktop D3): subscribe to the engine's outreach
+    // notification stream and raise an OS notification when the window is
+    // unfocused. No-op outside the Wails shell (guarded runtime access).
+    useOutreachNotifications();
+
     const [appName, setAppName] = useState('Harmony Link');
     const [appVersion, setAppVersion] = useState('v0.2.0-dev');
-    const [settingsTab, setSettingsTab] = useState(SettingsTabCharacters);
+    const [settingsTab, setSettingsTab] = useState(SettingsTabChat);
+
+    // Progressive-disclosure UI mode (simple / pro / dev). Mirrors
+    // config.general.uimode so the menu can react instantly.
+    const [uiMode, setUiMode] = useState(() => useUIModeStore.getState().mode);
+    useEffect(() => useUIModeStore.subscribe((state) => setUiMode(state.mode)), []);
 
     // Main Config reference
     const [applicationConfig, setApplicationConfig] = useState(null);
+
+    // Sidebar rail collapse state (persisted across sessions)
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem('hl.sidebar.collapsed') === '1';
+        } catch {
+            return false;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('hl.sidebar.collapsed', sidebarCollapsed ? '1' : '0');
+        } catch {
+            /* localStorage unavailable — non-fatal */
+        }
+    }, [sidebarCollapsed]);
 
     // Device approval state
     const [pendingDevices, setPendingDevices] = useState([]);
@@ -115,7 +152,13 @@ function HarmonyLinkAppInner() {
         // Update base config
         //LogDebug(JSON.stringify(newCompleteSettings));
         updateConfig(newCompleteSettings, createBackup)
-            .then(() => LogDebug("Successfully Updated General Settings"))
+            .then(() => {
+                LogDebug("Successfully Updated General Settings");
+                // Success feedback moved from inline banners to the global
+                // toast queue. Failures keep logging — the settings view has
+                // no decision to ask the user for.
+                toast.success(t('common:toast.settingsSaved'));
+            })
             .catch((onError) => {
                 LogError("Unable to Update General Settings");
                 LogError(onError);
@@ -159,6 +202,14 @@ function HarmonyLinkAppInner() {
         setSettingsTab(SettingsTabEntities);
     };
 
+    // "Start chatting" on a card — the Characters tab resolves (or creates) the
+    // profile's AI partner and stashes a start-chat request in chatStore; this
+    // callback just flips to the Chat tab, whose ChatView consumes the request
+    // on mount and opens the new conversation.
+    const handleStartChatFromCard = () => {
+        setSettingsTab(SettingsTabChat);
+    };
+
     // On Application Loaded
     useEffect(() => {
         // Load Config on Start
@@ -171,11 +222,16 @@ function HarmonyLinkAppInner() {
                 // Sync dynamic background store with loaded config
                 useDynamicBackgroundStore.getState().syncFromConfig(result);
 
-                // Auto-launch tutorial if not completed
+                // Sync UI mode store with loaded config
+                useUIModeStore.getState().syncFromConfig(result);
+
+                // Auto-launch tutorial if not completed.
+                // Delay clears the launch splash (min 1.8s + 0.7s exit) so the
+                // first tutorial step isn't shown underneath / mid-fade.
                 if (!result.general?.skiptutorial) {
                     setTimeout(() => {
                         useTutorialStore.getState().startTutorial();
-                    }, 1500);
+                    }, 3200);
                 }
             });
             LogDebug(JSON.stringify(applicationConfig));
@@ -202,8 +258,20 @@ function HarmonyLinkAppInner() {
 
         deviceApprovalWatcher.addListener(handlePendingDevices);
 
+        // A device that appears ALREADY-APPROVED (auto-approved engine-side by a
+        // LAN pairing secret, or approved manually) raises a "«name» paired"
+        // toast (plan 7-15, task W §3). The manual approval modal is unchanged.
+        const handlePairedDevice = (device) => {
+            const name = device?.device_name || device?.device_id || t('pairing.pairedToast.fallbackName');
+            toast.success(t('pairing.pairedToast.title', { name }), {
+                message: t('pairing.pairedToast.message'),
+            });
+        };
+        deviceApprovalWatcher.addPairedListener(handlePairedDevice);
+
         return () => {
             deviceApprovalWatcher.removeListener(handlePendingDevices);
+            deviceApprovalWatcher.removePairedListener(handlePairedDevice);
             deviceApprovalWatcher.stop();
         };
     }, [currentDevice]);
@@ -242,51 +310,125 @@ function HarmonyLinkAppInner() {
         }
     };
 
-    // Tab definitions — grouped into 3 dropdown menus (Variant C)
-    const navGroups = [
+    // Navigation groups — rendered as labelled sections in the left sidebar rail.
+    // Every tab declares the lowest UI mode that can see it (`minMode`); the
+    // menu is then filtered against the active mode so Simple users only see
+    // the essentials, Pro adds power features, and Dev adds the tooling.
+    //
+    // Group order describes the mental model, not the implementation:
+    //   chat          — where you talk (headerless primary destination)
+    //   characters    — who the AI is and who you are
+    //   conversations — the inbox: every thread you are not actively reading
+    //   settings      — app preferences, then service configuration
+    //   developer     — Dev-only tooling
+    //
+    // The `conversations` group is declared ahead of its members: Phase 02 adds
+    // Archived and Disabled-AI destinations here. An empty group is dropped by
+    // the `navGroups` filter below, so declaring it now costs nothing on screen
+    // and keeps the rail stable when Phase 02 lands. Do not move `chat` into it:
+    // Chat is the one destination that must be reachable with zero clicks.
+    const allNavGroups = [
         {
-            id: 'identity',
-            label: t('nav.groups.identity'),
+            // Primary landing destination — no header, sits above the sections.
+            id: 'chat',
+            label: null,
+            primary: true,
+            icon: MessageIcon,
+            minMode: 'simple',
+            tabs: [
+                { id: SettingsTabChat, label: t('nav.tabs.chat'), icon: MessageIcon, minMode: 'simple' },
+            ],
+        },
+        {
+            // AI Characters — who the AI is (character cards) and who you are
+            // (personas), plus the Pro-only entity that wires a character to AI
+            // capabilities.
+            id: 'characters',
+            label: t('nav.groups.characters'),
             icon: RobotIcon,
+            minMode: 'simple',
             tabs: [
-                { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon },
-                { id: SettingsTabPersonas, label: t('nav.tabs.personas'), icon: SmileIcon },
-                { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon },
+                { id: SettingsTabCharacters, label: t('nav.tabs.characters'), icon: RobotIcon, minMode: 'simple' },
+                { id: SettingsTabPersonas, label: t('nav.tabs.personas'), icon: SmileIcon, minMode: 'simple' },
+                { id: SettingsTabEntities, label: t('nav.tabs.entities'), icon: UsersIcon, minMode: 'pro' },
             ],
         },
         {
-            id: 'system',
-            label: t('nav.groups.system'),
+            // Conversations — the inbox. Intentionally empty until Phase 02
+            // populates it; see the note above.
+            id: 'conversations',
+            label: t('nav.groups.conversations'),
+            icon: MessageIcon,
+            minMode: 'simple',
+            tabs: [
+                // Phase 02: Archived chats.
+                // { id: SettingsTabArchived, label: t('nav.tabs.archived'), icon: ArchiveIcon, minMode: 'simple' },
+                // Phase 02: Disabled AI partners.
+                // { id: SettingsTabDisabledAIs, label: t('nav.tabs.disabledAIs'), icon: UsersIcon, minMode: 'simple' },
+            ],
+        },
+        {
+            // Settings — app preferences first, then the Pro-only screens that
+            // connect and manage the AI services. Sync is the one Pro
+            // destination that also has a Simple-era entry point: the
+            // "Manage devices" modal in General Settings, kept for
+            // compatibility.
+            id: 'settings',
+            label: t('nav.groups.settings'),
             icon: SettingsGearIcon,
+            minMode: 'simple',
             tabs: [
-                { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon },
-                { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon },
-                { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon },
+                { id: SettingsTabGeneral, label: t('nav.tabs.general'), icon: SettingsGearIcon, minMode: 'simple' },
+                { id: SettingsTabModules, label: t('nav.tabs.modules'), icon: PuzzleIcon, minMode: 'pro' },
+                { id: SettingsTabIntegrations, label: t('nav.tabs.integrations'), icon: LinkIcon, minMode: 'pro' },
+                { id: SettingsTabSync, label: t('nav.tabs.sync'), icon: SyncIcon, minMode: 'pro' },
             ],
         },
         {
-            id: 'tools',
-            label: t('nav.groups.tools'),
+            id: 'developer',
+            label: t('nav.groups.developer'),
             icon: SimulatorIcon,
+            minMode: 'dev',
             tabs: [
-                { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon },
-                { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon },
+                { id: SettingsTabSimulator, label: t('nav.tabs.simulator'), icon: SimulatorIcon, minMode: 'dev' },
+                { id: SettingsTabDevelopment, label: t('nav.tabs.dev'), icon: TerminalIcon, minMode: 'dev' },
             ],
         },
     ];
+
+    const navGroups = useMemo(
+        () => allNavGroups
+            .map((group) => ({
+                ...group,
+                tabs: group.tabs.filter((tab) => isModeAllowed(uiMode, tab.minMode)),
+            }))
+            .filter((group) => group.tabs.length > 0),
+        [uiMode, t],
+    );
+
+    // Downgrade safety — if the active tab is no longer visible in the current
+    // mode (e.g. the user switched Pro → Simple while on a hidden tab), move to
+    // the Chat landing screen rather than leaving a blank panel.
+    useEffect(() => {
+        const visibleTabs = navGroups.flatMap((group) => group.tabs.map((tab) => tab.id));
+        if (!visibleTabs.includes(settingsTab)) {
+            setSettingsTab(SettingsTabChat);
+        }
+    }, [navGroups, settingsTab]);
 
     return (
         <>
             {/* Theme-adaptive dynamic background — controlled by Zustand store for instant toggle */}
             <DynamicBackground />
 
-            <div id="App" className="relative z-[1] min-h-screen text-text-primary selection:bg-accent-primary/20">
-            {/* Top Navigation Bar — Ultra Glassmorphic Floating Dock */}
-            <nav className="sticky top-0 z-50 nav-glass-bar">
+            <div id="App" className="app-shell relative z-[1] text-text-primary selection:bg-accent-primary/20">
+            {/* Top Bar — brand + global actions (navigation now lives in the left rail).
+                Fixed via CSS (.nav-glass-bar) so it stays pinned while content scrolls. */}
+            <nav className="nav-glass-bar">
                 {/* Top-edge glass light catch */}
                 <div className="nav-top-edge" />
 
-                <div className="nav-inner relative flex items-center h-full px-8 max-w-[1920px] mx-auto">
+                <div className="nav-inner relative flex items-center h-full px-6 max-w-[1920px] mx-auto">
                     {/* Brand — fixed left */}
                     <div className="flex items-center gap-4 flex-shrink-0 z-10">
                         {/* Brand logo dot — small glowing accent orb */}
@@ -300,93 +442,115 @@ function HarmonyLinkAppInner() {
                         </div>
                     </div>
 
-                    {/* Left flex spacer — shrinks before zones, centers pill dock when space allows */}
-                    <div className="flex-1 min-w-0" />
-
-                    {/* Grouped Dropdown Dock — 3 menus instead of 8 pills */}
-                    <div className="nav-pill-dock z-0">
-                        {navGroups.map((group) => (
-                            <NavGroupMenu
-                                key={group.id}
-                                group={group}
-                                settingsTab={settingsTab}
-                                onSelect={setSettingsTab}
-                            />
-                        ))}
-                    </div>
-
-                    {/* Right flex spacer */}
-                    <div className="flex-1 min-w-0" />
-
                     {/* Action buttons — fixed right */}
-                    <div className="flex items-center gap-4 flex-shrink-0 z-10">
+                    <div className="flex items-center gap-4 flex-shrink-0 ml-auto z-10">
                         {/* Language Picker */}
                         <LanguagePicker />
 
                         {/* Dark/Light Theme Toggle */}
-                        <button
-                            className="nav-help-btn"
-                            onClick={toggleDarkLight}
-                            title={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
-                            aria-label={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
-                        >
-                            {currentTheme === 'soulbits-light' ? (
+                        <Tooltip content={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')} placement="bottom">
+                            <button
+                                className="nav-help-btn"
+                                onClick={toggleDarkLight}
+                                aria-label={currentTheme === 'soulbits-light' ? t('nav.darkMode') : t('nav.lightMode')}
+                            >
+                                {currentTheme === 'soulbits-light' ? (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                )}
+                            </button>
+                        </Tooltip>
+                        <Tooltip content={t('nav.help')} placement="bottom">
+                            <button
+                                data-tutorial-id="tutorial-restart-btn"
+                                className="nav-help-btn"
+                                onClick={handleRestartTutorial}
+                                aria-label="Help"
+                            >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            )}
-                        </button>
-                        <button
-                            data-tutorial-id="tutorial-restart-btn"
-                            className="nav-help-btn"
-                            onClick={handleRestartTutorial}
-                            title={t('nav.help')}
-                            aria-label="Help"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </button>
+                            </button>
+                        </Tooltip>
                     </div>
                 </div>
             </nav>
 
-            <div className="flex-1 min-h-[calc(100vh-6rem)]">
-                {applicationConfig && settingsTab === SettingsTabGeneral &&
-                    <GeneralSettingsView 
-                        generalSettings={applicationConfig.general} 
-                        saveGeneralSettings={saveGeneralSettings}
-                    ></GeneralSettingsView>
-                }
-                {applicationConfig && settingsTab === SettingsTabEntities &&
-                    <EntitySettingsView appName={appName}></EntitySettingsView>
-                }
-                {settingsTab === SettingsTabCharacters &&
-                    <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}
-                        onCreateEntityFromCard={handleCreateEntityFromCard}></CharacterProfilesView>
-                }
-                {settingsTab === SettingsTabPersonas &&
-                    <PersonasView></PersonasView>
-                }
-                {settingsTab === SettingsTabModules &&
-                    <ModuleConfigurationsView></ModuleConfigurationsView>
-                }
-                {settingsTab === SettingsTabDevelopment &&
-                    <DevelopmentView></DevelopmentView>
-                }
-                {settingsTab === SettingsTabIntegrations &&
-                    <IntegrationsView></IntegrationsView>
-                }
-                {settingsTab === SettingsTabSimulator &&
-                    <SimulatorView></SimulatorView>
-                }
+            {/* Body — left sidebar rail + main content column */}
+            <div className="app-body">
+                <SidebarNav
+                    groups={navGroups}
+                    settingsTab={settingsTab}
+                    onSelect={setSettingsTab}
+                    collapsed={sidebarCollapsed}
+                    onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+                />
+
+                <main className="app-main">
+                    <div className="app-content">
+                        {/* Render guards: a view only renders when its tab is
+                            permitted in the current mode, so hidden tabs can
+                            never appear (defence-in-depth alongside the menu filter). */}
+                        {settingsTab === SettingsTabChat &&
+                            <ChatView onNavigate={setSettingsTab} />
+                        }
+                        {applicationConfig && settingsTab === SettingsTabGeneral &&
+                            <GeneralSettingsView 
+                                generalSettings={applicationConfig.general} 
+                                saveGeneralSettings={saveGeneralSettings}
+                            ></GeneralSettingsView>
+                        }
+                        {applicationConfig && isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabEntities &&
+                            <EntitySettingsView appName={appName}></EntitySettingsView>
+                        }
+                        {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabCharacters &&
+                            <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}
+                                onCreateEntityFromCard={handleCreateEntityFromCard}
+                                onStartChatFromCard={handleStartChatFromCard}></CharacterProfilesView>
+                        }
+                        {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabPersonas &&
+                            <PersonasView></PersonasView>
+                        }
+                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabModules &&
+                            <ModuleConfigurationsView></ModuleConfigurationsView>
+                        }
+                        {isModeAllowed(uiMode, 'dev') && settingsTab === SettingsTabDevelopment &&
+                            <DevelopmentView></DevelopmentView>
+                        }
+                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabIntegrations &&
+                            <IntegrationsView></IntegrationsView>
+                        }
+                        {/* Sync — first-class rail destination. Her device
+                            roster + per-device actions (rows-v1 `sync_devices`)
+                            come first; parity's changeset-v1 authority/client
+                            status + pairing panel follows as a second section.
+                            The General Settings "Manage devices" modal remains
+                            as a compatibility entry point into the same data. */}
+                        {isModeAllowed(uiMode, 'pro') && settingsTab === SettingsTabSync && (
+                            <>
+                                <DeviceManagementView></DeviceManagementView>
+                                <SyncStatusView></SyncStatusView>
+                            </>
+                        )}
+                        {isModeAllowed(uiMode, 'dev') && settingsTab === SettingsTabSimulator &&
+                            <SimulatorView></SimulatorView>
+                        }
+                    </div>
+
+                    <footer className="app-footer">
+                        <a href="https://project-harmony.ai/technology/" target="_blank" rel="noreferrer">
+                            {appName} {appVersion} - {t('footer.copyright')}
+                        </a>
+                    </footer>
+                </main>
             </div>
 
             {/* Tutorial Controller */}
@@ -399,14 +563,6 @@ function HarmonyLinkAppInner() {
                 onReject={handleRejectDevice}
                 show={currentDevice !== null}
             />
-
-            <footer className="flex items-center justify-center bg-background-glass backdrop-blur-[20px] saturate-[1.3]">
-                <p className="py-2.5 px-4 text-text-muted text-[11px] font-medium tracking-wide">
-                    <a href="https://project-harmony.ai/technology/" target="_blank" className="hover:text-accent-primary transition-colors">
-                        {appName} {appVersion} - {t('footer.copyright')}
-                    </a>
-                </p>
-            </footer>
             </div>
         </>
     );

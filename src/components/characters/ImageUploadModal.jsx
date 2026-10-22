@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Modal for uploading new character images
@@ -84,16 +85,17 @@ export default function ImageUploadModal({ profileId, onClose }) {
                             </div>
                             <h2 className="text-lg font-bold text-gradient-primary leading-tight">{t('buttons.uploadImage')}</h2>
                         </div>
-                        <button
-                            onClick={onClose}
-                            disabled={uploading}
-                            className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5 disabled:opacity-40"
-                            title={t('buttons.close')}
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <Tooltip content={t('buttons.close')}>
+                            <button
+                                onClick={onClose}
+                                disabled={uploading}
+                                className="relative text-text-muted hover:text-text-primary transition-colors p-1 rounded hover:bg-white/5 disabled:opacity-40"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </Tooltip>
                     </div>
                 </div>
 
@@ -119,9 +121,11 @@ export default function ImageUploadModal({ profileId, onClose }) {
                                 {t('import.chooseFile')}
                             </button>
                             {file ? (
-                                <span className="character-editor-label-unit truncate max-w-[16rem]" title={file.name}>
-                                    {file.name}
-                                </span>
+                                <Tooltip content={file.name}>
+                                    <span className="character-editor-label-unit truncate max-w-[16rem]">
+                                        {file.name}
+                                    </span>
+                                </Tooltip>
                             ) : (
                                 <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('import.noFileChosen')}</span>
                             )}

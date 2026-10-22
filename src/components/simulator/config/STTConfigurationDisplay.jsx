@@ -32,7 +32,7 @@ function STTConfigurationDisplay({ config, loading, error }) {
 
     const getProviderDisplayName = (provider) => {
         const providerNames = {
-            'harmonyspeech': 'Harmony Speech',
+            'soulvoice': 'Soulvoice',
             'openai': 'OpenAI'
         };
         return providerNames[provider] || provider;
@@ -40,7 +40,7 @@ function STTConfigurationDisplay({ config, loading, error }) {
 
     const getProviderConfig = (config) => {
         switch (config.provider) {
-            case 'harmonyspeech': return config.harmonyspeech;
+            case 'soulvoice': return config.soulvoice;
             case 'openai': return config.openai;
             default: return null;
         }

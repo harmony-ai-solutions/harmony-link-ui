@@ -1580,14 +1580,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
     },
 
     // ============================================================
-    // Harmony Speech Engine Schemas (Phase 5)
+    // Soulvoice (speech engine) Schemas (Phase 5)
     // ============================================================
 
     /**
-     * HarmonySpeech TTS provider schema
+     * Soulvoice TTS provider schema
      * 2 fields: endpoint, voiceconfigfile
      */
-    harmonyspeech_tts: {
+    soulvoice_tts: {
         hasModelFetch: false,
         hasVoiceConfigManager: true,
         hasIntegrationSelector: true,
@@ -1626,10 +1626,10 @@ export const PROVIDER_FIELD_SCHEMAS = {
     },
 
     /**
-     * HarmonySpeech STT provider schema
+     * Soulvoice STT provider schema
      * 2 fields: endpoint, model
      */
-    harmonyspeech_stt: {
+    soulvoice_stt: {
         hasIntegrationSelector: true,
         integrationSelectorCondition: 'harmonyLinkMode',
         harmonySpeechMode: 'stt',
@@ -1659,7 +1659,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
             {
                 key: 'model',
                 label: 'Transcription Model',
-                type: 'harmonyspeech-model-select',
+                type: 'soulvoice-model-select',
                 placeholder: 'Select model...',
                 tooltip: 'Select the AI model to use for speech transcription.',
                 width: 'full',
@@ -1669,10 +1669,10 @@ export const PROVIDER_FIELD_SCHEMAS = {
     },
 
     /**
-     * HarmonySpeech VAD provider schema
+     * Soulvoice VAD provider schema
      * 2 fields: endpoint, model
      */
-    harmonyspeech_vad: {
+    soulvoice_vad: {
         hasIntegrationSelector: true,
         integrationSelectorCondition: 'harmonyLinkMode',
         harmonySpeechMode: 'vad',
@@ -1702,7 +1702,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
             {
                 key: 'model',
                 label: 'VAD Model',
-                type: 'harmonyspeech-model-select',
+                type: 'soulvoice-model-select',
                 placeholder: 'Select model...',
                 tooltip: 'Select the AI model to use for voice activity detection.',
                 width: 'full',

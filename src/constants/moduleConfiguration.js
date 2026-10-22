@@ -148,12 +148,12 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'transcription.provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
+                    { id: 'soulvoice', name: 'Soulvoice', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter }
                 ],
                 components: {
-                    harmonyspeech: 'harmonyspeech_stt',
+                    soulvoice: 'soulvoice_stt',
                     openai: 'stt_openai',
                     openrouter: 'stt_openrouter'
                 }
@@ -164,12 +164,12 @@ export const MODULE_CONFIGS = {
                 settingsKey: 'vad.provider',
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
+                    { id: 'soulvoice', name: 'Soulvoice', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter }
                 ],
                 components: {
-                    harmonyspeech: 'harmonyspeech_vad',
+                    soulvoice: 'soulvoice_vad',
                     openai: 'vad_openai',
                     openrouter: 'vad_openrouter'
                 }
@@ -186,7 +186,7 @@ export const MODULE_CONFIGS = {
                 providerOptions: [
                     { id: 'disabled', name: 'Disabled', logo: logo_blank },
                     { id: 'elevenlabs', name: 'Elevenlabs', logo: logo_elevenlabs },
-                    { id: 'harmonyspeech', name: 'Harmony Speech Engine', logo: logo_blank },
+                    { id: 'soulvoice', name: 'Soulvoice', logo: logo_blank },
                     { id: 'openai', name: 'OpenAI', logo: logo_openai },
                     { id: 'kindroid', name: 'Kindroid AI', logo: logo_kindroid },
                     { id: 'openrouter', name: 'OpenRouter', logo: logo_openrouter },
@@ -194,7 +194,7 @@ export const MODULE_CONFIGS = {
                 ],
                 components: {
                     elevenlabs: 'elevenlabs',
-                    harmonyspeech: 'harmonyspeech_tts',
+                    soulvoice: 'soulvoice_tts',
                     openai: 'tts_openai',
                     kindroid: 'kindroid',
                     openrouter: 'tts_openrouter',

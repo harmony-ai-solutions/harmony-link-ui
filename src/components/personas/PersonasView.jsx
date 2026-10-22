@@ -9,9 +9,12 @@ import * as characterService from '../../services/management/characterService.js
 import { validatePersonaName } from '../../utils/personaNameUtils';
 import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
 import CharacterCardExport from '../characters/CharacterCardExport.jsx';
+import CharacterImage from '../common/CharacterImage.jsx';
 import { ModuleConfigSelector } from '../EntitySettingsView.jsx';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
+import { toast } from '../../store/toastStore.js';
 
 /**
  * PersonasView — 3-1 (Soulbits Engine frontend).
@@ -73,8 +76,8 @@ export default function PersonasView() {
         return localStorage.getItem('personaCardSize') || 'large';
     });
 
-    // Feedback / modal state
-    const [successMessage, setSuccessMessage] = useState(null);
+    // Feedback / modal state. Success feedback is the global toast now —
+    // only failures that need a decision keep a dialog.
     const [errorDialog, setErrorDialog] = useState({ isOpen: false, title: '', message: '', type: 'error' });
     const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
@@ -194,8 +197,7 @@ export default function PersonasView() {
             const full = await entityService.getEntity('user');
             setUserEntityFull(full);
             setSharedModulesEdit(false);
-            setSuccessMessage(tes('messages.sharedModulesSaved'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.sharedModulesSaved'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -315,7 +317,7 @@ export default function PersonasView() {
                 }
                 throw error;
             }
-            setSuccessMessage(tes('messages.createSuccess'));
+            toast.success(tes('messages.createSuccess'));
         } else {
             // D14: the id is stable for life — edit only moves alias/profile.
             const entityId = editingPersona.id;
@@ -331,9 +333,8 @@ export default function PersonasView() {
             }
             // Alias update ONLY (D22: no rename endpoint exists anymore).
             await entityService.updateEntity(entityId, profileId, null, name);
-            setSuccessMessage(tes('messages.updateSuccess'));
+            toast.success(tes('messages.updateSuccess'));
         }
-        setTimeout(() => setSuccessMessage(null), 3000);
         await Promise.all([loadEntities(), loadProfiles()]);
         // Re-fetch the saved profile's images: the card's image-load effect is
         // ref-deduped (loadedImageIds already holds this profile id), so a
@@ -353,8 +354,7 @@ export default function PersonasView() {
                 try {
                     await deleteEntity(persona.id);
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
-                    setSuccessMessage(tes('messages.deleteSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.deleteSuccess'));
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                     setErrorDialog({
@@ -408,7 +408,7 @@ export default function PersonasView() {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+                <div className="bg-background-surface px-6 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-extrabold tracking-tight">
@@ -474,15 +474,8 @@ export default function PersonasView() {
                     )}
                 </div>
 
-                {/* Feedback */}
-                <div className="px-6 mt-4">
-                    {successMessage && (
-                        <div className="p-3 bg-success-bg/30 border border-success-bg rounded text-success text-sm">{successMessage}</div>
-                    )}
-                </div>
-
                 {/* Search + Card Size toolbar */}
-                <div className="bg-background-surface/50 px-6 py-4 backdrop-blur-md">
+                <div className="bg-background-surface px-6 py-4">
                     <div className="flex items-center justify-between gap-4">
                         {/* Search Bar */}
                         <div data-tutorial-id="persona-search" className="search-bar-wrapper">
@@ -502,19 +495,21 @@ export default function PersonasView() {
                         {/* Card Size Toggle */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-xs text-text-muted font-medium">{tes('cardSize')}</span>
-                            <div className="flex bg-background-elevated/50 rounded-lg p-1 gap-1">
+                            <div className="flex gap-1">
                                 {[
                                     { size: 'small', title: tes('cardSizes.small'), path: "M2 3h4v5H2zM7 3h4v5H7zM12 3h4v5H12zM17 3h4v5H17zM2 9.5h4v5H2zM7 9.5h4v5H7zM12 9.5h4v5H12zM17 9.5h4v5H17zM2 16h4v5H2zM7 16h4v5H7zM12 16h4v5H12zM17 16h4v5H17z" },
                                     { size: 'medium', title: tes('cardSizes.medium'), path: "M3 5h5v6H3zM10 5h5v6H10zM17 5h5v6H17zM3 13h5v6H3zM10 13h5v6H10zM17 13h5v6H17z" },
                                     { size: 'large', title: tes('cardSizes.large'), path: "M3 3h8v8H3zM14 3h8v8H14zM3 14h8v8H3zM14 14h8v8H14z" },
                                 ].map(({ size, title, path }) => (
-                                    <button key={size} onClick={() => handleCardSizeChange(size)}
-                                        className={`p-2 rounded transition-all ${cardSize === size ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30' : 'text-text-muted hover:text-text-primary hover:bg-white/5'}`}
-                                        title={title}>
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d={path} />
-                                        </svg>
-                                    </button>
+                                    <Tooltip key={size} content={title}>
+                                        <button onClick={() => handleCardSizeChange(size)}
+                                            style={cardSize === size ? { color: 'var(--color-accent-primary)' } : undefined}
+                                            className={`settings-option-chip p-2 rounded-md ${cardSize === size ? 'settings-option-chip-active' : 'text-text-muted hover:text-text-primary'}`}>
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d={path} />
+                                            </svg>
+                                        </button>
+                                    </Tooltip>
                                 ))}
                             </div>
                         </div>
@@ -533,16 +528,19 @@ export default function PersonasView() {
                                     <div key={persona.id}
                                         className="rounded-xl border border-white/10 bg-background-surface/30 backdrop-blur-sm overflow-hidden group hover:border-accent-primary/40 transition-all duration-200">
                                         <div className="aspect-[3/4] relative bg-elevated">
-                                            {avatar ? (
-                                                <img src={avatar?.data_url} alt={persona.profile?.name || persona.id}
-                                                    className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-text-disabled">
-                                                    <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                    </svg>
-                                                </div>
-                                            )}
+                                            <CharacterImage
+                                                profileId={persona.profile?.id}
+                                                imageId={avatar?.id}
+                                                alt={persona.profile?.name || persona.id}
+                                                className="w-full h-full object-cover"
+                                                fallback={(
+                                                    <div className="w-full h-full flex items-center justify-center text-text-disabled">
+                                                        <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            />
                                             <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity" />
                                             <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-secondary/15 text-accent-secondary">
@@ -572,8 +570,9 @@ export default function PersonasView() {
                                                     {persona.profile?.name || persona.alias || persona.id}
                                                 </h3>
                                                 {isBuiltIn && (
-                                                    <span className="text-[10px] text-text-muted italic font-medium flex-shrink-0"
-                                                        title={tes('dialogs.deleteBuiltIn')}>{tes('list.builtIn')}</span>
+                                                    <Tooltip content={tes('dialogs.deleteBuiltIn')}>
+                                                        <span className="text-[10px] text-text-muted italic font-medium flex-shrink-0">{tes('list.builtIn')}</span>
+                                                    </Tooltip>
                                                 )}
                                             </div>
                                             <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
@@ -582,11 +581,12 @@ export default function PersonasView() {
                                             <div className="flex gap-2 mt-3">
                                                 <button onClick={() => openEdit(persona)}
                                                     className="btn-secondary flex-1 text-xs py-1.5 px-2">{tes('buttons.edit')}</button>
-                                                <button onClick={() => handleDeleteRequest(persona)} disabled={isBuiltIn}
-                                                    className={`btn-danger flex-1 text-xs py-1.5 px-2 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}
-                                                    title={isBuiltIn ? tes('dialogs.deleteBuiltIn') : ''}>
-                                                    {tes('buttons.delete')}
-                                                </button>
+                                                <Tooltip content={isBuiltIn ? tes('dialogs.deleteBuiltIn') : ''}>
+                                                    <button onClick={() => handleDeleteRequest(persona)} disabled={isBuiltIn}
+                                                        className={`btn-danger flex-1 text-xs py-1.5 px-2 font-bold disabled:opacity-40 disabled:cursor-not-allowed`}>
+                                                        {tes('buttons.delete')}
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </div>

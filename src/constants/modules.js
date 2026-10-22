@@ -17,7 +17,7 @@ export const PROVIDERS = {
     OPENAI: 'openai',
     ELEVENLABS: 'elevenlabs',
     KINDROID: 'kindroid',
-    HARMONYSPEECH: 'harmonyspeech',
+    SOULVOICE: 'soulvoice',
     OLLAMA: 'ollama',
     MISTRAL: 'mistral',
     LOCALAI: 'localai',

@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import usePresetStore from '../../store/presetStore.js';
 import { uploadPreset, deletePreset } from '../../services/management/presetService.js';
+import { toast } from '../../store/toastStore.js';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import ThemedSelect from './ThemedSelect';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Preset selector dropdown that loads available presets and fires onChange.
  * Includes upload (with file picker) and delete controls.
  */
 const PresetSelector = ({ value, onChange }) => {
+    const { t } = useTranslation();
     const { presets, loadPresets, loadPresetDetail, getPresetParams } = usePresetStore();
     const [isLoading, setIsLoading] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
@@ -38,6 +42,9 @@ const PresetSelector = ({ value, onChange }) => {
             const params = getPresetParams(selectedName);
             onChange(selectedName, params || {});
             setIsLoading(false);
+            // Applying a preset rewrites several sampling fields at once, which
+            // the config editor always did silently — confirm it took effect.
+            toast.success(t('common:toast.presetApplied'));
         } else {
             onChange('', {});
         }
@@ -84,6 +91,7 @@ const PresetSelector = ({ value, onChange }) => {
             const params = getPresetParams(uploadName.trim());
             onChange(uploadName.trim(), params || {});
             setShowUploadModal(false);
+            toast.success(t('common:toast.presetUploaded'));
         } catch (err) {
             setUploadError(err.message || 'Failed to upload preset.');
         } finally {
@@ -97,10 +105,11 @@ const PresetSelector = ({ value, onChange }) => {
             await deletePreset(value);
             await loadPresets();
             onChange('', {});
+            toast.success(t('common:toast.presetDeleted'));
         } catch (err) {
             console.error('Failed to delete preset:', err);
         }
-    }, [value, loadPresets, onChange]);
+    }, [value, loadPresets, onChange, t]);
 
     const requestDelete = () => {
         if (!value) return;
@@ -122,23 +131,25 @@ const PresetSelector = ({ value, onChange }) => {
                     className="flex-1 min-w-0"
                 />
                 {isLoading && <span className="ml-2 text-xs text-text-muted">Loading...</span>}
-                <button
-                    type="button"
-                    onClick={openUploadModal}
-                    className="module-action-btn"
-                    title="Upload or create a new preset"
-                >
-                    + Add
-                </button>
-                {value && (
+                <Tooltip content="Upload or create a new preset">
                     <button
                         type="button"
-                        onClick={requestDelete}
-                        className="module-action-btn-danger"
-                        title="Delete selected preset"
+                        onClick={openUploadModal}
+                        className="module-action-btn"
                     >
-                        Delete
+                        + Add
                     </button>
+                </Tooltip>
+                {value && (
+                    <Tooltip content="Delete selected preset">
+                        <button
+                            type="button"
+                            onClick={requestDelete}
+                            className="module-action-btn-danger"
+                        >
+                            Delete
+                        </button>
+                    </Tooltip>
                 )}
             </div>
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getInstanceWebURLs, cancelIntegrationInstanceOperation } from '../../services/management/integrationsService.js';
 import { openSystemUrl } from '../../services/management/systemService.js';
 import RenameInstanceModal from './RenameInstanceModal.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
+import { rowToggleHandler } from '../../utils/rowToggle.js';
 
 const InstanceCard = ({ integrationName, instanceName, instance, onControl, onConfigure, onConfigFiles, onRename, currentOperation }) => {
     const [webURLs, setWebURLs] = useState([]);
@@ -151,7 +153,12 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
             <div className="instance-row-tint" />
 
             {/* ── Main instance row ─────────────────────────────────────── */}
-            <div className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 flex-wrap">
+            {/* Clicking the row (outside its controls) toggles the container
+                details, so the small chevron is no longer the only target. */}
+            <div
+                className="relative flex items-center gap-2.5 pl-14 pr-4 py-2.5 flex-wrap cursor-pointer"
+                onClick={rowToggleHandler(() => setShowContainers((v) => !v))}
+            >
 
                 {/* [1] Status dot */}
                 <span className={`flex-shrink-0 w-2 h-2 rounded-full ${getStatusDotClass(instance.status)}`} />
@@ -303,14 +310,15 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         Config Files
                     </button>
 
-                    <button
-                        onClick={() => setShowRenameModal(true)}
-                        disabled={!!currentOperation || hasActiveContainers()}
-                        className="instance-action-btn"
-                        title={hasActiveContainers() ? 'Cannot rename while Docker containers exist' : 'Rename instance'}
-                    >
-                        Rename
-                    </button>
+                    <Tooltip content={hasActiveContainers() ? 'Cannot rename while Docker containers exist' : 'Rename instance'}>
+                        <button
+                            onClick={() => setShowRenameModal(true)}
+                            disabled={!!currentOperation || hasActiveContainers()}
+                            className="instance-action-btn"
+                        >
+                            Rename
+                        </button>
+                    </Tooltip>
 
                     {isRunning && webURLs && webURLs.map((url, i) => (
                         <button
@@ -324,38 +332,40 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
 
                     {/* Logs icon button — opens operation log modal */}
                     {currentOperation && (
-                        <button
-                            onClick={() => setShowLogsModal(true)}
-                            className="instance-action-btn-icon"
-                            title="View operation logs"
-                        >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </button>
+                        <Tooltip content="View operation logs">
+                            <button
+                                onClick={() => setShowLogsModal(true)}
+                                className="instance-action-btn-icon"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0121 9.414V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </button>
+                        </Tooltip>
                     )}
 
                     {/* Container details toggle */}
                     {instance.containers && instance.containers.length > 0 && (
-                        <button
-                            onClick={() => setShowContainers(!showContainers)}
-                            className="instance-action-btn-icon"
-                            title={showContainers ? 'Hide containers' : 'Show container details'}
-                        >
-                            <svg
-                                className="w-3.5 h-3.5"
-                                style={{
-                                    transform: showContainers ? 'rotate(90deg)' : 'rotate(0deg)',
-                                    transition: 'transform 0.2s ease',
-                                }}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                        <Tooltip content={showContainers ? 'Hide containers' : 'Show container details'}>
+                            <button
+                                onClick={() => setShowContainers(!showContainers)}
+                                className="instance-action-btn-icon"
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
+                                <svg
+                                    className="w-3.5 h-3.5"
+                                    style={{
+                                        transform: showContainers ? 'rotate(90deg)' : 'rotate(0deg)',
+                                        transition: 'transform 0.2s ease',
+                                    }}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </Tooltip>
                     )}
 
                 </div>
@@ -530,9 +540,11 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                                             className="flex items-center justify-between text-xs mb-1"
                                             style={{ color: 'var(--color-text-muted)' }}
                                         >
-                                            <span className="truncate max-w-52" title={imageName}>
-                                                {imageName.split(':')[0]}
-                                            </span>
+                                            <Tooltip content={imageName}>
+                                                <span className="truncate max-w-52">
+                                                    {imageName.split(':')[0]}
+                                                </span>
+                                            </Tooltip>
                                             <div className="flex items-center gap-2 flex-shrink-0">
                                                 <span
                                                     className="px-1.5 py-0.5 rounded text-xs text-white"
@@ -565,9 +577,11 @@ const InstanceCard = ({ integrationName, instanceName, instance, onControl, onCo
                         >
                             {currentOperation.output && currentOperation.output.length > 0 ? (
                                 currentOperation.output.map((line, i) => (
-                                    <div key={i} className="truncate opacity-80" title={line}>
-                                        {formatProgressLine(line)}
-                                    </div>
+                                    <Tooltip key={i} content={line}>
+                                        <div className="truncate opacity-80">
+                                            {formatProgressLine(line)}
+                                        </div>
+                                    </Tooltip>
                                 ))
                             ) : (
                                 <span className="italic" style={{ color: 'var(--color-text-muted)' }}>

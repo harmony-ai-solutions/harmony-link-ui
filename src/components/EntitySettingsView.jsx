@@ -5,6 +5,7 @@ import useModuleConfigStore from '../store/moduleConfigStore';
 import useCharacterProfileStore from '../store/characterProfileStore';
 import ThemedSelect from './widgets/ThemedSelect';
 import CharacterProfilePreview from './widgets/CharacterProfilePreview';
+import CharacterImage from './common/CharacterImage.jsx';
 import RAGCollectionManager from './modules/RAGCollectionManager';
 import { supportsCharacterProfile } from '../constants/backendProviders';
 import { updateEntity, resetEntityLifecycleConfig, duplicateEntity } from '../services/management/entityService';
@@ -18,7 +19,9 @@ import InputDialog from "./modals/InputDialog.jsx";
 import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import useDockerStatus from '../hooks/useDockerStatus';
+import Tooltip from './ui/Tooltip.jsx';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
+import { toast } from '../store/toastStore.js';
 
 
 export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
@@ -94,7 +97,8 @@ const EntitySettingsView = ({ appName }) => {
     const [selectedCharacterProfileId, setSelectedCharacterProfileId] = useState('');
     const [showRAGCollections, setShowRAGCollections] = useState(false);
     const [error, setError] = useState(null);
-    const [successMessage, setSuccessMessage] = useState(null);
+    // Success feedback lives in the global toast queue (store/toastStore.js) —
+    // only the inline error banner remains, since it needs to stay on screen.
     const [isSaving, setIsSaving] = useState(false);
     const [tooltipVisible, setTooltipVisible] = useState(0);
 
@@ -283,15 +287,15 @@ const EntitySettingsView = ({ appName }) => {
         });
     }, [aiEntities, characterImages, loadCharacterImages]);
 
-    // Primary image (base64 data_url) for an entity's linked card, or null
-    // when the entity has no profile / no images — the caller renders the
-    // letter-bubble fallback.
-    const getEntityAvatarUrl = (entity) => {
+    // Primary image for an entity's linked card, or null when the entity has no
+    // profile / no images — the caller renders the letter-bubble fallback.
+    // Metadata-only since 1.8.0: the image object carries `id` (bytes are
+    // loaded as an object URL by <CharacterImage>), never `data_url`.
+    const getEntityAvatarImage = (entity) => {
         const profileId = entity?.character_profile?.id;
         if (!profileId) return null;
         const images = characterImages[profileId] || [];
-        const primary = images.find(img => img.is_primary) || images[0];
-        return primary?.data_url || null;
+        return images.find(img => img.is_primary) || images[0] || null;
     };
 
     const handleCopyEntityId = async () => {
@@ -338,8 +342,7 @@ const EntitySettingsView = ({ appName }) => {
             await updateEntityMappings(selectedEntityId, mappings);
             await loadEntities();
 
-            setSuccessMessage(tes('messages.saveSuccess'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.saveSuccess'));
         } catch (error) {
             setError(tes('messages.saveFailed', { message: error.message }));
         } finally {
@@ -391,8 +394,7 @@ const EntitySettingsView = ({ appName }) => {
                     setEntityLifecycleConfig(null);
                 }
             }
-            setSuccessMessage(tes('messages.lifecycleReset'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.lifecycleReset'));
         } catch (error) {
             setError(tes('messages.lifecycleResetFailed', { message: error.message }));
         }
@@ -403,8 +405,7 @@ const EntitySettingsView = ({ appName }) => {
         try {
             await updateEntity(selectedEntityId, null, JSON.stringify(entityLifecycleConfig));
             await loadEntities();
-            setSuccessMessage(tes('messages.lifecycleSaved'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.lifecycleSaved'));
         } catch (error) {
             setError(tes('messages.lifecycleSaveFailed', { message: error.message }));
         }
@@ -435,8 +436,7 @@ const EntitySettingsView = ({ appName }) => {
 
                 try {
                     await createEntity(trimmedName, null, { dedupeIdIfTaken: true });
-                    setSuccessMessage(tes('messages.createSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.createSuccess'));
                 } catch (error) {
                     setErrorDialog({
                         isOpen: true,
@@ -458,8 +458,7 @@ const EntitySettingsView = ({ appName }) => {
             onConfirm: async () => {
                 try {
                     await deleteEntity(selectedEntityId);
-                    setSuccessMessage(tes('messages.deleteSuccess'));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.deleteSuccess'));
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
@@ -492,8 +491,7 @@ const EntitySettingsView = ({ appName }) => {
             const copy = await duplicateEntity(selectedEntityId);
             await loadEntities();
             selectEntity(copy.id);
-            setSuccessMessage(tes('messages.copySuccess'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes('messages.copySuccess'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -525,8 +523,7 @@ const EntitySettingsView = ({ appName }) => {
                     setIsStoppingSessions(true);
                     const result = await stopSessions(selectedEntityId);
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
-                    setSuccessMessage(tes('messages.stopSessionsSuccess', { count: result?.stopped ?? 0 }));
-                    setTimeout(() => setSuccessMessage(null), 3000);
+                    toast.success(tes('messages.stopSessionsSuccess', { count: result?.stopped ?? 0 }));
                 } catch (error) {
                     setConfirmDialog({ ...confirmDialog, isOpen: false });
                     setErrorDialog({
@@ -553,8 +550,7 @@ const EntitySettingsView = ({ appName }) => {
         const nextDisabled = !selectedIsDisabled;
         try {
             await setEntityDisabled(selectedEntityId, nextDisabled);
-            setSuccessMessage(tes(nextDisabled ? 'messages.entityDisabled' : 'messages.entityEnabled'));
-            setTimeout(() => setSuccessMessage(null), 3000);
+            toast.success(tes(nextDisabled ? 'messages.entityDisabled' : 'messages.entityEnabled'));
         } catch (error) {
             setErrorDialog({
                 isOpen: true,
@@ -620,7 +616,7 @@ const EntitySettingsView = ({ appName }) => {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+                <div className="bg-background-surface px-6 py-4">
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(tes('header.title'))}
                     </h1>
@@ -636,10 +632,11 @@ const EntitySettingsView = ({ appName }) => {
                             Copy + Delete share the second (no empty grid cell). */}
                         <div className="grid grid-cols-2 gap-2">
                             <button data-tutorial-id="entity-add-btn" onClick={handleAdd} className="btn-secondary text-sm py-1.5 px-3 col-span-2">{tes('buttons.add')}</button>
-                            <button onClick={handleCopy}
-                                disabled={!selectedEntityId || isPersonaSelected}
-                                title={isPersonaSelected ? tes('buttons.copyPersonaHint') : ''}
-                                className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.copy')}</button>
+                            <Tooltip content={isPersonaSelected ? tes('buttons.copyPersonaHint') : ''}>
+                                <button onClick={handleCopy}
+                                    disabled={!selectedEntityId || isPersonaSelected}
+                                    className="btn-secondary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed">{tes('buttons.copy')}</button>
+                            </Tooltip>
                             <button onClick={handleDelete} disabled={!selectedEntityId} className="btn-danger text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed font-bold">{tes('buttons.delete')}</button>
                         </div>
 
@@ -680,43 +677,49 @@ const EntitySettingsView = ({ appName }) => {
                                     // the Identity Settings ID row). The green
                                     // bubble marks entities with live sessions.
                                     const displayName = entity.alias || entity.id;
-                                    const avatarUrl = getEntityAvatarUrl(entity);
+                                    const avatarImage = getEntityAvatarImage(entity);
                                     const sessionCount = countActiveSessions(sessionsByEntity, entity.id);
                                     return (
-                                        <button key={entity.id} type="button" onClick={() => selectEntity(entity.id)}
-                                            title={displayName}
-                                            className={`entity-row w-full text-left ${isSelected ? 'entity-row-selected' : ''}`}>
-                                            <div className="entity-row-inner px-2.5 py-2 flex items-center gap-3">
-                                                <div className="relative shrink-0">
-                                                    <div className="entity-avatar-ring">
-                                                        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'var(--color-background-elevated)' }}>
-                                                            {avatarUrl ? (
-                                                                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <div className="entity-avatar-fallback w-full h-full flex items-center justify-center">
-                                                                    <span className="text-sm font-extrabold text-white select-none">
-                                                                        {getEntityAvatarLetter(displayName) || (
-                                                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                                                            </svg>
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                            )}
+                                        <Tooltip key={entity.id} content={displayName}>
+                                            <button type="button" onClick={() => selectEntity(entity.id)}
+                                                className={`entity-row w-full text-left ${isSelected ? 'entity-row-selected' : ''}`}>
+                                                <div className="entity-row-inner px-2.5 py-2 flex items-center gap-3">
+                                                    <div className="relative shrink-0">
+                                                        <div className="entity-avatar-ring">
+                                                            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center" style={{ background: 'var(--color-background-elevated)' }}>
+                                                                <CharacterImage
+                                                                    profileId={entity?.character_profile?.id}
+                                                                    imageId={avatarImage?.id}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    fallback={(
+                                                                        <div className="entity-avatar-fallback w-full h-full flex items-center justify-center">
+                                                                            <span className="text-sm font-extrabold text-white select-none">
+                                                                                {getEntityAvatarLetter(displayName) || (
+                                                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                                                                    </svg>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                />
+                                                            </div>
                                                         </div>
+                                                        {sessionCount > 0 && (
+                                                            <Tooltip content={tes('entityList.activeSessionsBadge', { count: sessionCount })}>
+                                                                <span aria-label={tes('entityList.activeSessionsBadge', { count: sessionCount })}
+                                                                    className="entity-presence-dot absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5" />
+                                                            </Tooltip>
+                                                        )}
                                                     </div>
-                                                    {sessionCount > 0 && (
-                                                        <span aria-label={tes('entityList.activeSessionsBadge', { count: sessionCount })}
-                                                            title={tes('entityList.activeSessionsBadge', { count: sessionCount })}
-                                                            className="entity-presence-dot absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5" />
-                                                    )}
+                                                    <span className="truncate min-w-0 font-medium"
+                                                        style={{ color: isSelected ? 'var(--color-accent-primary)' : 'var(--color-text-primary)' }}>
+                                                        {displayName}
+                                                    </span>
                                                 </div>
-                                                <span className="truncate min-w-0 font-medium"
-                                                    style={{ color: isSelected ? 'var(--color-accent-primary)' : 'var(--color-text-primary)' }}>
-                                                    {displayName}
-                                                </span>
-                                            </div>
-                                        </button>
+                                            </button>
+                                        </Tooltip>
                                     );
                                 })}
                                 {visibleEntities.length === 0 && presenceFilter === 'active' && aiEntities.length > 0 && (
@@ -762,12 +765,6 @@ const EntitySettingsView = ({ appName }) => {
                                         {error}
                                     </div>
                                 )}
-                                {successMessage && (
-                                    <div className="p-3 rounded text-sm"
-                                        style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
-                                        {successMessage}
-                                    </div>
-                                )}
 
                                 <section className="space-y-4">
                                     <h3 data-tutorial-id="entity-identity-section" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6">
@@ -779,21 +776,23 @@ const EntitySettingsView = ({ appName }) => {
                                         {/* Session/runtime controls — right upper side:
                                             force-disconnect + enable/disable toggle. */}
                                         <div className="ml-auto flex items-center gap-2">
-                                            <button type="button" onClick={handleToggleDisabled}
-                                                disabled={isPersonaSelected}
-                                                title={selectedIsDisabled ? tes('buttons.enableHint') : tes('buttons.disableHint')}
-                                                className={`btn-secondary text-sm py-1.5 px-3 ${isPersonaSelected ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                {selectedIsDisabled ? tes('buttons.enable') : tes('buttons.disable')}
-                                            </button>
-                                            <button type="button" onClick={handleStopSessions}
-                                                disabled={!selectedHasSessions || isStoppingSessions}
-                                                title={tes('buttons.stopSessionsHint')}
-                                                className={`btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 ${!selectedHasSessions || isStoppingSessions ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <rect x="5" y="5" width="10" height="10" rx="1.5" />
-                                                </svg>
-                                                {isStoppingSessions ? tes('buttons.stoppingSessions') : tes('buttons.stopSessions')}
-                                            </button>
+                                            <Tooltip content={selectedIsDisabled ? tes('buttons.enableHint') : tes('buttons.disableHint')}>
+                                                <button type="button" onClick={handleToggleDisabled}
+                                                    disabled={isPersonaSelected}
+                                                    className={`btn-secondary text-sm py-1.5 px-3 ${isPersonaSelected ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    {selectedIsDisabled ? tes('buttons.enable') : tes('buttons.disable')}
+                                                </button>
+                                            </Tooltip>
+                                            <Tooltip content={tes('buttons.stopSessionsHint')}>
+                                                <button type="button" onClick={handleStopSessions}
+                                                    disabled={!selectedHasSessions || isStoppingSessions}
+                                                    className={`btn-secondary text-sm py-1.5 px-3 flex items-center gap-1.5 ${!selectedHasSessions || isStoppingSessions ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <rect x="5" y="5" width="10" height="10" rx="1.5" />
+                                                    </svg>
+                                                    {isStoppingSessions ? tes('buttons.stoppingSessions') : tes('buttons.stopSessions')}
+                                                </button>
+                                            </Tooltip>
                                         </div>
                                     </h3>
 
@@ -819,23 +818,25 @@ const EntitySettingsView = ({ appName }) => {
                                             {tes('fields.entityId.label')}
                                         </label>
                                         <div className="w-4/5 px-3 flex items-center gap-2">
-                                            <input type="text" readOnly value={selectedEntityId || ''}
-                                                onFocus={(e) => e.target.select()}
-                                                title={selectedEntityId || ''}
-                                                className="input-field w-full p-2 rounded text-sm font-mono text-text-muted cursor-default min-w-0" />
-                                            <button type="button" onClick={handleCopyEntityId}
-                                                title={tes(entityIdCopied ? 'fields.entityId.copied' : 'fields.entityId.copy')}
-                                                className="btn-secondary shrink-0 p-2 flex items-center justify-center">
-                                                {entityIdCopied ? (
-                                                    <svg className="w-4 h-4" style={{ color: 'var(--color-success)' }} fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m-6 0h6a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
-                                                    </svg>
-                                                )}
-                                            </button>
+                                            <Tooltip content={selectedEntityId || ''}>
+                                                <input type="text" readOnly value={selectedEntityId || ''}
+                                                    onFocus={(e) => e.target.select()}
+                                                    className="input-field w-full p-2 rounded text-sm font-mono text-text-muted cursor-default min-w-0" />
+                                            </Tooltip>
+                                            <Tooltip content={tes(entityIdCopied ? 'fields.entityId.copied' : 'fields.entityId.copy')}>
+                                                <button type="button" onClick={handleCopyEntityId}
+                                                    className="btn-secondary shrink-0 p-2 flex items-center justify-center">
+                                                    {entityIdCopied ? (
+                                                        <svg className="w-4 h-4" style={{ color: 'var(--color-success)' }} fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m-6 0h6a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            </Tooltip>
                                         </div>
                                     </div>
 
@@ -975,10 +976,11 @@ const EntitySettingsView = ({ appName }) => {
 
                                     {selectedCharacterProfileId && (
                                         <div className="flex items-center gap-3 mb-4">
-                                            <button onClick={handleResetToCharacterDefaults} className="btn-secondary text-sm py-1.5 px-3"
-                                                title={tes('buttons.resetToCharacterDefaults')}>
-                                                {tes('buttons.resetToCharacterDefaults')}
-                                            </button>
+                                            <Tooltip content={tes('buttons.resetToCharacterDefaults')}>
+                                                <button onClick={handleResetToCharacterDefaults} className="btn-secondary text-sm py-1.5 px-3">
+                                                    {tes('buttons.resetToCharacterDefaults')}
+                                                </button>
+                                            </Tooltip>
                                             <p className="text-xs text-text-muted italic">{tes('buttons.resetToCharacterDefaultsHint')}</p>
                                         </div>
                                     )}

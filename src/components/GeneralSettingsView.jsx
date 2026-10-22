@@ -7,19 +7,23 @@ import { useI18nContext } from '../contexts/I18nContext.jsx';
 import { listThemes } from '../services/management/themeService';
 import { getConfig, updateConfig } from '../services/management/configService';
 import { openSystemUrl } from '../services/management/systemService';
+import { listBackupTargets, getBackupDataVersion, createBackupArtifact, restoreBackupArtifact, probeBackupTarget, getBackupSyncGroupFingerprint } from '../services/management/backupService';
 import ConfirmDialog from './modals/ConfirmDialog.jsx';
+import { toast } from '../store/toastStore.js';
 import ErrorDialog from './modals/ErrorDialog.jsx';
 import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
+import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
+import BackupConflictModal from './modals/BackupConflictModal.jsx';
+import CloudAccountCard from './settings/CloudAccountCard.jsx';
+import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
+import useCloudAccount from '../hooks/useCloudAccount.js';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
+import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
+import Tooltip from './ui/Tooltip.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
-
-const FONT_SCALE_OPTIONS = [
-    { value: 'compact', labelKey: 'generalSettings:fields.fontScale.options.compact' },
-    { value: 'default', labelKey: 'generalSettings:fields.fontScale.options.default' },
-    { value: 'large', labelKey: 'generalSettings:fields.fontScale.options.large' },
-];
+import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale, DEFAULT_FONT_SCALE } from '../utils/fontScale.js';
 
 const NUMBER_FORMAT_OPTIONS = [
     { value: 'en', labelKey: 'generalSettings:fields.numberFormat.options.en' },
@@ -34,6 +38,24 @@ const AUTO_UPDATE_OPTIONS = [
 ];
 
 const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
+
+// General Settings is split into sub-tabs so the page is scannable instead of
+// one long scroll. Purely presentational — every section's state still lives in
+// this component, so Save/Reset keep covering all sub-tabs at once.
+const SUB_TABS = [
+    { id: 'general', labelKey: 'generalSettings:tabs.general' },
+    { id: 'appearance', labelKey: 'generalSettings:tabs.appearance' },
+    { id: 'notifications', labelKey: 'generalSettings:tabs.notifications' },
+    { id: 'dataSupport', labelKey: 'generalSettings:tabs.dataSupport' },
+];
+
+// Small inline spinner for the backup action buttons + running status line.
+const BackupSpinner = ({ className = 'w-3.5 h-3.5' }) => (
+    <span className={`block rounded-full border-2 border-current border-t-transparent animate-spin ${className}`} />
+);
+
+// localStorage key for the persisted backup UI config (never the WebDAV password).
+const BACKUP_CONFIG_STORAGE_KEY = 'soulbitsBackupTarget';
 
 const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const { t } = useTranslation();
@@ -61,10 +83,22 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const bgAuraStyle = useDynamicBackgroundStore((s) => s.auraStyle);
     const setBgAuraStyle = useDynamicBackgroundStore((s) => s.setAuraStyle);
 
+    // UI mode — progressive disclosure (simple / pro / dev). The store is the
+    // single source of truth for the navigation filter; here we also expose the
+    // switch and persist the choice into config.general.uimode.
+    const uiMode = useUIModeStore((s) => s.mode);
+    const setStoreMode = useUIModeStore((s) => s.setMode);
+    const [modeConfirmVisible, setModeConfirmVisible] = useState(false);
+    const [pendingMode, setPendingMode] = useState(null);
+
+    // Active General Settings sub-tab (see SUB_TABS). Defaults to General.
+    const [activeSection, setActiveSection] = useState('general');
+
     // Device Management modal state
     const [showDeviceManagementModal, setShowDeviceManagementModal] = useState(false);
 
-    // Success/error feedback for export/import
+    // Failure feedback for export/import. Successes go to the global toast
+    // queue; only failures stay inline so the user can still read them.
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [feedbackType, setFeedbackType] = useState(''); // 'success' or 'error'
 
@@ -103,7 +137,18 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const [wssPort, setWssPort] = useState(28443);
 
     // Fields — new UI
-    const [fontScale, setFontScale] = useState("default");
+    // Font scale is a locally-persisted preference (localStorage) applied
+    // globally at boot. Resolve the initial value from the stored choice first,
+    // then the saved config, so the very first render already holds the right
+    // value. Previously the state started as "default", and the apply effect
+    // below ran with that default on mount — flashing the font back to default
+    // AND overwriting the stored preference before it could be read.
+    const [fontScale, setFontScale] = useState(() => {
+        const stored = getStoredFontScale();
+        if (stored) return stored;
+        if (isKnownFontScale(generalSettings.fontscale)) return generalSettings.fontscale;
+        return DEFAULT_FONT_SCALE;
+    });
     const [appLanguage, setAppLanguage] = useState("en");
     const [numberFormat, setNumberFormat] = useState("en");
     // dynamicBackground is now read from Zustand store (see line ~52)
@@ -168,6 +213,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     };
 
     const setInitialValues = () => {
+        setStoreMode(generalSettings.uimode);
         setWorkingDir(generalSettings.workingdir);
         setDataDir(generalSettings.datadir);
         setDatabaseFileName(generalSettings.databasefilename);
@@ -177,8 +223,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         setClientConnectionBuffer(generalSettings.clientconnectionbuffer);
         setSinglePort(generalSettings.singleport || false);
         setWssPort(generalSettings.wssport || 28443);
-        // New fields
-        setFontScale(generalSettings.fontscale || "default");
+        // New fields — prefer the locally-persisted scale so re-entering the
+        // view (or clicking Reset) doesn't undo a choice the user already applied.
+        setFontScale(getStoredFontScale() || (isKnownFontScale(generalSettings.fontscale) ? generalSettings.fontscale : DEFAULT_FONT_SCALE));
         setAppLanguage(generalSettings.applanguage || "en");
         setNumberFormat(generalSettings.numberformat || "en");
         // dynamicBackground + variant are managed via Zustand store — skip resetting
@@ -229,6 +276,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         generalSettings.notifytaskcompletion = notifyTaskCompletion;
         generalSettings.soundeffects = soundEffects;
         generalSettings.soundvolume = soundVolume;
+        generalSettings.uimode = uiMode;
         // Configure Modal Dialog whether a backup should be made
         setConfirmModalYes(() => saveSettingsWithBackup);
         setConfirmModalNo(() => saveSettingsWithoutBackup);
@@ -239,6 +287,25 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const handleAppLanguageChange = (lang) => {
         setAppLanguage(lang);
         changeLanguage(lang);
+    };
+
+    // Apply a UI mode: update the store (instant menu change) and stage the
+    // value on generalSettings so the next Save persists it.
+    const applyMode = (mode) => {
+        setStoreMode(mode);
+        generalSettings.uimode = mode;
+    };
+
+    // Selecting a mode: downgrades are safe and instant; upgrades confirm
+    // because additional screens become visible in the navigation.
+    const handleModeSelect = (mode) => {
+        if (mode === uiMode) return;
+        if (mode === 'simple') {
+            applyMode(mode);
+            return;
+        }
+        setPendingMode(mode);
+        setModeConfirmVisible(true);
     };
 
     // Export settings to JSON file
@@ -255,7 +322,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showFeedback(t('common:notifications.exportSuccess'), 'success');
+            toast.success(t('common:notifications.exportSuccess'));
         } catch (err) {
             LogPrint('Export failed: ' + err.message);
             showFeedback(t('common:notifications.exportFailed', { message: err.message }), 'error');
@@ -288,7 +355,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
             setConfirmModalYes(() => async () => {
                 await updateConfig({ ...importedConfig, general: mergedGeneral }, true);
-                showFeedback(t('common:notifications.importSuccess'), 'success');
+                toast.success(t('common:notifications.importSuccess'));
                 // Refresh from server
                 setTimeout(async () => {
                     try {
@@ -319,6 +386,214 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         }
     };
 
+    // ── Backup & Restore (plan 2-6) ────────────────────────────────────────
+    // Minimal hook driving the engine's user-owned-storage backup routes. The
+    // engine produces + uploads the encrypted artifact; this UI only configures
+    // the target and triggers the run.
+    const [backupTargets, setBackupTargets] = useState([]);
+    const [backupTargetType, setBackupTargetType] = useState('local-folder');
+    const [backupDestDir, setBackupDestDir] = useState('');
+    const [backupBaseUrl, setBackupBaseUrl] = useState('');
+    const [backupUsername, setBackupUsername] = useState('');
+    const [backupPassword, setBackupPassword] = useState('');
+    const [backupRecoveryCode, setBackupRecoveryCode] = useState('');
+    const [backupDataVersion, setBackupDataVersion] = useState('');
+    // Which backup action is in flight (null = idle). Drives the per-button
+    // spinner/label swap and the ticking elapsed-time status line.
+    const [backupBusyMode, setBackupBusyMode] = useState(null);
+    const [backupElapsed, setBackupElapsed] = useState(0);
+    const backupBusy = backupBusyMode !== null;
+    const backupStartedAtRef = useRef(0);
+    const [backupStatus, setBackupStatus] = useState('');
+    const [backupBrowseOpen, setBackupBrowseOpen] = useState(false);
+    const [backupConfigHydrated, setBackupConfigHydrated] = useState(false);
+    // Held-push conflict (owner ruling 2026-10-17): when the cloud backup was
+    // written by another device with different data, the engine HOLDS the push
+    // and returns the remote metadata; the modal lets the user decide.
+    const [backupConflict, setBackupConflict] = useState(null);
+    const [localSyncFingerprint, setLocalSyncFingerprint] = useState('');
+
+    // Soulbits Cloud identity — lets the soulbits-cloud target surface sign-in
+    // state and gate its buttons. No polling here; the CloudAccountCard on this
+    // same screen owns the live polling surface.
+    const { account: cloudAccount } = useCloudAccount({ poll: false });
+
+    useEffect(() => {
+        listBackupTargets().then(setBackupTargets).catch(err => {
+            LogPrint('Failed to load backup targets: ' + err.message);
+        });
+        getBackupDataVersion().then(setBackupDataVersion).catch(err => {
+            LogPrint('Failed to load backup data version: ' + err.message);
+        });
+        getBackupSyncGroupFingerprint().then(setLocalSyncFingerprint).catch(err => {
+            LogPrint('Failed to load sync-group fingerprint: ' + err.message);
+        });
+    }, []);
+
+    // Hydrate the persisted backup UI config on mount. The WebDAV password is
+    // deliberately never persisted — it lives in component state only.
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(BACKUP_CONFIG_STORAGE_KEY);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    if (typeof saved.targetType === 'string' && saved.targetType) setBackupTargetType(saved.targetType);
+                    if (typeof saved.destDir === 'string') setBackupDestDir(saved.destDir);
+                    if (typeof saved.webdavBaseUrl === 'string') setBackupBaseUrl(saved.webdavBaseUrl);
+                    if (typeof saved.webdavUsername === 'string') setBackupUsername(saved.webdavUsername);
+                }
+            }
+        } catch (err) {
+            LogPrint('Failed to restore backup config: ' + err.message);
+        } finally {
+            setBackupConfigHydrated(true);
+        }
+    }, []);
+
+    // Persist the backup UI config on change (after hydration completes).
+    useEffect(() => {
+        if (!backupConfigHydrated) return;
+        try {
+            localStorage.setItem(BACKUP_CONFIG_STORAGE_KEY, JSON.stringify({
+                targetType: backupTargetType,
+                destDir: backupDestDir,
+                webdavBaseUrl: backupBaseUrl,
+                webdavUsername: backupUsername,
+            }));
+        } catch (err) {
+            LogPrint('Failed to persist backup config: ' + err.message);
+        }
+    }, [backupConfigHydrated, backupTargetType, backupDestDir, backupBaseUrl, backupUsername]);
+
+    // Tick a 1s elapsed counter while any backup action is running; resets on
+    // each new action and cleans up when it finishes or the view unmounts.
+    useEffect(() => {
+        if (!backupBusyMode) return undefined;
+        setBackupElapsed(0);
+        const id = setInterval(() => { setBackupElapsed((n) => n + 1); }, 1000);
+        return () => clearInterval(id);
+    }, [backupBusyMode]);
+
+    // Elapsed whole seconds since the current action started (for result copy).
+    const backupElapsedSeconds = () => Math.max(0, Math.round((Date.now() - backupStartedAtRef.current) / 1000));
+
+    // Append "(Ns)" to a result line where it's cheap to show how long it took.
+    function withBackupDuration(text, seconds) {
+        return tgs('backup.tookSeconds', { text, seconds });
+    }
+
+    // Build the target descriptor the engine routes accept. For soulbits-cloud
+    // the engine self-fills the service URL + PASETO from the desktop's signed-in
+    // cloud session, so we send the bare type (no destDir/credentials).
+    const buildBackupTarget = () => {
+        if (backupTargetType === 'soulbits-cloud') {
+            return { type: 'soulbits-cloud' };
+        }
+        if (backupTargetType === 'webdav') {
+            return { type: 'webdav', baseUrl: backupBaseUrl, username: backupUsername, password: backupPassword };
+        }
+        return { type: 'local-folder', destDir: backupDestDir };
+    };
+
+    // A local-folder target with no folder makes the engine write into its own
+    // process working directory; block that, and block soulbits-cloud when the
+    // desktop is not signed in (the engine's 400 is the backstop).
+    const localFolderMissing = backupTargetType === 'local-folder' && !backupDestDir.trim();
+    const cloudSignedIn = cloudAccount?.signed_in === true;
+    const soulbitsCloudSignedOut = backupTargetType === 'soulbits-cloud' && !cloudSignedIn;
+    const backupActionsDisabled = backupBusy || localFolderMissing || soulbitsCloudSignedOut;
+
+    // runBackup drives one backup run. onConflict (hosted soulbits-cloud only)
+    // is undefined/"hold" for a normal run and "overwrite" when the user chose
+    // "Push mine" on the conflict modal.
+    const runBackup = async (onConflict) => {
+        setBackupBusyMode('backup');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const payload = { target: buildBackupTarget(), deviceLabel: tgs('backup.deviceLabel') };
+            if (onConflict) payload.onConflict = onConflict;
+            const res = await createBackupArtifact(payload);
+            const seconds = backupElapsedSeconds();
+            if (res.held) {
+                // Another device wrote the cloud backup with different data — the
+                // engine held the push. Surface the conflict modal; upload nothing.
+                setBackupConflict(res.held);
+                setBackupStatus(tgs('backup.heldStatus', { device: res.held.remoteDeviceLabel || '—' }));
+            } else if (res.skipped) {
+                setBackupStatus(tgs('backup.upToDate'));
+            } else {
+                setBackupStatus(withBackupDuration(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }), seconds));
+                showFeedback(tgs('backup.backupSuccess', {
+                    objects: res.uploadedObjects ?? 0,
+                    bytes: res.totalBytes ?? 0
+                }), 'success');
+            }
+            if (res.dataVersion) setBackupDataVersion(res.dataVersion);
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.backupFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
+    const handleBackupNow = () => runBackup(undefined);
+
+    // Conflict-modal actions (owner ruling 2026-10-17).
+    const handleConflictPushMine = () => {
+        setBackupConflict(null);
+        runBackup('overwrite');
+    };
+    const handleConflictPullTheirs = () => {
+        setBackupConflict(null);
+        handleRestoreBackup();
+    };
+    const handleConflictCancel = () => setBackupConflict(null);
+
+    const handleProbeBackup = async () => {
+        setBackupBusyMode('probe');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const st = await probeBackupTarget(buildBackupTarget());
+            if (st?.available) {
+                setBackupStatus(tgs('backup.probeOk', { detail: st.account || st.detail || tgs('backup.probeDetailOk') }));
+            } else {
+                setBackupStatus(tgs('backup.probeFailed', { message: st?.detail || tgs('backup.probeDetailUnavailable') }));
+            }
+        } catch (err) {
+            setBackupStatus(tgs('backup.probeFailed', { message: err.message }));
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
+    const handleRestoreBackup = async () => {
+        if (!backupRecoveryCode.trim()) {
+            showModal(tgs('backup.recoveryCodeRequired'));
+            return;
+        }
+        setBackupBusyMode('restore');
+        backupStartedAtRef.current = Date.now();
+        setBackupStatus('');
+        try {
+            const res = await restoreBackupArtifact({ target: buildBackupTarget(), recoveryCode: backupRecoveryCode.trim() });
+            const seconds = backupElapsedSeconds();
+            setBackupStatus(withBackupDuration(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), seconds));
+            showFeedback(tgs('backup.restoreSuccess', { rows: res.dbRows ?? 0, dir: res.dataDir || '' }), 'success');
+        } catch (err) {
+            setBackupStatus(err.message);
+            showFeedback(tgs('backup.restoreFailed', { message: err.message }), 'error');
+        } finally {
+            setBackupBusyMode(null);
+        }
+    };
+
     // Split themes
     const officialThemes = useMemo(() => themes.filter(t => OFFICIAL_THEME_IDS.includes(t.id)), [themes]);
     const otherThemes = useMemo(() => themes.filter(t => !OFFICIAL_THEME_IDS.includes(t.id)), [themes]);
@@ -331,26 +606,13 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
         });
     }, []);
 
-    // Apply font scale to document
+    // Apply the font scale to the whole document whenever the choice changes.
+    // The initial value is already resolved from storage/config above, so this
+    // only ever persists a real user choice — it can no longer clobber the
+    // stored preference on mount.
     useEffect(() => {
-        const scaleMap = {
-            compact: '0.85rem',
-            default: '0.9rem',
-            large: '1.0rem',
-        };
-        document.documentElement.style.fontSize = scaleMap[fontScale] || '0.9rem';
-        localStorage.setItem('harmony-font-scale', fontScale);
+        applyFontScale(fontScale);
     }, [fontScale]);
-
-    // Apply font scale on initial mount from stored value
-    useEffect(() => {
-        const stored = localStorage.getItem('harmony-font-scale');
-        if (stored && ['compact', 'default', 'large'].includes(stored)) {
-            setFontScale(stored);
-        } else if (generalSettings.fontscale) {
-            setFontScale(generalSettings.fontscale);
-        }
-    }, []);
 
     // --- Helpers for t() keys using namespace ---
     const tgs = (key, opts) => t(`generalSettings:${key}`, opts);
@@ -365,7 +627,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4 flex items-start justify-between">
+            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold tracking-tight">
                         {colorFirstWord(tgs('header.title'))}
@@ -404,14 +666,77 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                 </div>
             )}
 
-            <div className="flex-1 p-6 space-y-8 max-w-7xl">
+            <div className="flex-1 p-6 pb-24 space-y-8 max-w-7xl">
+                {/* Sub-tab bar — splits the former single long scroll into
+                    scannable groups. Save/Reset (sticky, bottom) still persist
+                    every sub-tab at once. */}
+                <div className="flex flex-wrap gap-6 border-b border-white/5">
+                    {SUB_TABS.map((tab) => {
+                        const active = activeSection === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveSection(tab.id)}
+                                style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                className={`-mb-px px-1 py-2 text-sm transition-all whitespace-nowrap border-b-2 ${
+                                    active
+                                        ? 'font-semibold border-[var(--color-accent-primary)]'
+                                        : 'text-text-muted border-transparent hover:text-text-primary'
+                                }`}
+                            >
+                                {t(tab.labelKey)}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* ── Sub-tab: General ─────────────────────────────────── */}
+                {/* Interface Mode Section — progressive disclosure switch */}
+                {activeSection === 'general' && (
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">{t('uiMode:sectionTitle')}</span>
+                    </h2>
+                    <div className="card p-5" data-tutorial-id="ui-mode-switch">
+                        <p className="text-[11px] text-text-muted mb-4">{t('uiMode:sectionDescription')}</p>
+                        {/* Compact switch — each mode's explanation lives in a
+                            themed tooltip so the row itself stays clean. */}
+                        <div className="flex flex-wrap gap-1">
+                            {UI_MODES.map((m) => {
+                                const active = uiMode === m.id;
+                                return (
+                                    <Tooltip key={m.id} content={t(m.descriptionKey)}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleModeSelect(m.id)}
+                                            style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                            className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
+                                                active
+                                                    ? 'settings-option-chip-active font-bold'
+                                                    : 'text-text-muted hover:text-text-primary'
+                                            }`}
+                                        >
+                                            {t(m.labelKey)}
+                                        </button>
+                                    </Tooltip>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+                )}
+
                 {/* Application & Cloud Section */}
+                {activeSection === 'general' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.appAndCloud')}</span>
                     </h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
-                        {/* Left Column: Input Fields */}
+                        {/* Left Column: Input Fields — filesystem paths are a
+                            power-user concern, hidden in Simple mode. */}
+                        {isModeAllowed(uiMode, 'pro') && (
                         <div className="space-y-4">
                             <div className="flex items-center w-full">
                                 <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
@@ -459,6 +784,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 </div>
                             </div>
                         </div>
+                        )}
 
                         {/* Right Column: Toggles */}
                         <div className="space-y-4">
@@ -490,9 +816,26 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             </div>
                         </div>
                     </div>
-                </section>
 
-                {/* Network & Infrastructure Section */}
+                    {/* Local AI (Docker) — status + one-click start for the
+                        local inference service, plus optional response-style
+                        presets. Lives here rather than in Chat so the chat
+                        screen stays clean. */}
+                    <div className="card p-5 mt-4">
+                        <h3 className="text-sm font-bold text-text-primary mb-3">
+                            {t('chat:localAI.title')}
+                        </h3>
+                        <LocalAISetupCard />
+                    </div>
+                </section>
+                )}
+
+                {/* Soulbits Cloud Account Section (plan 7-15) */}
+                {activeSection === 'general' && <CloudAccountCard />}
+
+                {/* Network & Infrastructure Section — ports and buffer tuning
+                    are hidden in Simple mode. */}
+                {activeSection === 'general' && isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-75">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.network')}</span>
@@ -557,8 +900,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Theme Selector Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.appearance')}</span>
@@ -638,8 +983,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     )}
                 </section>
+                )}
 
                 {/* UI Personalization Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-175">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.uiPersonalization')}</span>
@@ -685,11 +1032,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="card p-4 mt-4">
                         <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgEnabled(!dynamicBackground)}>
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                                 <div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.label')}</h3>
                                     <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.description')}</p>
@@ -704,7 +1049,7 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                 <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
                                     {tgs('fields.dynamicBackground.variantsLabel')}
                                 </p>
-                                <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                <div className="flex flex-wrap gap-1">
                                     {BACKGROUND_VARIANTS.map((v) => {
                                         const active = bgVariant === v.id;
                                         return (
@@ -712,10 +1057,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                 key={v.id}
                                                 type="button"
                                                 onClick={() => setBgVariant(v.id)}
-                                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                                className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
                                                     active
-                                                        ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
-                                                        : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                        ? 'settings-option-chip-active font-bold'
+                                                        : 'text-text-muted hover:text-text-primary'
                                                 }`}
                                             >
                                                 {t(v.labelKey)}
@@ -731,11 +1077,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             <div className="flex items-center justify-between cursor-pointer group" onClick={() => setBgAura(!bgAura)}>
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                            <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                                            </svg>
-                                        </div>
+                                        <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                        </svg>
                                         <div>
                                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.dynamicBackground.auraLabel')}</h3>
                                             <p className="text-[11px] text-text-muted">{tgs('fields.dynamicBackground.auraDescription')}</p>
@@ -747,11 +1091,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
 
                             {/* Aura style picker — horizontal segmented control, text only */}
                             {bgAura && (
-                                <div className="mt-4">
+                                <div className="mt-4 pt-4 border-t border-white/5">
                                     <p className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-3">
                                         {tgs('fields.dynamicBackground.auraStylesLabel')}
                                     </p>
-                                    <div className="flex flex-wrap bg-background-elevated/50 rounded-lg p-1 gap-1">
+                                    <div className="flex flex-wrap gap-1">
                                         {AURA_STYLES.map((s) => {
                                             const active = bgAuraStyle === s.id;
                                             return (
@@ -759,10 +1103,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                                                     key={s.id}
                                                     type="button"
                                                     onClick={() => setBgAuraStyle(s.id)}
-                                                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                                                    style={active ? { color: 'var(--color-accent-primary)' } : undefined}
+                                                    className={`settings-option-chip px-3 py-1.5 rounded-md text-xs whitespace-nowrap ${
                                                         active
-                                                            ? 'bg-accent-primary/25 text-accent-primary shadow-sm ring-1 ring-accent-primary/30'
-                                                            : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+                                                            ? 'settings-option-chip-active font-bold'
+                                                            : 'text-text-muted hover:text-text-primary'
                                                     }`}
                                                 >
                                                     {t(s.labelKey)}
@@ -775,8 +1120,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
-                {/* Updates Section */}
+                {/* Updates Section — auto-update internals are hidden in Simple mode. */}
+                {activeSection === 'general' && isModeAllowed(uiMode, 'pro') && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.updates')}</span>
@@ -797,8 +1144,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Notifications Section */}
+                {activeSection === 'notifications' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-225">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.notifications')}</span>
@@ -806,11 +1155,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                         <div className="card p-4 cursor-pointer group" onClick={() => setDesktopNotifications(!desktopNotifications)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
                                 <Toggle checked={desktopNotifications} onChange={(e) => setDesktopNotifications(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.desktopNotifications.label')}</h3>
@@ -818,11 +1165,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                         <div className="card p-4 cursor-pointer group" onClick={() => setNotificationBadges(!notificationBadges)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
                                 <Toggle checked={notificationBadges} onChange={(e) => setNotificationBadges(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationBadges.label')}</h3>
@@ -830,11 +1175,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                         <div className="card p-4 cursor-pointer group" onClick={() => setNotificationSounds(!notificationSounds)}>
                             <div className="flex items-start justify-between mb-2">
-                                <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
                                 <Toggle checked={notificationSounds} onChange={(e) => setNotificationSounds(e.target.checked)} />
                             </div>
                             <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.notificationSounds.label')}</h3>
@@ -856,11 +1199,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                             ].map(({ key, state, setter, iconD }) => (
                                 <div key={key} className="card p-4 cursor-pointer group" onClick={() => setter(!state)}>
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className="w-9 h-9 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                            <svg className="w-4 h-4 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconD} />
-                                            </svg>
-                                        </div>
+                                        <svg className="w-4 h-4 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconD} />
+                                        </svg>
                                         <Toggle checked={state} onChange={(e) => setter(e.target.checked)} />
                                     </div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs(`fields.${key}.label`)}</h3>
@@ -870,8 +1211,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Sound & Audio Section */}
+                {activeSection === 'appearance' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-250">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.soundAudio')}</span>
@@ -879,11 +1222,9 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     <div className="card p-4 cursor-pointer group mb-4" onClick={() => setSoundEffects(!soundEffects)}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-                                    <svg className="w-5 h-5 text-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                    </svg>
-                                </div>
+                                <svg className="w-5 h-5 text-accent-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                </svg>
                                 <div>
                                     <h3 className="text-sm font-bold text-text-primary group-hover:text-accent-primary transition-colors">{tgs('fields.soundEffects.label')}</h3>
                                     <p className="text-[11px] text-text-muted">{tgs('fields.soundEffects.description')}</p>
@@ -917,8 +1258,10 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Data & Support Section */}
+                {activeSection === 'dataSupport' && (
                 <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
                     <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
                         <span className="text-gradient-primary">{tgs('sections.dataSupport')}</span>
@@ -945,9 +1288,149 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                         </button>
                     </div>
                 </section>
+                )}
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-6">
+                {/* Backup & Restore Section */}
+                {activeSection === 'dataSupport' && (
+                <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-275">
+                    <h2 className="text-lg font-bold text-text-primary pb-2 mb-6 flex items-center gap-3">
+                        <span className="text-gradient-primary">{tgs('sections.backupRestore')}</span>
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-4">
+                        {/* Left Column: Target picker + target fields */}
+                        <div className="space-y-4">
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.targetLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <select className="input-field w-full" value={backupTargetType}
+                                        onChange={(e) => setBackupTargetType(e.target.value)}>
+                                        {backupTargets.filter(bt => bt.v1).map((bt) => (
+                                            <option key={bt.type} value={bt.type}>{bt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            {backupTargetType === 'local-folder' && (
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.destDirLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3 flex items-center gap-2">
+                                            <input type="text" className="input-field flex-1" placeholder={tgs('backup.destDirPlaceholder')}
+                                                value={backupDestDir} onChange={(e) => setBackupDestDir(e.target.value)} />
+                                            <button type="button" onClick={() => setBackupBrowseOpen(true)}
+                                                className="btn-secondary whitespace-nowrap flex-shrink-0">
+                                                {tgs('backup.browse')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {localFolderMissing && (
+                                        <div className="flex w-full">
+                                            <div className="w-1/3" />
+                                            <div className="w-2/3 px-3 text-xs text-yellow-400">{tgs('backup.destDirRequired')}</div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                            {backupTargetType === 'webdav' && (
+                                <>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.baseUrlLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full" placeholder={tgs('backup.baseUrlPlaceholder')}
+                                                value={backupBaseUrl} onChange={(e) => setBackupBaseUrl(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.usernameLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="text" className="input-field w-full"
+                                                value={backupUsername} onChange={(e) => setBackupUsername(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center w-full">
+                                        <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                            {tgs('backup.passwordLabel')}
+                                        </label>
+                                        <div className="w-2/3 px-3">
+                                            <input type="password" className="input-field w-full"
+                                                value={backupPassword} onChange={(e) => setBackupPassword(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {backupTargetType === 'soulbits-cloud' && (
+                                <div className="px-3 text-xs space-y-1">
+                                    {cloudSignedIn ? (
+                                        <>
+                                            <div className="text-text-secondary">
+                                                {tgs('backup.cloudSignedInAs', { account: cloudAccount.email || cloudAccount.account_hint || '—' })}
+                                            </div>
+                                            <div className="text-text-muted">{tgs('backup.cloudQuotaNote')}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-yellow-400">{tgs('backup.cloudSignInFirst')}</div>
+                                    )}
+                                </div>
+                            )}
+                            {backupTargetType !== 'local-folder' && backupTargetType !== 'webdav' && backupTargetType !== 'soulbits-cloud' && (
+                                <div className="px-3 text-xs text-text-muted">{tgs('backup.otherTargetNote')}</div>
+                            )}
+                        </div>
+
+                        {/* Right Column: Actions + recovery code + status */}
+                        <div className="space-y-4">
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleBackupNow} disabled={backupActionsDisabled} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'backup' && <BackupSpinner />}
+                                    {backupBusyMode === 'backup' ? tgs('backup.busyBackup') : tgs('backup.backupNow')}
+                                </button>
+                                <button onClick={handleProbeBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'probe' && <BackupSpinner />}
+                                    {backupBusyMode === 'probe' ? tgs('backup.busyProbe') : tgs('backup.probe')}
+                                </button>
+                            </div>
+                            <div className="flex items-center w-full">
+                                <label className="block text-sm font-medium text-text-secondary w-1/3 px-3">
+                                    {tgs('backup.recoveryCodeLabel')}
+                                </label>
+                                <div className="w-2/3 px-3">
+                                    <input type="text" className="input-field w-full"
+                                        value={backupRecoveryCode} onChange={(e) => setBackupRecoveryCode(e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 px-3">
+                                <button onClick={handleRestoreBackup} disabled={backupActionsDisabled} className="btn-secondary flex items-center gap-2 disabled:opacity-50">
+                                    {backupBusyMode === 'restore' && <BackupSpinner />}
+                                    {backupBusyMode === 'restore' ? tgs('backup.busyRestore') : tgs('backup.restore')}
+                                </button>
+                            </div>
+                            {backupBusyMode && (
+                                <div className="px-3 text-xs text-text-secondary flex items-center gap-2">
+                                    <BackupSpinner className="w-3 h-3" />
+                                    <span>{tgs('backup.running', { seconds: backupElapsed })}</span>
+                                </div>
+                            )}
+                            <div className="px-3 text-xs text-text-muted">
+                                {tgs('backup.dataVersion')}: <span className="text-text-secondary">{backupDataVersion || '—'}</span>
+                            </div>
+                            {backupStatus && (
+                                <div className="px-3 text-xs text-text-secondary">{backupStatus}</div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+                )}
+
+                {/* Action Buttons — scroll with the page at the end of the settings form */}
+                <div className="flex items-center justify-end gap-3 pt-4 pb-3 mt-2 border-t border-white/5">
                     <button onClick={setInitialValues} className="btn-secondary">
                         {tc('buttons.resetChanges')}
                     </button>
@@ -961,7 +1444,30 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
             <ConfirmDialog isOpen={confirmModalVisible} title="Confirmation Required" message={confirmModalMessage}
                 onConfirm={() => { setConfirmModalVisible(false); confirmModalYes(); }}
                 onCancel={() => { setConfirmModalVisible(false); confirmModalNo(); }} />
+            <ConfirmDialog
+                isOpen={modeConfirmVisible}
+                title={t('uiMode:confirm.title', { mode: t(UI_MODES.find((m) => m.id === pendingMode)?.labelKey || 'uiMode:modes.pro.label') })}
+                message={t('uiMode:confirm.message')}
+                confirmText={t('uiMode:confirm.confirmText')}
+                cancelText={t('uiMode:confirm.cancelText')}
+                onConfirm={() => { setModeConfirmVisible(false); applyMode(pendingMode); setPendingMode(null); }}
+                onCancel={() => { setModeConfirmVisible(false); setPendingMode(null); }} />
             <DeviceManagementModal show={showDeviceManagementModal} onClose={() => setShowDeviceManagementModal(false)} />
+            <BackupConflictModal
+                isOpen={!!backupConflict}
+                conflict={backupConflict}
+                localFingerprint={localSyncFingerprint}
+                busy={backupBusy}
+                onPushMine={handleConflictPushMine}
+                onPullTheirs={handleConflictPullTheirs}
+                onCancel={handleConflictCancel}
+            />
+            <DirectoryBrowserModal
+                isOpen={backupBrowseOpen}
+                onClose={() => setBackupBrowseOpen(false)}
+                onPathSelected={(selected) => setBackupDestDir(selected)}
+                initialPath={backupDestDir}
+            />
         </div>
     );
 }

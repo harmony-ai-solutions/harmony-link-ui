@@ -3,24 +3,36 @@
     "brand": "Harmony",
     "brandSub": "Link",
     "tabs": {
+      "chat": "Chat",
       "general": "General",
-      "entities": "AI Entities",
+      "entities": "Entities",
       "modules": "Modules",
-      "characters": "Characters",
-      "personas": "Personas",
+      "characters": "AI Characters",
+      "personas": "You",
       "integrations": "Integrations",
       "simulator": "Simulator",
-      "dev": "Dev"
+      "dev": "Dev",
+      "sync": "Sync"
     },
     "groups": {
-      "identity": "Identity",
-      "system": "System",
-      "tools": "Tools"
+      "characters": "AI Characters",
+      "conversations": "Conversations",
+      "settings": "Settings",
+      "developer": "Developer"
     },
+    "primaryNavigation": "Primary navigation",
+    "collapse": "Collapse",
+    "expand": "Expand",
     "help": "Help / Restart Tutorial",
     "language": "Language",
     "darkMode": "Switch to Dark Mode",
     "lightMode": "Switch to Light Mode"
+  },
+  "splash": {
+    "brand": "SOULBITS",
+    "brandSub": "AI",
+    "tagline": "Ignite Your Imagination",
+    "loading": "Starting up"
   },
   "footer": {
     "copyright": "©2023-2026 Project Harmony.AI"
@@ -72,6 +84,34 @@
     "reloadFailed": "Reload after import failed: {{message}}",
     "bugTrackerFailed": "Failed to open bug tracker URL."
   },
+  "toast": {
+    "notifications": "Notifications",
+    "dismiss": "Dismiss notification",
+    "settingsSaved": "Settings saved",
+    "themeChanged": "Theme changed to {{theme}}",
+    "characterSaved": "Character saved",
+    "characterDeleted": "Character deleted",
+    "characterImported": "Character card imported",
+    "characterExported": "Character card exported",
+    "personaSaved": "Persona saved",
+    "personaDeleted": "Persona deleted",
+    "presetApplied": "Preset applied",
+    "presetUploaded": "Preset uploaded",
+    "presetDeleted": "Preset deleted",
+    "configSaved": "Configuration saved",
+    "configDeleted": "Configuration deleted",
+    "integrationStarted": "{{name}} started",
+    "integrationStopped": "{{name}} stopped",
+    "messageCopied": "Message copied to clipboard",
+    "messageDeleted": "Message deleted",
+    "allIntegrationsStopped": "All integrations stopped",
+    "conversationPinned": "Conversation pinned",
+    "conversationUnpinned": "Conversation unpinned",
+    "conversationArchived": "Conversation archived",
+    "conversationUnarchived": "Conversation unarchived",
+    "conversationMuted": "Conversation muted",
+    "conversationUnmuted": "Conversation unmuted"
+  },
   "deviceApproval": {
     "title": "New Device Connection Request",
     "deviceName": "Device Name",
@@ -90,6 +130,7 @@
     "devices": "Devices",
     "subtitle": "Manage devices that can sync with this Harmony Link instance",
     "loadFailed": "Failed to load devices",
+    "never": "Never",
     "revokeConfirm": "Are you sure you want to revoke access for this device?",
     "revokeFailed": "Failed to revoke device access",
     "loadingDevices": "Loading devices...",
@@ -108,6 +149,121 @@
       "status": "Status",
       "lastSync": "Last Sync",
       "actions": "Actions"
+    }
+  },
+  "sync": {
+    "title": "Sync",
+    "subtitle": "Changeset sync between this desktop and your devices",
+    "refresh": "Refresh",
+    "loading": "Loading sync status...",
+    "loadFailed": "Could not load sync status. Is the engine running?",
+    "authorityThisDevice": "This device leads",
+    "authorityPeer": "Peer leads",
+    "authorityThisDeviceHint": "This desktop holds write authority. Connected devices send their changes here.",
+    "authorityPeerHint": "Another engine currently holds write authority for this dataset.",
+    "epochId": "Epoch",
+    "epochStatus": "Epoch state",
+    "recording": "Recording",
+    "recordingOn": "Recording changes",
+    "recordingOff": "Not recording",
+    "lastSeq": "Last seq",
+    "clientsTitle": "Connected devices",
+    "clientsCount": "{{count}} connected",
+    "noClients": "No devices are connected right now.",
+    "noClientsHint": "When a phone connects and syncs, it will appear here.",
+    "colDevice": "Device",
+    "colType": "Type",
+    "colConnectedSince": "Connected since",
+    "colLastAcked": "Last acked",
+    "seqValue": "seq {{seq}}",
+    "pendingApprovalsTitle": "Device approvals",
+    "pendingApprovalsCount": "{{count}} device(s) awaiting approval",
+    "pendingApprovalsNone": "No pending approval requests",
+    "reviewApprovals": "Review",
+    "clientRoleTitle": "This desktop as a client",
+    "clientPeer": "Peer address",
+    "clientDataset": "Dataset",
+    "clientPendingWrites": "Buffered writes",
+    "clientLastError": "Last error",
+    "epochStates": {
+      "active": "Active",
+      "pending": "Pending",
+      "yielded": "Yielded",
+      "closed": "Closed"
+    },
+    "states": {
+      "idle": "Idle",
+      "pairing": "Pairing",
+      "connecting": "Connecting",
+      "pending_approval": "Awaiting approval",
+      "rejected": "Rejected",
+      "syncing": "Syncing",
+      "promoted": "Promoted (leads)",
+      "backoff": "Reconnecting",
+      "stopped": "Stopped"
+    }
+  },
+  "cloudAccount": {
+    "title": "Soulbits Cloud Account",
+    "description": "Sign this desktop's engine into Soulbits Cloud to pair devices over the relay and authorize enrolled phones.",
+    "status": {
+      "checking": "Checking…",
+      "signedOut": "Signed out",
+      "pending": "Waiting for browser",
+      "expired": "Session expired",
+      "ready": "Ready"
+    },
+    "signIn": "Sign in to Soulbits Cloud",
+    "signInAgain": "Sign in again",
+    "signingIn": "Opening browser…",
+    "signInHint": "Your browser will open to complete sign-in.",
+    "signInFailed": "Cloud sign-in failed: {{message}}",
+    "expiredTitle": "Session expired — sign in again",
+    "expiredBody": "Your Soulbits Cloud session ended on this desktop. Sign in again to restore cloud pairing and backups — no need to sign out first.",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "signOutFailed": "Could not sign out: {{message}}",
+    "refresh": "Refresh",
+    "loadFailed": "Could not load cloud account status.",
+    "notConfigured": "Cloud sign-in is not configured on this engine.",
+    "accountLabel": "Account",
+    "hintLabel": "Account hint",
+    "deviceLabel": "This device",
+    "deviceAuthorized": "Authorized",
+    "devicePending": "Awaiting authorization",
+    "waitingTitle": "Finish signing in in your browser",
+    "waitingBody": "Complete sign-in and click Allow in the browser tab we opened. This page updates automatically."
+  },
+  "pairing": {
+    "title": "Pair a device",
+    "subtitle": "Scan the code with the Soulbits app on your phone",
+    "entryButton": "Pair a device",
+    "tabs": {
+      "lan": "Local network",
+      "cloud": "Soulbits Cloud"
+    },
+    "generating": "Generating pairing code…",
+    "lanFailed": "Could not create a local-network pairing code.",
+    "cloudFailed": "Could not create a cloud pairing code.",
+    "scanHint": "Open Soulbits on your phone and scan this code.",
+    "expired": "Code expired",
+    "regenerate": "New code",
+    "badge": {
+      "verified": "Verified (certificate pinned)",
+      "secure": "Secure",
+      "insecureSsl": "Insecure SSL",
+      "unencrypted": "Unencrypted",
+      "cloudRelay": "Soulbits Cloud relay"
+    },
+    "cloudSignInRequiredTitle": "Sign in to Soulbits Cloud",
+    "cloudSignInHint": "Cloud pairing needs you signed in to Soulbits Cloud. Use the button below to open the sign-in page.",
+    "cloudSignInButton": "Sign in",
+    "deviceWaitTitle": "Finish signing in in your browser",
+    "deviceWaitBody": "Complete sign-in and click Allow in the browser tab we opened. This screen updates automatically.",
+    "pairedToast": {
+      "title": "{{name}} paired",
+      "message": "A device was paired with this desktop.",
+      "fallbackName": "Device"
     }
   }
 }

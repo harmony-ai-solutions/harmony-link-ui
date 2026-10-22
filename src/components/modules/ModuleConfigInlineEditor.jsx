@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import useModuleConfigStore from '../../store/moduleConfigStore';
+import { toast } from '../../store/toastStore.js';
 import { MODULE_CONFIGS, getNestedValue, setNestedValue } from '../../constants/moduleConfiguration.js';
 import { MODULE_DEFAULTS } from '../../constants/moduleDefaults.js';
 import { mergeConfigWithDefaults } from '../../utils/configUtils.js';
@@ -8,6 +10,7 @@ import ModularConfigEditor from './ModularConfigEditor.jsx';
 
 export default function ModuleConfigInlineEditor({ moduleType, mode, config, onSave, onCancel }) {
     const { createConfig, updateConfig, isLoading } = useModuleConfigStore();
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [moduleSettings, setModuleSettings] = useState({});
     const [selectedProviders, setSelectedProviders] = useState({});
@@ -128,6 +131,8 @@ export default function ModuleConfigInlineEditor({ moduleType, mode, config, onS
                 // Both 'create' and 'copy' create a new config
                 await createConfig(moduleType, name, moduleSettings);
             }
+            // Saving a config used to collapse the row silently — confirm it.
+            toast.success(t('common:toast.configSaved'));
             onSave();
         } catch (error) {
             alert(`Failed to save configuration: ${error.message}`);

@@ -10,6 +10,7 @@ import YAMLConfigEditor from './integrations/YAMLConfigEditor';
 import ConfigFilesModal from './integrations/ConfigFilesModal';
 import CreateInstanceModal from './integrations/CreateInstanceModal';
 import ConfirmDialog from './modals/ConfirmDialog';
+import { toast } from '../store/toastStore.js';
 
 const IntegrationsView = () => {
   const { t } = useTranslation();
@@ -59,9 +60,11 @@ const IntegrationsView = () => {
   const handleStopAllConfirm = async () => {
     setStoppingAll(true);
     const errors = [];
+    let stopped = 0;
     for (const { integrationName, instanceName } of runningInstances) {
       try {
         await controlIntegrationInstance(integrationName, instanceName, 'stop');
+        stopped += 1;
       } catch (error) {
         console.error(`Failed to stop ${integrationName}/${instanceName}:`, error);
         errors.push({ integrationName, instanceName, error: error.message });
@@ -70,6 +73,11 @@ const IntegrationsView = () => {
     setShowStopAllDialog(false);
     setStoppingAll(false);
     refreshAllInstances();
+    // Confirm the bulk action quietly. Partial failures stay a console warning
+    // exactly as before — this is the success path only.
+    if (stopped > 0 && errors.length === 0) {
+      toast.success(t('common:toast.allIntegrationsStopped'));
+    }
     if (errors.length > 0) {
       console.warn('[Stop All] Some instances failed to stop:', errors);
     }
@@ -175,7 +183,7 @@ const IntegrationsView = () => {
   if (!quickstartPathConfigured) {
     return (
       <div className="flex flex-col min-h-full">
-        <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+        <div className="bg-background-surface px-6 py-4">
           <h1 className="text-2xl font-extrabold tracking-tight">
             {colorFirstWord(t('integrations:header.title'))}
           </h1>
@@ -194,7 +202,7 @@ const IntegrationsView = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+      <div className="bg-background-surface px-6 py-4">
         <h1 className="text-2xl font-extrabold tracking-tight">
           {colorFirstWord(t('integrations:header.title'))}
         </h1>

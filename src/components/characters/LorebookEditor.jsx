@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Editor } from '@monaco-editor/react';
 import { Trans, useTranslation } from 'react-i18next';
 import Toggle from '../ui/Toggle.jsx';
+import Tooltip from '../ui/Tooltip.jsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LorebookEditor — structured editor for the `character_book` JSON column.
@@ -508,26 +509,27 @@ export default function LorebookEditor({ value, onChange }) {
                                             </div>
                                         )}
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setExpandedIndex(expanded ? null : index)}
-                                        className="shrink-0 text-text-muted hover:text-text-primary transition-colors p-1"
-                                        title={expanded ? t('lorebook.collapse') : t('lorebook.expand')}
-                                    >
-                                        <svg
-                                            className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
+                                    <Tooltip content={expanded ? t('lorebook.collapse') : t('lorebook.expand')}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandedIndex(expanded ? null : index)}
+                                            className="shrink-0 text-text-muted hover:text-text-primary transition-colors p-1"
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M19 9l-7 7-7-7"
-                                            />
-                                        </svg>
-                                    </button>
+                                            <svg
+                                                className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M19 9l-7 7-7-7"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </Tooltip>
                                 </div>
 
                                 {/* Expanded inline form (remounts per entry via key) */}

@@ -32,7 +32,7 @@ function TTSConfigurationDisplay({ config, loading, error }) {
 
     const getProviderDisplayName = (provider) => {
         const providerNames = {
-            'harmonyspeech': 'Harmony Speech',
+            'soulvoice': 'Soulvoice',
             'elevenlabs': 'ElevenLabs',
             'openai': 'OpenAI',
             'kindroid': 'Kindroid'
@@ -42,7 +42,7 @@ function TTSConfigurationDisplay({ config, loading, error }) {
 
     const getProviderConfig = (config) => {
         switch (config.provider) {
-            case 'harmonyspeech': return config.harmonyspeech;
+            case 'soulvoice': return config.soulvoice;
             case 'elevenlabs': return config.elevenlabs;
             case 'openai': return config.openai;
             case 'kindroid': return config.kindroid;

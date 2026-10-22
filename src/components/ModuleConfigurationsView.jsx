@@ -5,6 +5,7 @@ import ModuleCard from './modules/ModuleCard.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances.js';
 import useDockerStatus from '../hooks/useDockerStatus.js';
+import { toast } from '../store/toastStore.js';
 
 export default function ModuleConfigurationsView() {
     const { t } = useTranslation();
@@ -20,6 +21,7 @@ export default function ModuleConfigurationsView() {
         const { deleteConfig } = useModuleConfigStore.getState();
         try {
             await deleteConfig(moduleType, id);
+            toast.success(t('common:toast.configDeleted'));
         } catch (error) {
             alert(t('moduleConfig:deleteFailed', { message: error.message }));
         }
@@ -37,7 +39,7 @@ export default function ModuleConfigurationsView() {
 
     return (
         <div className="flex flex-col min-h-full">
-            <div className="bg-background-surface/30 backdrop-blur-sm px-6 py-4">
+            <div className="bg-background-surface px-6 py-4">
                 <h1 className="text-2xl font-extrabold tracking-tight">
                     {colorFirstWord(t('moduleConfig:header.title'))}
                 </h1>

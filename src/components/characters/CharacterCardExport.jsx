@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
+import Tooltip from '../ui/Tooltip.jsx';
 
 /**
  * Export a character profile as a Character Card V3 (JSON or PNG `ccv3`).
@@ -86,17 +87,18 @@ export default function CharacterCardExport({ profile, variant = 'card', wrapper
     if (variant === 'editor') {
         return (
             <Menu as="div" className="relative inline-block text-left">
-                <MenuButton
-                    disabled={!profile?.id || busy !== null}
-                    className="btn-secondary inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={t('characters:buttons.exportCard')}
-                >
-                    {busy ? <Spinner /> : <span className="mr-1.5 inline-flex">{DownloadIcon}</span>}
-                    <span className="hidden sm:inline">{t('characters:buttons.exportCard')}</span>
-                    <svg className="ml-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </MenuButton>
+                <Tooltip content={t('characters:buttons.exportCard')}>
+                    <MenuButton
+                        disabled={!profile?.id || busy !== null}
+                        className="btn-secondary inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {busy ? <Spinner /> : <span className="mr-1.5 inline-flex">{DownloadIcon}</span>}
+                        <span className="hidden sm:inline">{t('characters:buttons.exportCard')}</span>
+                        <svg className="ml-1 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </MenuButton>
+                </Tooltip>
                 {items('right-0')}
             </Menu>
         );
@@ -108,14 +110,15 @@ export default function CharacterCardExport({ profile, variant = 'card', wrapper
     // badges). The menu still opens rightward/downward so it stays on-card.
     return (
         <Menu as="div" className={`absolute ${wrapperClassName || 'top-2 left-2'} opacity-0 group-hover:opacity-100 transition-opacity`}>
-            <MenuButton
-                onClick={(e) => e.stopPropagation()}
-                disabled={!profile?.id || busy !== null}
-                className="p-1.5 module-action-btn rounded-full hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={t('characters:buttons.exportCard')}
-            >
-                {busy ? <span className="block w-4 h-4">{/* compact spinner */}<span className="block w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" /></span> : DownloadIcon}
-            </MenuButton>
+            <Tooltip content={t('characters:buttons.exportCard')}>
+                <MenuButton
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={!profile?.id || busy !== null}
+                    className="p-1.5 module-action-btn rounded-full hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {busy ? <span className="block w-4 h-4">{/* compact spinner */}<span className="block w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" /></span> : DownloadIcon}
+                </MenuButton>
+            </Tooltip>
             <div onClick={(e) => e.stopPropagation()}>{items(menuAnchorClassName)}</div>
         </Menu>
     );

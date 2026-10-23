@@ -11,6 +11,9 @@ import {
     removeConversation,
     setEntityFlag,
     lastMessage,
+    parseReactions,
+    toggleReaction,
+    nextReactionOp,
 } from './chatStoreUtils.js';
 import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
 import { announceConversationAction } from './conversationActions.js';
@@ -202,6 +205,17 @@ export const useChatStore = create((set, get) => ({
      */
     openConversationRequest: null,
     /**
+     * Cross-conversation FORWARD request (Task 02-6 step 4).
+     *
+     * `{ content, fromTitle }` while the partner picker is up, else null. A
+     * forward in 1.0 is "copy the text as a new message in another thread" —
+     * there is no engine forward primitive, and inventing one would require a
+     * new message type the pipeline does not understand. The content is carried
+     * here (not as a prop) because choosing a partner makes ChatView swap the
+     * open conversation, which unmounts the detail view that started it.
+     */
+    forwardRequest: null,
+    /**
      * Bumped when {@link deleteConversation} removes the thread that was open.
      *
      * The open conversation is ChatView's LOCAL state, so clearing the store's
@@ -316,6 +330,20 @@ export const useChatStore = create((set, get) => ({
 
     /** Clear the pending open-conversation request (consumed once by ChatView). */
     clearRequestOpenConversation: () => set({ openConversationRequest: null }),
+
+    /**
+     * Start a forward: remember the content and open the partner picker.
+     *
+     * @param {{ content: string, fromTitle?: string }} request
+     */
+    requestForward: (request) => {
+        const content = (request?.content || '').trim();
+        if (!content) return;
+        set({ forwardRequest: { content, fromTitle: request?.fromTitle || '' } });
+    },
+
+    /** Clear the pending forward (consumed once by the picker, or cancelled). */
+    clearForwardRequest: () => set({ forwardRequest: null }),
 
     // ── Open conversation ────────────────────────────────────────────────
 
@@ -899,7 +927,128 @@ export const useChatStore = create((set, get) => ({
         return ok;
     },
 
-    /** Remove a message from the local timeline (soft delete / tombstone). */
+    // ── Message actions (Task 02-6) ──────────────────────────────────────
+    //
+    // Every action here is scoped to ONE message and follows the same beats as
+    // the conversation actions: patch the timeline locally, call the engine,
+    // then reconcile (reaction) or roll back + toast (pin / delete).
+
+    /**
+     * Toggle one emoji reaction on a message.
+     *
+     * The ENGINE is the authority on `reactions_json`: it reads, mutates and
+     * re-marshals the column inside one transaction, so two rapid taps cannot
+     * lose an update. The local patch exists only so the chip appears before the
+     * round-trip; the response then REPLACES it. On failure the bubble goes back
+     * to what the engine last told us.
+     *
+     * @param {string} messageId
+     * @param {string} emoji
+     * @returns {Promise<boolean>} true when the engine accepted the change
+     */
+    toggleReaction: async (messageId, emoji) => {
+        const { messages } = get();
+        const target = messages.find((m) => m.id === messageId);
+        if (!target || !emoji) return false;
+
+        const op = nextReactionOp(target.reactions_json, emoji);
+        const optimistic = toggleReaction(parseReactions(target.reactions_json), emoji);
+
+        set({
+            messages: replaceMessage(messages, {
+                id: messageId,
+                reactions_json: optimistic.reactions.length ? optimistic.json : '',
+            }),
+        });
+
+        try {
+            const resp = await chatActionService.setMessageReaction(messageId, emoji, op);
+            // Prefer the engine's encoded column; fall back to its parsed array
+            // (the handler emits `reactions_json: null` for an empty set).
+            const encoded = resp?.reactions_json
+                || (Array.isArray(resp?.reactions) && resp.reactions.length
+                    ? JSON.stringify(resp.reactions)
+                    : '');
+            set({ messages: replaceMessage(get().messages, { id: messageId, reactions_json: encoded }) });
+            return true;
+        } catch (error) {
+            set({
+                messages: replaceMessage(get().messages, {
+                    id: messageId,
+                    reactions_json: target.reactions_json || '',
+                }),
+                error: error.message,
+            });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Pin / unpin one message.
+     *
+     * A pinned message shows a 📌 marker only — the timeline order does NOT
+     * change in 1.0. Reordering a live list to float a pin would move every
+     * message under the reader's pointer, and the marker is enough to find it.
+     *
+     * @param {string} messageId
+     * @param {boolean} pinned
+     * @returns {Promise<boolean>}
+     */
+    setMessagePinned: async (messageId, pinned) => {
+        const target = get().messages.find((m) => m.id === messageId);
+        if (!target) return false;
+
+        set({ messages: replaceMessage(get().messages, { id: messageId, is_pinned: !!pinned }) });
+        try {
+            await chatActionService.setMessagePinned(messageId, !!pinned);
+            toast.success(translate(pinned ? 'chat:toast.messagePinned' : 'chat:toast.messageUnpinned'));
+            return true;
+        } catch (error) {
+            set({
+                messages: replaceMessage(get().messages, {
+                    id: messageId,
+                    is_pinned: !!target.is_pinned,
+                }),
+                error: error.message,
+            });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Delete one message: the engine tombstones it, then it leaves the timeline.
+     *
+     * The local removal happens ONLY on success — unlike a pin, a failed delete
+     * must not briefly show the message as gone, because the user would have no
+     * way to tell whether it actually disappeared.
+     *
+     * @param {string} messageId
+     * @returns {Promise<boolean>}
+     */
+    deleteMessage: async (messageId) => {
+        const target = get().messages.find((m) => m.id === messageId);
+        if (!target) return false;
+        try {
+            await chatActionService.deleteMessage(messageId);
+            set({ messages: removeMessage(get().messages, messageId) });
+            toast.success(translate('common:toast.messageDeleted'));
+            return true;
+        } catch (error) {
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Remove a message from the LOCAL timeline only (no engine call).
+     *
+     * Kept because the optimistic send path uses it to roll back a message that
+     * never reached the socket. Deleting a real message goes through
+     * {@link deleteMessage}, which asks the engine first.
+     */
     deleteMessageLocal: (messageId) => {
         set({ messages: removeMessage(get().messages, messageId) });
     },
@@ -959,6 +1108,7 @@ export const useChatStore = create((set, get) => ({
             wireFrames: [],
             detailCloseTick: 0,
             openConversationRequest: null,
+            forwardRequest: null,
             error: null,
         });
     },

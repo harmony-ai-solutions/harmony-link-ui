@@ -28,6 +28,13 @@ import {
   partitionChatEntities,
   deriveParticipantKey,
   toTime,
+  parseReactions,
+  toggleReaction,
+  hasReaction,
+  nextReactionOp,
+  replyQuoteText,
+  QUICK_REACTIONS,
+  normalizeChatMessage,
 } from './chatStoreUtils.js';
 
 const msg = (id, createdAt, extra = {}) => ({
@@ -356,5 +363,107 @@ test('filterConversationsForPersonas drops companion-only DMs but keeps unknowns
   );
   // No known personas → no filtering.
   assert.equal(filterConversationsForPersonas(rows, []).length, 3);
+});
+
+// ── Reactions (Task 02-6 step 1) ─────────────────────────────────────────
+
+// The slug encodes the ACCEPTANCE CONTRACT: six quick reactions, and none of
+// them is the composer's wider emoji palette.
+test('QUICK_REACTIONS is exactly the six wired reactions', () => {
+  assert.deepEqual(QUICK_REACTIONS, ['❤️', '👍', '😂', '😮', '😢', '🎉']);
+});
+
+// Regression: the engine's canonical column is a JSON ARRAY OF EMOJI STRINGS.
+// The old reader only understood [{emoji,count}] and a map, so every real row
+// parsed to [] and the chips vanished even though they were stored correctly.
+test('parseReactions understands the engine\'s canonical string array', () => {
+  assert.deepEqual(parseReactions('["❤️","😂"]'), [
+    { emoji: '❤️', count: 1 },
+    { emoji: '😂', count: 1 },
+  ]);
+  // Duplicates aggregate — that is how "two people reacted" reads.
+  assert.deepEqual(parseReactions('["❤️","❤️"]'), [{ emoji: '❤️', count: 2 }]);
+});
+
+test('parseReactions still understands the count-object and map shapes', () => {
+  assert.deepEqual(parseReactions('[{"emoji":"❤️","count":2}]'), [{ emoji: '❤️', count: 2 }]);
+  assert.deepEqual(parseReactions('{"❤️": 3}'), [{ emoji: '❤️', count: 3 }]);
+  // A per-user map counts its senders.
+  assert.deepEqual(parseReactions('{"❤️": ["a","b"]}'), [{ emoji: '❤️', count: 2 }]);
+});
+
+test('parseReactions degrades to an empty list instead of throwing', () => {
+  assert.deepEqual(parseReactions(null), []);
+  assert.deepEqual(parseReactions(''), []);
+  assert.deepEqual(parseReactions('not json'), []);
+  assert.deepEqual(parseReactions(42), []);
+  assert.deepEqual(parseReactions('[]'), []);
+  // Blank/unknown entries are dropped, not rendered as empty chips.
+  assert.deepEqual(parseReactions('["", null, {"count": 2}]'), []);
+});
+
+test('toggleReaction adds, decrements and removes without reordering', () => {
+  const start = [{ emoji: '❤️', count: 2 }, { emoji: '😂', count: 1 }];
+
+  // Adding a NEW emoji appends.
+  const added = toggleReaction(start, '🎉');
+  assert.deepEqual(added.reactions.map((r) => r.emoji), ['❤️', '😂', '🎉']);
+  assert.equal(JSON.parse(added.json).length, 3);
+
+  // Adding an EXISTING one bumps its count and keeps position.
+  const bumped = toggleReaction(start, '❤️');
+  assert.deepEqual(bumped.reactions[0], { emoji: '❤️', count: 1 });
+  assert.deepEqual(bumped.reactions.map((r) => r.emoji), ['❤️', '😂']);
+
+  // Removing the last occurrence drops the chip (and the inputs are untouched).
+  const removed = toggleReaction(start, '😂');
+  assert.deepEqual(removed.reactions, [{ emoji: '❤️', count: 2 }]);
+  assert.equal(start.length, 2);
+});
+
+test('hasReaction / nextReactionOp drive the add-or-remove choice', () => {
+  const json = '["❤️"]';
+  assert.equal(hasReaction(json, '❤️'), true);
+  assert.equal(hasReaction(json, '😂'), false);
+  assert.equal(nextReactionOp(json, '❤️'), 'remove');
+  assert.equal(nextReactionOp(json, '😂'), 'add');
+  assert.equal(nextReactionOp('', '😂'), 'add');
+});
+
+// ── Reply quotes (Task 02-6 step 2) ──────────────────────────────────────
+
+test('replyQuoteText prefers the server preview over a timeline lookup', () => {
+  const message = { id: 'm2', reply_to_message_id: 'm1', reply_preview: 'server copy' };
+  const timeline = [{ id: 'm1', content: 'local copy' }];
+  assert.equal(replyQuoteText(message, timeline), 'server copy');
+});
+
+test('replyQuoteText falls back to the timeline for a just-sent reply', () => {
+  // A fresh optimistic reply has no preview yet — the parent is still loaded.
+  const message = { id: 'm2', reply_to_message_id: 'm1', reply_preview: '' };
+  assert.equal(replyQuoteText(message, [{ id: 'm1', content: 'the parent' }]), 'the parent');
+  // A long parent is clipped to the same budget the server uses.
+  const long = { id: 'm1', content: 'x'.repeat(200) };
+  assert.equal(replyQuoteText(message, [long]).length, 80);
+  // Unknown parent → no quote rather than a placeholder.
+  assert.equal(replyQuoteText(message, []), '');
+});
+
+test('replyQuoteText is empty for a non-reply', () => {
+  assert.equal(replyQuoteText({ id: 'm1', content: 'hi' }, []), '');
+  assert.equal(replyQuoteText(null, []), '');
+});
+
+test('normalizeChatMessage carries reply_preview through', () => {
+  const normalized = normalizeChatMessage({
+    id: 'm2',
+    reply_to_message_id: 'm1',
+    reply_preview: 'quoted',
+  });
+  assert.equal(normalized.reply_preview, 'quoted');
+  assert.equal(normalized.reply_to_message_id, 'm1');
+
+  // Absent → '' so the bubble's truthiness check stays simple.
+  assert.equal(normalizeChatMessage({ id: 'm3' }).reply_preview, '');
 });
 

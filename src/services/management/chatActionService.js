@@ -234,3 +234,86 @@ export async function deleteConversation(conversation) {
     await handleResponse(resp, 'Failed to delete the conversation');
     return await resp.json();
 }
+
+// ── Message-level user intent (Task 02-6) ────────────────────────────────
+//
+// These act on ONE message, not on a thread, so they live under /messages/:id
+// (the address Task 02-3 added beside the existing PATCH/DELETE pair). There is
+// deliberately no participant-key fallback: a message id is globally unique and
+// is the only handle these endpoints need.
+//
+// NOTE ON OPTIMISM. Unlike the conversation actions above, the CALLER decides
+// whether to patch first. The engine is the authority on the resulting
+// `reactions_json` (it is a read-modify-write inside one transaction), so a
+// reaction is patched optimistically and then REPLACED by the server's answer —
+// see chatStore.toggleReaction.
+
+/**
+ * Add or remove one emoji reaction on a message.
+ *
+ * The engine stores `reactions_json` as a JSON array of emoji strings and
+ * returns the whole re-marshalled column plus its parsed form, so the caller
+ * never has to reconstruct it (and can never lose a concurrent update).
+ *
+ * @param {string} messageId
+ * @param {string} emoji
+ * @param {'add'|'remove'} op
+ * @returns {Promise<{reactions_json: string|null, reactions: string[]}>}
+ */
+export async function setMessageReaction(messageId, emoji, op = 'add') {
+    if (!messageId) throw new Error('This message has not been saved yet.');
+    if (!emoji) throw new Error('Pick a reaction first.');
+    const resp = await fetch(
+        apiUrl(`/messages/${encodeURIComponent(messageId)}/reactions`),
+        {
+            method: 'POST',
+            headers: getJsonHeaders(),
+            body: JSON.stringify({ emoji, op: op === 'remove' ? 'remove' : 'add' }),
+        }
+    );
+    await handleResponse(resp, 'Failed to update the reaction');
+    return await resp.json();
+}
+
+/**
+ * Pin or unpin one message.
+ *
+ * Pinning a MESSAGE is unrelated to pinning a CONVERSATION (that one lives on
+ * `chat_conversation_settings`). In 1.0 a pinned message only shows a 📌
+ * marker — it is deliberately not lifted to the top of the timeline, because
+ * reordering on a live-updating list makes rows jump under the pointer.
+ *
+ * @param {string} messageId
+ * @param {boolean} pinned
+ * @returns {Promise<{is_pinned: boolean}>}
+ */
+export async function setMessagePinned(messageId, pinned) {
+    if (!messageId) throw new Error('This message has not been saved yet.');
+    const resp = await fetch(
+        apiUrl(`/messages/${encodeURIComponent(messageId)}/pin`),
+        {
+            method: 'POST',
+            headers: getJsonHeaders(),
+            body: JSON.stringify({ pinned: !!pinned }),
+        }
+    );
+    await handleResponse(resp, 'Failed to update the pin');
+    return await resp.json();
+}
+
+/**
+ * Soft-delete one message (a tombstone — the row is never hard-deleted, because
+ * the phone learns about a deletion by seeing `deleted_at`).
+ *
+ * @param {string} messageId
+ * @returns {Promise<{status: string}>}
+ */
+export async function deleteMessage(messageId) {
+    if (!messageId) throw new Error('This message has not been saved yet.');
+    const resp = await fetch(
+        apiUrl(`/messages/${encodeURIComponent(messageId)}`),
+        { method: 'DELETE', headers: getAuthHeaders() }
+    );
+    await handleResponse(resp, 'Failed to delete the message');
+    return await resp.json();
+}

@@ -100,30 +100,90 @@ export function isProactiveMessage(message) {
 }
 
 /**
- * Parse a message's reactions_json into `[{emoji, count}]`. Malformed/absent
- * JSON degrades to an empty list (never throws).
+ * The six quick reactions offered on every bubble (Task 02-6 step 1). They are
+ * the wire-presence set, NOT `EmojiPicker.QUICK_EMOJI` (that one appends emoji
+ * to the composer text and is a much wider palette).
+ */
+export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🎉'];
+
+/**
+ * Parse a message's `reactions_json` into `[{emoji, count}]`, in the order the
+ * emoji were first seen.
+ *
+ * ── THE CANONICAL SHAPE IS A STRING ARRAY ────────────────────────────────
+ *
+ * The engine stores `["❤️","😂"]` (see convrepo.ToggleConversationMessageReaction
+ * — a plain JSON array of emoji strings, because `formatReactionsAnnotation` and
+ * the like counters both depend on that form). This reader used to accept ONLY
+ * `[{emoji,count}]` and a map, so a canonical row parsed to `[]` and the chips
+ * silently vanished. All three shapes are now accepted:
+ *
+ *   ["❤️","😂"]                     — canonical (engine writes this)
+ *   [{"emoji":"❤️","count":2}, …]   — app/desktop batch shape
+ *   {"❤️": 2, …}                    — hypothetical per-user/count map
+ *
+ * A plain string element counts as ONE occurrence, so duplicates aggregate:
+ * `["❤️","❤️"]` → `[{emoji:'❤️', count:2}]` — which is how "two people
+ * reacted" will read once the phone syncs per-user rows. Malformed/absent JSON
+ * degrades to an empty list (never throws).
+ *
+ * @param {string|object|null|undefined} reactionsJson
+ * @returns {Array<{emoji: string, count: number}>}
  */
 export function parseReactions(reactionsJson) {
     if (!reactionsJson) return [];
-    try {
-        const parsed = JSON.parse(reactionsJson);
-        if (Array.isArray(parsed)) {
-            return parsed
-                .filter((r) => r && r.emoji)
-                .map((r) => ({ emoji: r.emoji, count: Number(r.count) || 1 }));
+
+    let parsed = reactionsJson;
+    if (typeof reactionsJson === 'string') {
+        try {
+            parsed = JSON.parse(reactionsJson);
+        } catch {
+            return [];
         }
-        if (parsed && typeof parsed === 'object') {
-            return Object.entries(parsed).map(([emoji, count]) => ({ emoji, count: Number(count) || 1 }));
-        }
-        return [];
-    } catch {
-        return [];
     }
+
+    const counts = new Map();
+    const bump = (emoji, count) => {
+        const key = typeof emoji === 'string' ? emoji.trim() : '';
+        if (!key) return;
+        const n = Number(count);
+        counts.set(key, (counts.get(key) || 0) + (Number.isFinite(n) && n > 0 ? n : 1));
+    };
+
+    if (Array.isArray(parsed)) {
+        for (const entry of parsed) {
+            if (typeof entry === 'string') {
+                bump(entry, 1);
+            } else if (entry && typeof entry === 'object' && entry.emoji) {
+                bump(entry.emoji, entry.count);
+            }
+        }
+        return [...counts].map(([emoji, count]) => ({ emoji, count }));
+    }
+
+    if (parsed && typeof parsed === 'object') {
+        for (const [emoji, count] of Object.entries(parsed)) {
+            // A per-user map (emoji → sender ids) counts its senders; a plain
+            // count map uses the number.
+            if (Array.isArray(count)) bump(emoji, count.length);
+            else bump(emoji, count);
+        }
+    }
+
+    return [...counts].map(([emoji, count]) => ({ emoji, count }));
 }
 
 /**
  * Toggle a reaction on a reactions list, returning the new list plus its JSON
  * string form (ready for the `reactions_json` column).
+ *
+ * Adding PRESERVES POSITION (an existing chip is bumped, never moved) because a
+ * re-ordered chip row reads as "the reaction jumped" even though the set is
+ * identical. Removing an emoji whose count reaches zero drops the chip.
+ *
+ * @param {Array<{emoji: string, count: number}>} reactions
+ * @param {string} emoji
+ * @returns {{reactions: Array<{emoji: string, count: number}>, json: string}}
  */
 export function toggleReaction(reactions, emoji) {
     const list = (reactions || []).map((r) => ({ ...r }));
@@ -136,6 +196,47 @@ export function toggleReaction(reactions, emoji) {
         list[index].count -= 1;
     }
     return { reactions: list, json: JSON.stringify(list) };
+}
+
+/**
+ * True when the local user has already reacted with `emoji` — presence in the
+ * canonical array already means "I reacted" (one local user), and a count > 0
+ * means the same for the aggregated shapes.
+ *
+ * @param {string} reactionsJson
+ * @param {string} emoji
+ * @returns {boolean}
+ */
+export function hasReaction(reactionsJson, emoji) {
+    return parseReactions(reactionsJson).some((r) => r.emoji === emoji && r.count > 0);
+}
+
+/**
+ * The op to send for a chip tap: tapping an emoji you already reacted with
+ * removes yours, anything else adds it. Mirrors the engine's add/remove verbs.
+ *
+ * @param {string} reactionsJson
+ * @param {string} emoji
+ * @returns {'add'|'remove'}
+ */
+export function nextReactionOp(reactionsJson, emoji) {
+    return hasReaction(reactionsJson, emoji) ? 'remove' : 'add';
+}
+
+/**
+ * The quoted-text line for a bubble: the server-computed `reply_preview`, or a
+ * short excerpt of the parent message when the timeline still holds it (a
+ * just-sent reply has no preview until the next page load).
+ *
+ * @param {object|null|undefined} message
+ * @param {Array<object>} timeline - the loaded messages (lookup fallback)
+ * @returns {string} empty when this is not a reply
+ */
+export function replyQuoteText(message, timeline) {
+    if (!message?.reply_to_message_id) return '';
+    if (message.reply_preview) return message.reply_preview;
+    const parent = (timeline || []).find((m) => m.id === message.reply_to_message_id);
+    return truncatePreview((parent?.content || '').trim(), 80);
 }
 
 /** Truncate a preview string to `max` characters with an ellipsis. */
@@ -453,6 +554,9 @@ export function normalizeChatMessage(msg) {
         is_edited: !!msg.is_edited,
         edit_of_message_id: msg.edit_of_message_id || '',
         reply_to_message_id: msg.reply_to_message_id || '',
+        // Server-computed quote text (Task 02-6). Empty for a non-reply; the
+        // bubble falls back to a timeline lookup for a just-sent reply.
+        reply_preview: msg.reply_preview || '',
         reactions_json: msg.reactions_json || '',
         is_pinned: !!msg.is_pinned,
         is_read: typeof msg.is_read === 'boolean' ? msg.is_read : null,

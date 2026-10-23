@@ -38,6 +38,18 @@
     "searchPlaceholder": "Search conversations",
     "filterAll": "All",
     "filterUnread": "Unread",
+    "filterByPartner": "Filter by AI partner",
+    "allPartners": "All",
+    "statusPinned": "Pinned",
+    "statusMuted": "Muted",
+    "statusDisabled": "This AI partner is disabled",
+    "day": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    },
+    "archivedSection": "Archived ({{count}})",
+    "openArchived": "Open archived conversations",
     "selectCompanion": "Who do you want to talk to?",
     "noCompanionsTitle": "No AI partners yet",
     "noCompanions": "No AI partners yet. Create one in the AI Characters tab first.",

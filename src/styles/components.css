@@ -4884,6 +4884,157 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     justify-content: center;
 }
 
+/* ── Global inbox (Task 02-4) ─────────────────────────────────────────
+   The inbox is ONE scannable list. Chip row filters it by AI partner, rows
+   are bucketed into day groups, and archived threads hide behind a toggle. */
+
+.chat-inbox-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.chat-inbox-chip {
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+    white-space: nowrap;
+    transition: all 0.2s var(--ease-spring);
+}
+
+.chat-inbox-chip:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-glow);
+}
+
+.chat-inbox-chip-active {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-color: transparent;
+}
+
+/* The day-grouped list is the only scroller: fixed chip/toolbar rows above it
+   must not scroll away, or a long inbox loses its filter mid-scan. */
+.chat-list-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    /* Reserve the gutter so revealing archived rows does not shift the list. */
+    scrollbar-gutter: stable;
+}
+
+.chat-inbox-daygroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chat-inbox-dayhead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0;
+    padding: 0.25rem 0.15rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    background: var(--color-background-surface);
+}
+
+/* Status column: pinned / muted / disabled, between the name and the time. */
+.chat-list-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.chat-list-status-icon {
+    font-size: 0.6875rem;
+    line-height: 1;
+    opacity: 0.85;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* A row with unread messages reads stronger than the rest, the way an
+   unopened conversation should. */
+.chat-list-row-unread .chat-list-name,
+.chat-list-row-unread .chat-list-preview {
+    color: var(--color-text-primary);
+}
+
+.chat-list-row-unread .chat-list-name {
+    font-weight: 800;
+}
+
+.chat-inbox-archived {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid var(--color-border-glass);
+}
+
+.chat-inbox-archived-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    align-self: flex-start;
+}
+
+.chat-inbox-archived-head:hover {
+    color: var(--color-text-primary);
+}
+
+.chat-inbox-archived-chevron {
+    transition: transform 0.2s var(--ease-spring);
+}
+
+.chat-inbox-archived-chevron-open {
+    transform: rotate(180deg);
+}
+
+.chat-inbox-archived-link {
+    align-self: flex-start;
+    padding: 0.25rem 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+}
+
+/* Day groups and the archived section live INSIDE `.chat-list-scroll`, so their
+   nested `.chat-list-rows` must not become a second scroller. */
+.chat-list-scroll .chat-list-rows {
+    overflow: visible;
+}
+
+.chat-inbox-archived-link:hover {
+    text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-inbox-chip,
+    .chat-inbox-archived-chevron {
+        transition: none;
+    }
+}
+
 /* ── New-chat picker ──────────────────────────────────────────────── */
 .chat-picker-backdrop {
     position: fixed;

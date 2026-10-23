@@ -100,6 +100,67 @@ export async function listConversations(entityId, { limit = 200 } = {}) {
 }
 
 /**
+ * Load the GLOBAL inbox: every active conversation across ALL companions in one
+ * call (`GET /entities/chat-list`, Tasks 02-1/02-4). This replaces the
+ * per-companion fan-out (one `listConversations` per partner, merged
+ * client-side): the dedupe by `participant_key`, the unread count, the settings
+ * join and the `pinned DESC, last_activity_at DESC` ordering all happen in SQL,
+ * so the client must never re-sort the result.
+ *
+ * Each row already carries everything the inbox renders — its owning companion
+ * (`entity_id`, plus the companion's display name / avatar id), the
+ * `pinned` / `archived` / `muted` / `entity_disabled` flags and the last-message
+ * preview — so naming a row costs no second request.
+ *
+ * Archived threads are EXCLUDED by default; with `includeArchived` they come
+ * back in a SEPARATE `archived` array (bounded server-side), which the inbox
+ * renders behind its collapsed "Archived (N)" section.
+ *
+ * @param {{ includeArchived?: boolean, limit?: number }} [options]
+ * @returns {Promise<{conversations: object[], archived: object[], hasMore: boolean}>}
+ */
+export async function listInbox({ includeArchived = false, limit = 200 } = {}) {
+    const conversations = [];
+    const archived = [];
+    let hasMore = false;
+    let offset = 0;
+
+    // Follow has_more/next_offset so a busy inbox cannot silently lose threads
+    // to the page cap. Hard stop so a broken has_more can never loop forever.
+    for (let page = 0; page < 20; page += 1) {
+        const params = new URLSearchParams({ limit: String(limit) });
+        if (offset) params.set('offset', String(offset));
+        if (includeArchived) params.set('include_archived', '1');
+        const resp = await fetch(
+            apiUrl(`/entities/chat-list?${params.toString()}`),
+            { headers: getAuthHeaders() }
+        );
+        await handleResponse(resp, 'Failed to load the inbox');
+        const data = await resp.json();
+        const rows = data?.conversations || [];
+        // A global row names its OWNING companion — that is the POV the thread
+        // is listed from and the entity the row is named/avatar'd by.
+        for (const row of rows) {
+            conversations.push(normalizeChatConversation(row, row?.entity_id || ''));
+        }
+
+        // The archived array is a bounded first page and is repeated verbatim on
+        // every response — collect it once or pagination would duplicate rows.
+        if (page === 0 && Array.isArray(data?.archived)) {
+            for (const row of data.archived) {
+                archived.push(normalizeChatConversation(row, row?.entity_id || ''));
+            }
+        }
+
+        hasMore = !!data?.has_more;
+        if (!hasMore || rows.length === 0) break;
+        offset = Number.isFinite(data?.next_offset) ? data.next_offset : offset + rows.length;
+    }
+
+    return { conversations, archived, hasMore };
+}
+
+/**
  * Load one page of a conversation's messages, oldest-first. The conversation is
  * addressed by `participantKey`, so the window spans EVERY interaction of the
  * key (a membership change closes an interaction but must not truncate the

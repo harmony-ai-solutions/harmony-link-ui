@@ -112,10 +112,21 @@
     "back": "Back",
     "loadingMessages": "Loading messages…",
     "loadOlder": "Load older messages",
+    "showOlder": "Show {{count}} older messages",
     "noMessages": "Say hello to start the conversation.",
     "noMessagesHint": "Your first message opens the conversation.",
     "jumpToLatest": "Jump to latest",
     "newMessages": "New messages",
+    "day": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "greeting": {
+      "title": "Try another greeting",
+      "position": "{{current}} of {{total}}",
+      "cycle": "Show next",
+      "send": "Start with this one"
+    },
     "connection": {
       "connecting": "Connecting…",
       "connected": "Connected",

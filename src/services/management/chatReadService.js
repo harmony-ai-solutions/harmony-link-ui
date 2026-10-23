@@ -214,6 +214,13 @@ export async function listChatEntities() {
             display_name: profileName || entity?.alias || entity?.id || '',
             character_profile_id: profileId,
             is_disabled: !!entity?.is_disabled,
+            // Authored alternate greetings (Task 02-7 step 3). The `GET /entities`
+            // payload nests them on `character_profile`, so they are lifted here
+            // rather than at every call site; the raw JSON string is passed
+            // through and parsed by `entityAlternateGreetings`.
+            alternate_greetings: entity?.alternate_greetings
+                ?? entity?.character_profile?.alternate_greetings
+                ?? '',
         };
     }).filter((entity) => entity.id);
 }

@@ -14,6 +14,9 @@ import {
     parseReactions,
     toggleReaction,
     nextReactionOp,
+    markMessagesRead,
+    setMessagesReadFlag,
+    unreadMessageIds,
 } from './chatStoreUtils.js';
 import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
 import { announceConversationAction } from './conversationActions.js';
@@ -582,14 +585,36 @@ export const useChatStore = create((set, get) => ({
         if (!participantKey && !chatActionService.canWriteConversation(conversation)) return false;
 
         const snapshot = snapshotInbox(get());
+        /**
+         * The badge and the TIMELINE are two copies of the same fact.
+         *
+         * Until Task 02-7 only the inbox row was cleared, so the "new messages"
+         * divider kept sitting in the open thread until the next page load —
+         * the receipt had landed, yet the UI still claimed there were new
+         * messages. The loaded `is_read = false` rows are flipped locally in the
+         * same beat, and the ids are snapshotted first so a failure restores
+         * exactly those rows and nothing else.
+         *
+         * NOTE the flip is NOT restricted to inbound rows: the engine writes
+         * `entity_id = <the character>` on EVERY message, so its read receipt
+         * selects the user's own rows and leaves the AI's rows unread forever.
+         * `markMessagesRead` documents why the local rule has to be broader.
+         */
+        const previousUnreadIds = read ? unreadMessageIds(get().messages) : [];
         if (participantKey) {
             get().patchConversation(participantKey, { unread_count: read ? 0 : 1 });
+        }
+        if (previousUnreadIds.length > 0) {
+            set({ messages: markMessagesRead(get().messages) });
         }
         try {
             await chatActionService.markConversationRead(conversation, { read, upToMessageId });
             return true;
         } catch (error) {
             restoreInbox(set, snapshot);
+            if (previousUnreadIds.length > 0) {
+                set({ messages: setMessagesReadFlag(get().messages, previousUnreadIds, false) });
+            }
             set({ error: error.message });
             toast.error(error.message || translate('chat:errors.generic'));
             return false;
@@ -1051,6 +1076,34 @@ export const useChatStore = create((set, get) => ({
      */
     deleteMessageLocal: (messageId) => {
         set({ messages: removeMessage(get().messages, messageId) });
+    },
+
+    /**
+     * Send one of the character's authored greetings as the opening line.
+     *
+     * ── WHY THIS IS A NORMAL MESSAGE ───────────────────────────────────────
+     *
+     * The engine CAN replace a greeting (`GENERATE_GREETING`) but only while the
+     * greeting is the interaction's sole message, and it REPLACES the row rather
+     * than letting the user pick which text it becomes — the alternates are
+     * authored card data, not something the engine can be told to select. What
+     * the user wants from "try another greeting" is the same text the app
+     * delivers as a first message, so this sends it through the ordinary
+     * `ENTITY_UTTERANCE` path: the pipeline persists it, the bubble appears
+     * optimistically, and the AI answers it like any other opening.
+     *
+     * The text is treated as the USER's first message (never the character's):
+     * the persona speaks it, so a picker can never be mistaken for the AI having
+     * said something it did not.
+     *
+     * @param {string} ownEntityId - the persona we chat as
+     * @param {string} text - the chosen greeting text
+     * @returns {boolean} true when the socket accepted it
+     */
+    sendGreetingAlternate: (ownEntityId, text) => {
+        const content = (text || '').trim();
+        if (!content) return false;
+        return get().sendText(ownEntityId, content);
     },
 
     /** Change the conversation's reply mode (F10). */

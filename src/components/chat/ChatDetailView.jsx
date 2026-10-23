@@ -1,15 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     ChevronRightIcon, ArrowDownIcon, SettingsGearIcon, RefreshIcon, TerminalIcon,
 } from '../../constants/icons.jsx';
 import useChatStore from '../../store/chatStore.js';
-import { messageDirection, isUnreadInbound, deriveParticipantKey } from '../../store/chatStoreUtils.js';
+import {
+    messageDirection,
+    isUnreadInbound,
+    deriveParticipantKey,
+    buildDayDividers,
+    timelineWindow,
+    slideWindowEnd,
+    entityAlternateGreetings,
+    isGreetingOpening,
+    TIMELINE_RENDER_LIMIT,
+    TIMELINE_PAGE,
+} from '../../store/chatStoreUtils.js';
 import useChatPrefsStore from '../../store/chatPrefsStore.js';
 import ChatBubble from './ChatBubble.jsx';
 import ChatInput from './ChatInput.jsx';
 import TypingIndicator from './TypingIndicator.jsx';
 import NewMessagesDivider from './NewMessagesDivider.jsx';
+import DayDivider from './DayDivider.jsx';
+import GreetingAlternates from './GreetingAlternates.jsx';
 import ImageLightbox from './ImageLightbox.jsx';
 import ChatPreferences from './ChatPreferences.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
@@ -70,6 +83,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const requestForward = useChatStore((s) => s.requestForward);
     const setReplyMode = useChatStore((s) => s.setReplyMode);
     const loadOlderMessages = useChatStore((s) => s.loadOlderMessages);
+    const sendGreetingAlternate = useChatStore((s) => s.sendGreetingAlternate);
 
     const wireFrames = useChatStore((s) => s.wireFrames);
     const clearWireFrames = useChatStore((s) => s.clearWireFrames);
@@ -87,11 +101,40 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const [showJump, setShowJump] = useState(false);
     const [showWire, setShowWire] = useState(false);
     const [menuPosition, setMenuPosition] = useState(null);
+    /**
+     * Id of the NEWEST rendered message (Task 02-7 step 4). `null` = follow the
+     * live tail.
+     *
+     * The timeline mounts at most `TIMELINE_RENDER_LIMIT` bubbles instead of
+     * every loaded one, which is Android's own cap and costs nothing:
+     * virtualization was deliberately not added (see the task note), because a
+     * bounded window plus the scroll anchor below removes the stutter a
+     * 500-message thread produced without a new dependency.
+     */
+    const [renderEndId, setRenderEndId] = useState(null);
+    /**
+     * Bumped at local midnight so "Today"/"Yesterday" labels re-evaluate even
+     * when no message arrives. Without it a window left open overnight keeps
+     * calling yesterday's messages "Today".
+     */
+    const [dayTick, setDayTick] = useState(0);
 
     const scrollRef = useRef(null);
     const bottomRef = useRef(null);
+    /**
+     * Scroll anchor for pagination (Task 02-7 step 5).
+     *
+     * `before` is captured AFTER every commit; on the next commit the same
+     * message is located again and `scrollTop` is shifted by however far its
+     * top moved. That keeps the reader's place when older pages PREPEND (the
+     * whole reason "load older" used to jump) and also when the render window
+     * slides in either direction.
+     */
+    const anchorRef = useRef({ firstId: '', lastId: '', firstTop: null, lastTop: null, scrollTop: 0 });
+    const restoringAnchorRef = useRef(false);
 
     const partnerId = conversation.entityId;
+
     const isTyping = !!typingByEntity[partnerId];
     const isRecording = !!recordingByEntity[partnerId];
 
@@ -131,8 +174,42 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const aiDisabled = threadRow.entity_disabled;
     const threadName = conversation.title || threadRow.companion_display_name || partnerId;
 
-    // Auto-scroll to the newest message.
+    /**
+     * The character's AUTHORED alternate greetings (Task 02-7 step 3).
+     *
+     * Read from `chatEntities`, which ChatView already loaded — the field rides on
+     * the chat-entity option (`listChatEntities` lifts it from the nested
+     * profile), so showing the control costs no extra request.
+     */
+    const alternateGreetings = useMemo(
+        () => entityAlternateGreetings(chatEntities.find((item) => item.id === partnerId)),
+        [chatEntities, partnerId]
+    );
+
+    /**
+     * True while the thread is still in its opening state: the character greeted
+     * and the user has not spoken. Only then is "try another greeting" meaningful
+     * — once a turn has happened the greeting is history, and offering to replace
+     * it would be a lie.
+     */
+    const greetingOpening = useMemo(
+        () => isGreetingOpening(messages, ownEntityId),
+        [messages, ownEntityId]
+    );
+    const showGreetingAlternates = greetingOpening
+        && alternateGreetings.length > 1
+        && !aiDisabled;
+
+    /**
+     * Scroll to the newest message.
+     *
+     * The render window is RESET first: while it is slid back the newest messages
+     * are not mounted, so scrolling would land on the last MOUNTED row instead of
+     * the real tail. Clearing it re-follows the live tail, which is also what the
+     * "jump to latest" button means.
+     */
     const scrollToBottom = useCallback((behavior = 'smooth') => {
+        setRenderEndId(null);
         bottomRef.current?.scrollIntoView({ behavior, block: 'end' });
     }, []);
 
@@ -188,44 +265,209 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
         };
     }, [threadRow, unreadCount, markRead]);
 
+    // ── Timeline window (Task 02-7 step 4) ───────────────────────────────
+
+    /**
+     * The slice of the loaded timeline that is actually mounted.
+     *
+     * `renderEndId === null` means "follow the tail", which is the normal state
+     * for an open, live conversation. It is set to an id only when the user has
+     * scrolled back past the window (see `handleScroll`), so browsing history
+     * never unmounts the messages being read.
+     */
+    const renderWindow = useMemo(
+        () => timelineWindow(messages, renderEndId, TIMELINE_RENDER_LIMIT),
+        [messages, renderEndId]
+    );
+    const visibleMessages = useMemo(
+        () => messages.slice(renderWindow.start, renderWindow.end),
+        [messages, renderWindow.start, renderWindow.end]
+    );
+    /** Messages loaded but not mounted above the window. */
+    const hiddenOlder = renderWindow.start;
+
+    /**
+     * One day-divider descriptor per VISIBLE message (index-aligned).
+     *
+     * Computing it over the visible slice — not the whole timeline — keeps the
+     * first row of a slid window labelled even when its real predecessor is
+     * mounted-out. `dayTick` is a dependency so a page left open across
+     * midnight re-labels "Today" without waiting for a message.
+     */
+    const dayDividers = useMemo(
+        () => buildDayDividers(visibleMessages, new Date()),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [visibleMessages, dayTick]
+    );
+
+    /**
+     * Re-label at local midnight.
+     *
+     * A chat left open overnight would otherwise keep calling yesterday "Today"
+     * until something else re-rendered the list. The timeout targets the NEXT
+     * local midnight (+1s of slack) and reschedules itself, so it also survives
+     * DST shifts correctly.
+     */
     useEffect(() => {
-        // Only auto-scroll when the user is already near the bottom.
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 1, 0);
+        const delay = Math.max(1000, midnight.getTime() - now.getTime());
+        const timer = setTimeout(() => setDayTick((tick) => tick + 1), delay);
+        return () => clearTimeout(timer);
+    }, [dayTick]);
+
+    /**
+     * Scroll anchor (Task 02-7 step 5).
+     *
+     * Runs in `useLayoutEffect` — BEFORE the browser paints — so the correction
+     * is never visible. Two things move the content under the reader:
+     *
+     *   1. an older page PREPENDS (scrollTop would stay put, so the whole list
+     *      would appear to jump down by the height of the new page);
+     *   2. the render window SLIDES (rows leave one edge and enter the other).
+     *
+     * Both are handled the same way: remember the first and last rendered
+     * message with their `offsetTop`, then on the next commit find the same
+     * message and apply the delta. Anchoring on TWO messages (not one) is what
+     * makes it correct when the anchored message itself leaves the window — the
+     * other end still resolves the shift.
+     *
+     * `restoringAnchorRef` guards the correction from re-entering this effect
+     * through the scroll event it fires.
+     */
+    useLayoutEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
-        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-        if (nearBottom) scrollToBottom('smooth');
-        else setShowJump(true);
-    }, [messages.length]);
+        const first = visibleMessages[0];
+        const last = visibleMessages[visibleMessages.length - 1];
 
+        /**
+         * A message's offset INSIDE the scrolled content, in pixels.
+         *
+         * `offsetTop` is the obvious choice and the wrong one: it is measured
+         * from the nearest POSITIONED ancestor, and `.chat-timeline` is not
+         * positioned, so the value would jump whenever anything up the tree
+         * changed. `rect.top - containerRect.top + scrollTop` is the same number
+         * expressed in the scroll container's own coordinate space, which is
+         * exactly what `scrollTop` is measured in.
+         */
+        const findTop = (id) => {
+            if (!id) return null;
+            const node = el.querySelector(`[data-message-id="${CSS.escape(id)}"]`);
+            if (!node) return null;
+            return node.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+        };
+
+        const previous = anchorRef.current;
+
+        if (!restoringAnchorRef.current && previous.firstId) {
+            const prevFirstTop = findTop(previous.firstId);
+            const prevLastTop = findTop(previous.lastId);
+            let delta = null;
+            if (prevFirstTop !== null && previous.firstTop !== null) {
+                delta = prevFirstTop - previous.firstTop;
+            } else if (prevLastTop !== null && previous.lastTop !== null) {
+                delta = prevLastTop - previous.lastTop;
+            }
+            if (delta) {
+                restoringAnchorRef.current = true;
+                el.scrollTop += delta;
+                restoringAnchorRef.current = false;
+            }
+        }
+
+        anchorRef.current = {
+            firstId: first?.id || '',
+            lastId: last?.id || '',
+            firstTop: findTop(first?.id),
+            lastTop: findTop(last?.id),
+            scrollTop: el.scrollTop,
+        };
+    }, [visibleMessages, renderWindow.start, renderWindow.end]);
+
+    /**
+     * Index (within the VISIBLE slice) of the first unread inbound message, for
+     * the "new messages" divider. Indices are slice-relative because that is
+     * what the render loop iterates — a timeline-relative index would place the
+     * divider one screenful off once the window has slid.
+     */
+    const firstUnreadIndex = useMemo(() => {
+        for (let i = 0; i < visibleMessages.length; i += 1) {
+            if (isUnreadInbound(visibleMessages[i], ownEntityId)) return i;
+        }
+        return -1;
+    }, [visibleMessages, ownEntityId]);
+
+    const lastOutboundIndex = useMemo(() => {
+        for (let i = visibleMessages.length - 1; i >= 0; i -= 1) {
+            if (messageDirection(visibleMessages[i], ownEntityId) === 'out') return i;
+        }
+        return -1;
+    }, [visibleMessages, ownEntityId]);
+
+    /**
+     * Scroll handler: pagination trigger, window sliding and the jump button.
+     *
+     * The render window SLIDES toward older messages when the reader reaches the
+     * top of the mounted slice, so a long scrollback stays bounded. It slides
+     * back toward the tail on the way down and drops to `null` (follow the live
+     * tail) once the tail is inside the window, which is what re-arms the
+     * auto-scroll for new messages.
+     *
+     * Sliding in `TIMELINE_PAGE` steps rather than per pixel matters: a per-pixel
+     * slide would unmount and remount rows on every scroll event.
+     */
     const handleScroll = () => {
         const el = scrollRef.current;
         if (!el) return;
         if (el.scrollTop < 120 && hasMore && !loadingOlder) {
             loadOlderMessages();
         }
+        if (el.scrollTop < 48 && renderWindow.start > 0) {
+            setRenderEndId((current) => slideWindowEnd(messages, current, -TIMELINE_PAGE));
+        } else {
+            const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+            if (distanceToBottom < 48 && renderEndId) {
+                setRenderEndId((current) => slideWindowEnd(messages, current, TIMELINE_PAGE));
+            }
+        }
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
         setShowJump(!nearBottom);
     };
 
-    // Index of the first unread inbound message (for the F6 divider).
-    const firstUnreadIndex = useMemo(() => {
-        for (let i = 0; i < messages.length; i += 1) {
-            if (isUnreadInbound(messages[i], ownEntityId)) return i;
-        }
-        return -1;
-    }, [messages, ownEntityId]);
-
-    const lastOutboundIndex = useMemo(() => {
-        for (let i = messages.length - 1; i >= 0; i -= 1) {
-            if (messageDirection(messages[i], ownEntityId) === 'out') return i;
-        }
-        return -1;
-    }, [messages, ownEntityId]);
+    /**
+     * Auto-scroll on a new message — only when the reader is already at the
+     * bottom, and keyed on the MOUNTED length.
+     *
+     * `visibleMessages.length` rather than `messages.length` is the whole point:
+     * prepending an older page changes the second and not the first, so
+     * pagination in the background can no longer yank the view to the bottom
+     * (which is what made "load older" jump before the anchor existed).
+     */
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+        if (nearBottom) scrollToBottom('smooth');
+        else setShowJump(true);
+    }, [visibleMessages.length]);
 
     const handleSendText = (text) => {
         sendText(ownEntityId, text, { replyToMessageId: replyTo?.id });
         setReplyTo(null);
     };
+
+    /**
+     * Send a chosen alternate greeting as the user's opening message.
+     *
+     * The chosen text goes through the ordinary text path, so the bubble appears
+     * optimistically, the engine persists it and the partner answers it like any
+     * first message. No engine greeting path is involved — see
+     * `chatStore.sendGreetingAlternate` for why the authored alternates cannot be
+     * delivered as a `message_type = 'greeting'` row.
+     */
+    const handleSendGreetingAlternate = (text) => sendGreetingAlternate(ownEntityId, text);
 
     const handleSendAudio = (audio) => sendAudio(ownEntityId, audio);
     const handleSendImage = (image) => sendImage(ownEntityId, image);
@@ -401,8 +643,24 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         />
                     )}
 
-                    {messages.map((message, index) => (
-                        <div key={message.id}>
+                    {/* Loaded but not mounted: the render window has slid back.
+                        Reveals another page worth of rows. The scroll anchor keeps
+                        the reader's place across the swap, so this does not jump. */}
+                    {hiddenOlder > 0 && (
+                        <button
+                            type="button"
+                            className="chat-timeline-load-older chat-timeline-show-older"
+                            onClick={() => setRenderEndId((current) => slideWindowEnd(
+                                messages, current, -TIMELINE_PAGE
+                            ))}
+                        >
+                            {t('chat:conversation.showOlder', { count: Math.min(TIMELINE_PAGE, hiddenOlder) })}
+                        </button>
+                    )}
+
+                    {visibleMessages.map((message, index) => (
+                        <div key={message.id} data-message-id={message.id}>
+                            {dayDividers[index] && <DayDivider info={dayDividers[index]} />}
                             {index === firstUnreadIndex && <NewMessagesDivider />}
                             <ChatBubble
                                 message={message}
@@ -422,6 +680,19 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                             />
                         </div>
                     ))}
+
+                    {/* "Try another greeting" (Task 02-7 step 3). Only while the
+                        thread is still opening — the character has greeted and the
+                        user has not spoken. It sits below the timeline rather than
+                        attached to the bubble because it acts on the OPENING, not
+                        on the message: sending one ends the opening for good. */}
+                    {showGreetingAlternates && (
+                        <GreetingAlternates
+                            greetings={alternateGreetings}
+                            onSend={handleSendGreetingAlternate}
+                            disabled={connectionState !== 'connected'}
+                        />
+                    )}
 
                     {(isTyping || isRecording) && (
                         <TypingIndicator name={conversation.title || partnerId} recording={isRecording} />

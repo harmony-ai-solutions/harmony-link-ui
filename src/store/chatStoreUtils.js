@@ -617,3 +617,292 @@ export function deriveParticipantKey(participantIds, entityId, scope) {
     }
     return 'world:' + (entityId || '');
 }
+
+// ── Timeline readability (Task 02-7) ─────────────────────────────────────
+//
+// Everything below backs the day dividers, the greeting alternates, the
+// read-receipt reconciliation of the "new messages" divider and the render
+// window that keeps a long thread from mounting every loaded message.
+
+/**
+ * Rows the timeline mounts at once.
+ *
+ * This is the cheap alternative to virtualization: a thread that has paged ten
+ * times still mounts at most this many bubbles, and older rows arrive a page at
+ * a time as the user scrolls back. Android caps its timeline at 200 the same
+ * way, and `react-window` was deliberately NOT added — see the task note in
+ * `.current_work/desktop-app-readiness/02-Chat-Parity.md`.
+ */
+export const TIMELINE_RENDER_LIMIT = 200;
+
+/** Rows the "show older" control reveals per step (the engine's page size). */
+export const TIMELINE_PAGE = 50;
+
+/**
+ * Local calendar day of a timestamp as `YYYY-MM-DD`, or '' when unparseable.
+ *
+ * Built from the LOCAL date parts on purpose: `toISOString()` answers in UTC, so
+ * a message sent at 23:30 in UTC+1 would file under the NEXT day — and the
+ * divider would appear a day early.
+ *
+ * @param {string|number|Date|null|undefined} value
+ * @returns {string} '' for a missing/unparseable timestamp
+ */
+export function dayKey(value) {
+    const time = toTime(value);
+    if (!time) return '';
+    const date = new Date(time);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Label descriptor for a day divider: `{ kind: 'today'|'yesterday'|'date',
+ * key, date }`, or null when the timestamp cannot be read.
+ *
+ * "Yesterday" steps the LOCAL calendar back one day (`setDate(getDate() - 1)`)
+ * instead of subtracting 24 hours — the subtraction is wrong across a DST
+ * boundary, where a day can be 23 or 25 hours long.
+ *
+ * @param {string|number|Date|null|undefined} createdAt
+ * @param {Date} [now]
+ * @returns {{kind: 'today'|'yesterday'|'date', key: string, date: Date}|null}
+ */
+export function dayDividerInfo(createdAt, now = new Date()) {
+    const key = dayKey(createdAt);
+    if (!key) return null;
+    const date = new Date(toTime(createdAt));
+    if (key === dayKey(now)) return { kind: 'today', key, date };
+    const yesterday = new Date(toTime(now));
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (key === dayKey(yesterday)) return { kind: 'yesterday', key, date };
+    return { kind: 'date', key, date };
+}
+
+/**
+ * One entry per message: the divider that belongs ABOVE it, or null.
+ *
+ * The first message with a readable date always opens a divider — the top of the
+ * loaded history needs a label — and every later one only when the local date
+ * changes. An unparseable timestamp opens no divider AND does not reset the
+ * running day, so one bad row cannot re-open the same day twice.
+ *
+ * @param {Array<object>} messages - oldest → newest
+ * @param {Date} [now]
+ * @returns {Array<object|null>} same length as `messages`
+ */
+export function buildDayDividers(messages, now = new Date()) {
+    const list = messages || [];
+    const dividers = [];
+    let previousKey = '';
+    for (const message of list) {
+        const info = dayDividerInfo(message?.created_at, now);
+        if (!info || info.key === previousKey) {
+            dividers.push(null);
+            continue;
+        }
+        previousKey = info.key;
+        dividers.push(info);
+    }
+    return dividers;
+}
+
+/**
+ * Bounds of the rendered slice of the timeline.
+ *
+ * `endId` is the id of the NEWEST rendered message (`null` = the live tail). The
+ * window is addressed by ID rather than by index because older pages PREPEND: an
+ * index would shift under a new page, while an id keeps pointing at the same
+ * message.
+ *
+ * @param {Array<object>} messages
+ * @param {string|null} endId
+ * @param {number} [limit]
+ * @returns {{start: number, end: number}}
+ */
+export function timelineWindow(messages, endId, limit = TIMELINE_RENDER_LIMIT) {
+    const list = messages || [];
+    const size = Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : TIMELINE_RENDER_LIMIT;
+    let end = list.length;
+    if (endId) {
+        const index = list.findIndex((message) => message?.id === endId);
+        if (index !== -1) end = index + 1;
+    }
+    return { start: Math.max(0, end - size), end };
+}
+
+/**
+ * Slide the render window by `delta` rows (negative = toward older messages) and
+ * return the new `endId`, or null for "follow the live tail".
+ *
+ * Sliding rather than GROWING the window is what keeps the mount bounded: rows
+ * that fall off one edge leave the DOM. The scroll anchor is what makes the swap
+ * invisible.
+ *
+ * @param {Array<object>} messages
+ * @param {string|null} endId
+ * @param {number} delta
+ * @param {number} [limit]
+ * @returns {string|null}
+ */
+export function slideWindowEnd(messages, endId, delta, limit = TIMELINE_RENDER_LIMIT) {
+    const list = messages || [];
+    if (list.length === 0) return null;
+    const { end } = timelineWindow(list, endId, limit);
+    const step = Number.isFinite(delta) ? Math.trunc(delta) : 0;
+    // Clamped to [1, length]: a window end of 0 would render NOTHING of a
+    // non-empty timeline, so the first message is always mounted.
+    const nextEnd = Math.min(list.length, Math.max(1, end + step));
+    // Covering the tail means "no window" — the caller follows new messages.
+    if (nextEnd >= list.length) return null;
+    return list[nextEnd - 1]?.id || null;
+}
+
+/**
+ * Mark every still-unread message read — the local half of a read receipt.
+ *
+ * ── WHY NOT "INBOUND ONLY" ───────────────────────────────────────────────
+ *
+ * The engine's receipt stamps `sender_entity_id != <interaction.entity_id>`,
+ * i.e. the rows the PARTNER sent. But `conversation_messages.entity_id` is the
+ * character for EVERY row (both the incoming handler in `modules/cognition.go`
+ * and the outgoing one in `processor.go` write `EntityID: <the character>`), so
+ * that predicate selects the USER's rows — the opposite of what it intends.
+ * Rows the AI sent therefore stay `is_read = 0` for life, which is exactly the
+ * set `isUnreadInbound` counts.
+ *
+ * Mirroring the engine predicate locally would leave those phantom unread rows
+ * in the timeline and the "new messages" divider would never retire. The honest
+ * local rule is therefore "an open thread has nothing unread": every row whose
+ * flag is still false is flipped, whichever side sent it. Outbound rows gain a
+ * `true` they should have had from birth, and nothing in the UI reads `is_read`
+ * on them — bubble side comes from `messageDirection`, not from this flag.
+ *
+ * This is what retires the divider the moment `markRead` succeeds, instead of
+ * waiting for the next page load.
+ *
+ * @param {Array<object>} messages
+ * @returns {Array<object>} the same array when nothing was unread
+ */
+export function markMessagesRead(messages) {
+    let changed = false;
+    const next = (messages || []).map((message) => {
+        if (!message || message.is_read !== false) return message;
+        changed = true;
+        return { ...message, is_read: true };
+    });
+    return changed ? next : messages || [];
+}
+
+/**
+ * Set the read flag of specific messages — the rollback path for a failed
+ * `markRead`. Addressed by id so a message that arrived meanwhile survives the
+ * restore.
+ *
+ * @param {Array<object>} messages
+ * @param {Iterable<string>} ids
+ * @param {boolean} read
+ * @returns {Array<object>}
+ */
+export function setMessagesReadFlag(messages, ids, read) {
+    const target = ids instanceof Set ? ids : new Set(ids || []);
+    if (target.size === 0) return messages || [];
+    return (messages || []).map((message) => (
+        message && target.has(message.id) ? { ...message, is_read: !!read } : message
+    ));
+}
+
+/**
+ * Ids of the messages that are still unread — the rollback snapshot for
+ * {@link markMessagesRead}. Deliberately direction-agnostic so the snapshot
+ * covers exactly the rows the flip touched (see that function for why).
+ *
+ * @param {Array<object>} messages
+ * @returns {string[]}
+ */
+export function unreadMessageIds(messages) {
+    return (messages || [])
+        .filter((message) => message?.is_read === false)
+        .map((message) => message.id);
+}
+
+/**
+ * Parse a JSON string-array column (`alternate_greetings`, `tags`, …) into a
+ * trimmed string array. Accepts an already-parsed array and tolerates '' / null
+ * / malformed JSON by returning an empty array (never throws).
+ *
+ * @param {string|string[]|null|undefined} raw
+ * @returns {string[]}
+ */
+export function parseJsonStringArray(raw) {
+    if (!raw) return [];
+    let parsed = raw;
+    if (typeof raw === 'string') {
+        const text = raw.trim();
+        if (!text) return [];
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            return [];
+        }
+    }
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+        .filter((value) => typeof value === 'string' && value.trim())
+        .map((value) => value.trim());
+}
+
+/**
+ * A chat entity's authored alternate greetings.
+ *
+ * The `GET /entities` payload nests the profile (`character_profile`) and the
+ * chat-entity option may also flatten `alternate_greetings` onto itself, so both
+ * shapes are accepted.
+ *
+ * @param {object|null|undefined} entity
+ * @returns {string[]}
+ */
+export function entityAlternateGreetings(entity) {
+    if (!entity) return [];
+    return parseJsonStringArray(
+        entity.alternate_greetings ?? entity.character_profile?.alternate_greetings
+    );
+}
+
+/**
+ * Next index when cycling a fixed-length list (wraps, never throws).
+ * @param {number} current
+ * @param {number} length
+ * @returns {number}
+ */
+export function nextGreetingIndex(current, length) {
+    const size = Number.isFinite(length) ? Math.trunc(length) : 0;
+    if (size <= 0) return 0;
+    const index = Number.isFinite(current) ? Math.trunc(current) : 0;
+    return ((index + 1) % size + size) % size;
+}
+
+/**
+ * True while the thread is still in its OPENING state: the first message is the
+ * character's greeting and the user has not spoken yet.
+ *
+ * This mirrors the engine's own rule for a greeting regenerate (the greeting must
+ * still be the only thing that has happened) without pretending the desktop can
+ * re-run greeting generation — it cannot. Which is why the control offers the
+ * character's AUTHORED alternates and sends the chosen one as the user's first
+ * message, a normal `ENTITY_UTTERANCE` the pipeline already understands.
+ *
+ * @param {Array<object>} messages
+ * @param {string} ownEntityId
+ * @returns {boolean}
+ */
+export function isGreetingOpening(messages, ownEntityId) {
+    const list = messages || [];
+    if (list.length === 0) return false;
+    if (list[0]?.message_type !== 'greeting') return false;
+    for (let i = 1; i < list.length; i += 1) {
+        if (messageDirection(list[i], ownEntityId) === 'out') return false;
+    }
+    return true;
+}

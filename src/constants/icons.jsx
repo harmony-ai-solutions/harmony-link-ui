@@ -144,6 +144,17 @@ export const SmileIcon = ({ className = defaultSize }) => (
     </svg>
 );
 
+// Task 02-8: the scenario button. Three four-point stars — the conventional
+// "insert generated/magic context" glyph, and distinct from the emoji face
+// sitting next to it in the same toolbar.
+export const SparklesIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l1.6 4.1L18 8.7l-4.4 1.6L12 14.4l-1.6-4.1L6 8.7l4.4-1.6L12 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.5 14.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9.9-2.3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7L5 15z" />
+    </svg>
+);
+
 /* ── Event Type Icons ─────────────────────────────────────────────────── */
 
 // Optical-size normalization: every nav glyph is scaled to the same 18-unit

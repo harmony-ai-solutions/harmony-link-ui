@@ -871,6 +871,24 @@ export function entityAlternateGreetings(entity) {
 }
 
 /**
+ * A chat entity's authored `scenario` text (Task 02-8 step 3).
+ *
+ * The `GET /entities` payload nests the profile (`character_profile`) and the
+ * chat-entity option may also flatten `scenario` onto itself, so both shapes are
+ * accepted — the same tolerance {@link entityAlternateGreetings} has, and for
+ * the same reason: the ✨ button must read the profile ChatView already loaded
+ * rather than issue a second request per keystroke-free render.
+ *
+ * @param {object|null|undefined} entity
+ * @returns {string} '' when the character has no scenario
+ */
+export function entityScenario(entity) {
+    if (!entity) return '';
+    const raw = entity.scenario ?? entity.character_profile?.scenario;
+    return typeof raw === 'string' ? raw.trim() : '';
+}
+
+/**
  * Next index when cycling a fixed-length list (wraps, never throws).
  * @param {number} current
  * @param {number} length

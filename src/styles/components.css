@@ -6113,6 +6113,7 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 
 /* ── Input (F4) ───────────────────────────────────────────────────── */
 .chat-input-wrap {
+    position: relative;
     border-top: 1px solid var(--color-border-glass);
     background: var(--color-background-nav);
 }
@@ -6171,7 +6172,117 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 
 .chat-input-textarea:focus { border-color: var(--color-border-glow); }
 
+.chat-input-textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.chat-input-textarea:disabled::placeholder { color: var(--color-text-tertiary, var(--color-text-secondary)); }
+
 .chat-input-send { flex-shrink: 0; }
+
+/* ── Staged images (Task 02-8 step 1) ─────────────────────────────── */
+.chat-input-attachments {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.85rem 0;
+}
+
+.chat-input-attachment {
+    position: relative;
+    width: 3.25rem;
+    height: 3.25rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-md, 0.5rem);
+    overflow: hidden;
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface-translucent);
+}
+
+.chat-input-attachment-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.chat-input-attachment-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.chat-input-attachment-remove {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    line-height: 1;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.chat-input-attachment-remove:hover { background: var(--color-danger, #ef4444); }
+
+.chat-input-attachment-count {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+/* ── Shortcode suggestions (Task 02-8 step 2) ─────────────────────── */
+.chat-input-suggestions {
+    position: absolute;
+    bottom: calc(100% - 0.25rem);
+    left: 0.85rem;
+    width: min(18rem, calc(100% - 1.7rem));
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+    z-index: 25;
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.chat-input-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--radius-md, 0.5rem);
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-input-suggestion:hover,
+.chat-input-suggestion-active {
+    background: var(--color-background-hover-glass);
+    color: var(--color-text-primary);
+}
+
+.chat-input-suggestion-emoji { font-size: 1.1rem; line-height: 1; }
+.chat-input-suggestion-name { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ── One-time Enter hint (Task 02-8 step 5) ───────────────────────── */
+.chat-input-hint {
+    padding: 0 0.85rem 0.5rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    opacity: 0.8;
+}
 
 /* ── Emoji picker (F11) ───────────────────────────────────────────── */
 .chat-emoji-picker {

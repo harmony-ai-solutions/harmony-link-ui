@@ -137,6 +137,8 @@
   "input": {
     "placeholder": "Type a message…",
     "placeholderTyping": "{{name}} is typing…",
+    "placeholderOffline": "Not connected — reconnecting…",
+    "placeholderDisabled": "This AI partner is switched off",
     "send": "Send",
     "record": "Record a voice note",
     "stopRecording": "Stop recording",
@@ -146,7 +148,19 @@
     "sendAs": "Chatting as {{name}}",
     "micDenied": "Microphone access was denied.",
     "recordingFailed": "Could not record audio.",
-    "sendFailed": "Could not send the message."
+    "sendFailed": "Could not send the message.",
+    "imageFallbackName": "picture",
+    "imageCount": "{{count}} of {{max}} pictures",
+    "removeImage": "Remove {{name}}",
+    "imageLimit": "You can send up to {{max}} pictures at a time.",
+    "imageTooLarge": "\"{{name}}\" is too large. Pictures must be under {{size}} MB.",
+    "imageNotAnImage": "\"{{name}}\" is not a picture.",
+    "imageReadFailed": "Could not read that picture.",
+    "emojiSuggestions": "Emoji suggestions",
+    "insertScenario": "Insert the scenario as context",
+    "noScenario": "This character has no scenario to insert.",
+    "scenarioAlreadyThere": "The scenario is already in your message.",
+    "enterHint": "Enter sends · Shift+Enter adds a line"
   },
   "bubble": {
     "edited": "edited",

@@ -12,10 +12,12 @@ import {
     timelineWindow,
     slideWindowEnd,
     entityAlternateGreetings,
+    entityScenario,
     isGreetingOpening,
     TIMELINE_RENDER_LIMIT,
     TIMELINE_PAGE,
 } from '../../store/chatStoreUtils.js';
+import { draftStorageKey } from '../../store/chatInputUtils.js';
 import useChatPrefsStore from '../../store/chatPrefsStore.js';
 import ChatBubble from './ChatBubble.jsx';
 import ChatInput from './ChatInput.jsx';
@@ -185,6 +187,30 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
         () => entityAlternateGreetings(chatEntities.find((item) => item.id === partnerId)),
         [chatEntities, partnerId]
     );
+
+    /**
+     * The character's authored scenario (Task 02-8 step 3) — what the ✨ button
+     * inserts. Read from the SAME already-loaded chat entity as the greetings, so
+     * the composer costs no request.
+     */
+    const scenario = useMemo(
+        () => entityScenario(chatEntities.find((item) => item.id === partnerId)),
+        [chatEntities, partnerId]
+    );
+
+    /**
+     * Per-thread draft key (Task 02-8 step 4).
+     *
+     * `interactionId` is the task's spec (`hl.chat.draft.<interactionId>`), with
+     * the deterministic participant key and the entity id as fallbacks for a
+     * brand-new thread that has no interaction yet — a draft must not be lost
+     * merely because the thread has not produced a message.
+     */
+    const draftKey = useMemo(() => draftStorageKey({
+        interactionId: threadRow.interaction_id,
+        participantKey: threadRow.participant_key,
+        entityId: threadRow.entity_id,
+    }), [threadRow.interaction_id, threadRow.participant_key, threadRow.entity_id]);
 
     /**
      * True while the thread is still in its opening state: the character greeted
@@ -459,6 +485,27 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     };
 
     /**
+     * Send a batched image selection (Task 02-8 step 1).
+     *
+     * The socket takes ONE image per utterance, so five staged files become five
+     * `ENTITY_UTTERANCE` frames. They are sent in ORDER and the composer has
+     * already cleared — the batch is planned by `planImageMessages`, which puts
+     * the typed text on the FIRST image only (repeating a caption across five
+     * bubbles would be five copies of the same sentence).
+     *
+     * Each frame goes out through the same `sendImage` action a single image
+     * used, so the optimistic bubble, the socket guard and the engine path are
+     * unchanged; only the loop is new.
+     */
+    const handleSendImages = (payloads) => {
+        const list = Array.isArray(payloads) ? payloads : [];
+        for (const payload of list) {
+            sendImage(ownEntityId, payload);
+        }
+        setReplyTo(null);
+    };
+
+    /**
      * Send a chosen alternate greeting as the user's opening message.
      *
      * The chosen text goes through the ordinary text path, so the bubble appears
@@ -470,7 +517,6 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const handleSendGreetingAlternate = (text) => sendGreetingAlternate(ownEntityId, text);
 
     const handleSendAudio = (audio) => sendAudio(ownEntityId, audio);
-    const handleSendImage = (image) => sendImage(ownEntityId, image);
 
     const handleSendEmojiAction = (action) => {
         // An emoji action is a short substitution text plus its emotion effect.
@@ -744,9 +790,22 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                     <ChatInput
                         onSendText={handleSendText}
                         onSendAudio={handleSendAudio}
-                        onSendImage={handleSendImage}
+                        onSendImages={handleSendImages}
                         onSendEmojiAction={handleSendEmojiAction}
+                        /*
+                         * `disabled` alone cannot explain itself: the composer
+                         * needs to say WHICH reason applies (Task 02-8 step 6).
+                         * The AI-disabled case normally renders the banner
+                         * instead, but passing the reason keeps the placeholder
+                         * honest if both ever coexist.
+                         */
                         disabled={connectionState !== 'connected'}
+                        disabledReason={aiDisabled
+                            ? 'aiDisabled'
+                            : (connectionState !== 'connected' ? 'offline' : null)}
+                        scenario={scenario}
+                        draftKey={draftKey}
+                        entityId={partnerId}
                     />
                 )}
                 </div>

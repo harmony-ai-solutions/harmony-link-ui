@@ -221,6 +221,13 @@ export async function listChatEntities() {
             alternate_greetings: entity?.alternate_greetings
                 ?? entity?.character_profile?.alternate_greetings
                 ?? '',
+            // Authored scenario (Task 02-8 step 3) — what the composer's ✨
+            // button inserts as a quoted context line. Lifted for exactly the
+            // same reason as the greetings: ChatView has already loaded the
+            // entity, so reading it here costs no request.
+            scenario: entity?.scenario
+                ?? entity?.character_profile?.scenario
+                ?? '',
         };
     }).filter((entity) => entity.id);
 }

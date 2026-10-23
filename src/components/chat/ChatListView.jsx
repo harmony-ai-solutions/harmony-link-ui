@@ -5,34 +5,20 @@ import useChatStore from '../../store/chatStore.js';
 import useEntityStore from '../../store/entityStore.js';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
-import Tooltip from '../ui/Tooltip.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
+import ConversationRow from './ConversationRow.jsx';
+import ConversationMenu from './ConversationMenu.jsx';
 import {
     partitionChatEntities,
     entityDisplayName,
     conversationPreview,
     conversationDisplayName,
-    conversationAvatarProfileId,
-    isConversationLastMessageOutgoing,
-    truncatePreview,
 } from '../../store/chatStoreUtils.js';
 import {
     filterByPartner,
     groupByDay,
     partnerChips,
-    rowUnreadBadge,
 } from '../../store/inboxUtils.js';
-
-/** Short time-of-day label for a row (`14:05`), or the date when older. */
-function formatRowTime(value, now = new Date()) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const sameDay = date.toDateString() === now.toDateString();
-    return sameDay
-        ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-        : date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
-}
 
 /**
  * Chat list (F1) — the desktop GLOBAL INBOX (Task 02-4).
@@ -50,6 +36,7 @@ function formatRowTime(value, now = new Date()) {
  *    there are ≥2 partners) narrows the list client-side,
  *  - rows are grouped into Today / Yesterday / Earlier,
  *  - each row is avatar · name · preview · time · status column · unread badge,
+ *  - every row carries a `⋯` / right-click **action menu** (Task 02-5),
  *  - archived threads are hidden behind a collapsible "Archived (N)" section.
  *
  * @param {{ onOpenConversation: (conversation: object) => void,
@@ -62,6 +49,12 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
     const [unreadOnly, setUnreadOnly] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    /**
+     * The open row menu: `{ conversation, position }`. One menu instance is
+     * rendered for the whole list (rather than one per row) — a portal per row
+     * would mount hundreds of listeners on a busy inbox.
+     */
+    const [menu, setMenu] = useState(null);
 
     const conversations = useChatStore((s) => s.conversations);
     const archivedConversations = useChatStore((s) => s.archivedConversations);
@@ -156,90 +149,27 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
         });
     };
 
-    /**
-     * Status column: 📌 pinned · 🔇 muted · 🚫 disabled.
-     *
-     * Glyphs (matching the Android inbox) rather than new SVG icons, each with a
-     * translated accessible label + tooltip so the meaning is not guesswork.
-     * Rendered only when at least one flag is set — a quiet row stays quiet.
-     */
-    const renderStatus = (conversation) => {
-        const flags = [];
-        if (conversation.pinned) {
-            flags.push({ key: 'pinned', glyph: '📌', label: t('chat:list.statusPinned') });
-        }
-        if (conversation.muted) {
-            flags.push({ key: 'muted', glyph: '🔇', label: t('chat:list.statusMuted') });
-        }
-        if (conversation.entity_disabled) {
-            flags.push({ key: 'disabled', glyph: '🚫', label: t('chat:list.statusDisabled') });
-        }
-        if (flags.length === 0) return null;
-        return (
-            <span className="chat-list-status">
-                {flags.map((flag) => (
-                    <Tooltip key={flag.key} content={flag.label}>
-                        <span className="chat-list-status-icon" aria-label={flag.label} role="img">
-                            {flag.glyph}
-                        </span>
-                    </Tooltip>
-                ))}
-            </span>
-        );
-    };
+    /** Hand the row's open action the camelCase shape the detail view expects. */
+    const openConversation = (conversation) => onOpenConversation?.({
+        interactionId: conversation.interaction_id,
+        entityId: conversation.entity_id,
+        participantIds: conversation.participant_ids,
+        partnerEntityId: conversation.partner_entity_id,
+        participantKey: conversation.participant_key,
+    });
 
-    const renderRow = (conversation) => {
-        // Name/avatar by the AI companion that OWNS the row, not by
-        // partner_entity_id (the persona "user").
-        const name = conversationDisplayName(conversation, entityById);
-        const avatarProfileId = conversationAvatarProfileId(conversation, entityById);
-        const preview = conversationPreview(conversation.last_message);
-        const isOutgoing = isConversationLastMessageOutgoing(conversation, entityById);
-        const previewPrefix = isOutgoing ? `${t('chat:list.you')}: ` : '';
-        // Suppress the badge when muted — the Android rule. A muted thread
-        // still sorts and still shows its preview; it just stops shouting.
-        const badge = rowUnreadBadge(conversation);
+    const openMenu = (conversation, position) => setMenu({ conversation, position });
 
-        return (
-            <li key={conversation.participant_key}>
-                <button
-                    type="button"
-                    className={`chat-list-row ${badge > 0 ? 'chat-list-row-unread' : ''}`}
-                    onClick={() => onOpenConversation?.({
-                        interactionId: conversation.interaction_id,
-                        entityId: conversation.entity_id,
-                        participantIds: conversation.participant_ids,
-                        partnerEntityId: conversation.partner_entity_id,
-                        participantKey: conversation.participant_key,
-                    })}
-                >
-                    <span className="chat-list-avatar-ring">
-                        <CharacterImage
-                            profileId={avatarProfileId}
-                            alt={name}
-                            className="chat-list-avatar"
-                            fallback={<span className="chat-list-avatar-fallback"><RobotIcon className="w-5 h-5" /></span>}
-                        />
-                    </span>
-                    <span className="chat-list-body">
-                        <span className="chat-list-row-top">
-                            <span className="chat-list-name">{name}</span>
-                            {renderStatus(conversation)}
-                            <span className="chat-list-time">
-                                {formatRowTime(conversation.last_activity_at || conversation.last_message?.created_at)}
-                            </span>
-                        </span>
-                        <span className="chat-list-preview">
-                            {preview
-                                ? `${previewPrefix}${truncatePreview(preview)}`
-                                : t('chat:list.noMessages')}
-                        </span>
-                    </span>
-                    {badge > 0 && <span className="chat-list-badge">{badge}</span>}
-                </button>
-            </li>
-        );
-    };
+    const renderRow = (conversation) => (
+        <ConversationRow
+            key={conversation.participant_key}
+            conversation={conversation}
+            entityById={entityById}
+            onOpen={openConversation}
+            onMenu={openMenu}
+            menuOpen={menu?.conversation?.participant_key === conversation.participant_key}
+        />
+    );
 
     return (
         <div className="chat-list">
@@ -412,6 +342,16 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* One menu instance for the whole list, portaled to <body>. See
+                the note on the `menu` state. */}
+            {menu && (
+                <ConversationMenu
+                    conversation={menu.conversation}
+                    position={menu.position}
+                    onClose={() => setMenu(null)}
+                />
             )}
         </div>
     );

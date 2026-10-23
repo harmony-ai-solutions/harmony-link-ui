@@ -374,6 +374,14 @@ export const SearchIcon = ({ className = defaultSize }) => (
     </svg>
 );
 
+// Archive box (Conversations group). Drawn as a lidded box rather than the
+// generic folder glyph, so "archived" does not read as "browse files".
+export const ArchiveIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 01-2-2V5a1 1 0 011-1h16a1 1 0 011 1v1a2 2 0 01-2 2M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4" />
+    </svg>
+);
+
 // Optical-size normalization: 16x16 artwork scaled 18/16 = 1.125 so it is not
 // visually smaller than the other nav glyphs.
 export const SimulatorIcon = ({ className = defaultSize }) => (

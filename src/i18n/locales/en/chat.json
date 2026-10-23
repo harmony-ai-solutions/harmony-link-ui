@@ -57,6 +57,55 @@
     "loading": "Loading conversations…",
     "failedToLoad": "Could not load conversations."
   },
+  "menu": {
+    "open": "Conversation actions",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "disableAI": "Disable AI",
+    "enableAI": "Enable AI",
+    "delete": "Delete",
+    "deleteTitle": "Delete conversation",
+    "deleteMessage": "Delete the conversation with {{name}}? This removes the thread and its messages and cannot be undone."
+  },
+  "archived": {
+    "title": "Archived",
+    "subtitle": "Conversations you have filed away",
+    "searchPlaceholder": "Search archived conversations",
+    "empty": "Nothing is archived",
+    "emptyHint": "Archive a conversation from the inbox to move it here.",
+    "noMatches": "No archived conversations match",
+    "noMatchesHint": "Try a different search.",
+    "backToInbox": "Back to the inbox"
+  },
+  "disabled": {
+    "title": "{{name}} is disabled",
+    "hint": "This AI partner is switched off. Enable it to chat again.",
+    "enable": "Enable",
+    "enableFailed": "Could not enable this AI partner."
+  },
+  "disabledAIs": {
+    "title": "Disabled AIs",
+    "subtitle": "AI partners that are currently switched off",
+    "empty": "No disabled AI partners",
+    "emptyHint": "Every AI partner is switched on.",
+    "itemHint": "Off — no chat, no outreach, automations paused",
+    "enable": "Enable",
+    "enabling": "Enabling…",
+    "backToInbox": "Back to the inbox"
+  },
+  "toast": {
+    "conversationDeleted": "Conversation deleted",
+    "markedRead": "Marked as read",
+    "markedUnread": "Marked as unread",
+    "aiDisabled": "AI partner disabled",
+    "aiEnabled": "AI partner enabled"
+  },
   "conversation": {
     "back": "Back",
     "loadingMessages": "Loading messages…",

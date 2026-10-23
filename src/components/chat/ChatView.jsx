@@ -30,6 +30,8 @@ const ChatView = ({ onNavigate }) => {
     const loadInbox = useChatStore((s) => s.loadInbox);
     const openChat = useChatStore((s) => s.openConversation);
     const closeSocket = useChatStore((s) => s.closeSocket);
+    const detailCloseTick = useChatStore((s) => s.detailCloseTick);
+    const clearDetailCloseTick = useChatStore((s) => s.clearDetailCloseTick);
 
     const { partners, personas } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
@@ -74,6 +76,48 @@ const ChatView = ({ onNavigate }) => {
             setOwnEntityId(personas[0].id);
         }
     }, [personas, ownEntityId]);
+
+    /**
+     * Open a thread requested from ANOTHER view (the Archived screen).
+     *
+     * Same one-shot handoff as `startChatRequest`: the request is stashed in the
+     * store because navigating here unmounts the requester. The row is already
+     * inbox-shaped (snake_case), so it is normalised before being handed to the
+     * SAME `handleOpenConversation` path the list uses — the persona/participant
+     * resolution must not be duplicated.
+     */
+    useEffect(() => {
+        const request = useChatStore.getState().openConversationRequest;
+        if (!request) return;
+        useChatStore.getState().clearRequestOpenConversation();
+        const normalized = {
+            interactionId: request.interaction_id || request.interactionId || null,
+            entityId: request.entity_id || request.entityId,
+            participantIds: request.participant_ids || request.participantIds || [],
+            partnerEntityId: request.partner_entity_id || request.partnerEntityId,
+            participantKey: request.participant_key || request.participantKey,
+        };
+        if (normalized.entityId) handleOpenConversation(normalized);
+        // Mount-only: the request is consumed once, and `handleOpenConversation`
+        // closes over the entity/persona lists this mount loaded.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /**
+     * Drop back to the list when a thread action removed the open conversation
+     * (Task 02-5 delete).
+     *
+     * `openConversation` is LOCAL state here, so the store clearing
+     * `activeConversation` cannot unmount the detail view on its own. The store
+     * bumps `detailCloseTick` for exactly this case and the signal is consumed
+     * once.
+     */
+    useEffect(() => {
+        if (!detailCloseTick) return;
+        clearDetailCloseTick();
+        setOpenConversation(null);
+        loadInbox();
+    }, [detailCloseTick, clearDetailCloseTick, loadInbox]);
 
     const handleOpenConversation = async (conversation) => {
         const partner = chatEntities.find((e) => e.id === conversation.entityId);
@@ -185,6 +229,7 @@ const ChatView = ({ onNavigate }) => {
                     <ChatListView
                         onOpenConversation={handleOpenConversation}
                         onNavigate={onNavigate}
+                        onOpenArchived={() => onNavigate?.('archived')}
                     />
                 )}
             </div>

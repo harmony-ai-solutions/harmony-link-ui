@@ -180,6 +180,91 @@ export function rowUnreadBadge(row) {
 }
 
 /**
+ * Place a client-synthesised row into the server order WITHOUT re-sorting the
+ * rows that are already there.
+ *
+ * An inbox row that moves between arrays (archive / unarchive) has no server
+ * position any more, so it has to be slotted in somewhere. Re-sorting the whole
+ * list would be the one thing this module forbids — it re-ranks every other
+ * row and can make the thread the user is watching jump. Instead this finds the
+ * single insertion point in the existing (already ordered) array: pinned rows
+ * first, then newest activity first, and inserts there. Existing rows keep their
+ * relative order.
+ *
+ * @param {Array<object>} rows - already ordered rows (server order)
+ * @param {object} row - the row to slot in
+ * @returns {Array<object>} a NEW array; the original when `row` is unusable
+ */
+export function insertByInboxOrder(rows, row) {
+    const list = rows || [];
+    const key = row?.participant_key;
+    if (!key) return list;
+    const time = rowTime(row);
+    const pinned = !!row.pinned;
+
+    // A pinned row may not sit below an unpinned one; an unpinned row may not
+    // sit above a pinned one. Between rows of the same tier, newest first.
+    let index = list.findIndex((existing) => {
+        if (pinned !== !!existing.pinned) return pinned;
+        return time > rowTime(existing);
+    });
+    if (index === -1) index = list.length;
+
+    const next = list.slice();
+    next.splice(index, 0, { ...row });
+    return next;
+}
+
+/**
+ * Move a thread between the inbox's active and archived arrays.
+ *
+ * The engine returns active and archived threads in two separate arrays, so
+ * archiving is a MOVE, not a flag flip — a row patched in place would linger in
+ * the wrong section. The row keeps its identity (`participant_key`) and takes
+ * the new `archived` flag; it is slotted into the target array with
+ * {@link insertByInboxOrder}, so no existing row is re-ranked.
+ *
+ * @param {Array<object>} activeRows
+ * @param {Array<object>} archivedRows
+ * @param {string} participantKey
+ * @param {boolean} archived
+ * @returns {{conversations: Array<object>, archivedConversations: Array<object>}}
+ */
+export function moveConversation(activeRows, archivedRows, participantKey, archived) {
+    const active = activeRows || [];
+    const archivedList = archivedRows || [];
+    if (!participantKey) {
+        return { conversations: active, archivedConversations: archivedList };
+    }
+    const source = [...active, ...archivedList].find((row) => row?.participant_key === participantKey);
+    if (!source) {
+        return { conversations: active, archivedConversations: archivedList };
+    }
+
+    const moved = { ...source, archived: !!archived };
+    const withoutActive = active.filter((row) => row?.participant_key !== participantKey);
+    const withoutArchived = archivedList.filter((row) => row?.participant_key !== participantKey);
+
+    return archived
+        ? { conversations: withoutActive, archivedConversations: insertByInboxOrder(withoutArchived, moved) }
+        : { conversations: insertByInboxOrder(withoutActive, moved), archivedConversations: withoutArchived };
+}
+
+/**
+ * The AI entities that are currently disabled (`entities.is_disabled`), for the
+ * Disabled AIs screen. User-type personas are excluded: disabling is an AI
+ * automation gate, and a persona has no automation to gate.
+ *
+ * @param {Array<object>} entities - chat entities (`{id, entity_type, is_disabled, …}`)
+ * @returns {Array<object>}
+ */
+export function disabledEntities(entities) {
+    return (entities || []).filter(
+        (entity) => entity?.id && entity.entity_type !== 'user' && entity.is_disabled
+    );
+}
+
+/**
  * The distinct AI partners present in the inbox, for the filter chip row.
  *
  * Derived from the ROWS rather than the entity list on purpose: a chip must

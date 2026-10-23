@@ -10,18 +10,21 @@ import CharacterProfilesView from "./components/characters/CharacterProfilesView
 import PersonasView from "./components/personas/PersonasView.jsx";
 import ModuleConfigurationsView from "./components/ModuleConfigurationsView.jsx";
 import DynamicBackground from "./components/DynamicBackground.jsx";
-import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon, SyncIcon } from './constants/icons.jsx';
+import { SettingsGearIcon, UsersIcon, PuzzleIcon, RobotIcon, LinkIcon, SimulatorIcon, TerminalIcon, SmileIcon, ChevronRightIcon, MessageIcon, SyncIcon, ArchiveIcon, XCircleIcon } from './constants/icons.jsx';
 import DeviceApprovalModal from "./components/modals/DeviceApprovalModal.jsx";
 import DeviceManagementView from "./components/sync/DeviceManagementView.jsx";
 import SyncStatusView from "./components/sync/SyncStatusView.jsx";
 import useOutreachNotifications from "./hooks/useOutreachNotifications.js";
 import { HealthIndicator, HealthBanner, useEngineHealth } from "./components/ui/EngineHealth.jsx";
 import { deviceApprovalWatcher } from "./services/sync/deviceApprovalWatcher.js";
-import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync } from './constants.jsx'
+import { SettingsTabMain, SettingsTabChat, SettingsTabGeneral, SettingsTabEntities, SettingsTabPersonas, SettingsTabCharacters, SettingsTabModules, SettingsTabDevelopment, SettingsTabIntegrations, SettingsTabSimulator, SettingsTabSync, SettingsTabArchived, SettingsTabDisabledAIs } from './constants.jsx'
 import { LogDebug, LogError, LogPrint } from "./utils/logger.js";
 import useDynamicBackgroundStore from "./store/dynamicBackgroundStore.js";
 import useUIModeStore, { isModeAllowed } from "./store/uiModeStore.js";
 import ChatView from "./components/chat/ChatView.jsx";
+import ArchivedChatsView from "./components/chat/ArchivedChatsView.jsx";
+import DisabledAIsView from "./components/chat/DisabledAIsView.jsx";
+import useChatStore from "./store/chatStore.js";
 import TutorialController from './components/tutorial/TutorialController.jsx';
 import useTutorialStore from './store/tutorialStore';
 import { I18nProvider } from './contexts/I18nContext.jsx';
@@ -216,6 +219,14 @@ function HarmonyLinkAppInner() {
         setSettingsTab(SettingsTabChat);
     };
 
+    // "Open" from the Archived screen — same one-shot handoff as
+    // handleStartChatFromCard: the request goes into chatStore and ChatView
+    // consumes it on mount, because navigating away unmounts the Archived view.
+    const handleOpenArchivedConversation = (conversation) => {
+        useChatStore.getState().requestOpenConversation(conversation);
+        setSettingsTab(SettingsTabChat);
+    };
+
     // On Application Loaded
     useEffect(() => {
         // Load Config on Start
@@ -360,17 +371,18 @@ function HarmonyLinkAppInner() {
             ],
         },
         {
-            // Conversations — the inbox. Intentionally empty until Phase 02
-            // populates it; see the note above.
+            // Conversations — the "filed away" destinations beside the inbox.
+            // The inbox itself stays on the primary Chat tab (reachable with
+            // zero clicks); these are where a thread goes when it is archived
+            // and where a switched-off partner can be turned back on. Both are
+            // Simple-mode: neither is a power feature.
             id: 'conversations',
             label: t('nav.groups.conversations'),
             icon: MessageIcon,
             minMode: 'simple',
             tabs: [
-                // Phase 02: Archived chats.
-                // { id: SettingsTabArchived, label: t('nav.tabs.archived'), icon: ArchiveIcon, minMode: 'simple' },
-                // Phase 02: Disabled AI partners.
-                // { id: SettingsTabDisabledAIs, label: t('nav.tabs.disabledAIs'), icon: UsersIcon, minMode: 'simple' },
+                { id: SettingsTabArchived, label: t('nav.tabs.archived'), icon: ArchiveIcon, minMode: 'simple' },
+                { id: SettingsTabDisabledAIs, label: t('nav.tabs.disabledAIs'), icon: XCircleIcon, minMode: 'simple' },
             ],
         },
         {
@@ -519,6 +531,18 @@ function HarmonyLinkAppInner() {
                             never appear (defence-in-depth alongside the menu filter). */}
                         {settingsTab === SettingsTabChat &&
                             <ChatView onNavigate={setSettingsTab} />
+                        }
+                        {/* Conversations group — the "filed away" destinations.
+                            Both open a thread by handing it back to ChatView,
+                            which owns the persona/participant resolution. */}
+                        {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabArchived && (
+                            <ArchivedChatsView
+                                onOpenConversation={handleOpenArchivedConversation}
+                                onNavigate={setSettingsTab}
+                            />
+                        )}
+                        {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabDisabledAIs &&
+                            <DisabledAIsView onNavigate={setSettingsTab} />
                         }
                         {applicationConfig && settingsTab === SettingsTabGeneral &&
                             <GeneralSettingsView 

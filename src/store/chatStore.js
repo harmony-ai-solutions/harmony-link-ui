@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import * as chatReadService from '../services/management/chatReadService.js';
+import * as chatActionService from '../services/management/chatActionService.js';
+import { setEntityDisabled as setEntityDisabledRequest } from '../services/management/entityService.js';
 import { ChatSocketService, generateEventId } from '../services/chat/chatSocketService.js';
 import {
     mergeMessages,
@@ -10,6 +12,10 @@ import {
     setEntityFlag,
     lastMessage,
 } from './chatStoreUtils.js';
+import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
+import { announceConversationAction } from './conversationActions.js';
+import { toast } from './toastStore.js';
+import { translate } from '../i18n/translate.js';
 
 /**
  * Desktop Chat store (Phase 2-1).
@@ -67,6 +73,56 @@ function patchConversation(rows, patch) {
     const next = rows.slice();
     next[index] = { ...next[index], ...patch };
     return next;
+}
+
+/**
+ * Snapshot the two inbox arrays before an optimistic mutation.
+ *
+ * Rollback restores the SNAPSHOT rather than flipping the flag back, because
+ * archive/unarchive MOVES a row between arrays: "undo" has to put the row back
+ * in the array it came from, with the flags it had, or the failure path becomes
+ * a second mutation of its own.
+ */
+function snapshotInbox(state) {
+    return {
+        conversations: state.conversations,
+        archivedConversations: state.archivedConversations,
+    };
+}
+
+/** Restore an inbox snapshot taken by {@link snapshotInbox}. */
+function restoreInbox(set, snapshot) {
+    set({
+        conversations: snapshot.conversations,
+        archivedConversations: snapshot.archivedConversations,
+    });
+}
+
+/**
+ * True when `participantKey` is the OPEN thread.
+ *
+ * The open conversation arrives in camelCase from the list (`participantKey`)
+ * but in snake_case once it mirrors an inbox row, so both are checked — a
+ * delete must close the detail view either way.
+ */
+function isActiveConversation(activeConversation, participantKey) {
+    if (!activeConversation || !participantKey) return false;
+    return (activeConversation.participantKey || activeConversation.participant_key) === participantKey;
+}
+
+/**
+ * Mirror an entity-level flag into `chatEntities` (mute / disable).
+ *
+ * `chatEntities` is what the New Chat picker and the composer's disabled banner
+ * read, and it is a separate copy from the inbox rows. Patching both keeps them
+ * from contradicting each other for the rest of the session.
+ */
+function syncChatEntityFlag(set, get, entityId, field, value) {
+    if (!entityId) return;
+    const chatEntities = (get().chatEntities || []).map((entity) => (
+        entity.id === entityId ? { ...entity, [field]: value } : entity
+    ));
+    set({ chatEntities });
 }
 
 export const useChatStore = create((set, get) => ({
@@ -138,6 +194,22 @@ export const useChatStore = create((set, get) => ({
      * that AI partner. Mirrors characterProfileStore.createProfileRequested.
      */
     startChatRequest: null,
+    /**
+     * Cross-view request: set by the Archived screen (Task 02-5), consumed once
+     * by ChatView, which owns the persona/participant resolution. Same handoff
+     * pattern as {@link startChatRequest} — navigating to the Chat tab unmounts
+     * the requester, so the request cannot travel as a prop.
+     */
+    openConversationRequest: null,
+    /**
+     * Bumped when {@link deleteConversation} removes the thread that was open.
+     *
+     * The open conversation is ChatView's LOCAL state, so clearing the store's
+     * `activeConversation` cannot unmount the detail view by itself. ChatView
+     * watches this counter and drops back to the list when it changes — an
+     * explicit one-shot signal rather than a boolean the consumer must reset.
+     */
+    detailCloseTick: 0,
 
     // ── Chat list ────────────────────────────────────────────────────────
 
@@ -229,6 +301,22 @@ export const useChatStore = create((set, get) => ({
     /** Clear the pending start-chat request (consumed once by ChatView). */
     clearRequestStartChat: () => set({ startChatRequest: null }),
 
+    /**
+     * Ask the Chat tab to open an EXISTING conversation (Task 02-5).
+     *
+     * Same handoff as {@link requestStartChat}: the Archived screen navigates to
+     * the Chat tab, which unmounts the requester, so the request cannot travel
+     * as a prop. ChatView owns the persona/participant resolution, so it must be
+     * the one that opens the thread.
+     *
+     * @param {object} conversation - an inbox row (snake_case) or a
+     *   ChatView-shaped conversation object.
+     */
+    requestOpenConversation: (conversation) => set({ openConversationRequest: conversation }),
+
+    /** Clear the pending open-conversation request (consumed once by ChatView). */
+    clearRequestOpenConversation: () => set({ openConversationRequest: null }),
+
     // ── Open conversation ────────────────────────────────────────────────
 
     /**
@@ -316,9 +404,8 @@ export const useChatStore = create((set, get) => ({
     },
 
     /**
-     * Mark the open conversation read (participant_key scoped) and clear its
-     * local unread badge optimistically. Re-reads converge on the next
-     * loadInbox().
+     * Mark the open conversation read and clear its local unread badge
+     * optimistically. Re-reads converge on the next `loadInbox()`.
      *
      * The badge is cleared IN PLACE (never by re-inserting and re-sorting the
      * row): the engine owns the inbox order, and re-sorting here would move the
@@ -326,16 +413,253 @@ export const useChatStore = create((set, get) => ({
      */
     markActiveConversationRead: async ({ upToMessageId } = {}) => {
         const { activeConversation } = get();
-        const { entityId, participantKey } = activeConversation || {};
-        if (!entityId || !participantKey) return;
-        get().patchConversation(participantKey, { unread_count: 0 });
+        if (!activeConversation) return;
+        await get().markRead(activeConversation, { upToMessageId });
+    },
+
+    // ── Conversation actions (Task 02-5) ─────────────────────────────────
+    //
+    // Every action below follows the same three beats, matching the optimistic
+    // send path already in this store:
+    //
+    //   1. patch the inbox row(s) LOCALLY first, so the UI is instant;
+    //   2. call the engine;
+    //   3. on failure, restore the previous row(s) and toast the reason.
+    //
+    // The row is restored from a SNAPSHOT rather than by flipping the flag back:
+    // an archive moves the row between arrays, so "undo" has to put it back
+    // where it was, with the flags it had.
+
+    /**
+     * Pin / unpin a conversation.
+     *
+     * Pin lives on `chat_conversation_settings` (participant-key scoped), and it
+     * only affects the row's flag — the engine re-ranks on the next load, and
+     * the row is deliberately NOT moved here: a pin that instantly reorders the
+     * list would jump the thread away from the pointer that just pinned it.
+     *
+     * @param {object} conversation - inbox row or open conversation
+     * @param {boolean} pinned
+     * @returns {Promise<boolean>} true when the engine accepted the change
+     */
+    setPinned: async (conversation, pinned) => {
+        const { participantKey } = chatActionService.conversationTarget(conversation);
+        if (!participantKey) return false;
+        const snapshot = snapshotInbox(get());
+        get().patchConversation(participantKey, { pinned: !!pinned });
         try {
-            await chatReadService.markConversationRead(entityId, participantKey, { upToMessageId });
+            await chatActionService.setConversationPinned(conversation, !!pinned);
+            announceConversationAction('pin', !!pinned, translate);
+            return true;
         } catch (error) {
-            // The badge re-syncs from the engine on the next list load.
+            restoreInbox(set, snapshot);
             set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
         }
     },
+
+    /**
+     * Archive / unarchive a conversation.
+     *
+     * This is a MOVE between the two inbox arrays, not a flag flip: the engine
+     * returns archived threads in their own array, so patching in place would
+     * leave the row in the wrong section. {@link moveConversation} slots it into
+     * the target array without re-ranking anything else.
+     *
+     * @param {object} conversation
+     * @param {boolean} archived
+     * @returns {Promise<boolean>}
+     */
+    setArchived: async (conversation, archived) => {
+        const { participantKey } = chatActionService.conversationTarget(conversation);
+        if (!participantKey) return false;
+        const snapshot = snapshotInbox(get());
+        const moved = moveConversation(
+            get().conversations, get().archivedConversations, participantKey, !!archived
+        );
+        set({
+            conversations: moved.conversations,
+            archivedConversations: moved.archivedConversations,
+        });
+        // The open thread's own header flag follows the row.
+        const active = get().activeConversation;
+        if (active && (active.participant_key || active.participantKey) === participantKey) {
+            set({ activeConversation: { ...active, archived: !!archived } });
+        }
+        try {
+            await chatActionService.setConversationArchived(conversation, !!archived);
+            announceConversationAction('archive', !!archived, translate);
+            return true;
+        } catch (error) {
+            restoreInbox(set, snapshot);
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Mute / unmute the AI partner behind a conversation.
+     *
+     * Mute is ENTITY-level (`entities.is_muted`), so EVERY thread owned by that
+     * companion changes, not just the one that was clicked — patching only the
+     * clicked row would leave the others contradicting the engine. The unread
+     * badge is cleared as well because a muted thread never shows one.
+     *
+     * @param {object} conversation
+     * @param {boolean} muted
+     * @returns {Promise<boolean>}
+     */
+    setMuted: async (conversation, muted) => {
+        const { participantKey } = chatActionService.conversationTarget(conversation);
+        const entityId = conversation?.entity_id || conversation?.entityId || '';
+        if (!participantKey && !entityId) return false;
+
+        const snapshot = snapshotInbox(get());
+        const patchOwned = (rows) => (rows || []).map((row) => (
+            row.entity_id === entityId ? { ...row, muted: !!muted } : row
+        ));
+        set({
+            conversations: patchOwned(get().conversations),
+            archivedConversations: patchOwned(get().archivedConversations),
+        });
+        try {
+            await chatActionService.setConversationMuted(conversation, !!muted);
+            announceConversationAction('mute', !!muted, translate);
+            // The entity flag also drives the detail view's status column.
+            syncChatEntityFlag(set, get, entityId, 'is_muted', !!muted);
+            return true;
+        } catch (error) {
+            restoreInbox(set, snapshot);
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Mark a conversation read, or bump its newest message back to unread.
+     *
+     * `read: true` is the badge-clearing path and is idempotent engine-side.
+     * `read: false` restores the phone app's "mark unread" affordance (the
+     * engine sets exactly ONE message unread), so the local badge becomes 1.
+     *
+     * @param {object} conversation
+     * @param {{ read?: boolean, upToMessageId?: string }} [options]
+     * @returns {Promise<boolean>}
+     */
+    markRead: async (conversation, { read = true, upToMessageId } = {}) => {
+        const { participantKey } = chatActionService.conversationTarget(conversation);
+        if (!participantKey && !chatActionService.canWriteConversation(conversation)) return false;
+
+        const snapshot = snapshotInbox(get());
+        if (participantKey) {
+            get().patchConversation(participantKey, { unread_count: read ? 0 : 1 });
+        }
+        try {
+            await chatActionService.markConversationRead(conversation, { read, upToMessageId });
+            return true;
+        } catch (error) {
+            restoreInbox(set, snapshot);
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Delete a conversation.
+     *
+     * The row is removed optimistically from BOTH arrays, and the timeline is
+     * cleared when the deleted thread was the open one. `detailCloseTick` is
+     * bumped in that case so the chat container can drop back to the list — the
+     * detail view is mounted with local state, so a store flag alone cannot
+     * unmount it.
+     *
+     * A `409` (an entity session is still live) restores everything and shows
+     * the engine's copy verbatim: "Close the conversation before deleting it."
+     *
+     * @param {object} conversation
+     * @returns {Promise<boolean>}
+     */
+    deleteConversation: async (conversation) => {
+        const { participantKey } = chatActionService.conversationTarget(conversation);
+        if (!participantKey) return false;
+
+        const snapshot = snapshotInbox(get());
+        const previousActive = get().activeConversation;
+        const previousMessages = get().messages;
+        const wasOpen = isActiveConversation(previousActive, participantKey);
+        get().dropConversation(participantKey);
+        if (wasOpen) {
+            get().closeSocket();
+            set({ activeConversation: null, messages: [] });
+        }
+        try {
+            await chatActionService.deleteConversation(conversation);
+            toast.success(translate('chat:toast.conversationDeleted'));
+            if (wasOpen) set({ detailCloseTick: get().detailCloseTick + 1 });
+            return true;
+        } catch (error) {
+            restoreInbox(set, snapshot);
+            if (wasOpen) {
+                // Restore the EXACT previous objects, not the row we passed in:
+                // the open conversation carries navigation state (title,
+                // interactionId) that a generic inbox row does not.
+                set({ activeConversation: previousActive, messages: previousMessages });
+            }
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /**
+     * Enable / disable an AI partner.
+     *
+     * Delegates to the EXISTING entity `is_disabled` update — this is the same
+     * synced flag the phone app's Disabled-AIs screen reads and the automation
+     * gates honour, so there is deliberately no second write path.
+     *
+     * Locally the flag is patched on every thread the entity owns (the inbox
+     * renders 🚫 per row) and on `chatEntities`, which is what the composer's
+     * disabled banner reads.
+     *
+     * @param {string} entityId
+     * @param {boolean} disabled
+     * @returns {Promise<boolean>}
+     */
+    setDisabled: async (entityId, disabled) => {
+        if (!entityId) return false;
+
+        const snapshot = snapshotInbox(get());
+        const patchOwned = (rows) => (rows || []).map((row) => (
+            row.entity_id === entityId ? { ...row, entity_disabled: !!disabled } : row
+        ));
+        set({
+            conversations: patchOwned(get().conversations),
+            archivedConversations: patchOwned(get().archivedConversations),
+        });
+        syncChatEntityFlag(set, get, entityId, 'is_disabled', !!disabled);
+
+        try {
+            await setEntityDisabledRequest(entityId, !!disabled);
+            toast.success(translate(disabled
+                ? 'chat:toast.aiDisabled'
+                : 'chat:toast.aiEnabled'));
+            return true;
+        } catch (error) {
+            restoreInbox(set, snapshot);
+            syncChatEntityFlag(set, get, entityId, 'is_disabled', !disabled);
+            set({ error: error.message });
+            toast.error(error.message || translate('chat:errors.generic'));
+            return false;
+        }
+    },
+
+    /** Clear the pending "close the detail view" request (consumed once). */
+    clearDetailCloseTick: () => set({ detailCloseTick: 0 }),
 
     // ── Live socket ──────────────────────────────────────────────────────
 
@@ -633,6 +957,8 @@ export const useChatStore = create((set, get) => ({
             typingByEntity: {},
             recordingByEntity: {},
             wireFrames: [],
+            detailCloseTick: 0,
+            openConversationRequest: null,
             error: null,
         });
     },

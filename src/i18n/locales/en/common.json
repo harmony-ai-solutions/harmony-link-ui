@@ -12,7 +12,9 @@
       "integrations": "Integrations",
       "simulator": "Simulator",
       "dev": "Dev",
-      "sync": "Sync"
+      "sync": "Sync",
+      "archived": "Archived",
+      "disabledAIs": "Disabled AIs"
     },
     "groups": {
       "characters": "AI Characters",
@@ -113,7 +115,12 @@
     "conversationArchived": "Conversation archived",
     "conversationUnarchived": "Conversation unarchived",
     "conversationMuted": "Conversation muted",
-    "conversationUnmuted": "Conversation unmuted"
+    "conversationUnmuted": "Conversation unmuted",
+    "conversationDeleted": "Conversation deleted",
+    "markedRead": "Marked as read",
+    "markedUnread": "Marked as unread",
+    "aiDisabled": "AI partner disabled",
+    "aiEnabled": "AI partner enabled"
   },
   "deviceApproval": {
     "title": "New Device Connection Request",

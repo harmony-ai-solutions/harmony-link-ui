@@ -5035,6 +5035,204 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     }
 }
 
+/* ── Conversation actions (Task 02-5) ─────────────────────────────────
+   Rows become `li.chat-list-item` wrappers so the `⋯` trigger can sit BESIDE
+   the row button (a nested button is invalid HTML and eats the click). The
+   menu is portaled to <body> and positioned at fixed viewport coordinates, so
+   it escapes the inbox scroll container. */
+
+.chat-list-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.chat-list-item .chat-list-row {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-list-menu-btn {
+    flex-shrink: 0;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    opacity: 0;
+    transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+/* Reveal on row hover / focus-within so a quiet inbox stays quiet, but never
+   hide it from keyboard or touch users. */
+.chat-list-item:hover .chat-list-menu-btn,
+.chat-list-item:focus-within .chat-list-menu-btn,
+.chat-list-menu-btn:focus-visible,
+.chat-list-menu-btn-active {
+    opacity: 1;
+}
+
+.chat-list-menu-btn:hover,
+.chat-list-menu-btn-active {
+    color: var(--color-text-primary);
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glass);
+}
+
+@media (hover: none) {
+    /* Touch / pen: there is no hover to reveal it. */
+    .chat-list-menu-btn { opacity: 1; }
+}
+
+.chat-conv-menu {
+    position: fixed;
+    z-index: 10020;
+    min-width: 12rem;
+    padding: 0.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    border-radius: var(--radius-md, 10px);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.45));
+    animation: chat-conv-menu-in 0.12s ease-out;
+}
+
+@keyframes chat-conv-menu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-conv-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border-radius: 7px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    color: var(--color-text-secondary);
+    background: transparent;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+.chat-conv-menu-item:hover {
+    color: var(--color-text-primary);
+    background: var(--color-background-hover-glass);
+}
+
+.chat-conv-menu-item-danger {
+    color: var(--color-error, #f87171);
+}
+
+.chat-conv-menu-item-danger:hover {
+    color: var(--color-error, #f87171);
+    background: var(--color-error-bg, rgba(248, 113, 113, 0.12));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-conv-menu {
+        animation: none;
+    }
+}
+
+/* Header flags (pin / mute / disabled) beside the open thread's title. */
+.chat-detail-flag {
+    margin-left: 0.35rem;
+    font-size: 0.75rem;
+}
+
+/* Disabled-AI banner — replaces the composer (Android parity). */
+.chat-disabled-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-disabled-banner-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.chat-disabled-banner-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.chat-disabled-banner-title {
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.chat-disabled-banner-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-disabled-banner-action {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Disabled AIs screen. */
+.chat-disabled-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.chat-disabled-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-disabled-item-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.chat-disabled-item-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-disabled-item-action {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.chat-disabled-item-action:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
 /* ── New-chat picker ──────────────────────────────────────────────── */
 .chat-picker-backdrop {
     position: fixed;

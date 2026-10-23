@@ -9,6 +9,9 @@ import {
   rowUnreadBadge,
   isMuted,
   partnerChips,
+  insertByInboxOrder,
+  moveConversation,
+  disabledEntities,
   DAY_GROUPS,
 } from './inboxUtils.js';
 
@@ -208,4 +211,92 @@ test('partnerChips falls back to the entity list, then the id', () => {
   assert.deepEqual(chips[0], { id: 'ai1', name: 'Claire', profileId: 'p-claire' });
   assert.deepEqual(chips[1], { id: 'ai9', name: 'ai9', profileId: '' });
   assert.deepEqual(partnerChips(undefined), []);
+});
+
+// ── insertByInboxOrder ───────────────────────────────────────────────────
+
+test('insertByInboxOrder slots a row without re-ranking the existing ones', () => {
+  const rows = [
+    row('u1', 'ai1', { last_activity_at: '2026-01-03T00:00:00Z' }),
+    row('u2', 'ai2', { last_activity_at: '2026-01-01T00:00:00Z' }),
+  ];
+  const next = insertByInboxOrder(rows, row('u3', 'ai3', { last_activity_at: '2026-01-02T00:00:00Z' }));
+  assert.deepEqual(next.map((r) => r.participant_key), ['u1', 'u3', 'u2']);
+  // Existing rows keep their identity (cheap re-renders).
+  assert.equal(next[0], rows[0]);
+  assert.equal(next[2], rows[1]);
+});
+
+test('insertByInboxOrder puts a pinned row above every unpinned row', () => {
+  const rows = [
+    row('u1', 'ai1', { last_activity_at: '2026-01-09T00:00:00Z' }),
+    row('u2', 'ai2', { last_activity_at: '2025-01-01T00:00:00Z' }),
+  ];
+  const next = insertByInboxOrder(rows, row('u3', 'ai3', { pinned: true }));
+  assert.deepEqual(next.map((r) => r.participant_key), ['u3', 'u1', 'u2']);
+});
+
+test('insertByInboxOrder appends an unpinned row below pinned ones', () => {
+  const rows = [row('u1', 'ai1', { pinned: true })];
+  const next = insertByInboxOrder(rows, row('u2', 'ai2', { last_activity_at: '2030-01-01T00:00:00Z' }));
+  assert.deepEqual(next.map((r) => r.participant_key), ['u1', 'u2']);
+});
+
+test('insertByInboxOrder ignores a row with no participant key', () => {
+  const rows = [row('u1', 'ai1')];
+  assert.equal(insertByInboxOrder(rows, { entity_id: 'ai1' }), rows);
+  assert.deepEqual(insertByInboxOrder(undefined, row('u2', 'ai2')).length, 1);
+});
+
+// ── moveConversation (archive / unarchive) ───────────────────────────────
+
+test('moveConversation moves a row from active to archived and sets the flag', () => {
+  const active = [row('u1', 'ai1'), row('u2', 'ai2')];
+  const archived = [];
+  const moved = moveConversation(active, archived, 'u1', true);
+  assert.deepEqual(moved.conversations.map((r) => r.participant_key), ['u2']);
+  assert.deepEqual(moved.archivedConversations.map((r) => r.participant_key), ['u1']);
+  assert.equal(moved.archivedConversations[0].archived, true);
+});
+
+test('moveConversation moves a row back to active on unarchive, in recency order', () => {
+  // Distinct activity times on purpose: unarchive must SLOT the returned row by
+  // its recency (here it is the fresher thread), not blindly append it.
+  const active = [row('u2', 'ai2', { last_activity_at: '2026-01-01T00:00:00Z' })];
+  const archived = [
+    row('u1', 'ai1', { archived: true, last_activity_at: '2026-01-05T00:00:00Z' }),
+  ];
+  const moved = moveConversation(active, archived, 'u1', false);
+  assert.deepEqual(moved.conversations.map((r) => r.participant_key), ['u1', 'u2']);
+  assert.equal(moved.conversations[0].archived, false);
+  assert.deepEqual(moved.archivedConversations, []);
+});
+
+test('moveConversation leaves both arrays untouched for an unknown key', () => {
+  const active = [row('u1', 'ai1')];
+  const archived = [row('u2', 'ai2', { archived: true })];
+  const moved = moveConversation(active, archived, 'ghost', true);
+  assert.equal(moved.conversations, active);
+  assert.equal(moved.archivedConversations, archived);
+});
+
+test('moveConversation does not mutate its inputs', () => {
+  const active = [row('u1', 'ai1')];
+  const archived = [];
+  moveConversation(active, archived, 'u1', true);
+  assert.equal(active.length, 1);
+  assert.equal(active[0].archived, false);
+});
+
+// ── disabledEntities ─────────────────────────────────────────────────────
+
+test('disabledEntities lists disabled AI partners but never personas', () => {
+  const disabled = disabledEntities([
+    { id: 'ai1', entity_type: 'ai', is_disabled: true },
+    { id: 'ai2', entity_type: 'ai', is_disabled: false },
+    { id: 'user', entity_type: 'user', is_disabled: true },
+    { id: '', entity_type: 'ai', is_disabled: true },
+  ]);
+  assert.deepEqual(disabled.map((e) => e.id), ['ai1']);
+  assert.deepEqual(disabledEntities(undefined), []);
 });

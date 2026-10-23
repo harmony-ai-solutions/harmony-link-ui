@@ -27,7 +27,7 @@ const ChatView = ({ onNavigate }) => {
 
     const chatEntities = useChatStore((s) => s.chatEntities);
     const loadChatEntities = useChatStore((s) => s.loadChatEntities);
-    const loadConversations = useChatStore((s) => s.loadConversations);
+    const loadInbox = useChatStore((s) => s.loadInbox);
     const openChat = useChatStore((s) => s.openConversation);
     const closeSocket = useChatStore((s) => s.closeSocket);
 
@@ -134,9 +134,9 @@ const ChatView = ({ onNavigate }) => {
     const handleBack = () => {
         closeSocket();
         setOpenConversation(null);
-        // Refresh the inbox so the newest message shows (all companions —
-        // `loadConversations()` defaults to the merged app-style list).
-        loadConversations();
+        // Refresh the inbox so the newest message shows. `loadInbox()` is the
+        // global list — every companion in one request, ordered by the engine.
+        loadInbox();
     };
 
     const hasCompanions = partners.length > 0;

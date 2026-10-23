@@ -336,14 +336,26 @@ export function conversationCompanion(conversation, entityById) {
     return (id && entityById && entityById[id]) || null;
 }
 
-/** Display name for a chat-list row — always the owning AI companion. */
+/**
+ * Display name for a chat-list row — always the owning AI companion.
+ *
+ * The GLOBAL inbox row states the companion's name itself
+ * (`partner_display_name`), so a row can be named before (or without) the
+ * entity list. That server name wins; `entityById` is the fallback for the
+ * per-entity surface, which leaves the global fields zero-valued.
+ */
 export function conversationDisplayName(conversation, entityById) {
-    return entityDisplayName(conversationCompanion(conversation, entityById)) || conversation?.entity_id || '';
+    return conversation?.companion_display_name
+        || entityDisplayName(conversationCompanion(conversation, entityById))
+        || conversation?.entity_id
+        || '';
 }
 
 /** Linked character-profile id for a chat-list row's companion (avatar). */
 export function conversationAvatarProfileId(conversation, entityById) {
-    return conversationCompanion(conversation, entityById)?.character_profile_id || '';
+    return conversation?.companion_profile_id
+        || conversationCompanion(conversation, entityById)?.character_profile_id
+        || '';
 }
 
 /**
@@ -450,28 +462,41 @@ export function normalizeChatMessage(msg) {
 }
 
 /**
- * Normalise one parity chat-list row into the shape the chat list renders. The
- * POV entity id is not on the row (it is the request path parameter), so the
- * caller supplies it.
+ * Normalise one parity chat-list row into the shape the chat list renders.
+ *
+ * The POV entity id is the per-entity route's path parameter, so it is supplied
+ * by the caller for that surface. The GLOBAL inbox (Task 02-4) states it on the
+ * row (`entity_id`), along with everything needed to name and badge it without
+ * a second request — those fields are read here and `entityId` merely fills in
+ * for a row that omits one (the per-entity route emits them zero-valued).
  *
  * @param {object} row
- * @param {string} entityId
+ * @param {string} [entityId] - fallback POV/owning entity id
  * @returns {object}
  */
-export function normalizeChatConversation(row, entityId) {
+export function normalizeChatConversation(row, entityId = '') {
     const participantIds = parseParticipantIds(row?.participant_ids);
     const lastMessage = normalizeChatMessage(row?.last_message);
+    const owningEntityId = row?.entity_id || entityId || '';
     return {
         interaction_id: row?.interaction_id || '',
         participant_key: row?.participant_key || '',
-        entity_id: entityId,
+        entity_id: owningEntityId,
         participant_ids: participantIds,
-        partner_entity_id: derivePartnerEntityId(participantIds, entityId),
+        partner_entity_id: row?.partner_entity_id || derivePartnerEntityId(participantIds, owningEntityId),
         scope: row?.interaction_scope || 'private',
-        last_activity_at: row?.last_message_at || lastMessage?.created_at || null,
+        last_activity_at: row?.last_activity_at || row?.last_message_at || lastMessage?.created_at || null,
         unread_count: row?.unread_count || 0,
         pinned: !!row?.pinned,
         archived: !!row?.archived,
+        // Global-inbox flags (entities.is_muted / is_disabled). The unread badge
+        // is suppressed for a muted thread, matching the Android rule.
+        muted: !!row?.muted,
+        entity_disabled: !!row?.entity_disabled,
+        // Companion identity as stated by the server, so naming a row costs no
+        // entity lookup (and works before chatEntities has loaded).
+        companion_display_name: row?.partner_display_name || '',
+        companion_profile_id: row?.partner_profile_id || '',
         reply_mode: row?.reply_mode || 'realistic',
         last_message: lastMessage,
     };

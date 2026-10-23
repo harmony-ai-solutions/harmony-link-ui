@@ -6,11 +6,7 @@ import {
     prependOlderMessages,
     replaceMessage,
     removeMessage,
-    upsertConversation,
     removeConversation,
-    mergeConversationPages,
-    filterConversationsForPersonas,
-    partitionChatEntities,
     setEntityFlag,
     lastMessage,
 } from './chatStoreUtils.js';
@@ -28,11 +24,16 @@ import {
  * interaction, so `interactionId` is a NAVIGATION handle only and all history
  * reads address the participant key (they span every interaction of the key).
  *
- * Chat list: the desktop inbox mirrors the mobile app — it loads the
- * `/chat-list` page of EVERY enabled AI companion (in parallel), merges the
- * rows by `participant_key`, and names/avatars each row by the AI companion
- * that owns it (`conversation.entity_id`). `partner_entity_id` is the persona
- * "user" on a private companion thread and is deliberately NOT the row label.
+ * Chat list: the desktop inbox IS the mobile inbox — ONE request
+ * (`GET /api/entities/chat-list`) returns every active thread across all
+ * companions, already deduped by `participant_key`, flagged (pinned / archived
+ * / muted / disabled) and ordered `pinned DESC, last_activity_at DESC` in SQL.
+ * Each row is named and avatar'd by the AI companion that owns it
+ * (`conversation.entity_id`); `partner_entity_id` is the persona "user" on a
+ * private companion thread and is deliberately NOT the row label.
+ *
+ * Ordering is never recomputed here: live updates patch rows in place, so a
+ * thread cannot jump under the pointer between loads.
  *
  * Message perspective: timelines are stored from the AI entity's perspective
  * (sender_entity_id === ownEntityId means "the user/persona spoke"), matching
@@ -42,10 +43,46 @@ import {
 /** Per-entity socket registry (module scope — not reactive state). */
 const sockets = new Map();
 
+/**
+ * Patch one inbox row in place (by participant_key) across BOTH list arrays.
+ *
+ * The inbox is two arrays — `conversations` (active) and
+ * `archivedConversations` — because the engine returns them separately, and a
+ * row can move between them when it is archived/unarchived. Every mutation has
+ * to address both or a flag change on an archived thread would be lost.
+ *
+ * The incoming order is preserved (no re-sort): the engine owns the ordering
+ * (`pinned DESC, last_activity_at DESC`) and re-sorting here would make a row
+ * jump while the user is reading it.
+ *
+ * @param {Array<object>} rows
+ * @param {object} patch - the replacement row (matched by participant_key)
+ * @returns {Array<object>} the same array when nothing matched
+ */
+function patchConversation(rows, patch) {
+    const key = patch?.participant_key;
+    if (!key) return rows;
+    const index = (rows || []).findIndex((row) => row.participant_key === key);
+    if (index === -1) return rows;
+    const next = rows.slice();
+    next[index] = { ...next[index], ...patch };
+    return next;
+}
+
 export const useChatStore = create((set, get) => ({
     // ── State ────────────────────────────────────────────────────────────
-    /** Chat-list rows for the inbox (all companions, or one when filtered). */
+    /** Inbox rows for ACTIVE threads — every companion in one list. */
     conversations: [],
+    /**
+     * Inbox rows for ARCHIVED threads, kept in their own array because that is
+     * how the engine returns them (a separate, bounded `archived` array under
+     * `?include_archived=1`). The inbox hides these behind a collapsed
+     * "Archived (N)" section; they are loaded by {@link loadInbox} so the count
+     * is real without a second request.
+     */
+    archivedConversations: [],
+    /** True when the last inbox load included the archived array. */
+    archivedLoaded: false,
     /**
      * True while the inbox is being fetched (or while the chat entities that
      * the inbox is derived from are still loading). Presentation-only: the
@@ -54,9 +91,11 @@ export const useChatStore = create((set, get) => ({
      */
     loadingConversations: false,
     /**
-     * Optional companion filter for the inbox. `null` = "All companions"
-     * (the default, app-style merged list); a set id lists just that AI's
-     * threads. The detail view is addressed by participant_key either way.
+     * Optional companion filter for the already-loaded inbox. `null` = "All
+     * companions" (the default). A set id narrows the rendered list to that
+     * AI's threads via the partner chips — it is presentation state only, never
+     * a requirement of the query. The detail view is addressed by
+     * participant_key either way.
      */
     listEntityId: null,
     /** Chat-entity options: AI partners + personas (from the engine). */
@@ -115,47 +154,68 @@ export const useChatStore = create((set, get) => ({
     },
 
     /**
-     * Load the inbox rows. Without an `entityId` this loads the chat-list of
-     * EVERY enabled AI companion in parallel and merges them (one row per
-     * participant_key, named by its owning companion) — the app's chat-list
-     * semantics. With an `entityId` it lists just that companion's threads
-     * (the optional per-companion filter).
+     * Load the GLOBAL inbox (Task 02-4): every active thread across ALL AI
+     * companions in ONE request (`GET /api/entities/chat-list`).
      *
-     * A failing companion must not blank the inbox: pages settle independently
-     * and the error is surfaced only when EVERY page failed.
+     * This replaces the old per-entity fan-out (`loadConversations(entityId)`),
+     * which listed one companion at a time and could not be scanned. The engine
+     * now dedupes by `participant_key`, joins the settings and mute state and
+     * orders `pinned DESC, last_activity_at DESC` — all in SQL. The returned
+     * order is therefore AUTHORITATIVE: it is stored as-is and never re-sorted
+     * client-side, because re-sorting on each live update makes rows jump.
      *
-     * @param {string|null} [entityId] - optional companion filter
-     * @returns {Promise<Array<object>>}
+     * `listEntityId` survives as an OPTIONAL filter: it is presentation state
+     * the inbox chip row owns (`setListEntityFilter`), applied client-side over
+     * the already-loaded rows — never a required argument to this call.
+     *
+     * @param {{ includeArchived?: boolean }} [options] - `includeArchived` also
+     *   fetches the archived array, so the collapsed section can show a real
+     *   count; the default payload stays small.
+     * @returns {Promise<Array<object>>} the active rows
      */
-    loadConversations: async (entityId = null) => {
-        set({ listEntityId: entityId || null, error: null, loadingConversations: true });
-        const { partners, personas } = partitionChatEntities(get().chatEntities);
-        const ids = entityId ? [entityId] : partners.map((entity) => entity.id);
-        if (ids.length === 0) {
-            set({ conversations: [], loadingConversations: false });
-            return [];
+    loadInbox: async ({ includeArchived = true } = {}) => {
+        set({ error: null, loadingConversations: true });
+        try {
+            const { conversations, archived } = await chatReadService.listInbox({ includeArchived });
+            set({
+                conversations,
+                archivedConversations: archived,
+                archivedLoaded: includeArchived,
+                loadingConversations: false,
+            });
+            return conversations;
+        } catch (error) {
+            // Keep whatever was already on screen: a failed refresh must not
+            // blank a list the user is reading.
+            set({ loadingConversations: false, error: error.message });
+            return get().conversations;
         }
+    },
 
-        const settled = await Promise.allSettled(
-            ids.map((id) => chatReadService.listConversations(id))
-        );
-        const { conversations: merged, failures, total } = mergeConversationPages(settled);
-        // Mirror the app inbox: only conversations the user's persona takes
-        // part in (a per-companion merge also sees companion↔companion DMs).
-        // Rows with an unparseable participant set are kept.
-        const conversations = filterConversationsForPersonas(
-            merged,
-            personas.map((persona) => persona.id)
-        );
-        const firstFailure = settled.find((result) => result.status === 'rejected');
+    /**
+     * Set the optional partner filter for the inbox (`null` = All partners).
+     *
+     * Purely presentation state — the list is already loaded, so filtering
+     * costs no request and the unread totals stay whole.
+     *
+     * @param {string|null} entityId
+     */
+    setListEntityFilter: (entityId) => set({ listEntityId: entityId || null }),
+
+    /**
+     * Apply an optimistic flag patch to one inbox row (pin / archive / mute /
+     * disable). Matches by `participant_key` in BOTH arrays and preserves the
+     * server's ordering; the next {@link loadInbox} converges on the truth.
+     *
+     * @param {string} participantKey
+     * @param {object} patch
+     */
+    patchConversation: (participantKey, patch) => {
+        const target = { participant_key: participantKey, ...patch };
         set({
-            conversations,
-            loadingConversations: false,
-            error: total > 0 && failures === total
-                ? firstFailure?.reason?.message || 'Failed to load conversations'
-                : null,
+            conversations: patchConversation(get().conversations, target),
+            archivedConversations: patchConversation(get().archivedConversations, target),
         });
-        return conversations;
     },
 
     /**
@@ -258,16 +318,17 @@ export const useChatStore = create((set, get) => ({
     /**
      * Mark the open conversation read (participant_key scoped) and clear its
      * local unread badge optimistically. Re-reads converge on the next
-     * loadConversations().
+     * loadInbox().
+     *
+     * The badge is cleared IN PLACE (never by re-inserting and re-sorting the
+     * row): the engine owns the inbox order, and re-sorting here would move the
+     * thread the user just opened.
      */
     markActiveConversationRead: async ({ upToMessageId } = {}) => {
-        const { activeConversation, conversations } = get();
+        const { activeConversation } = get();
         const { entityId, participantKey } = activeConversation || {};
         if (!entityId || !participantKey) return;
-        const existing = conversations.find((c) => c.participant_key === participantKey);
-        if (existing && existing.unread_count > 0) {
-            set({ conversations: upsertConversation(conversations, { ...existing, unread_count: 0 }) });
-        }
+        get().patchConversation(participantKey, { unread_count: 0 });
         try {
             await chatReadService.markConversationRead(entityId, participantKey, { upToMessageId });
         } catch (error) {
@@ -531,18 +592,24 @@ export const useChatStore = create((set, get) => ({
     // ── Chat-list maintenance ────────────────────────────────────────────
 
     /**
-     * Reorder/update a chat row when a message arrives for it.
+     * Update a chat row when a message arrives for it.
+     *
+     * The row is patched IN PLACE rather than re-inserted, so the server's
+     * order is preserved — a thread must not jump to the top on a live update
+     * that the engine has not ranked yet. The next `loadInbox()` re-ranks it.
+     *
      * @param {string} participantKey - the conversation identity
      */
     touchConversation: (participantKey, patch = {}) => {
-        const existing = get().conversations.find((c) => c.participant_key === participantKey);
-        if (!existing) return;
-        set({ conversations: upsertConversation(get().conversations, { ...existing, ...patch }) });
+        get().patchConversation(participantKey, patch);
     },
 
-    /** Drop a conversation from the list (delete thread). */
+    /** Drop a conversation from both inbox arrays (delete thread). */
     dropConversation: (participantKey) => {
-        set({ conversations: removeConversation(get().conversations, participantKey) });
+        set({
+            conversations: removeConversation(get().conversations, participantKey),
+            archivedConversations: removeConversation(get().archivedConversations, participantKey),
+        });
     },
 
     /** The newest message of the open timeline (helper for the UI). */
@@ -553,6 +620,8 @@ export const useChatStore = create((set, get) => ({
         get().closeSocket();
         set({
             conversations: [],
+            archivedConversations: [],
+            archivedLoaded: false,
             listEntityId: null,
             activeConversation: null,
             messages: [],

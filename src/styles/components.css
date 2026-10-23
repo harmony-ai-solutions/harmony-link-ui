@@ -5297,6 +5297,91 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     color: var(--color-text-primary);
 }
 
+/* ── Forward picker (Task 02-6 step 4) ────────────────────────────── */
+.chat-forward-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: min(34rem, 82vh);
+    overflow-y: auto;
+}
+
+.chat-picker-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.chat-picker-head .chat-picker-title { margin-bottom: 0; }
+
+.chat-forward-hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+/* The exact text that will be sent. Stated up front because a forward in 1.0
+   copies TEXT only — the reader must not expect attachments to travel. */
+.chat-forward-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-forward-preview-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.chat-forward-preview-text {
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chat-forward-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    color: var(--color-text-secondary);
+}
+
+.chat-forward-search input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.chat-forward-list {
+    flex: 1;
+    min-height: 4rem;
+    overflow-y: auto;
+}
+
+.chat-forward-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.2rem;
+}
+
 /* ── Chat detail (F2) ─────────────────────────────────────────────── */
 .chat-detail {
     display: flex;
@@ -5567,12 +5652,41 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     line-height: 1.4;
 }
 
+/* Reply quote (F13 / Task 02-6). Two lines: a quiet label, then the quoted
+   text in a single clamped line — a long parent must not grow the bubble. */
 .chat-bubble-quote {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
     font-size: 0.75rem;
-    font-style: italic;
-    opacity: 0.8;
+    opacity: 0.85;
     padding-left: 0.5rem;
     border-left: 2px solid currentColor;
+}
+
+.chat-bubble-quote-label {
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+.chat-bubble-quote-text {
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 28rem;
+}
+
+/* The parent is gone (purged / never loaded). Still shown, so the reader knows
+   the reply WAS a reply — just not to something readable any more. */
+.chat-bubble-quote-missing { opacity: 0.6; }
+
+/* Pinned-message marker. A pin does NOT reorder the timeline in 1.0; the glyph
+   in the meta row is the whole affordance. */
+.chat-bubble-pin {
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: default;
 }
 
 .chat-bubble-meta {
@@ -5601,6 +5715,9 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     margin-top: 0.1rem;
 }
 
+/* A reaction chip is a BUTTON (Task 02-6): clicking it toggles your reaction.
+   It keeps the chip look and gains a hover/active affordance so it reads as
+   interactive rather than decorative. */
 .chat-bubble-reaction {
     display: inline-flex;
     align-items: center;
@@ -5608,11 +5725,20 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     padding: 0.05rem 0.4rem;
     border-radius: 9999px;
     font-size: 0.75rem;
+    line-height: 1.4;
+    color: inherit;
     background: rgba(255, 255, 255, 0.18);
     border: 1px solid var(--color-border-glass);
+    transition: transform 0.12s var(--ease-spring), background 0.12s ease;
+}
+
+.chat-bubble-reaction:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.06);
 }
 
 .chat-bubble-in .chat-bubble-reaction { background: var(--color-background-surface-translucent); }
+.chat-bubble-in .chat-bubble-reaction:hover { background: var(--color-background-hover-glass); }
 
 .chat-bubble-actions {
     position: absolute;
@@ -5651,6 +5777,63 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 
 .chat-bubble-action:hover { background: var(--color-background-hover-glass); color: var(--color-text-primary); }
 .chat-bubble-action-danger:hover { color: var(--color-danger, #ef4444); }
+
+/* The entry is OPEN (the react strip is showing) or the state is ON (this
+   message is pinned) — accent-tinted so the toggle reads as latched. */
+.chat-bubble-action-active {
+    background: var(--color-background-hover-glass);
+    color: var(--color-accent-primary, #a78bfa);
+}
+
+/* A DISABLED action must look unavailable and must not react to the pointer —
+   it is how "Regenerate" stays honest without disappearing. A tooltip still
+   fires (Tooltip wraps the button, which keeps pointer events). */
+.chat-bubble-action:disabled,
+.chat-bubble-action[aria-disabled='true'] {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.chat-bubble-action:disabled:hover {
+    background: transparent;
+    color: var(--color-text-secondary);
+}
+
+/* Quick reaction strip (Task 02-6 step 1). Sits INSIDE the bubble so it can
+   never be clipped by the timeline's overflow, and aligns to the bubble's own
+   side so it does not appear to belong to the neighbouring message. */
+.chat-bubble-quick-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem;
+    margin-top: 0.25rem;
+    padding: 0.2rem;
+    border-radius: 9999px;
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    width: fit-content;
+}
+
+.chat-bubble-row-out .chat-bubble-quick-reactions { align-self: flex-end; }
+.chat-bubble-row-in .chat-bubble-quick-reactions { align-self: flex-start; }
+
+.chat-bubble-quick-reaction {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: transform 0.12s var(--ease-spring), background 0.12s ease;
+}
+
+.chat-bubble-quick-reaction:hover {
+    background: var(--color-background-hover-glass);
+    transform: scale(1.18);
+}
 
 /* ── Audio bubble (F8) ────────────────────────────────────────────── */
 .chat-audio-bubble {

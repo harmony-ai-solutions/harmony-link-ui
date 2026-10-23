@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { MessageIcon, RobotIcon } from '../../constants/icons.jsx';
 import ChatListView from './ChatListView.jsx';
 import ChatDetailView from './ChatDetailView.jsx';
+import ForwardPicker from './ForwardPicker.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
+import { toast } from '../../store/toastStore.js';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
@@ -32,6 +34,9 @@ const ChatView = ({ onNavigate }) => {
     const closeSocket = useChatStore((s) => s.closeSocket);
     const detailCloseTick = useChatStore((s) => s.detailCloseTick);
     const clearDetailCloseTick = useChatStore((s) => s.clearDetailCloseTick);
+    const forwardRequest = useChatStore((s) => s.forwardRequest);
+    const clearForwardRequest = useChatStore((s) => s.clearForwardRequest);
+    const sendText = useChatStore((s) => s.sendText);
 
     const { partners, personas } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
@@ -183,6 +188,32 @@ const ChatView = ({ onNavigate }) => {
         loadInbox();
     };
 
+    /**
+     * Send a forwarded message into the chosen partner's thread.
+     *
+     * A forward in 1.0 is "copy the text": the target conversation is opened
+     * (which connects its socket) and the SAME content is sent as a normal new
+     * message. The request is cleared FIRST so the picker cannot reopen if the
+     * send below fails — a failed forward would otherwise leave the modal up
+     * over a thread that already switched.
+     */
+    const handleForwardPick = async (partner) => {
+        const content = forwardRequest?.content || '';
+        clearForwardRequest();
+        if (!partner?.id || !content) return;
+        await handleOpenConversation({
+            interactionId: null,
+            entityId: partner.id,
+            participantIds: [partner.id],
+            partnerEntityId: partner.id,
+            isNew: true,
+        });
+        const sent = sendText(ownEntityId || partner.id, content);
+        if (sent) toast.success(t('chat:forward.sent', { name: entityDisplayName(partner) }));
+        // A closed socket is reported by the store; there is nothing to retry
+        // here, and the composer is the obvious next step for the user.
+    };
+
     const hasCompanions = partners.length > 0;
 
     return (
@@ -233,6 +264,18 @@ const ChatView = ({ onNavigate }) => {
                     />
                 )}
             </div>
+
+            {/* Forward target picker (Task 02-6 step 4). Lives here, not in the
+                detail view: picking a partner REPLACES the open conversation,
+                which unmounts the bubble that started the forward. */}
+            <ForwardPicker
+                isOpen={!!forwardRequest}
+                partners={partners}
+                content={forwardRequest?.content || ''}
+                fromTitle={forwardRequest?.fromTitle || ''}
+                onPick={handleForwardPick}
+                onClose={clearForwardRequest}
+            />
 
             {/* New-chat companion picker (opened by the welcome "+ Start
                 Chatting" button). Shares the ChatListView picker styling; its

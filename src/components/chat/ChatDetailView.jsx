@@ -22,7 +22,6 @@ import { MessageIcon } from '../../constants/icons.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
-import { toast } from '../../store/toastStore.js';
 
 /**
  * Chat detail screen (F2): the scrolling message timeline, typing dots (F5),
@@ -65,7 +64,10 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const sendAudio = useChatStore((s) => s.sendAudio);
     const sendImage = useChatStore((s) => s.sendImage);
     const editMessage = useChatStore((s) => s.editMessage);
-    const deleteMessageLocal = useChatStore((s) => s.deleteMessageLocal);
+    const deleteMessage = useChatStore((s) => s.deleteMessage);
+    const toggleReaction = useChatStore((s) => s.toggleReaction);
+    const setMessagePinned = useChatStore((s) => s.setMessagePinned);
+    const requestForward = useChatStore((s) => s.requestForward);
     const setReplyMode = useChatStore((s) => s.setReplyMode);
     const loadOlderMessages = useChatStore((s) => s.loadOlderMessages);
 
@@ -243,21 +245,45 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
         setEditing(null);
     };
 
+    /**
+     * Delete a message: confirm, then ask the ENGINE, then drop the row.
+     *
+     * The store removes the message only after the engine accepted the
+     * tombstone, so a failure leaves the timeline exactly as it was (and toasts
+     * the reason). The confirm dialog is kept — this is still destructive.
+     */
     const handleDelete = (message) => setConfirmDelete(message);
     const confirmDeleteYes = () => {
-        if (confirmDelete) {
-            deleteMessageLocal(confirmDelete.id);
-            // Deletion still asks (ConfirmDialog above), but the destructive
-            // action is confirmed non-modally once it has happened.
-            toast.success(t('common:toast.messageDeleted'));
-        }
+        if (confirmDelete) deleteMessage(confirmDelete.id);
         setConfirmDelete(null);
     };
 
-    const handleRegenerate = () => {
-        // Regenerate = resend the last outbound text; the engine produces a new reply.
-        const lastOutbound = messages[lastOutboundIndex];
-        if (lastOutbound?.content) sendText(ownEntityId, lastOutbound.content);
+    /**
+     * Toggle one reaction on a message (menu strip or an existing chip).
+     *
+     * The emoji is REQUIRED — the old handler was `onReact={() => {}}` and the
+     * bubble could not tell which emoji was tapped.
+     */
+    const handleReact = (message, emoji) => {
+        if (!message?.id || !emoji) return;
+        toggleReaction(message.id, emoji);
+    };
+
+    /** Pin/unpin one message. A pin shows a 📌 marker; the order is unchanged. */
+    const handleTogglePin = (message, pinned) => {
+        if (!message?.id) return;
+        setMessagePinned(message.id, pinned);
+    };
+
+    /**
+     * Start a forward: the picker lives in ChatView (it needs the partner list
+     * and must survive this view unmounting when the target thread opens), so
+     * this only records the intent in the store.
+     */
+    const handleForward = (message) => {
+        const content = (message?.content || '').trim();
+        if (!content) return;
+        requestForward({ content, fromTitle: threadName });
     };
 
     const prefsClass = `chat-detail chat-detail-font-${prefs.fontSize} chat-detail-spacing-${prefs.spacing}`;
@@ -382,11 +408,16 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                                 message={message}
                                 ownEntityId={ownEntityId}
                                 isLast={index === lastOutboundIndex}
+                                /* The quote fallback needs the parent's text for
+                                   a reply whose server preview has not arrived
+                                   yet (a just-sent message). */
+                                timeline={messages}
                                 onEdit={setEditing}
                                 onDelete={handleDelete}
-                                onRegenerate={handleRegenerate}
                                 onReply={setReplyTo}
-                                onReact={() => {}}
+                                onReact={handleReact}
+                                onForward={handleForward}
+                                onTogglePin={handleTogglePin}
                                 onOpenImage={(msg, url) => setLightbox({ open: true, url })}
                             />
                         </div>

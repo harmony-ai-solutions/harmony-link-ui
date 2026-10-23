@@ -8,6 +8,7 @@ import Skeleton from '../ui/Skeleton.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
 import ConversationRow from './ConversationRow.jsx';
 import ConversationMenu from './ConversationMenu.jsx';
+import MessageSearch from './MessageSearch.jsx';
 import {
     partitionChatEntities,
     entityDisplayName,
@@ -97,6 +98,16 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
         return map;
     }, [chatEntities]);
 
+    /**
+     * The persona the user speaks as — passed to the search result list so a hit
+     * from the user's own message is labelled "You:" instead of being
+     * indistinguishable from the character's.
+     */
+    const ownEntityId = useMemo(() => {
+        const candidates = (chatEntities || []).filter((entity) => entity.entity_type === 'user');
+        return candidates[0]?.id || '';
+    }, [chatEntities]);
+
     // Partner chips come from the ROWS, so a chip can never lead to an empty
     // screen. Shown only when there is more than one partner to choose from —
     // a single-partner chip row would be pure noise.
@@ -183,6 +194,16 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
+                {/* GLOBAL message search (Task 02-9) — searches the MESSAGES of
+                    every partner, not just the names/previews of the threads
+                    already loaded. Kept distinct from the field above, which
+                    filters this list; merging them would make one box do two
+                    different things depending on what you type. */}
+                <MessageSearch
+                    variant="global"
+                    entityById={entityById}
+                    ownEntityId={ownEntityId}
+                />
                 <button
                     type="button"
                     className={`chat-list-filter ${unreadOnly ? 'chat-list-filter-active' : ''}`}

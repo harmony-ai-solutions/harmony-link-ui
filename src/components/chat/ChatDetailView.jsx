@@ -25,6 +25,7 @@ import TypingIndicator from './TypingIndicator.jsx';
 import NewMessagesDivider from './NewMessagesDivider.jsx';
 import DayDivider from './DayDivider.jsx';
 import GreetingAlternates from './GreetingAlternates.jsx';
+import MessageSearch from './MessageSearch.jsx';
 import ImageLightbox from './ImageLightbox.jsx';
 import ChatPreferences from './ChatPreferences.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
@@ -37,6 +38,8 @@ import { MessageIcon } from '../../constants/icons.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import InputDialog from '../modals/InputDialog.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
+import { toast } from '../../store/toastStore.js';
+import { translate } from '../../i18n/translate.js';
 
 /**
  * Chat detail screen (F2): the scrolling message timeline, typing dots (F5),
@@ -86,6 +89,15 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const setReplyMode = useChatStore((s) => s.setReplyMode);
     const loadOlderMessages = useChatStore((s) => s.loadOlderMessages);
     const sendGreetingAlternate = useChatStore((s) => s.sendGreetingAlternate);
+    /**
+     * Search-jump plumbing (Task 02-9). `focusMessage` is set by the store when
+     * a hit is chosen and consumed here exactly once; `loadUntilMessage` pages
+     * backwards so an old hit is actually IN the timeline before we scroll.
+     */
+    const focusMessage = useChatStore((s) => s.focusMessage);
+    const clearFocusMessage = useChatStore((s) => s.clearFocusMessage);
+    const loadUntilMessage = useChatStore((s) => s.loadUntilMessage);
+    const jumpToSearchHit = useChatStore((s) => s.jumpToSearchHit);
 
     const wireFrames = useChatStore((s) => s.wireFrames);
     const clearWireFrames = useChatStore((s) => s.clearWireFrames);
@@ -114,6 +126,12 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
      * 500-message thread produced without a new dependency.
      */
     const [renderEndId, setRenderEndId] = useState(null);
+    /**
+     * Id of the message a search jump landed on, or ''. Drives the flash
+     * animation; cleared by a timeout so a second jump re-triggers it and the
+     * highlight does not become permanent furniture.
+     */
+    const [flashedId, setFlashedId] = useState('');
     /**
      * Bumped at local midnight so "Today"/"Yesterday" labels re-evaluate even
      * when no message arrives. Without it a window left open overnight keeps
@@ -187,6 +205,19 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
         () => entityAlternateGreetings(chatEntities.find((item) => item.id === partnerId)),
         [chatEntities, partnerId]
     );
+
+    /**
+     * `entityId → entity` for the in-thread search results (Task 02-9).
+     *
+     * The result rows name their partner through this map and fall back to the
+     * raw entity id, so a hit from an entity that is not in `chatEntities` (a
+     * thread whose companion was deleted, say) still renders.
+     */
+    const entityById = useMemo(() => {
+        const map = {};
+        for (const entity of chatEntities || []) map[entity.id] = entity;
+        return map;
+    }, [chatEntities]);
 
     /**
      * The character's authored scenario (Task 02-8 step 3) — what the ✨ button
@@ -470,14 +501,105 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
      * prepending an older page changes the second and not the first, so
      * pagination in the background can no longer yank the view to the bottom
      * (which is what made "load older" jump before the anchor existed).
+     *
+     * A search jump suspends this: the jump is placing the reader at an OLD
+     * message, and "near the bottom" is false there, so the auto-scroll would
+     * otherwise be harmless — but a page load that lands at the tail (the newest
+     * page) would fire it and undo the jump. The guard is the explicit target.
      */
+    const jumpTargetIdRef = useRef('');
     useEffect(() => {
+        if (jumpTargetIdRef.current) return;
         const el = scrollRef.current;
         if (!el) return;
         const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
         if (nearBottom) scrollToBottom('smooth');
         else setShowJump(true);
     }, [visibleMessages.length]);
+
+    /**
+     * Centre one message in the scroller and flash it (Task 02-9).
+     *
+     * `scrollIntoView({block: 'center'})` rather than the anchor arithmetic the
+     * pagination path uses: the target is a message the reader has never seen,
+     * so there is no "keep my place" delta to preserve — we are deliberately
+     * moving them. Centring also makes the flash visible even when the bubble
+     * sits at the very top or bottom of the viewport.
+     *
+     * The render window must admit the message FIRST. The window follows the tail
+     * by default, so an old hit is loaded but not mounted; `setRenderEndId` to
+     * the target id moves the window so the row exists, and the scroll runs on the
+     * next frame (after React has committed that mount).
+     */
+    const scrollToMessage = useCallback((messageId) => {
+        if (!messageId) return;
+        setRenderEndId(messageId);
+        // Two frames: one to commit the window change, one to have layout done.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const el = scrollRef.current;
+                if (!el) return;
+                const node = el.querySelector(`[data-message-id="${CSS.escape(messageId)}"]`);
+                if (!node) return;
+                node.scrollIntoView({ block: 'center', behavior: 'auto' });
+                setFlashedId(messageId);
+            });
+        });
+    }, []);
+
+    /**
+     * Land on a message a search requested.
+     *
+     * The sequence matters and each step can fail honestly:
+     *
+     *   1. the request is consumed IMMEDIATELY (before the await), so a
+     *      re-render cannot fire it twice;
+     *   2. the timeline pages back until the message exists — a hit can be far
+     *      older than the newest page, and scrolling to a row that is not loaded
+     *      silently does nothing, which is exactly what "search is broken" looks
+     *      like from the user's side;
+     *   3. only then is it scrolled to and flashed. If the message cannot be
+     *      found (deleted between the search and the click), nothing is marked —
+     *      a flash on the wrong message would be worse than none.
+     */
+    useEffect(() => {
+        if (!focusMessage?.id) return;
+        const target = focusMessage;
+        clearFocusMessage();
+        let cancelled = false;
+        jumpTargetIdRef.current = target.id;
+        (async () => {
+            const found = await loadUntilMessage(target.id);
+            if (cancelled) return;
+            if (found) {
+                scrollToMessage(target.id);
+                return;
+            }
+            // The message is gone (deleted between the search and the click) or
+            // lies beyond the page cap. Disarm the auto-scroll guard — leaving it
+            // armed would silently disable scroll-to-newest for the rest of the
+            // session — and say so rather than scrolling nowhere.
+            jumpTargetIdRef.current = '';
+            toast.error(translate('chat:search.jumpUnavailable'));
+        })();
+        return () => { cancelled = true; };
+    }, [focusMessage, clearFocusMessage, loadUntilMessage, scrollToMessage]);
+
+    /**
+     * Retire the flash. `flashedId` is a dependency, so a second jump on the same
+     * message re-arms it; `''` is a no-op.
+     */
+    useEffect(() => {
+        if (!flashedId) {
+            jumpTargetIdRef.current = '';
+            return undefined;
+        }
+        const timer = setTimeout(() => {
+            setFlashedId('');
+            jumpTargetIdRef.current = '';
+        }, 2200);
+        return () => clearTimeout(timer);
+    }, [flashedId]);
 
     const handleSendText = (text) => {
         sendText(ownEntityId, text, { replyToMessageId: replyTo?.id });
@@ -616,6 +738,17 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         ⋯
                     </button>
                 </Tooltip>
+                {/* In-conversation message search (Task 02-9). A FIELD, not an
+                    icon: inside a thread the user is already looking at one
+                    conversation, so search is a direct affordance. It narrows to
+                    this thread's participant key. */}
+                <MessageSearch
+                    variant="inline"
+                    scope={{ participantKey: threadRow.participant_key }}
+                    entityById={entityById}
+                    ownEntityId={ownEntityId}
+                    onJump={jumpToSearchHit}
+                />
                 <ImpersonationSelector personas={personas} value={ownEntityId} onChange={onOwnEntityChange} />
                 {showWireInspector && (
                     <Tooltip content={t('chat:wire.toggle')}>
@@ -705,7 +838,15 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                     )}
 
                     {visibleMessages.map((message, index) => (
-                        <div key={message.id} data-message-id={message.id}>
+                        <div
+                            key={message.id}
+                            data-message-id={message.id}
+                            /* The search-jump flash lives on the WRAPPER, not on
+                               the bubble: the bubble owns its own hover/menu
+                               styling, and an animation class merged into it
+                               would fight those transitions. */
+                            className={flashedId === message.id ? 'chat-message-flash' : undefined}
+                        >
                             {dayDividers[index] && <DayDivider info={dayDividers[index]} />}
                             {index === firstUnreadIndex && <NewMessagesDivider />}
                             <ChatBubble

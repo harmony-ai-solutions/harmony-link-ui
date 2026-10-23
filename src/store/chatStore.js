@@ -18,6 +18,14 @@ import {
     setMessagesReadFlag,
     unreadMessageIds,
 } from './chatStoreUtils.js';
+import {
+    SEARCH_RESULT_LIMIT,
+    isSearchable,
+    normalizeSearchTerm,
+    filterHitsByParticipant,
+    jumpTargetFromHit,
+    capSearchResults,
+} from './searchUtils.js';
 import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
 import { announceConversationAction } from './conversationActions.js';
 import { toast } from './toastStore.js';
@@ -227,6 +235,41 @@ export const useChatStore = create((set, get) => ({
      * explicit one-shot signal rather than a boolean the consumer must reset.
      */
     detailCloseTick: 0,
+
+    // ── Message search (Task 02-9) ───────────────────────────────────────
+    /**
+     * The query the CURRENT results were produced by — not what is in the input.
+     *
+     * The field keeps its own local text so typing stays instant, and only the
+     * debounced, committed term lands here. That distinction is what lets the
+     * result list say "No matches for 'ocean'" about the results on screen
+     * instead of about a half-typed word.
+     */
+    searchTerm: '',
+    /** Normalised search hits, newest first (engine order), capped at 100. */
+    searchResults: [],
+    /** True while a search request is in flight. */
+    searching: false,
+    /** The last search failure, or null. Shown in the search surface. */
+    searchError: null,
+    /**
+     * `null` for the GLOBAL search (every partner), or `{ participantKey }` for
+     * the in-conversation field. Kept in the store because both surfaces read
+     * the same result list and only one may be open at a time.
+     */
+    searchScope: null,
+    /**
+     * A hit the user asked to jump to, and the message to land on.
+     *
+     * Two fields, not one, because the jump crosses two components: ChatView
+     * owns opening a conversation (and unmounts the list when it does), while
+     * the scroll happens inside ChatDetailView once the timeline is mounted.
+     * `searchJump` is consumed by ChatView; `focusMessage` survives into the
+     * detail view and is consumed by the timeline.
+     */
+    searchJump: null,
+    /** `{ id, participantKey }` of the message to scroll to and flash. */
+    focusMessage: null,
 
     // ── Chat list ────────────────────────────────────────────────────────
 
@@ -713,6 +756,162 @@ export const useChatStore = create((set, get) => ({
 
     /** Clear the pending "close the detail view" request (consumed once). */
     clearDetailCloseTick: () => set({ detailCloseTick: 0 }),
+
+    // ── Message search (Task 02-9) ───────────────────────────────────────
+
+    /**
+     * Run a message search and publish the hits.
+     *
+     * The DEBOUNCE lives in the component, not here: the field owns the timing
+     * (250 ms after the last keystroke) and this action is the "commit" step, so
+     * a caller can also run a search immediately (Enter, a retry) without
+     * waiting. Duplicating the timer in both layers would either double-fire or
+     * make the immediate path impossible.
+     *
+     * A term shorter than two characters NEVER reaches the network. It clears
+     * the results instead of leaving the previous ones on screen, because stale
+     * results under a new query read as matches for it.
+     *
+     * `scope` narrows the results to one thread CLIENT-side (see the service's
+     * note on why `interaction_id` would hide history). Passing no scope searches
+     * every partner.
+     *
+     * @param {string} rawTerm
+     * @param {{ scope?: {participantKey: string}|null }} [options]
+     * @returns {Promise<Array<object>>} the hits that were published
+     */
+    searchMessages: async (rawTerm, { scope = null } = {}) => {
+        const term = normalizeSearchTerm(rawTerm);
+        if (!isSearchable(term)) {
+            // Publishing an EMPTY result set is deliberate: "type two more
+            // characters" must not sit above the previous query's hits.
+            set({
+                searchTerm: '',
+                searchResults: [],
+                searching: false,
+                searchError: null,
+                searchScope: scope || null,
+            });
+            return [];
+        }
+
+        set({ searching: true, searchError: null, searchTerm: term, searchScope: scope || null });
+        try {
+            const hits = await chatReadService.searchMessages(term, { limit: SEARCH_RESULT_LIMIT });
+            const visible = capSearchResults(
+                scope?.participantKey ? filterHitsByParticipant(hits, scope.participantKey) : hits,
+                SEARCH_RESULT_LIMIT
+            );
+            // A SLOWER response must not overwrite the results of a newer query:
+            // the debounce reduces, but cannot eliminate, overlapping requests.
+            if (get().searchTerm !== term) return get().searchResults;
+            set({ searchResults: visible, searching: false });
+            return visible;
+        } catch (error) {
+            if (get().searchTerm === term) {
+                set({ searchResults: [], searching: false, searchError: error.message });
+            }
+            return [];
+        }
+    },
+
+    /** Drop the results and the committed term (closing the search surface). */
+    clearSearch: () => set({
+        searchTerm: '',
+        searchResults: [],
+        searching: false,
+        searchError: null,
+        searchScope: null,
+    }),
+
+    /**
+     * Ask the chat container to open a hit's thread and land on the message.
+     *
+     * `searchJump` is the cross-component request (ChatView opens the
+     * conversation); `focusMessage` is what the timeline consumes once it has
+     * mounted. `searchJump` is cleared by its consumer exactly once — the same
+     * one-shot handoff `openConversationRequest` uses.
+     *
+     * `focusMessage` is published in BOTH branches, because landing on a message
+     * is the whole point of a jump; only the "open a different thread" half is
+     * conditional.
+     *
+     * @param {object} hit - a normalised search hit
+     * @param {{ query?: string }} [options] - the term the results belong to.
+     *   The caller passes it because choosing a hit clears `searchTerm`, so
+     *   reading it here would record an empty query.
+     * @returns {boolean} true when the hit could be turned into a jump
+     */
+    jumpToSearchHit: (hit, { query } = {}) => {
+        const target = jumpTargetFromHit(hit);
+        if (!target.entityId || !target.participantKey) return false;
+
+        const active = get().activeConversation;
+        const activeKey = active?.participantKey || active?.participant_key || '';
+        const focusMessage = { id: hit.id, participantKey: target.participantKey };
+
+        // A hit INSIDE the open thread must NOT re-open it. `openConversation`
+        // resets the timeline, tears the socket down and re-fetches the newest
+        // page — for a message that is already on screen that is a visible
+        // reload, and for an older hit it throws away the pages the jump itself
+        // paged in. Only the scroll target is published.
+        if (activeKey && activeKey === target.participantKey) {
+            set({ focusMessage });
+            return true;
+        }
+
+        set({
+            // `query` is the term the results belong to, passed by the caller:
+            // the search panel resets itself when a hit is chosen, so reading
+            // `searchTerm` here would race that reset.
+            searchJump: {
+                ...target,
+                messageId: hit.id,
+                query: query !== undefined ? query : get().searchTerm,
+            },
+            focusMessage,
+        });
+        return true;
+    },
+
+    /** Clear the pending jump (consumed once by ChatView). */
+    clearSearchJump: () => set({ searchJump: null }),
+
+    /** Clear the pending scroll target (consumed once by the timeline). */
+    clearFocusMessage: () => set({ focusMessage: null }),
+
+    /**
+     * Page BACKWARDS until `messageId` is in the timeline.
+     *
+     * A search hit can be arbitrarily old, while `openConversation` loads only
+     * the newest page (50 rows). Jumping without this lands on a timeline that
+     * does not contain the message at all — the scroll then silently does
+     * nothing, which reads as a broken search.
+     *
+     * Bounded on purpose: `maxPages` caps the loop (a lifetime of history is not
+     * worth an unbounded request chain), and it stops as soon as the engine says
+     * there is nothing older, so a message that genuinely is not there (deleted
+     * between the search and the click) resolves to `false` instead of hanging.
+     *
+     * @param {string} messageId
+     * @param {{ maxPages?: number }} [options]
+     * @returns {Promise<boolean>} true when the message is loaded
+     */
+    loadUntilMessage: async (messageId, { maxPages = 20 } = {}) => {
+        if (!messageId) return false;
+        const isLoaded = () => get().messages.some((message) => message?.id === messageId);
+        if (isLoaded()) return true;
+
+        const pages = Number.isFinite(maxPages) && maxPages > 0 ? Math.trunc(maxPages) : 20;
+        for (let page = 0; page < pages; page += 1) {
+            const { hasMore, loadingOlder, nextCursor, activeConversation } = get();
+            if (!activeConversation?.participantKey || loadingOlder) break;
+            if (!hasMore || !nextCursor) break;
+            await get().loadOlderMessages();
+            if (isLoaded()) return true;
+        }
+        return isLoaded();
+    },
 
     // ── Live socket ──────────────────────────────────────────────────────
 

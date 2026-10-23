@@ -99,6 +99,22 @@
     "enabling": "Enabling…",
     "backToInbox": "Back to the inbox"
   },
+  "search": {
+    "open": "Search messages",
+    "close": "Close search",
+    "title": "Search messages",
+    "placeholderGlobal": "Search all messages",
+    "placeholderInThread": "Search this conversation",
+    "clear": "Clear the search",
+    "minLength": "Type at least {{count}} characters.",
+    "count": "{{count}} matching messages",
+    "countCapped": "Showing the newest {{limit}} of {{count}} matches",
+    "promptTitle": "Search your messages",
+    "promptHint": "Find a word across every conversation, or inside the one you have open. Choosing a result opens the thread at that message.",
+    "noResultsTitle": "No messages match \"{{term}}\"",
+    "noResultsHint": "Try a shorter word, or check the spelling.",
+    "jumpUnavailable": "That message is no longer available."
+  },
   "toast": {
     "conversationDeleted": "Conversation deleted",
     "markedRead": "Marked as read",

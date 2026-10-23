@@ -6284,6 +6284,257 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     opacity: 0.8;
 }
 
+/* ── Message search (Task 02-9) ──────────────────────────────────────
+   One field component in two placements: a header ICON that opens a panel over
+   the inbox (global search), and an always-live FIELD in a thread's header
+   (in-conversation search). Both share the result list, so the two can never
+   look or behave differently. */
+
+.chat-search { position: relative; display: flex; align-items: center; }
+
+.chat-search-inline { flex: 1; min-width: 8rem; max-width: 16rem; }
+
+/* The inline field sits in the thread HEADER, so its hint must not add a line to
+   a row that is vertically centred — it floats just under the field instead. */
+.chat-search-inline .chat-search-hint {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-md, 0.5rem);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    white-space: nowrap;
+    z-index: 31;
+}
+
+.chat-search-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.35rem 0.6rem;
+    border-radius: 9999px;
+    background: var(--color-background-surface-translucent);
+    border: 1px solid var(--color-border-glass);
+}
+
+.chat-search-field:focus-within { border-color: var(--color-border-glow); }
+
+.chat-search-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-primary);
+    font-size: 0.8125rem;
+}
+
+.chat-search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    border-radius: 9999px;
+    padding: 0.1rem;
+}
+
+.chat-search-clear:hover { color: var(--color-text-primary); }
+
+.chat-search-hint {
+    padding: 0.25rem 0.6rem 0;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+
+/* The inline panel floats over the timeline instead of pushing it: expanding a
+   row in the header would resize the message list on every keystroke. */
+.chat-search-panel-inline {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    width: min(28rem, 80vw);
+    max-height: 24rem;
+    overflow-y: auto;
+    z-index: 30;
+    padding: 0.5rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Global search: a sheet over the inbox. Fixed (not absolute) so the inbox's
+   scroll container cannot clip it — the same reason the pickers portal. */
+.chat-search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 4rem 1rem 1rem;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+}
+
+.chat-search-overlay-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: min(38rem, 100%);
+    max-height: min(70vh, 34rem);
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-elevated);
+    border: 1px solid var(--color-border-glass);
+    box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.4));
+}
+
+.chat-search-overlay-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.chat-search-overlay-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.chat-search-overlay-body { flex: 1; min-height: 0; overflow-y: auto; }
+
+.chat-search-results { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.chat-search-count {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    padding: 0 0.15rem;
+}
+
+.chat-search-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+
+.chat-search-hit {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.55rem 0.6rem;
+    text-align: left;
+    border-radius: var(--radius-lg);
+    background: var(--color-background-surface-translucent);
+    border: 1px solid transparent;
+    transition: all 0.2s var(--ease-spring);
+}
+
+.chat-search-hit:hover {
+    background: var(--color-background-hover-glass);
+    border-color: var(--color-border-glow);
+}
+
+.chat-search-hit-avatar { flex-shrink: 0; width: 34px; height: 34px; }
+
+.chat-search-hit-avatar-img { width: 100%; height: 100%; border-radius: 9999px; object-fit: cover; }
+
+.chat-search-hit-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--gradient-primary);
+    color: #fff;
+}
+
+.chat-search-hit-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+
+.chat-search-hit-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.chat-search-hit-name {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-search-hit-time {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+}
+
+.chat-search-hit-snippet {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    line-height: 1.35;
+    /* Two lines, then clipped: a snippet is a reason to open the thread, not a
+       replacement for reading it. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.chat-search-hit-you { font-weight: 700; color: var(--color-text-muted); }
+
+/* The match itself. `mark` rather than a span so the semantics survive: this
+   text is highlighted BECAUSE it matched the query. */
+.chat-search-mark {
+    padding: 0 0.1em;
+    border-radius: 0.2em;
+    background: color-mix(in srgb, var(--color-accent-primary) 26%, transparent);
+    color: var(--color-text-primary);
+    font-weight: 700;
+}
+
+.chat-search-message { padding: 0.75rem; font-size: 0.8125rem; color: var(--color-text-secondary); }
+
+.chat-search-message-error { color: var(--color-danger, #f87171); }
+
+/* The flash a search jump lands with. On the message WRAPPER, not the bubble,
+   so it cannot fight the bubble's own hover/menu transitions. Two pulses rather
+   than a fade: a single flash is easy to miss while the eye is still moving
+   from the result list to the timeline. */
+.chat-message-flash {
+    border-radius: var(--radius-lg);
+    animation: chat-message-flash-pulse 1.1s ease-in-out 2;
+}
+
+@keyframes chat-message-flash-pulse {
+    0%, 100% { background: transparent; box-shadow: none; }
+    35% {
+        background: color-mix(in srgb, var(--color-accent-primary) 18%, transparent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-primary) 55%, transparent);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-message-flash {
+        animation: none;
+        background: color-mix(in srgb, var(--color-accent-primary) 14%, transparent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-primary) 45%, transparent);
+    }
+
+    .chat-search-hit,
+    .chat-search-field {
+        transition: none;
+    }
+}
+
 /* ── Emoji picker (F11) ───────────────────────────────────────────── */
 .chat-emoji-picker {
     position: absolute;

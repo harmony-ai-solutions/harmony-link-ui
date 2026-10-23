@@ -1,6 +1,7 @@
 ﻿import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handleResponse } from './baseService.js';
 import { listEntities } from './entityService.js';
 import { normalizeChatConversation, normalizeChatMessage } from '../../store/chatStoreUtils.js';
+import { normalizeSearchResults, SEARCH_RESULT_LIMIT } from '../../store/searchUtils.js';
 
 /**
  * Desktop Chat — REST history reads over the engine's parity chat surface
@@ -18,6 +19,7 @@ import { normalizeChatConversation, normalizeChatMessage } from '../../store/cha
  *   GET  /entities/:id/emoji-actions                               → emoji actions
  *   GET  /entities                                                 → entities (partners + personas)
  *   GET  /messages/:id/audio | /messages/:id/image                 → media bytes
+ *   GET  /entities/messages/search?q=                              → message search (Task 02-9)
  *   POST /entities/:id/conversations/:participantKey/read          → mark read (participant_key scoped)
  *
  * This module normalises the parity wire shapes into the flat camel/snake shape
@@ -290,6 +292,46 @@ export function getMessageAudioUrl(messageId) {
  */
 export function getMessageImageUrl(messageId) {
     return apiUrl(`/messages/${encodeURIComponent(messageId)}/image`);
+}
+
+/**
+ * Search messages across EVERY conversation (Task 02-9).
+ *
+ * `GET /entities/messages/search?q=&interaction_id=&limit=` answers
+ * `{query, count, results: [{message, interaction_id, participant_key}]}`,
+ * newest first and capped at 100 server-side. The client caps too, so the UI
+ * can never claim to hold more rows than the engine will return.
+ *
+ * ── WHY THE GLOBAL ENDPOINT SERVES THE IN-CONVERSATION FIELD TOO ────────
+ *
+ * The engine supports `interaction_id`, but a thread's messages span EVERY
+ * interaction of its participant key — the engine mints a new interaction each
+ * time the participant set changes, and a membership change must not truncate
+ * the history. Filtering by the *current* interaction would therefore hide the
+ * older messages the user is most likely searching for. So the in-conversation
+ * field calls this same global search and narrows by `participant_key`
+ * client-side (`filterHitsByParticipant`). The trade-off is explicit: a thread
+ * whose matches exceed the global 100-hit cap can show fewer hits than it owns.
+ *
+ * A blank `q` is rejected here before the request: the handler answers `400`
+ * for it, and a `400` for something the UI can determine locally is noise.
+ *
+ * @param {string} query
+ * @param {{ limit?: number }} [options]
+ * @returns {Promise<Array<object>>} normalised hits (see `normalizeSearchHit`)
+ */
+export async function searchMessages(query, { limit = SEARCH_RESULT_LIMIT } = {}) {
+    const term = String(query ?? '').trim();
+    if (!term) return [];
+
+    const params = new URLSearchParams({ q: term, limit: String(limit) });
+    const resp = await fetch(
+        apiUrl(`/entities/messages/search?${params.toString()}`),
+        { headers: getAuthHeaders() }
+    );
+    await handleResponse(resp, 'Failed to search messages');
+    const data = await resp.json();
+    return normalizeSearchResults(data?.results || [], limit);
 }
 
 /**

@@ -37,6 +37,8 @@ const ChatView = ({ onNavigate }) => {
     const forwardRequest = useChatStore((s) => s.forwardRequest);
     const clearForwardRequest = useChatStore((s) => s.clearForwardRequest);
     const sendText = useChatStore((s) => s.sendText);
+    const searchJump = useChatStore((s) => s.searchJump);
+    const clearSearchJump = useChatStore((s) => s.clearSearchJump);
 
     const { partners, personas } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
@@ -123,6 +125,36 @@ const ChatView = ({ onNavigate }) => {
         setOpenConversation(null);
         loadInbox();
     }, [detailCloseTick, clearDetailCloseTick, loadInbox]);
+
+    /**
+     * Open the thread a search hit points at (Task 02-9).
+     *
+     * The jump crosses two components: the search panel lives in the LIST (or in
+     * a thread's own header) and opening a conversation REPLACES what is
+     * mounted, so the request travels through the store — the same one-shot
+     * handoff `openConversationRequest` and `forwardRequest` use.
+     *
+     * Crucially, this goes through `handleOpenConversation`, the SAME path a row
+     * click takes: the persona/participant resolution must not fork for search,
+     * or a jump could mint a second private interaction. `focusMessage` was set
+     * alongside the request and is what the detail view consumes for the scroll.
+     */
+    useEffect(() => {
+        if (!searchJump?.entityId) return;
+        const request = searchJump;
+        clearSearchJump();
+        handleOpenConversation({
+            interactionId: request.interactionId,
+            entityId: request.entityId,
+            participantKey: request.participantKey,
+            participantIds: request.participantIds,
+            partnerEntityId: request.partnerEntityId,
+        });
+        // `handleOpenConversation` is recreated each render by design (it closes
+        // over the entity/persona lists); the request itself is one-shot, so
+        // depending on it alone is what keeps this from re-firing.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchJump]);
 
     const handleOpenConversation = async (conversation) => {
         const partner = chatEntities.find((e) => e.id === conversation.entityId);

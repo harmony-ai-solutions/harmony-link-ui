@@ -39,8 +39,11 @@ import { isFavoriteProfile } from '../../utils/characterFilterUtils.js';
  * @param {Function} [props.onStartChat] - "Start chatting" — receives the FULL
  *   profile; the app resolves (or creates) the AI partner for it and opens a
  *   brand-new chat in the Chat tab.
+ * @param {Function} [props.onOpenDetail] - 03-4: open the read-only detail page.
+ *   Bound to the card TITLE only — the card body keeps opening the editor, so
+ *   the new destination is additive and nothing that worked before changes.
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity, onStartChat }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, onOpenDetail, referencingEntities, onCreatePersona, onCreateEntity, onStartChat }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
     const exportCharacterCard = useCharacterProfileStore(state => state.exportCharacterCard);
@@ -350,7 +353,23 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
             </div>
 
             <div className="p-4">
-                <h3 className="font-semibold text-accent-primary truncate">{profile.name}</h3>
+                {/* 03-4: the title is the door to the detail page. It is a real
+                    <button> so it is reachable by keyboard, and it stops the
+                    click from bubbling into the card body — otherwise opening the
+                    detail would immediately open the editor underneath it. When
+                    no handler is supplied the title stays a plain heading. */}
+                <h3 className="font-semibold text-accent-primary truncate">
+                    {onOpenDetail ? (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onOpenDetail(profile); }}
+                            className="character-card-title-btn truncate"
+                            title={t('detail.openTitle', { name: profile.name })}
+                        >
+                            {profile.name}
+                        </button>
+                    ) : profile.name}
+                </h3>
                 <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
                     {profile.description || t('noDescription')}
                 </p>

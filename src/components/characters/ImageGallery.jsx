@@ -11,8 +11,14 @@ import CharacterImage from '../common/CharacterImage.jsx';
  * @param {Object} props
  * @param {string} props.profileId - ID of the character profile
  * @param {number|null} props.visionConfigId - ID of the selected vision configuration
+ * @param {boolean} [props.readOnly=false] - 03-4: "look at this character" mode.
+ *   Keeps the lightbox, the VL badge and the **Analyze** action (the detail page
+ *   is where a user judges a card before chatting, so re-analysing is in scope)
+ *   but hides every MUTATION: upload, set-primary, edit description and delete.
+ *   A page you open to *inspect* a character must not be a second, unguarded
+ *   editor for its images — those actions stay in the editor's Images tab.
  */
-export default function ImageGallery({ profileId, visionConfigId }) {
+export default function ImageGallery({ profileId, visionConfigId, readOnly = false }) {
     const { t } = useTranslation('characters');
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [editingImage, setEditingImage] = useState(null);
@@ -114,6 +120,18 @@ export default function ImageGallery({ profileId, visionConfigId }) {
     // Get current image for edit modal
     const currentEditImage = editingImage ? images.find(img => img.id === editingImage) : null;
 
+    /**
+     * 03-4: does the kebab menu have anything to show?
+     *
+     * In the full editor every image has at least Set-primary (non-primary
+     * images), Edit description and Delete, so it is always true. In readOnly
+     * mode only Analyze survives, and Analyze needs a vision config — without
+     * one the kebab would open an EMPTY panel. Computed once here instead of
+     * per image, because `readOnly` and `visionConfigId` are uniform for the
+     * whole gallery.
+     */
+    const hasMenuActions = !readOnly || Boolean(visionConfigId);
+
     return (
         <div className="space-y-3">
             {/* Gallery toolbar */}
@@ -128,13 +146,15 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                             {images.length} {images.length === 1 ? t('images.image') : t('images.images')}
                         </span>
                     </div>
-                    <button
-                        onClick={() => setShowUploadModal(true)}
-                        className="btn-primary py-1 px-3 text-xs"
-                        style={{ textTransform: 'none', letterSpacing: 'normal' }}
-                    >
-                        + {t('buttons.uploadImage')}
-                    </button>
+                    {!readOnly && (
+                        <button
+                            onClick={() => setShowUploadModal(true)}
+                            className="btn-primary py-1 px-3 text-xs"
+                            style={{ textTransform: 'none', letterSpacing: 'normal' }}
+                        >
+                            + {t('buttons.uploadImage')}
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -177,25 +197,32 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                             </div>
                         )}
 
-                        {/* Three-dot menu button - top-right, subtle */}
-                        <Tooltip content={t('images.actions')}>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleMenu(image.id);
-                                }}
-                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded flex items-center justify-center
-                                    bg-black/30 border border-white/10 text-white/70
-                                    hover:opacity-100 hover:bg-black/60 hover:border-white/30
-                                    transition-all duration-200 z-10"
-                            >
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                                    <circle cx="12" cy="5" r="2" />
-                                    <circle cx="12" cy="12" r="2" />
-                                    <circle cx="12" cy="19" r="2" />
-                                </svg>
-                            </button>
-                        </Tooltip>
+                        {/* Three-dot menu button - top-right, subtle.
+                            03-4: in readOnly mode the only remaining action is
+                            Analyze, so the kebab disappears entirely when there
+                            is no vision config to analyse with — a menu with
+                            nothing in it is worse than no menu. */}
+                        {(hasMenuActions) && (
+                            <Tooltip content={t('images.actions')}>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleMenu(image.id);
+                                    }}
+                                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded flex items-center justify-center
+                                        bg-black/30 border border-white/10 text-white/70
+                                        hover:opacity-100 hover:bg-black/60 hover:border-white/30
+                                        transition-all duration-200 z-10"
+                                >
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="5" r="2" />
+                                        <circle cx="12" cy="12" r="2" />
+                                        <circle cx="12" cy="19" r="2" />
+                                    </svg>
+                                </button>
+                            </Tooltip>
+                        )}
 
                         {/* Dropdown menu */}
                         {openMenuId === image.id && (
@@ -209,7 +236,7 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                 }}
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                {!image.is_primary && (
+                                {!readOnly && !image.is_primary && (
                                     <button
                                         onClick={() => handleSetPrimary(image.id)}
                                         className="w-full px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-white/5 transition-colors text-orange-400"
@@ -239,27 +266,31 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                                         {t('images.analyze')}
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => {
-                                        handleEditDescription(image);
-                                        setOpenMenuId(null);
-                                    }}
-                                    className="w-full px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-white/5 transition-colors text-blue-400"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    {t('images.editDescription')}
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(image.id)}
-                                    className="module-action-btn-danger w-full"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    {t('images.deleteImage')}
-                                </button>
+                                {!readOnly && (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                handleEditDescription(image);
+                                                setOpenMenuId(null);
+                                            }}
+                                            className="w-full px-2.5 py-1.5 text-xs font-medium flex items-center gap-1.5 hover:bg-white/5 transition-colors text-blue-400"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            {t('images.editDescription')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(image.id)}
+                                            className="module-action-btn-danger w-full"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                            {t('images.deleteImage')}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -281,6 +312,9 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                 ))}
             </div>
 
+            {/* 03-4: the empty copy differs in readOnly mode — "upload one to get
+                started" is an instruction the detail page cannot satisfy
+                (there is no upload button there). */}
             {images.length === 0 && (
                 <div className="flex flex-col items-center gap-3 py-10">
                     <div
@@ -291,7 +325,9 @@ export default function ImageGallery({ profileId, visionConfigId }) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>{t('images.noImages')}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                        {readOnly ? t('images.noImagesReadOnly') : t('images.noImages')}
+                    </p>
                 </div>
             )}
 

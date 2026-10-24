@@ -1082,6 +1082,517 @@ input[type="checkbox"]:disabled:hover {
     }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Character detail page (plan 03-4)
+
+   A READ-ONLY "look at this character" page, not a second editor. It sits on
+   the same page-variant chassis as `.char-editor-page` (sticky header, centred
+   scrolling pane, sticky footer) so the two screens feel like siblings, but it
+   owns its own class family: the editor's classes carry edit-specific intent
+   and reusing them would invite edit affordances into a read-only view.
+
+   Every colour is a theme token, so the light themes inherit this unchanged.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.char-detail-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.char-detail-scroll {
+    flex: 1;
+    min-height: 0;
+}
+
+.char-detail-pane {
+    width: 100%;
+    max-width: 64rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+
+.char-detail-hero {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    padding: 1.25rem;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+}
+
+.char-detail-hero-art {
+    width: 11rem;
+    aspect-ratio: 3 / 4;
+    flex-shrink: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-background-elevated);
+}
+
+.char-detail-hero-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-text-disabled);
+}
+
+.char-detail-hero-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.char-detail-hero-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--color-text-primary);
+}
+
+.char-detail-hero-nickname {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+}
+
+.char-detail-hero-meta {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+}
+
+.char-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+    list-style: none;
+    padding: 0;
+}
+
+.char-detail-tag {
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-background-elevated);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.char-detail-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.char-detail-hero-chat {
+    align-self: flex-start;
+    margin-top: 0.4rem;
+    border-radius: var(--radius-md);
+}
+
+/* ── Tabs (Pro / Dev only) ────────────────────────────────────────────── */
+
+.char-detail-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding-bottom: 0.15rem;
+    border-bottom: 1px solid var(--color-border-glass);
+}
+
+.char-detail-tab {
+    padding: 0.45rem 0.8rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.char-detail-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.char-detail-tab.is-active {
+    color: var(--color-accent-primary);
+    border-bottom-color: var(--color-accent-primary);
+}
+
+.char-detail-tab:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* ── Body / collapsible sections ──────────────────────────────────────── */
+
+.char-detail-body {
+    display: block;
+}
+
+.char-detail-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.char-detail-section {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+    overflow: hidden;
+}
+
+.char-detail-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: none;
+    background: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.char-detail-section-head:hover {
+    color: var(--color-text-primary);
+}
+
+.char-detail-section-head:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: -2px;
+}
+
+.char-detail-section-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.char-detail-section-body {
+    padding: 0 1rem 0.9rem;
+}
+
+.char-detail-text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--color-text-primary);
+}
+
+.char-detail-muted {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.char-detail-hint {
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.char-detail-mode-hint {
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-border-default);
+}
+
+.char-detail-subhead {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+/* ── Greeting carousel ────────────────────────────────────────────────── */
+
+.char-detail-greeting {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.char-detail-greeting-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.char-detail-greeting-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-accent-primary);
+}
+
+.char-detail-greeting-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.char-detail-greeting-count {
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+
+.char-detail-greeting-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    border: 1px solid var(--color-border-default);
+    background: var(--color-background-elevated);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.char-detail-greeting-arrow:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-accent-primary);
+}
+
+.char-detail-greeting-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.char-detail-greeting-arrow:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+}
+
+.char-detail-greeting-text {
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-accent-primary);
+    background: var(--color-background-elevated);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    color: var(--color-text-primary);
+}
+
+/* ── Copies tab ───────────────────────────────────────────────────────── */
+
+.char-detail-copy-list,
+.char-detail-partner-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.char-detail-copy-row,
+.char-detail-partner-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+}
+
+.char-detail-copy-art {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-background-elevated);
+}
+
+.char-detail-copy-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.char-detail-copy-name,
+.char-detail-partner-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.char-detail-copy-desc {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.char-detail-partner-row .char-detail-partner-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.char-detail-partner-meta {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+/* ── Dev "Card JSON" tab ──────────────────────────────────────────────── */
+
+.char-detail-raw {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-elevated);
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    overflow: auto;
+    max-height: 32rem;
+    white-space: pre;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+
+.char-detail-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 1.5rem;
+    border-top: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+}
+
+.char-detail-footer-main {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Delete is quiet-until-hovered-danger: it must never look like the primary
+   action next to Chat on a page whose whole point is "chat with this". */
+.char-detail-footer-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.char-detail-footer-delete:hover:not(:disabled) {
+    color: var(--color-error);
+    border-color: color-mix(in srgb, var(--color-error) 40%, transparent);
+    background: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.char-detail-footer-delete:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.char-detail-footer-delete:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+    .char-detail-hero {
+        flex-direction: column;
+    }
+
+    .char-detail-hero-art {
+        width: 100%;
+        max-width: 14rem;
+    }
+
+    .char-detail-pane {
+        padding: 1rem 1rem 2rem;
+    }
+
+    .char-detail-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        padding: 0.75rem 1rem;
+    }
+
+    .char-detail-footer-main {
+        justify-content: stretch;
+    }
+}
+
+/* 03-4: the card TITLE is the entry point to the detail page. It must look
+   like the heading it replaces (the button resets every inherited style) while
+   still reading as clickable on hover/focus. `width: 100%` + `text-align: left`
+   keep the truncation behaviour of the <h3> it lives in. */
+.character-card-title-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.character-card-title-btn:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.character-card-title-btn:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 /* "Start chatting" CTA on a character card — the one-click path from a card
    to a conversation. Full-width, accent-filled, sits under the description. */
 .character-card-chat-btn {

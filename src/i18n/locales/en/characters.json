@@ -252,6 +252,79 @@
     "sections": "Sections",
     "modeHint": "Some advanced sections are hidden in Simple mode. Switch to Pro or Developer in Settings → General to reveal them."
   },
+  "detail": {
+    "back": "Back to characters",
+    "untitled": "Untitled character",
+    "openTitle": "Open the detail page for {{name}}",
+    "chat": "Chat",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "duplicating": "Duplicating…",
+    "modeHint": "Switch to Pro in Settings → General to see this character's gallery, copy series and linked AI partners.",
+    "section": {
+      "description": "Description",
+      "personality": "Personality",
+      "scenario": "Scenario",
+      "greeting": "Greeting"
+    },
+    "greeting": {
+      "default": "Default greeting",
+      "alternate": "Alternate greeting {{index}}",
+      "previous": "Previous greeting",
+      "next": "Next greeting",
+      "position": "{{current}} of {{total}}",
+      "none": "This character has no authored greeting — the chat will open without an opening message."
+    },
+    "stats": {
+      "linked_one": "{{count}} linked AI partner",
+      "linked_other": "{{count}} linked AI partners",
+      "greetings_one": "{{count}} greeting",
+      "greetings_other": "{{count}} greetings"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "gallery": "Gallery",
+      "copies": "Copies",
+      "partners": "Linked partners",
+      "raw": "Card JSON"
+    },
+    "gallery": {
+      "hint": "Click any image to open it full size. Images marked VL have been analysed by the vision model.",
+      "noVision": "No Vision module is configured for this character, so images cannot be analysed here. Pick one in the editor's Images tab."
+    },
+    "copies": {
+      "hint": "Other characters in this copy series — same base name, a trailing number apart.",
+      "emptyTitle": "No copies yet",
+      "emptyDescription": "Duplicating this character creates \"{{name}}\" with the next free number, and it will appear here.",
+      "open": "Open",
+      "duplicate": "Duplicate",
+      "duplicateHint": "Create another copy of this character with the next free name"
+    },
+    "partners": {
+      "heading": "AI partners using this character",
+      "personasHeading": "Personas using this character",
+      "ai": "AI partner",
+      "persona": "Persona",
+      "chat": "Chat",
+      "emptyTitle": "No linked AI partners",
+      "emptyDescription": "Create an AI partner from this character card to start chatting with it."
+    },
+    "raw": {
+      "hint": "The stored profile row, including JSON columns exactly as the engine holds them. Read-only."
+    },
+    "deleteDialog": {
+      "title": "Delete \"{{name}}\"?",
+      "message": "This character profile and its images will be removed.\n\nThis action cannot be undone.",
+      "linkedMessage": "{{count}} entity reference(s) use \"{{name}}\". Deleting the character leaves them pointing at a missing profile, so remove or re-link them first.\n\nThis action cannot be undone.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "cancel": "Cancel"
+    },
+    "toast": {
+      "duplicated": "\"{{name}}\" created",
+      "duplicateFailed": "Could not duplicate this character: {{message}}"
+    }
+  },
   "fields": {
     "name": "Name",
     "namePlaceholder": "Character name...",
@@ -400,6 +473,7 @@
     "image": "image",
     "images": "images",
     "noImages": "No images yet. Upload one to get started!",
+    "noImagesReadOnly": "This character has no images yet.",
     "primaryBadge": "Primary",
     "actions": "Actions",
     "characterImageAlt": "Character image",

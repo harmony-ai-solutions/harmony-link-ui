@@ -11,6 +11,7 @@ import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
+import CharacterDetailView from './CharacterDetailView.jsx';
 import CharacterCardImport from './CharacterCardImport';
 import CategoryFilterDropdown from './CategoryFilterDropdown.jsx';
 import ManageCategoriesModal from './ManageCategoriesModal.jsx';
@@ -75,6 +76,15 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     const [showImport, setShowImport] = useState(false);
     const [showManageCategories, setShowManageCategories] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
+    /**
+     * 03-4: the profile whose DETAIL page is open.
+     *
+     * Held as an ID, not a row: the store row is the single source of truth, so
+     * a favourite toggle, an edit or a sync refresh is reflected on the page
+     * without copying state. A deleted profile resolves to `undefined` and the
+     * page closes itself (see the guard below) rather than rendering a ghost.
+     */
+    const [detailProfileId, setDetailProfileId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilterRequest, setActiveFilterRequest] = useState(FILTER_ALL);
     const categories = useCategoryStore((state) => state.categories);
@@ -207,6 +217,59 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     const handleEdit = (profile) => {
         setEditingProfile(profile);
         setShowEditor(true);
+    };
+
+    /** 03-4: open the read-only detail page for one profile. */
+    const handleOpenDetail = (profile) => {
+        if (!profile?.id) return;
+        setDetailProfileId(profile.id);
+    };
+
+    const handleCloseDetail = () => setDetailProfileId(null);
+
+    /**
+     * 03-4: the detail page's Duplicate action.
+     *
+     * Calls the engine's full-card copy (the same route 2-4 uses) and refreshes
+     * the list BEFORE resolving, so the Copies tab and the returned row are both
+     * backed by real store state. The new profile is returned so the page can
+     * navigate to it — the name comes from the server, never from the client.
+     */
+    const handleDetailDuplicate = async (profile) => {
+        if (!profile?.id) return null;
+        const created = await characterService.duplicateCharacterProfile(profile.id);
+        await loadProfiles();
+        return created;
+    };
+
+    /**
+     * 03-4: the detail page's Delete action.
+     *
+     * Uses the STORE's `deleteProfile`, not the bare service: the store also
+     * drops the profile's cached images and clears `selectedProfileId`, so a
+     * deleted character cannot leave object URLs or a dangling selection behind.
+     * The detail page owns its own busy state, so the `isLoading` flip this
+     * causes cannot flash anything the user is looking at — the page closes on
+     * success and the grid reloads anyway.
+     */
+    const handleDetailDelete = async (id) => {
+        await deleteProfile(id);
+    };
+
+    /**
+     * 03-4: Chat from the detail page.
+     *
+     * An explicit `entityId` (a linked partner row) is used as-is; without one
+     * the behaviour matches the card's Chat button — resolve the existing AI
+     * partner or create one, then hand the id to the Chat tab.
+     */
+    const handleDetailStartChat = async (profile, entityId = null) => {
+        if (entityId) {
+            useChatStore.getState().requestStartChat(entityId);
+            onStartChatFromCard?.();
+            return;
+        }
+        await handleStartChatFromCard(profile);
     };
 
     const handleDeleteRequest = (id) => {
@@ -415,6 +478,35 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         );
     }
 
+    /**
+     * 03-4: the DETAIL page takes over like the editor's page variant.
+     *
+     * Ordering matters — `showEditor` is checked first so Edit from the detail
+     * page returns to the editor, and the detail page comes back afterwards
+     * because `detailProfileId` is never cleared by that transition.
+     *
+     * The profile is resolved from the store on every render: if it disappears
+     * (deleted here or by a sync), the page falls through to the grid instead
+     * of rendering a ghost. `getProfile` is a plain lookup, so this costs
+     * nothing.
+     */
+    const detailProfile = detailProfileId ? getProfile(detailProfileId) : null;
+    if (detailProfile) {
+        return (
+            <CharacterDetailView
+                profile={detailProfile}
+                profiles={visibleProfiles}
+                linkedEntities={referencingByProfile[detailProfile.id] || []}
+                onBack={handleCloseDetail}
+                onEdit={handleEdit}
+                onStartChat={handleDetailStartChat}
+                onOpenProfile={(id) => setDetailProfileId(id)}
+                onDuplicate={handleDetailDuplicate}
+                onDelete={handleDetailDelete}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-full">
             <PageHeader
@@ -540,6 +632,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                             {filteredProfiles.map(profile => (
                                 <CharacterProfileCard key={profile.id} profile={profile}
                                     onClick={() => handleEdit(profile)} onDelete={handleDeleteRequest}
+                                    onOpenDetail={handleOpenDetail}
                                     referencingEntities={referencingByProfile[profile.id] || []}
                                     onCreatePersona={handleCreatePersonaFromCard}
                                     onCreateEntity={handleCreateEntityFromCard}

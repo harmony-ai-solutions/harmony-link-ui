@@ -76,8 +76,71 @@ const useCharacterProfileStore = create((set, get) => ({
     },
     
     /**
+     * Toggle a profile's favourite bit (plan 03-1).
+     *
+     * OPTIMISTIC, then reconciled: the heart must feel instant, so the local row
+     * is patched before the request goes out, and a failure restores the EXACT
+     * previous value (not a blanket `false`) — the user may have been
+     * un-favouriting. The error is re-thrown so the card can toast it.
+     *
+     * Two details that matter:
+     *  - `is_favorite` is patched as a NUMBER (1/0). The engine stores it as a
+     *    SQLite 0/1 INTEGER and the list route marshals `int64`, so writing
+     *    `true` here would make the optimistic row disagree with the next
+     *    refetch and with `isFavorite()`'s wire-value handling.
+     *  - `isLoading` is deliberately NOT touched. It is the grid's skeleton flag;
+     *    flipping it on every heart click would flash the whole character grid.
+     *
+     * @param {string} id
+     * @param {boolean} [nextFavorite] - explicit target; defaults to the inverse
+     * @returns {Promise<{id: string, is_favorite: boolean}>}
+     */
+    toggleFavorite: async (id, nextFavorite) => {
+        const current = get().profiles.find(p => p.id === id);
+        if (!current) return null;
+
+        const previous = current.is_favorite;
+        // Accept both the numeric wire value and a boolean from a caller.
+        const target = typeof nextFavorite === 'boolean'
+            ? nextFavorite
+            : !(previous === true || previous === 1 || previous === '1');
+
+        set(produce(state => {
+            const index = state.profiles.findIndex(p => p.id === id);
+            if (index !== -1) {
+                state.profiles[index].is_favorite = target ? 1 : 0;
+            }
+        }));
+
+        try {
+            const result = await characterService.setCharacterProfileFavorite(id, target);
+            // Reconcile against the engine's answer (authoritative), keeping the
+            // numeric shape.
+            const confirmed = !!result?.is_favorite;
+            set(produce(state => {
+                const index = state.profiles.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    state.profiles[index].is_favorite = confirmed ? 1 : 0;
+                }
+            }));
+            return result;
+        } catch (error) {
+            // Restore the snapshot — a failed toggle must never leave the heart
+            // lying about what the database holds.
+            set(produce(state => {
+                const index = state.profiles.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    state.profiles[index].is_favorite = previous;
+                }
+            }));
+            set({ error: error.message });
+            throw error;
+        }
+    },
+
+    /**
      * Delete a character profile
-     * @param {string} id 
+     * @param {string} id
      */
     deleteProfile: async (id) => {
         set({ isLoading: true, error: null });

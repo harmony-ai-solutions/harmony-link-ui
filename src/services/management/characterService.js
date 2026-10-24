@@ -121,8 +121,36 @@ export async function updateCharacterProfile(id, profile) {
 }
 
 /**
+ * Toggle a character profile's favourite bit.
+ *
+ * Mirrors the engine's NARROW `PUT /api/v1/character-profiles/:id/favorite`
+ * route (`{ is_favorite: boolean }`). This exists so the UI never sends a
+ * partial profile body to `PUT /character-profiles/:id`: that handler binds the
+ * FULL `CharacterProfileConfig`, so any field omitted from the body is written
+ * back as its zero value — a partial update there would wipe the card. Use this
+ * for favourites, and mirror the same narrow shape for any future flag
+ * (pinned-style) rather than reusing the full update.
+ *
+ * The engine also re-stamps `updated_at`, which is what carries the change to
+ * the phone: the app's only change tracking is `updated_at > lastSync`.
+ *
+ * @param {string} id
+ * @param {boolean} favorite
+ * @returns {Promise<{id: string, is_favorite: boolean}>}
+ */
+export async function setCharacterProfileFavorite(id, favorite) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/${id}/favorite`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ is_favorite: !!favorite })
+    });
+    await handleResponse(resp, "Failed to update favorite");
+    return await resp.json();
+}
+
+/**
  * Delete a character profile
- * @param {string} id 
+ * @param {string} id
  * @returns {Promise<void>}
  */
 export async function deleteCharacterProfile(id) {

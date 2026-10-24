@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
-import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
+import { EditIcon, TrashIcon, RobotIcon, MessageIcon, HeartIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
 import { toast } from '../../store/toastStore.js';
+import { isFavoriteProfile } from '../../utils/characterFilterUtils.js';
 
 /**
  * Card component for displaying a character profile summary.
@@ -42,6 +43,8 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
     const exportCharacterCard = useCharacterProfileStore(state => state.exportCharacterCard);
+    const toggleFavorite = useCharacterProfileStore(state => state.toggleFavorite);
+    const [favoriteBusy, setFavoriteBusy] = useState(false);
     const [busy, setBusy] = useState(null); // null | 'json' | 'png'
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -94,13 +97,34 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
         fn?.();
     };
 
+    /**
+     * Heart toggle (plan 03-1). The store patches the row optimistically, so
+     * the glyph flips on the click itself; a failed write rolls back and the
+     * user is told why. `favoriteBusy` only guards against a double-fire while
+     * the request is in flight — it deliberately does NOT disable the rest of
+     * the card.
+     */
+    const favorited = isFavoriteProfile(profile);
+    const handleToggleFavorite = async (e) => {
+        e.stopPropagation();
+        if (!profile?.id || favoriteBusy) return;
+        setFavoriteBusy(true);
+        try {
+            await toggleFavorite(profile.id, !favorited);
+        } catch (error) {
+            toast.error(t('toast.favoriteFailed', { message: error.message }));
+        } finally {
+            setFavoriteBusy(false);
+        }
+    };
+
     const handleExport = async (format) => {
         if (!profile?.id || busy) return;
         setBusy(format);
         try {
             await exportCharacterCard(profile.id, format, profile.name);
             // The card downloads straight to disk — confirm the copy landed.
-            toast.success(t('characters:toast.characterExported'));
+            toast.success(t('common:toast.characterExported'));
         } catch (e) {
             // eslint-disable-next-line no-alert
             alert(t('exportFailed', { message: e.message }));
@@ -202,6 +226,24 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                 />
 
                 <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none" />
+
+                {/* Favourite heart (plan 03-1). Unlike the kebab this is always
+                    visible: it is a piece of STATE, not just an action — a
+                    hover-only heart would hide which characters are favourited.
+                    Solid glyph = favourited, outline = not, so the state does
+                    not depend on colour. */}
+                <Tooltip content={favorited ? t('favorite.remove') : t('favorite.add')}>
+                    <button
+                        type="button"
+                        onClick={handleToggleFavorite}
+                        className={`absolute top-2 left-2 z-30 transition-all hover:scale-110 focus:opacity-100 ${favorited ? 'character-card-favorite-active' : 'character-card-favorite'}`}
+                        aria-label={favorited ? t('favorite.remove') : t('favorite.add')}
+                        aria-pressed={favorited}
+                        disabled={favoriteBusy}
+                    >
+                        <HeartIcon className="w-4 h-4" filled={favorited} />
+                    </button>
+                </Tooltip>
 
                 {/* Small kebab (vertical three-dot) — hover-revealed. The menu
                     itself is portaled to <body> (see `menu` above). */}

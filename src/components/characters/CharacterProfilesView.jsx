@@ -15,8 +15,15 @@ import Tooltip from '../ui/Tooltip.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
-import { MagnifierIcon, UsersIcon } from '../../constants/icons.jsx';
+import { MagnifierIcon, UsersIcon, HeartIcon } from '../../constants/icons.jsx';
 import { toast } from '../../store/toastStore.js';
+import {
+    FILTER_ALL,
+    FILTER_FAVORITES,
+    countFavorites,
+    filterCharacterProfiles,
+    resolveCharacterFilter,
+} from '../../utils/characterFilterUtils.js';
 
 /**
  * Main view for managing character profiles
@@ -60,6 +67,7 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     const [showImport, setShowImport] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [favoriteFilter, setFavoriteFilter] = useState(FILTER_ALL);
     const [cardSize, setCardSize] = useState(() => {
         return localStorage.getItem('characterProfileCardSize') || 'medium';
     });
@@ -82,15 +90,35 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         [profiles, personaOwnedIds]
     );
 
-    /** Filter visible profiles by search query — matches name and description */
-    const filteredProfiles = useMemo(() => {
-        if (!searchQuery.trim()) return visibleProfiles;
-        const query = searchQuery.toLowerCase().trim();
-        return visibleProfiles.filter(p =>
-            p.name?.toLowerCase().includes(query) ||
-            p.description?.toLowerCase().includes(query)
-        );
-    }, [visibleProfiles, searchQuery]);
+    /**
+     * Toolbar state — search AND the Favorites chip, composed (search runs
+     * WITHIN the active filter). The logic itself lives in
+     * `characterFilterUtils` so the rules are unit-tested rather than re-derived
+     * here; 03-2 extends the same options object with a category id.
+     *
+     * `activeFilter` resolves a stale Favourites selection back to All: if the
+     * user un-hearts the last favourite while the chip is active, the grid must
+     * fall back to everything instead of showing a permanent empty state.
+     *
+     * `favoriteFilter` is the user's REQUEST; `activeFilter` is what is actually
+     * honoured. They diverge only while there is nothing to filter by, which is
+     * also when the chip row is hidden — so the effect below drops the request
+     * in that window. Without it, hearting the FIRST character would silently
+     * arm a filter the user never saw (the chip appears already active) and the
+     * rest of the grid would vanish on that one click.
+     */
+    const favoriteCount = useMemo(() => countFavorites(visibleProfiles), [visibleProfiles]);
+    const activeFilter = resolveCharacterFilter(favoriteFilter, visibleProfiles);
+    const filteredProfiles = useMemo(
+        () => filterCharacterProfiles(visibleProfiles, { search: searchQuery, filter: activeFilter }),
+        [visibleProfiles, searchQuery, activeFilter]
+    );
+
+    useEffect(() => {
+        if (favoriteCount === 0 && favoriteFilter !== FILTER_ALL) {
+            setFavoriteFilter(FILTER_ALL);
+        }
+    }, [favoriteCount, favoriteFilter]);
 
     useEffect(() => {
         loadProfiles();
@@ -332,6 +360,35 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                         />
                     </div>
 
+                    {/* Favourite filter chip (plan 03-1). Hidden entirely when
+                        nothing is favourited — a chip that can only ever produce
+                        an empty grid is noise, and Simple users should not see a
+                        filter they have no use for. */}
+                    {favoriteCount > 0 && (
+                        <div className="chat-inbox-chips flex-shrink-0" role="group" aria-label={t('characters:filter.filterLabel')}>
+                            <button
+                                type="button"
+                                data-tutorial-id="char-filter-all"
+                                onClick={() => setFavoriteFilter(FILTER_ALL)}
+                                className={`chat-inbox-chip ${activeFilter === FILTER_ALL ? 'chat-inbox-chip-active' : ''}`}
+                                aria-pressed={activeFilter === FILTER_ALL}
+                            >
+                                {t('characters:filter.all')}
+                            </button>
+                            <button
+                                type="button"
+                                data-tutorial-id="char-filter-favorites"
+                                onClick={() => setFavoriteFilter(activeFilter === FILTER_FAVORITES ? FILTER_ALL : FILTER_FAVORITES)}
+                                className={`chat-inbox-chip char-filter-favorites ${activeFilter === FILTER_FAVORITES ? 'chat-inbox-chip-active' : ''}`}
+                                aria-pressed={activeFilter === FILTER_FAVORITES}
+                            >
+                                <HeartIcon className="w-3.5 h-3.5" filled={activeFilter === FILTER_FAVORITES} />
+                                {t('characters:filter.favorites')}
+                                <span className="char-filter-count">{favoriteCount}</span>
+                            </button>
+                        </div>
+                    )}
+
                     {/* Card Size Toggle */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-text-muted font-medium">{t('characters:cardSize')}</span>
@@ -387,9 +444,13 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                         <EmptyState
                             icon={MagnifierIcon}
                             title={t('characters:empty.noResults')}
-                            description={t('characters:empty.tryAdjustingSearch')}
+                            description={activeFilter === FILTER_FAVORITES
+                                ? t('characters:empty.noFavoriteResults')
+                                : t('characters:empty.tryAdjustingSearch')}
                             actionLabel={t('common:emptyState.clearFilters')}
-                            onAction={() => setSearchQuery('')}
+                            /* Both filters must clear: leaving Favourites active
+                               would make an already-empty grid stay empty. */
+                            onAction={() => { setSearchQuery(''); setFavoriteFilter(FILTER_ALL); }}
                         />
                     )
                 ) : (

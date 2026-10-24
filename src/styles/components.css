@@ -581,6 +581,77 @@ input[type="checkbox"]:disabled:hover {
     outline-offset: 2px;
 }
 
+/* Favourite heart on a character card (plan 03-1).
+   Always visible (it is a state indicator, not just a hover action). The
+   surface is declared HERE rather than borrowing `.module-action-btn`: that
+   shared class lives further down this file and would win on `padding` and
+   `border-radius`, turning the heart into a wide pill. Sizing is explicit so
+   the two states are pixel-identical and the glyph never shifts on toggle.
+   The active state switches the glyph to solid via the `filled` prop; the
+   colour here only reinforces it. */
+.character-card-favorite,
+.character-card-favorite-active {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface-translucent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-spring);
+}
+
+.character-card-favorite {
+    color: var(--color-text-primary);
+}
+
+.character-card-favorite:hover {
+    color: var(--color-accent-primary);
+    border-color: var(--color-border-glow);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
+}
+
+.character-card-favorite-active {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 12px var(--color-glow-accent-soft);
+}
+
+.character-card-favorite:disabled,
+.character-card-favorite-active:disabled {
+    opacity: 0.5;
+    cursor: progress;
+}
+
+/* Favourites filter chip in the Characters toolbar. Reuses the chat inbox chip
+   look so the two filter rows read as the same affordance; the count badge is
+   muted against the active gradient so it never out-shouts the label. */
+.char-filter-favorites {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.char-filter-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0 0.3rem;
+    border-radius: 9999px;
+    background: var(--color-background-surface-translucent);
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.chat-inbox-chip-active .char-filter-count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
 /* Menu item — icon + label + active indicator */
 .nav-menu-item {
     display: flex;

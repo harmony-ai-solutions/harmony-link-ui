@@ -31,6 +31,18 @@
     "uploading": "Uploading…"
   },
   "searchPlaceholder": "Search profiles...",
+  "favorite": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
+  },
+  "filter": {
+    "filterLabel": "Filter characters",
+    "all": "All",
+    "favorites": "Favorites"
+  },
+  "toast": {
+    "favoriteFailed": "Could not update favorite: {{message}}"
+  },
   "cardSize": "Card Size:",
   "cardSizes": {
     "small": "Small cards",
@@ -41,6 +53,7 @@
     "title": "No profiles found",
     "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
+    "noFavoriteResults": "No favorites match your search. Try a different query or clear the filter.",
     "getStarted": "Get started by creating a new profile or importing a character card.",
     "personaOwnedHint": "Persona-owned cards are managed in the Personas tab."
   },

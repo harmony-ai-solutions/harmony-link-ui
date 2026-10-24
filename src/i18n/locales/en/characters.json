@@ -82,6 +82,49 @@
   "toast": {
     "favoriteFailed": "Could not update favorite: {{message}}"
   },
+  "duplicate": {
+    "headerButton": "Duplicate",
+    "headerButtonHint": "Pick an AI partner from a carousel and see the copy's name before creating it",
+    "title": "Duplicate an AI partner",
+    "subtitle": "Pick the partner to copy. You will see the new name before anything is created.",
+    "pickerLabel": "Choose the AI partner to duplicate",
+    "plainLabel": "Only one AI partner",
+    "position": "{{current}} of {{total}}",
+    "previous": "Previous partner",
+    "next": "Next partner",
+    "confirm": "Duplicate",
+    "duplicating": "Duplicating…",
+    "unnamed": "Untitled",
+    "facts": {
+      "mappings_one": "{{count}} module configuration will be copied",
+      "mappings_other": "{{count}} module configurations will be copied",
+      "mappingsNone": "No module configurations are set, so none will be copied",
+      "profileLinked": "The character itself is shared, not copied — edits apply to both"
+    },
+    "warning": {
+      "notCopied": "Greetings and memories are NOT copied. The new partner starts with the same character card but a fresh conversation and no remembered history."
+    },
+    "note": {
+      "serverDecides": "The engine picks the final name. The one shown above is the name it will use next.",
+      "noAlias": "This partner has no separate display name, so the copy keeps the character's name."
+    },
+    "empty": {
+      "title": "Nothing to duplicate yet",
+      "description": "Create an AI partner from a character card first — then you can copy it from here."
+    },
+    "error": {
+      "generic": "Could not duplicate this partner."
+    },
+    "result": {
+      "title": "\"{{name}}\" created",
+      "hint": "The copy uses the same character card. Edit its name or module configurations in the Entities screen.",
+      "openEntity": "Open in Entities",
+      "startChat": "Start chatting"
+    },
+    "toast": {
+      "created": "\"{{name}}\" created"
+    }
+  },
   "cardSize": "Card Size:",
   "cardSizes": {
     "small": "Small cards",

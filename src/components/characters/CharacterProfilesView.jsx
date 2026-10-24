@@ -4,22 +4,27 @@ import useCharacterProfileStore from '../../store/characterProfileStore';
 import useEntityStore from '../../store/entityStore';
 import usePersonaStore from '../../store/personaStore';
 import useChatStore from '../../store/chatStore';
+import useCategoryStore from '../../store/categoryStore.js';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
+import CategoryFilterDropdown from './CategoryFilterDropdown.jsx';
+import ManageCategoriesModal from './ManageCategoriesModal.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Skeleton from '../ui/Skeleton.jsx';
-import { MagnifierIcon, UsersIcon, HeartIcon } from '../../constants/icons.jsx';
+import { MagnifierIcon, UsersIcon } from '../../constants/icons.jsx';
 import { toast } from '../../store/toastStore.js';
 import {
     FILTER_ALL,
     FILTER_FAVORITES,
+    buildCategoryMemberIndex,
+    categoryIdFromFilter,
     countFavorites,
     filterCharacterProfiles,
     resolveCharacterFilter,
@@ -65,9 +70,12 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     }, [entities]);
     const [showEditor, setShowEditor] = useState(false);
     const [showImport, setShowImport] = useState(false);
+    const [showManageCategories, setShowManageCategories] = useState(false);
     const [editingProfile, setEditingProfile] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [favoriteFilter, setFavoriteFilter] = useState(FILTER_ALL);
+    const [activeFilterRequest, setActiveFilterRequest] = useState(FILTER_ALL);
+    const categories = useCategoryStore((state) => state.categories);
+    const loadCategories = useCategoryStore((state) => state.loadCategories);
     const [cardSize, setCardSize] = useState(() => {
         return localStorage.getItem('characterProfileCardSize') || 'medium';
     });
@@ -91,40 +99,56 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     );
 
     /**
-     * Toolbar state — search AND the Favorites chip, composed (search runs
-     * WITHIN the active filter). The logic itself lives in
-     * `characterFilterUtils` so the rules are unit-tested rather than re-derived
-     * here; 03-2 extends the same options object with a category id.
+     * Toolbar state — search AND the active filter (All / Favorites / one
+     * category), composed so search always runs WITHIN the active filter
+     * (03-2 step 5).
      *
-     * `activeFilter` resolves a stale Favourites selection back to All: if the
-     * user un-hearts the last favourite while the chip is active, the grid must
-     * fall back to everything instead of showing a permanent empty state.
+     * The rules live in `characterFilterUtils` so they are unit-tested rather
+     * than re-derived here. `activeFilterRequest` is the user's REQUEST;
+     * `activeFilter` is what is actually honoured. They diverge when the request
+     * has become STALE:
      *
-     * `favoriteFilter` is the user's REQUEST; `activeFilter` is what is actually
-     * honoured. They diverge only while there is nothing to filter by, which is
-     * also when the chip row is hidden — so the effect below drops the request
-     * in that window. Without it, hearting the FIRST character would silently
-     * arm a filter the user never saw (the chip appears already active) and the
-     * rest of the grid would vanish on that one click.
+     *  - Favourites active but nothing is favourited any more (the last heart was
+     *    un-clicked, or that profile was deleted) → fall back to All rather than
+     *    stranding the grid empty forever.
+     *  - A category chip active but the category was deleted (here or in the
+     *    Manage modal) → same fallback.
+     *
+     * A category that merely has ZERO members is NOT stale — the user may be
+     * looking at the chip they just created, so an empty grid with a "no
+     * characters in this category yet" message is the correct answer.
      */
+    const categoryIndex = useMemo(() => buildCategoryMemberIndex(categories), [categories]);
+    const categoryIds = useMemo(
+        () => new Set((categories || []).map((category) => category.id)),
+        [categories]
+    );
     const favoriteCount = useMemo(() => countFavorites(visibleProfiles), [visibleProfiles]);
-    const activeFilter = resolveCharacterFilter(favoriteFilter, visibleProfiles);
+    const activeFilter = resolveCharacterFilter(activeFilterRequest, visibleProfiles, { categoryIds });
     const filteredProfiles = useMemo(
-        () => filterCharacterProfiles(visibleProfiles, { search: searchQuery, filter: activeFilter }),
-        [visibleProfiles, searchQuery, activeFilter]
+        () => filterCharacterProfiles(visibleProfiles, {
+            search: searchQuery,
+            filter: activeFilter,
+            categoryIndex,
+        }),
+        [visibleProfiles, searchQuery, activeFilter, categoryIndex]
     );
 
+    // Mirror the resolved filter back into the request once it goes stale, so
+    // the chip row and the grid never disagree about what is selected.
     useEffect(() => {
-        if (favoriteCount === 0 && favoriteFilter !== FILTER_ALL) {
-            setFavoriteFilter(FILTER_ALL);
+        if (activeFilter !== activeFilterRequest) {
+            setActiveFilterRequest(activeFilter);
         }
-    }, [favoriteCount, favoriteFilter]);
+    }, [activeFilter, activeFilterRequest]);
 
     useEffect(() => {
         loadProfiles();
         // Needed for the "used by" badges / live-link hint (3-2).
         loadEntities();
-    }, [loadProfiles, loadEntities]);
+        // 03-2: categories drive the chip row and the card menu's checkbox list.
+        loadCategories();
+    }, [loadProfiles, loadEntities, loadCategories]);
 
     // Cross-view handoff: the Chat welcome screen's "Create AI Character"
     // button sets a one-shot flag and switches to this tab. This view mounts
@@ -360,34 +384,26 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                         />
                     </div>
 
-                    {/* Favourite filter chip (plan 03-1). Hidden entirely when
-                        nothing is favourited — a chip that can only ever produce
-                        an empty grid is noise, and Simple users should not see a
-                        filter they have no use for. */}
-                    {favoriteCount > 0 && (
-                        <div className="chat-inbox-chips flex-shrink-0" role="group" aria-label={t('characters:filter.filterLabel')}>
-                            <button
-                                type="button"
-                                data-tutorial-id="char-filter-all"
-                                onClick={() => setFavoriteFilter(FILTER_ALL)}
-                                className={`chat-inbox-chip ${activeFilter === FILTER_ALL ? 'chat-inbox-chip-active' : ''}`}
-                                aria-pressed={activeFilter === FILTER_ALL}
-                            >
-                                {t('characters:filter.all')}
-                            </button>
-                            <button
-                                type="button"
-                                data-tutorial-id="char-filter-favorites"
-                                onClick={() => setFavoriteFilter(activeFilter === FILTER_FAVORITES ? FILTER_ALL : FILTER_FAVORITES)}
-                                className={`chat-inbox-chip char-filter-favorites ${activeFilter === FILTER_FAVORITES ? 'chat-inbox-chip-active' : ''}`}
-                                aria-pressed={activeFilter === FILTER_FAVORITES}
-                            >
-                                <HeartIcon className="w-3.5 h-3.5" filled={activeFilter === FILTER_FAVORITES} />
-                                {t('characters:filter.favorites')}
-                                <span className="char-filter-count">{favoriteCount}</span>
-                            </button>
-                        </div>
-                    )}
+                    {/* Filter chips (03-1 favourites + 03-2 categories):
+                        All · Favorites (n) · <category> (n) … · Manage.
+                        Always rendered (not gated on `favoriteCount`) because
+                        Manage is the only entry point to categories — hiding the
+                        row until something is favourited would make the feature
+                        unreachable. The component owns the per-chip visibility
+                        rules (a zero-member category hides unless active). */}
+                    <CategoryFilterDropdown
+                        categories={categories}
+                        categoryIndex={categoryIndex}
+                        profiles={visibleProfiles}
+                        activeFilter={activeFilter}
+                        favoriteCount={favoriteCount}
+                        onSelect={(filter) => setActiveFilterRequest(
+                            // Clicking the ACTIVE chip clears it back to All —
+                            // the same toggle affordance the favourites chip had.
+                            filter === activeFilter && filter !== FILTER_ALL ? FILTER_ALL : filter
+                        )}
+                        onManage={() => setShowManageCategories(true)}
+                    />
 
                     {/* Card Size Toggle */}
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -444,13 +460,18 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                         <EmptyState
                             icon={MagnifierIcon}
                             title={t('characters:empty.noResults')}
-                            description={activeFilter === FILTER_FAVORITES
-                                ? t('characters:empty.noFavoriteResults')
-                                : t('characters:empty.tryAdjustingSearch')}
+                            description={
+                                activeFilter === FILTER_FAVORITES
+                                    ? t('characters:empty.noFavoriteResults')
+                                    : categoryIdFromFilter(activeFilter)
+                                        ? t('characters:empty.noCategoryResults')
+                                        : t('characters:empty.tryAdjustingSearch')
+                            }
                             actionLabel={t('common:emptyState.clearFilters')}
-                            /* Both filters must clear: leaving Favourites active
-                               would make an already-empty grid stay empty. */
-                            onAction={() => { setSearchQuery(''); setFavoriteFilter(FILTER_ALL); }}
+                            /* Both the search AND the filter must clear: leaving
+                               Favourites or a category active would make an
+                               already-empty grid stay empty. */
+                            onAction={() => { setSearchQuery(''); setActiveFilterRequest(FILTER_ALL); }}
                         />
                     )
                 ) : (
@@ -492,6 +513,13 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     </div>
                 </div>
             )}
+
+            <ManageCategoriesModal
+                isOpen={showManageCategories}
+                onClose={() => setShowManageCategories(false)}
+                profiles={visibleProfiles}
+                categoryIndex={categoryIndex}
+            />
 
             <ConfirmDialog
                 isOpen={deleteTargetId !== null}

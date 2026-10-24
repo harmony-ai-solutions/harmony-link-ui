@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
+import useCategoryStore from '../../store/categoryStore.js';
 import { EditIcon, TrashIcon, RobotIcon, MessageIcon, HeartIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
@@ -48,8 +49,18 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
     const [busy, setBusy] = useState(null); // null | 'json' | 'png'
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+    /**
+     * 03-2: "Add to category" is a COLLAPSED section inside the same menu, not a
+     * nested flyout — a second portal anchored to a portaled menu is brittle,
+     * and the menu is already narrow enough that an inline checkbox list reads
+     * cleanly. Collapsed by default so the existing actions keep their position.
+     */
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
     const btnRef = useRef(null);
     const menuRef = useRef(null);
+    const categories = useCategoryStore((state) => state.categories);
+    const setProfileCategories = useCategoryStore((state) => state.setProfileCategories);
+    const categoryBusy = useCategoryStore((state) => state.pendingProfileId) === profile?.id;
     const referenced = Array.isArray(referencingEntities) ? referencingEntities : [];
 
     // Menu width is fixed in CSS (176px) so the panel can be right-aligned to
@@ -88,8 +99,38 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
         };
     }, [menuOpen, positionMenu]);
 
-    // Close when the card unmounts.
+    // Close when the card unmounts, and collapse the category section whenever
+    // the menu itself closes so reopening always starts from a predictable shape.
     useEffect(() => () => setMenuOpen(false), []);
+    useEffect(() => {
+        if (!menuOpen) setCategoriesOpen(false);
+    }, [menuOpen]);
+
+    /**
+     * 03-2 category membership.
+     *
+     * Read from the ALREADY-LOADED category list rather than fetching per card:
+     * every category carries its `profile_ids`, so pre-checking the boxes costs
+     * no request. The write is REPLACE-style (the store sends the complete set),
+     * so unchecking works in the same single interaction.
+     */
+    const memberCategoryIds = new Set(
+        (categories || [])
+            .filter((category) => Array.isArray(category.profile_ids) && category.profile_ids.includes(profile?.id))
+            .map((category) => category.id)
+    );
+
+    const handleToggleCategory = async (categoryId) => {
+        if (!profile?.id || categoryBusy) return;
+        const next = new Set(memberCategoryIds);
+        if (next.has(categoryId)) next.delete(categoryId);
+        else next.add(categoryId);
+        try {
+            await setProfileCategories(profile.id, [...next]);
+        } catch (error) {
+            toast.error(t('category.toast.assignFailed', { message: error.message }));
+        }
+    };
 
     const runAndClose = (fn) => (e) => {
         e.stopPropagation();
@@ -175,6 +216,49 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                     </svg>
                     {t('buttons.createPersona')}
                 </button>
+            )}
+
+            {/* 03-2: Add to category — an inline collapsed checkbox list.
+                Disabled (not hidden) when no category exists yet, so the action
+                does not appear and disappear; the hint points at Manage. */}
+            <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCategoriesOpen((v) => !v); }}
+                className={`${rowClass()} char-category-menu-toggle`}
+                aria-expanded={categoriesOpen}
+                disabled={categoryBusy}
+            >
+                <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a2 2 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                {t('category.addToCategory')}
+                <svg
+                    className="char-category-menu-chevron"
+                    style={{ transform: categoriesOpen ? 'rotate(180deg)' : 'none' }}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {categoriesOpen && (
+                <div className="char-category-menu-list" onClick={(e) => e.stopPropagation()}>
+                    {(categories || []).length === 0 ? (
+                        <p className="char-category-menu-empty">{t('category.noneYet')}</p>
+                    ) : (
+                        categories.map((category) => (
+                            <label key={category.id} className="char-category-menu-option">
+                                <input
+                                    type="checkbox"
+                                    checked={memberCategoryIds.has(category.id)}
+                                    disabled={categoryBusy}
+                                    onChange={() => handleToggleCategory(category.id)}
+                                />
+                                <span className="char-category-menu-option-name">{category.name}</span>
+                            </label>
+                        ))
+                    )}
+                </div>
             )}
 
             <Separator />

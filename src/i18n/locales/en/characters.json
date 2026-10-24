@@ -40,6 +40,45 @@
     "all": "All",
     "favorites": "Favorites"
   },
+  "category": {
+    "chipGroupLabel": "Filter characters by category",
+    "manage": "Manage",
+    "manageHint": "Create, rename, reorder or delete categories",
+    "manageTitle": "Manage categories",
+    "manageSubtitle": "Organise your characters. Categories live on this computer only.",
+    "newPlaceholder": "New category name",
+    "add": "Add",
+    "addToCategory": "Add to category",
+    "noneYet": "No categories yet. Use Manage in the filter row to create one.",
+    "filterHint": "Show only characters in {{name}} ({{count}})",
+    "loading": "Loading categories…",
+    "reorderHint": "Drag a row, or use the arrow buttons, to change the order of the chips.",
+    "rename": "Rename {{name}}",
+    "renameLabel": "New name for {{name}}",
+    "delete": "Delete {{name}}",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "empty": {
+      "title": "No categories yet",
+      "description": "Add one above to start grouping your characters."
+    },
+    "deleteDialog": {
+      "title": "Delete \"{{name}}\"?",
+      "message": "The category is removed and its {{count}} character(s) stay exactly where they are — they are only un-grouped, never deleted.",
+      "confirm": "Delete category",
+      "cancel": "Keep it"
+    },
+    "toast": {
+      "created": "Category \"{{name}}\" created",
+      "createFailed": "Could not create category: {{message}}",
+      "renamed": "Category renamed",
+      "renameFailed": "Could not rename category: {{message}}",
+      "deleted": "Category \"{{name}}\" deleted — its characters were kept",
+      "deleteFailed": "Could not delete category: {{message}}",
+      "reorderFailed": "Could not save the new order: {{message}}",
+      "assignFailed": "Could not update categories: {{message}}"
+    }
+  },
   "toast": {
     "favoriteFailed": "Could not update favorite: {{message}}"
   },
@@ -54,6 +93,7 @@
     "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
     "noFavoriteResults": "No favorites match your search. Try a different query or clear the filter.",
+    "noCategoryResults": "No characters in this category match your search. Assign some from a card's menu, or clear the filter.",
     "getStarted": "Get started by creating a new profile or importing a character card.",
     "personaOwnedHint": "Persona-owned cards are managed in the Personas tab."
   },

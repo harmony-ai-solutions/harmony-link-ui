@@ -184,6 +184,142 @@ export async function duplicateCharacterProfile(profileId, overrides = {}) {
     return await resp.json();
 }
 
+// Character Categories (plan 03-2)
+//
+// Desktop-local organisation — NOT synced. The phone keeps its own categories
+// in app-local SQLite, so these exist only on this machine. Categories group
+// character PROFILES; deleting one never deletes a character.
+
+/**
+ * @typedef {Object} CharacterCategory
+ * @property {string} id
+ * @property {string} name
+ * @property {number} sort_order
+ * @property {number} member_count - Projection filled by the engine, not a column
+ * @property {string[]} profile_ids - Projection: the live profiles in the category
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * List every category in the user's drag order.
+ *
+ * Each item carries `member_count` and `profile_ids`, so the chip row and the
+ * card menu's checkbox list are served by ONE request — no per-chip follow-up.
+ *
+ * @returns {Promise<CharacterCategory[]>}
+ */
+export async function listCharacterCategories() {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories`, {
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to list character categories");
+    return await resp.json();
+}
+
+/**
+ * Create a category.
+ *
+ * Throws on a 409 ("category name is already in use") — the caller surfaces the
+ * clash inline so the user can pick another name. A name held by a DELETED
+ * category is revived by the engine rather than rejected.
+ *
+ * @param {string} name
+ * @returns {Promise<CharacterCategory>}
+ */
+export async function createCharacterCategory(name) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ name })
+    });
+    await handleResponse(resp, "Failed to create category");
+    return await resp.json();
+}
+
+/**
+ * Rename a category.
+ * @param {string} id
+ * @param {string} name
+ * @returns {Promise<CharacterCategory>}
+ */
+export async function renameCharacterCategory(id, name) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${id}`, {
+        method: "PATCH",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ name })
+    });
+    await handleResponse(resp, "Failed to rename category");
+    return await resp.json();
+}
+
+/**
+ * Delete a category. Characters are never deleted — they simply stop being
+ * grouped, so the UI can warn about that explicitly.
+ * @param {string} id
+ * @returns {Promise<{status: string, id: string}>}
+ */
+export async function deleteCharacterCategory(id) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to delete category");
+    return await resp.json();
+}
+
+/**
+ * Set a category's membership to exactly `profileIds`.
+ *
+ * This is a REPLACE, not an add: the card menu sends the complete checked set,
+ * so unchecking a character works in the same single call. An empty array
+ * clears the category.
+ *
+ * @param {string} categoryId
+ * @param {string[]} profileIds
+ * @returns {Promise<CharacterCategory>} the category with its resulting membership
+ */
+export async function setCharacterCategoryMembers(categoryId, profileIds) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${categoryId}/members`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ profile_ids: Array.isArray(profileIds) ? profileIds : [] })
+    });
+    await handleResponse(resp, "Failed to update category members");
+    return await resp.json();
+}
+
+/**
+ * Remove one profile from one category. Removing a non-member is a success.
+ * @param {string} categoryId
+ * @param {string} profileId
+ * @returns {Promise<Object>}
+ */
+export async function removeCharacterCategoryMember(categoryId, profileId) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-categories/${categoryId}/members/${profileId}`,
+        { method: "DELETE", headers: getAuthHeaders() }
+    );
+    await handleResponse(resp, "Failed to remove category member");
+    return await resp.json();
+}
+
+/**
+ * Persist the drag order. Index becomes `sort_order`; ids the engine no longer
+ * knows (deleted on another window) are skipped rather than failing the drag.
+ * @param {string[]} orderedIds
+ * @returns {Promise<CharacterCategory[]>} the re-ordered list
+ */
+export async function reorderCharacterCategories(orderedIds) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/reorder`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ ordered_ids: Array.isArray(orderedIds) ? orderedIds : [] })
+    });
+    await handleResponse(resp, "Failed to reorder categories");
+    return await resp.json();
+}
+
 // Character Card Import
 
 /**

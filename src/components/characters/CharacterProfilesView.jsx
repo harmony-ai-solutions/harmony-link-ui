@@ -5,6 +5,7 @@ import useEntityStore from '../../store/entityStore';
 import usePersonaStore from '../../store/personaStore';
 import useChatStore from '../../store/chatStore';
 import useCategoryStore from '../../store/categoryStore.js';
+import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
 import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
@@ -13,6 +14,7 @@ import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterCardImport from './CharacterCardImport';
 import CategoryFilterDropdown from './CategoryFilterDropdown.jsx';
 import ManageCategoriesModal from './ManageCategoriesModal.jsx';
+import DuplicatePickerModal from './DuplicatePickerModal.jsx';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import PageHeader from '../ui/PageHeader.jsx';
@@ -29,6 +31,7 @@ import {
     filterCharacterProfiles,
     resolveCharacterFilter,
 } from '../../utils/characterFilterUtils.js';
+import { duplicateCandidates } from '../../utils/duplicateNamePreview.js';
 
 /**
  * Main view for managing character profiles
@@ -80,6 +83,25 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         return localStorage.getItem('characterProfileCardSize') || 'medium';
     });
     const [deleteTargetId, setDeleteTargetId] = useState(null);
+    /**
+     * 03-3: duplicate-with-preview picker visibility.
+     *
+     * The picker operates on AI ENTITIES, not character profiles: the engine's
+     * duplicate flow (`POST /entities/:id/duplicate`) copies module mappings +
+     * lifecycle and live-links the SAME character card, so a profile-level
+     * duplicate would be the wrong thing entirely. The button therefore only
+     * appears once at least one AI partner exists.
+     */
+    const [showDuplicatePicker, setShowDuplicatePicker] = useState(false);
+    /**
+     * Read the UI mode REACTIVELY (not `getState()` at call time). The result
+     * actions offered by the picker differ per mode — Pro opens the new entity
+     * in the Entities screen, Simple starts a chat instead — and the modal
+     * holds the created row, so swapping the handler mid-flow would change the
+     * buttons under the user's pointer.
+     */
+    const uiMode = useUIModeStore((state) => state.mode);
+    const canOpenEntities = isModeAllowed(uiMode, 'pro');
 
     /**
      * 2-1: ids of profiles owned by personas (referenced by ≥1 user entity).
@@ -96,6 +118,17 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
     const visibleProfiles = useMemo(
         () => (profiles || []).filter(p => !personaOwnedIds.has(p.id)),
         [profiles, personaOwnedIds]
+    );
+
+    /**
+     * 03-3: does the duplicate flow have anything to work on? Memoized because
+     * the header button reads it on every render and it allocates a new array —
+     * and it is the SAME predicate the picker applies internally, so the button
+     * can never open a modal that immediately shows its empty state.
+     */
+    const hasDuplicateCandidates = useMemo(
+        () => duplicateCandidates(entities).length > 0,
+        [entities]
     );
 
     /**
@@ -300,6 +333,46 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
         }
     };
 
+    /**
+     * 03-3 — refresh after a duplicate.
+     *
+     * Called by the picker the moment the 201 lands, NOT when it closes: the
+     * follow-up actions ("Open in Entities" / "Start chatting") navigate away,
+     * and a stale list would then mount without the copy in it. The engine
+     * already re-read the row inside the duplicate transaction, so this is a
+     * plain reload — no optimistic row is inserted, because the server is the
+     * authority on both the id and the alias.
+     */
+    const handleEntityDuplicated = async () => {
+        await loadEntities();
+    };
+
+    /**
+     * Pro: open the freshly created copy in the Entities screen.
+     *
+     * The refresh is AWAITED here rather than trusted to the picker's
+     * `onDuplicated` callback: both fire, but only awaiting guarantees the list
+     * contains the copy before the tab switches. Selecting a not-yet-loaded id
+     * loses the race with EntitySettingsView's selection-constraining effect,
+     * which would then open the previously selected entity.
+     */
+    const handleOpenDuplicatedEntity = async (created) => {
+        if (!created?.id) return;
+        await loadEntities();
+        selectEntity(created.id);
+        setShowDuplicatePicker(false);
+        onCreateEntityFromCard?.();
+    };
+
+    /** Simple: start a conversation with the copy instead of managing it. */
+    const handleStartChatWithDuplicate = (created) => {
+        const entityId = created?.id;
+        setShowDuplicatePicker(false);
+        if (!entityId) return;
+        useChatStore.getState().requestStartChat(entityId);
+        onStartChatFromCard?.();
+    };
+
     const handleImportSuccess = async (result) => {
         setShowImport(false);
         // Import used to close silently — a themed toast confirms the card
@@ -349,6 +422,23 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                 subtitle={t('characters:header.subtitle')}
                 actions={(
                     <>
+                        {/* 03-3: duplicate-with-preview. Only meaningful when an
+                            AI partner EXISTS — a character card with no entity
+                            has nothing to duplicate (the flow copies the entity:
+                            profile link, module mappings, lifecycle).
+                            "Create AI partner from this card" on a card is how
+                            the first one is made. */}
+                        {hasDuplicateCandidates && (
+                            <Tooltip content={t('characters:duplicate.headerButtonHint')}>
+                                <button data-tutorial-id="char-duplicate-btn" onClick={() => setShowDuplicatePicker(true)}
+                                    className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
+                                    <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    {t('characters:duplicate.headerButton')}
+                                </button>
+                            </Tooltip>
+                        )}
                         <button data-tutorial-id="char-import-btn" onClick={() => setShowImport(true)}
                             className="btn-secondary inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors">
                             <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -513,6 +603,20 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                     </div>
                 </div>
             )}
+
+            {/* 03-3 duplicate picker. Receives the FULL entity list (not the
+                filtered profile grid): copy-series slots are counted across
+                every live AI alias, and the profile filters have no bearing on
+                which partners can be copied. Result actions are mode-scoped —
+                Pro manages the copy in Entities, Simple starts chatting. */}
+            <DuplicatePickerModal
+                isOpen={showDuplicatePicker}
+                onClose={() => setShowDuplicatePicker(false)}
+                entities={entities}
+                onDuplicated={handleEntityDuplicated}
+                onOpenEntity={canOpenEntities ? handleOpenDuplicatedEntity : null}
+                onStartChat={canOpenEntities ? null : handleStartChatWithDuplicate}
+            />
 
             <ManageCategoriesModal
                 isOpen={showManageCategories}

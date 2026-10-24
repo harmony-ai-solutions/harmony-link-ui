@@ -786,6 +786,302 @@ input[type="checkbox"]:disabled:hover {
     }
 }
 
+/* ── Duplicate with preview — cover flow (plan 03-3) ─────────────────────────
+   Android's duplicate flow lets you pick a base card from a carousel and shows
+   the auto-numbered name before committing. Two surfaces here:
+
+     1. `.char-coverflow-*`    — the horizontal card strip. Focus is a CSS
+        transform on each card (`translateX` + `scale` + `rotateY`), computed
+        in JSX from its distance to the focused index, so one style function
+        drives the whole depth effect and there is no scroll-position state to
+        keep in sync.
+     2. `.char-duplicate-*`    — the preview panel (source → result, mapping
+        count, the "not copied" warning) and the post-copy result row.
+
+   ALL transform/animation is disabled under `prefers-reduced-motion`; the
+   focused card stays centred and fully opaque regardless, so the picker is
+   still readable and operable without motion. */
+
+.char-coverflow {
+    position: relative;
+    padding: 0 6rem 1rem;
+    outline: none;
+}
+
+.char-coverflow:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: -2px;
+    border-radius: 12px;
+}
+
+/* Fixed height + centred children: cards are absolutely positioned and
+   transformed, so the strip cannot size itself from them. */
+.char-coverflow-stage {
+    position: relative;
+    height: 12rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 900px;
+    perspective-origin: center;
+}
+
+.char-coverflow-card {
+    position: absolute;
+    width: 9rem;
+    padding: 0;
+    border: 1px solid var(--color-border-glass);
+    border-radius: 12px;
+    background: var(--color-background-elevated);
+    cursor: pointer;
+    overflow: hidden;
+    text-align: center;
+    transform-origin: center;
+    transition: transform 0.28s var(--ease-spring), opacity 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+    will-change: transform, opacity;
+}
+
+.char-coverflow-card-focused {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 10px 30px var(--color-glow-accent-soft), 0 0 0 1px var(--color-border-glow) inset;
+}
+
+.char-coverflow-art {
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--color-background-surface);
+}
+
+.char-coverflow-name {
+    display: block;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.char-coverflow-card-focused .char-coverflow-name {
+    color: var(--color-accent-primary);
+}
+
+.char-coverflow-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+}
+
+.char-coverflow-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    border: 1px solid var(--color-border-glass);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.char-coverflow-arrow:hover:not(:disabled),
+.char-coverflow-arrow:focus-visible:not(:disabled) {
+    color: var(--color-accent-primary);
+    border-color: var(--color-border-glow);
+    background: color-mix(in srgb, var(--color-accent-primary) 12%, transparent);
+    outline: none;
+}
+
+.char-coverflow-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.char-coverflow-position {
+    min-width: 4rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
+
+/* ── Plain list fallback (fewer than two AI partners) ─────────────────────── */
+
+.char-duplicate-plain-label {
+    margin-bottom: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+.char-duplicate-plain-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.char-duplicate-plain-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-glass);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* ── Preview panel ───────────────────────────────────────────────────────── */
+
+.char-duplicate-preview {
+    padding: 0.75rem 0.875rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+}
+
+.char-duplicate-names {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.char-duplicate-name {
+    min-width: 0;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.char-duplicate-name-source {
+    color: var(--color-text-secondary);
+}
+
+.char-duplicate-name-result {
+    color: var(--color-accent-primary);
+}
+
+.char-duplicate-arrow {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    color: var(--color-text-disabled);
+}
+
+.char-duplicate-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    margin: 0.6rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.char-duplicate-facts li {
+    position: relative;
+    padding-left: 0.85rem;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+}
+
+.char-duplicate-facts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.42em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent-primary);
+    opacity: 0.7;
+}
+
+/* The one line that must not be missed: what a copy does NOT bring along. */
+.char-duplicate-warning {
+    margin: 0.6rem 0 0;
+    padding: 0.4rem 0.55rem;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--color-warning, var(--color-text-muted)) 40%, transparent);
+    background: color-mix(in srgb, var(--color-warning, var(--color-text-muted)) 10%, transparent);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+}
+
+.char-duplicate-note {
+    margin: 0.45rem 0 0;
+    font-size: 0.7rem;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+}
+
+.char-duplicate-error {
+    margin: 0.6rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--color-error);
+}
+
+/* ── Result row (after a successful copy) ────────────────────────────────── */
+
+.char-duplicate-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.85rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-glass);
+    background: var(--color-background-surface);
+}
+
+.char-duplicate-result-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    color: var(--color-success, var(--color-accent-primary));
+    background: color-mix(in srgb, var(--color-success, var(--color-accent-primary)) 14%, transparent);
+}
+
+.char-duplicate-result-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.char-duplicate-result-hint {
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .char-coverflow-card,
+    .char-coverflow-arrow {
+        transition: none;
+    }
+}
+
 /* "Start chatting" CTA on a character card — the one-click path from a card
    to a conversation. Full-width, accent-filled, sits under the description. */
 .character-card-chat-btn {

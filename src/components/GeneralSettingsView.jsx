@@ -15,6 +15,7 @@ import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
 import BackupConflictModal from './modals/BackupConflictModal.jsx';
 import CloudAccountCard from './settings/CloudAccountCard.jsx';
+import VoiceInputSettings from './settings/VoiceInputSettings.jsx';
 import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
 import useCloudAccount from '../hooks/useCloudAccount.js';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
@@ -46,6 +47,7 @@ const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
 const SUB_TABS = [
     { id: 'general', labelKey: 'generalSettings:tabs.general' },
     { id: 'appearance', labelKey: 'generalSettings:tabs.appearance' },
+    { id: 'voice', labelKey: 'generalSettings:tabs.voice' },
     { id: 'notifications', labelKey: 'generalSettings:tabs.notifications' },
     { id: 'dataSupport', labelKey: 'generalSettings:tabs.dataSupport' },
 ];
@@ -1203,6 +1205,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </div>
                 </section>
                 )}
+
+                {/* Voice Input Section (Task 04-2). Runs a non-prompting
+                    microphone check on open, so a user whose recording never
+                    worked can find out why without touching the composer. */}
+                {activeSection === 'voice' && <VoiceInputSettings />}
 
                 {/* Sound & Audio Section */}
                 {activeSection === 'appearance' && (

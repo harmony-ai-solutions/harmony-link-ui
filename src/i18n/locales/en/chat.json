@@ -162,10 +162,11 @@
     "emoji": "Emoji",
     "emojiActions": "Emoji actions",
     "sendAs": "Chatting as {{name}}",
-    "micDenied": "Microphone access was denied. Allow it in the app's permissions and try again.",
-    "micNotFound": "No microphone found. Plug one in or check your sound settings.",
+    "micDenied": "Microphone blocked. Allow it in the app's permissions and try again.",
+    "micNotFound": "No microphone found.",
     "micInUse": "The microphone is in use by another app.",
     "micUnavailable": "This app cannot reach the microphone.",
+    "micAvailable": "The microphone is ready.",
     "micSilent": "No sound is reaching the microphone — check that it is not muted.",
     "recordingFailed": "Could not record audio.",
     "recordingTooShort": "That was too short to send — hold the mic button while you speak.",
@@ -177,6 +178,7 @@
     "micDeviceDefault": "System default microphone",
     "micDeviceN": "Microphone {{index}}",
     "micDeviceNone": "No other microphones detected",
+    "micDeviceCount": "{{count}} microphones available",
     "sendFailed": "Could not send the message.",
     "imageFallbackName": "picture",
     "imageCount": "{{count}} of {{max}} pictures",
@@ -190,6 +192,54 @@
     "noScenario": "This character has no scenario to insert.",
     "scenarioAlreadyThere": "The scenario is already in your message.",
     "enterHint": "Enter sends · Shift+Enter adds a line"
+  },
+  "mic": {
+    "ok": {
+      "title": "Microphone ready",
+      "primary": "Test again",
+      "secondary": ""
+    },
+    "denied": {
+      "title": "Microphone blocked",
+      "primary": "Retry",
+      "secondary": "Sound settings"
+    },
+    "notFound": {
+      "title": "No microphone found",
+      "primary": "Open sound settings",
+      "secondary": "Retry"
+    },
+    "inUse": {
+      "title": "Microphone busy",
+      "primary": "Retry",
+      "secondary": ""
+    },
+    "unavailable": {
+      "title": "Microphone unavailable",
+      "primary": "",
+      "secondary": ""
+    },
+    "insecure": {
+      "title": "Microphone unavailable",
+      "body": "The app is not running in a secure context, so the microphone cannot be reached. Open the app window itself rather than a page served over plain HTTP.",
+      "primary": "",
+      "secondary": ""
+    },
+    "unknown": {
+      "title": "Could not check the microphone",
+      "primary": "Retry",
+      "secondary": ""
+    },
+    "supportHint": "Still stuck? Check Windows Settings → Privacy & security → Microphone, then Sound settings → Input.",
+    "checking": "Checking the microphone…",
+    "testAgain": "Test the microphone",
+    "lastChecked": "Checked {{time}}",
+    "settingsSection": "Voice Input",
+    "settingsDescription": "Recording a voice note needs a microphone and the app's permission to use it. This is checked here, without asking for permission.",
+    "managePermissions": "How to allow the microphone",
+    "managePermissionsBody": "The microphone prompt belongs to the app window, not to a website. Windows keeps the answer per app: Settings → Privacy & security → Microphone, and make sure the app is listed and switched on. Then press Retry here.",
+    "openSoundSettings": "Open sound settings",
+    "openSoundSettingsFailed": "Could not open the sound settings on this system. Open them manually: Windows Settings → System → Sound → Input."
   },
   "bubble": {
     "edited": "edited",

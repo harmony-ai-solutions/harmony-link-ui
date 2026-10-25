@@ -19,10 +19,16 @@ import {
     describeMicError,
     deviceLabel,
     formatDuration,
-    micErrorKey,
     recordingProgress,
     ringGeometry,
 } from '../../services/audio/recorderUtils.js';
+import { buildMicIssue, shouldRecheckOnPress } from '../../services/audio/micDiagnosticsUtils.js';
+import {
+    checkMicrophone,
+    getLastMicIssue,
+    rememberMicIssue,
+} from '../../services/audio/micDiagnostics.js';
+import MicIssuePanel from './MicIssuePanel.jsx';
 import {
     MAX_IMAGES,
     MAX_IMAGE_BYTES,
@@ -153,6 +159,15 @@ const ChatInput = ({
     const startingRef = useRef(false);
     /** The take was finished by the 2:00 ceiling, so `onstop` must not re-toast. */
     const autoStoppedRef = useRef(false);
+    /**
+     * The microphone failure to explain, if any (Task 04-2).
+     *
+     * Replaces the old one-line `error` string for the mic path specifically:
+     * "Microphone blocked" needs a Retry, and a string cannot carry a button.
+     * `error` is still used for non-mic failures (an unreadable image, a failed
+     * take read), which need no recovery control.
+     */
+    const [micIssue, setMicIssue] = useState(null);
 
     const inputDeviceId = useChatPrefsStore((state) => state.inputDeviceId);
     const updatePrefs = useChatPrefsStore((state) => state.updatePrefs);
@@ -486,6 +501,24 @@ const ChatInput = ({
     }, []);
 
     /**
+     * Re-check the microphone before a take, but ONLY after a previous failure.
+     *
+     * Task 04-2 step 2's second half. A successful take is proof the mic works,
+     * so re-checking every press would add an `enumerateDevices` round-trip to
+     * the common path for nothing. After a failure it is the opposite: the check
+     * is what turns a generic message into the right one, and it can notice that
+     * the user granted permission in the meantime.
+     *
+     * Returns the check result when it ran, or `null`.
+     */
+    const recheckAfterFailure = useCallback(async () => {
+        if (!shouldRecheckOnPress(getLastMicIssue())) return null;
+        const result = await checkMicrophone();
+        rememberMicIssue(result.reason);
+        return result;
+    }, []);
+
+    /**
      * Begin a take.
      *
      * The device id comes from persisted prefs, so the picker choice survives a
@@ -496,9 +529,22 @@ const ChatInput = ({
         if (recorderRef.current || startingRef.current || disabled) return;
         startingRef.current = true;
         setError(null);
+        setMicIssue(null);
         autoStoppedRef.current = false;
         setElapsedMs(0);
         setLevel(0);
+
+        // Step 2: learn why the LAST attempt failed before asking again. This
+        // check never prompts — the `getUserMedia` below is the permission
+        // request, and it must be the only one this press raises.
+        try {
+            const diagnosis = await recheckAfterFailure();
+            if (diagnosis && !diagnosis.ok) {
+                setMicIssue(diagnosis);
+            }
+        } catch {
+            /* diagnostics are advisory: a failure here must not block the take */
+        }
 
         const recorder = createVoiceRecorder({
             onTick: ({ elapsedMs: next }) => setElapsedMs(next),
@@ -523,6 +569,12 @@ const ChatInput = ({
             try {
                 const result = await take;
                 if (result && !result.cancelled && result.audioBase64) {
+                    // The take succeeded, so the mic is known-good: clear the
+                    // remembered failure and the panel with it. Leaving a stale
+                    // "blocked" banner over a working microphone is worse than
+                    // showing nothing.
+                    rememberMicIssue('ok');
+                    setMicIssue(null);
                     if (autoStoppedRef.current) {
                         toast.info(t('chat:input.recordingCapped', {
                             limit: formatDuration(MAX_RECORDING_MS),
@@ -543,14 +595,19 @@ const ChatInput = ({
                 }
             }
         } catch (startError) {
-            setError(t(micErrorKey(describeMicError(startError))));
+            // Task 04-2: classify, remember and render the failure with its
+            // action. `setError(...micErrorKey(...))` used to put a bare sentence
+            // here, which is the dead end this task removes.
+            const reason = describeMicError(startError);
+            rememberMicIssue(reason);
+            setMicIssue(buildMicIssue({ ok: false, reason }));
         } finally {
             recorder.dispose();
             recorderRef.current = null;
             resetRecordingUi();
             startingRef.current = false;
         }
-    }, [disabled, inputDeviceId, onSendAudio, resetRecordingUi, t]);
+    }, [disabled, inputDeviceId, onSendAudio, recheckAfterFailure, resetRecordingUi, t]);
 
     /**
      * Finish the take and hand it to the caller.
@@ -642,6 +699,20 @@ const ChatInput = ({
     return (
         <div className="chat-input-wrap">
             {error && <div className="chat-input-error">{error}</div>}
+
+            {/* Microphone failure with a way forward (Task 04-2). Rendered
+                instead of the bare `error` line for mic problems, because each
+                class needs its own action: Retry for a block or a busy device,
+                the OS sound panel for a missing one. Dismissible, so it does not
+                sit over a working composer forever. */}
+            {micIssue && !micIssue.ok && (
+                <MicIssuePanel
+                    issue={micIssue}
+                    compact
+                    onResolved={(result) => setMicIssue(result?.ok ? null : result)}
+                    onDismiss={() => setMicIssue(null)}
+                />
+            )}
 
             {/* Staged images (Task 02-8 step 1). One thumbnail per file with its
                 own remove control — a batch you cannot inspect or trim is just a

@@ -9,6 +9,7 @@
   "tabs": {
     "general": "General",
     "appearance": "Appearance",
+    "voice": "Voice Input",
     "notifications": "Notifications",
     "dataSupport": "Data & Support"
   },

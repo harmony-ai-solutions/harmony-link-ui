@@ -1008,10 +1008,17 @@ const EntitySettingsView = ({ appName }) => {
                                     needs to author mood deltas, and the table has
                                     four columns.
 
-                                    Persona entities are filtered out of this view
-                                    upstream (aiEntities), so no persona guard is
-                                    needed here. */}
-                                {isModeAllowed(uiMode, 'pro') && selectedEntityId && (
+                                    03-6: persona entities are filtered out of
+                                    this view upstream (`aiEntities`), BUT the
+                                    selection-constraining effect only runs when
+                                    at least one AI entity exists — so with zero
+                                    AI entities a persona selected on the Personas
+                                    tab can still be the current selection. The
+                                    emoji/lifecycle guards therefore read
+                                    `isPersonaSelected` explicitly instead of
+                                    trusting the rail filter (Android hides both
+                                    for personas too). */}
+                                {isModeAllowed(uiMode, 'pro') && selectedEntityId && !isPersonaSelected && (
                                     <section data-tutorial-id="entity-emoji-actions-section" className="space-y-4">
                                         <h3 className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                             <span className="text-gradient-primary">{tes('sections.emojiActions')}</span>
@@ -1020,7 +1027,12 @@ const EntitySettingsView = ({ appName }) => {
                                     </section>
                                 )}
 
-                                {/* Lifecycle Settings Section */}
+                                {/* Lifecycle Settings Section — 03-6: hidden for
+                                    personas (they never run autonomous beats, and
+                                    Android hides the same block). See the emoji
+                                    section above for why the rail filter alone is
+                                    not sufficient. */}
+                                {!isPersonaSelected && (
                                 <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">
                                     <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">{tes('sections.lifecycleSettings')}</span>
@@ -1060,6 +1072,7 @@ const EntitySettingsView = ({ appName }) => {
                                         </div>
                                     )}
                                 </section>
+                                )}
                             </div>
                         )}
                     </div>

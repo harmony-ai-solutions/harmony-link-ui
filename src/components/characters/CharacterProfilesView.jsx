@@ -8,7 +8,7 @@ import useCategoryStore from '../../store/categoryStore.js';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore.js';
 import * as characterService from '../../services/management/characterService.js';
 import * as entityService from '../../services/management/entityService.js';
-import { personaOwnedProfileIds } from '../../utils/personaProfileUtils';
+import { excludePersonaOwnedProfiles } from '../../utils/personaProfileUtils';
 import CharacterProfileCard from './CharacterProfileCard';
 import CharacterProfileEditor from './CharacterProfileEditor';
 import CharacterDetailView from './CharacterDetailView.jsx';
@@ -127,20 +127,22 @@ export default function CharacterProfilesView({
     const canOpenModules = typeof onOpenModules === 'function' && isModeAllowed(uiMode, 'pro');
 
     /**
-     * 2-1: ids of profiles owned by personas (referenced by ≥1 user entity).
-     * Those cards are managed in the Personas tab — they must not show in this
-     * grid, must not resurface via search, and (defensively) hide even if an AI
-     * entity also references them (persona ownership wins).
+     * 2-1 / 03-6: profiles this tab may render — persona-owned cards excluded
+     * (referenced by ≥1 user entity). Those cards are managed in the Personas
+     * tab: they must not show in this grid, must not resurface via search, and
+     * (defensively) hide even if an AI entity also references them (persona
+     * ownership wins).
+     *
+     * 03-6 requires this to survive the CATEGORY work. A category's membership
+     * rows carry raw profile ids, so a persona-owned card can legitimately be a
+     * member — filtering categories over the raw list would resurface exactly
+     * the cards 2-1 removed. The exclusion is therefore applied HERE, to the
+     * list handed to the toolbar/dropdown/manage modal/detail page, so every
+     * downstream consumer inherits it instead of re-implementing it.
      */
-    const personaOwnedIds = useMemo(
-        () => personaOwnedProfileIds(entities, profiles),
-        [entities, profiles]
-    );
-
-    /** Profiles visible in this tab: persona-owned cards excluded. */
     const visibleProfiles = useMemo(
-        () => (profiles || []).filter(p => !personaOwnedIds.has(p.id)),
-        [profiles, personaOwnedIds]
+        () => excludePersonaOwnedProfiles(profiles, entities),
+        [profiles, entities]
     );
 
     /**

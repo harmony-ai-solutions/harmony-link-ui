@@ -9,7 +9,7 @@ import ErrorDialog from '../modals/ErrorDialog.jsx';
 import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
-import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore';
+import useUIModeStore from '../../store/uiModeStore';
 import { toast } from '../../store/toastStore.js';
 import {
     GREETING_WARN_CHARS,
@@ -22,6 +22,11 @@ import {
     moveAlternateGreeting,
     serialiseAlternateGreetings,
 } from '../../utils/greetingEditorUtils.js';
+import {
+    isSectionVisible,
+    resolveActiveTabId,
+    resolveEditorTabs,
+} from '../../utils/characterEditorSections.js';
 
 // ---------------------------------------------------------------------------
 // Inline helpers (Character Card V3 data editing)
@@ -243,10 +248,13 @@ function Section({ id, title, icon, open, onToggle, children }) {
  * @param {Function} props.onClose - Callback to close the editor
  * @param {Object[]} [props.referencedEntities] - 3-2: entities that link this
  *   profile live. When non-empty the header shows a muted live-link hint.
- * @param {boolean} [props.personaMode] - 2-3: persona editing mode. Hides the
- *   lifecycle + advanced tabs (decision 2) and, when combined with
- *   `nameReadOnly`, locks the name field. Greeting TEST affordances are never
- *   rendered in this mode (decision 13).
+ * @param {boolean} [props.personaMode] - 2-3/03-6: persona editing mode. Hides
+ *   the generator-only SECTIONS — AI Prompt, Voice & Behaviour, AI Lifecycle and
+ *   Raw Card Data — rather than whole tabs, so a persona keeps Identity + Card
+ *   Info while the tabs that lose every section drop out on their own. Also
+ *   hides the **Export card** action (a persona is not a character card) and,
+ *   when combined with `nameReadOnly`, locks the name field. Greeting TEST
+ *   affordances are never rendered in this mode (decision 13).
  * @param {boolean} [props.nameReadOnly] - 2-3: make the name field read-only
  *   (built-in 'user' persona — the engine rejects renames anyway).
  * @param {Function} [props.onSave] - 2-3: optional save override. When provided,
@@ -584,15 +592,17 @@ export default function CharacterProfileEditor({
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
         },
         {
-            // 2-3: the behaviour + raw-card tabs are hidden for personas
-            // (decision 2) — personas never run autonomous lifecycle beats and
-            // the raw card fields stay card-only. The values still round-trip
-            // on save via the editor's full-field state.
-            id: 'behavior', label: t('tabs.behavior'), minMode: 'pro', personaHidden: true,
+            // 03-6: no `personaHidden` flag on the TAB any more. Both this tab
+            // and `advanced` are dropped for personas because every SECTION
+            // inside them is persona-hidden (see `characterEditorSections`), so
+            // adding a persona-visible section later re-enables the tab instead
+            // of silently contradicting the guard. The hidden sections' values
+            // still round-trip on save via the editor's full-field state.
+            id: 'behavior', label: t('tabs.behavior'), minMode: 'pro',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
         },
         {
-            id: 'advanced', label: t('tabs.advanced'), minMode: 'dev', personaHidden: true,
+            id: 'advanced', label: t('tabs.advanced'), minMode: 'dev',
             icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
         },
         {
@@ -601,25 +611,29 @@ export default function CharacterProfileEditor({
         },
     ];
 
-    // Tabs actually shown: not hidden for the profile type, and permitted by
-    // the active UI mode. Memoised so the downgrade guard below only runs when
-    // the mode / profile actually change.
+    // Tabs actually shown. Three filters, all in `resolveEditorTabs` so they are
+    // unit-tested rather than re-derived here: data availability (`hidden`),
+    // the persona section guard (a tab whose sections are ALL persona-hidden
+    // drops out), and the active UI mode.
     const visibleTabs = useMemo(
-        () => tabs.filter((tab) =>
-            !tab.hidden && !(personaMode && tab.personaHidden) && isModeAllowed(mode, tab.minMode),
-        ),
+        () => resolveEditorTabs({ tabs, mode, personaMode }),
         // `tabs` is rebuilt each render; its content only depends on `t`.
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [mode, personaMode, profile, t],
     );
 
     // Downgrade safety — if the active tab became hidden (mode switched down,
-    // or persona mode), fall back to the Profile tab.
+    // persona mode engaged), fall back to the Profile tab.
     useEffect(() => {
-        if (!visibleTabs.some((tab) => tab.id === activeTab)) {
-            setActiveTab('basic');
-        }
-    }, [visibleTabs, activeTab]);
+        setActiveTab((current) => resolveActiveTabId(visibleTabs, current));
+    }, [visibleTabs]);
+
+    /**
+     * 03-6: per-section persona guard. A hidden section is NOT rendered; its
+     * state is still loaded and saved, because the engine's profile UPDATE
+     * writes every column and omitting a field would zero it.
+     */
+    const sectionVisible = (sectionId) => isSectionVisible(sectionId, { personaMode });
 
     // Live preview avatar — the profile's primary image, when one exists.
     const previewImage = useMemo(() => {
@@ -893,49 +907,54 @@ export default function CharacterProfileEditor({
             case 'behavior':
                 return (
                     <div className="space-y-4">
-                        <Section
-                            id="aiPrompt"
-                            title={t('sections.aiPrompt')}
-                            open={openSections.aiPrompt}
-                            onToggle={toggleSection}
-                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                        >
-                            <div className="space-y-4">
-                                <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('advanced.baseSystemPromptHint')}>{t('advanced.baseSystemPrompt')}</FieldLabel>
-                                    <textarea
-                                        name="base_prompt"
-                                        value={basePrompt}
-                                        onChange={(e) => setBasePrompt(e.target.value)}
-                                        rows={4}
-                                        placeholder={t('advanced.baseSystemPromptPlaceholder')}
-                                        className="input-field w-full resize-none"
-                                    />
+                        {/* 03-6: each section carries its own persona guard, so
+                            hiding the tab is a CONSEQUENCE of the guard rather
+                            than a separate (and drift-prone) rule. */}
+                        {sectionVisible('aiPrompt') && (
+                            <Section
+                                id="aiPrompt"
+                                title={t('sections.aiPrompt')}
+                                open={openSections.aiPrompt}
+                                onToggle={toggleSection}
+                                icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                            >
+                                <div className="space-y-4">
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('advanced.baseSystemPromptHint')}>{t('advanced.baseSystemPrompt')}</FieldLabel>
+                                        <textarea
+                                            name="base_prompt"
+                                            value={basePrompt}
+                                            onChange={(e) => setBasePrompt(e.target.value)}
+                                            rows={4}
+                                            placeholder={t('advanced.baseSystemPromptPlaceholder')}
+                                            className="input-field w-full resize-none"
+                                        />
+                                    </div>
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('advanced.postHistoryInstructionsHint')}>{t('advanced.postHistoryInstructions')}</FieldLabel>
+                                        <textarea
+                                            name="post_history_instructions"
+                                            value={postHistoryInstructions}
+                                            onChange={(e) => setPostHistoryInstructions(e.target.value)}
+                                            rows={3}
+                                            placeholder={t('advanced.postHistoryInstructionsPlaceholder')}
+                                            className="input-field w-full resize-none"
+                                        />
+                                    </div>
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('advanced.scenarioHint')}>{t('advanced.scenario')}</FieldLabel>
+                                        <textarea
+                                            name="scenario"
+                                            value={scenario}
+                                            onChange={(e) => setScenario(e.target.value)}
+                                            rows={2}
+                                            placeholder={t('advanced.scenarioPlaceholder')}
+                                            className="input-field w-full resize-none"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('advanced.postHistoryInstructionsHint')}>{t('advanced.postHistoryInstructions')}</FieldLabel>
-                                    <textarea
-                                        name="post_history_instructions"
-                                        value={postHistoryInstructions}
-                                        onChange={(e) => setPostHistoryInstructions(e.target.value)}
-                                        rows={3}
-                                        placeholder={t('advanced.postHistoryInstructionsPlaceholder')}
-                                        className="input-field w-full resize-none"
-                                    />
-                                </div>
-                                <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('advanced.scenarioHint')}>{t('advanced.scenario')}</FieldLabel>
-                                    <textarea
-                                        name="scenario"
-                                        value={scenario}
-                                        onChange={(e) => setScenario(e.target.value)}
-                                        rows={2}
-                                        placeholder={t('advanced.scenarioPlaceholder')}
-                                        className="input-field w-full resize-none"
-                                    />
-                                </div>
-                            </div>
-                        </Section>
+                            </Section>
+                        )}
 
                         {/* Plan 03-5b — Voice & Behaviour.
                             Android's block, surfaced coherently on desktop:
@@ -944,97 +963,111 @@ export default function CharacterProfileEditor({
                             `<input type="number">` rows with a trailing unit
                             label, NOT the old NumberStepper — this matches the
                             editor polish pass and keeps three fields on one
-                            screen. */}
-                        <Section
-                            id="voiceBehavior"
-                            title={t('sections.voiceBehavior')}
-                            open={openSections.voiceBehavior}
-                            onToggle={toggleSection}
-                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
-                        >
-                            <div className="space-y-4">
-                                <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('voice.characteristicsHint')}>{t('voice.characteristics')}</FieldLabel>
-                                    <textarea
-                                        name="voice_characteristics"
-                                        value={voiceCharacteristics}
-                                        onChange={(e) => setVoiceCharacteristics(e.target.value)}
-                                        rows={3}
-                                        placeholder={t('fields.voiceCharacteristicsPlaceholder')}
-                                        className="input-field w-full resize-y"
+                            screen.
+
+                            03-6: persona-hidden. A persona never speaks for the
+                            AI, so its own delivery settings are dead data. */}
+                        {sectionVisible('voiceBehavior') && (
+                            <Section
+                                id="voiceBehavior"
+                                title={t('sections.voiceBehavior')}
+                                open={openSections.voiceBehavior}
+                                onToggle={toggleSection}
+                                icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
+                            >
+                                <div className="space-y-4">
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('voice.characteristicsHint')}>{t('voice.characteristics')}</FieldLabel>
+                                        <textarea
+                                            name="voice_characteristics"
+                                            value={voiceCharacteristics}
+                                            onChange={(e) => setVoiceCharacteristics(e.target.value)}
+                                            rows={3}
+                                            placeholder={t('fields.voiceCharacteristicsPlaceholder')}
+                                            className="input-field w-full resize-y"
+                                        />
+                                    </div>
+
+                                    <div className="char-editor-grid-2">
+                                        <div className="character-editor-field-group">
+                                            <FieldLabel hint={t('voice.typingSpeedHint')}>{t('voice.typingSpeed')}</FieldLabel>
+                                            <div className="char-editor-number-row">
+                                                <input
+                                                    type="number"
+                                                    name="typing_speed_wpm"
+                                                    value={typingSpeedWPM}
+                                                    onChange={(e) => setTypingSpeedWPM(e.target.value)}
+                                                    onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
+                                                    min={1}
+                                                    max={200}
+                                                    step={1}
+                                                    className="input-field char-editor-number"
+                                                />
+                                                <span className="char-editor-number-unit">{t('voice.wpm')}</span>
+                                            </div>
+                                        </div>
+                                        <div className="character-editor-field-group">
+                                            <FieldLabel hint={t('voice.audioChanceHint')}>{t('voice.audioChance')}</FieldLabel>
+                                            <div className="char-editor-number-row">
+                                                <input
+                                                    type="number"
+                                                    name="audio_response_chance_percent"
+                                                    value={audioResponseChance}
+                                                    onChange={(e) => setAudioResponseChance(e.target.value)}
+                                                    onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
+                                                    min={0}
+                                                    max={100}
+                                                    step={1}
+                                                    className="input-field char-editor-number"
+                                                />
+                                                <span className="char-editor-number-unit">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="char-editor-note">
+                                        <p className="character-editor-hint">{t('voice.ttsExplainer')}</p>
+                                        {typeof onOpenModules === 'function' && (
+                                            <button
+                                                type="button"
+                                                onClick={onOpenModules}
+                                                className="char-editor-inline-link"
+                                            >
+                                                {t('voice.openModules')} →
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </Section>
+                        )}
+
+                        {/* 03-6: persona-hidden — personas never run autonomous
+                            beats, so lifecycle_config is meaningless for them
+                            (Android hides the same block). */}
+                        {sectionVisible('aiLifecycle') && (
+                            <Section
+                                id="aiLifecycle"
+                                title={t('sections.aiLifecycle')}
+                                open={openSections.aiLifecycle}
+                                onToggle={toggleSection}
+                                icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>}
+                            >
+                                <div className="space-y-4">
+                                    <p className="character-editor-hint">{t('lifecycle.defaultsNote')}</p>
+                                    <LifecycleConfigEditor
+                                        config={lifecycleConfig}
+                                        onChange={setLifecycleConfig}
                                     />
                                 </div>
-
-                                <div className="char-editor-grid-2">
-                                    <div className="character-editor-field-group">
-                                        <FieldLabel hint={t('voice.typingSpeedHint')}>{t('voice.typingSpeed')}</FieldLabel>
-                                        <div className="char-editor-number-row">
-                                            <input
-                                                type="number"
-                                                name="typing_speed_wpm"
-                                                value={typingSpeedWPM}
-                                                onChange={(e) => setTypingSpeedWPM(e.target.value)}
-                                                onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
-                                                min={1}
-                                                max={200}
-                                                step={1}
-                                                className="input-field char-editor-number"
-                                            />
-                                            <span className="char-editor-number-unit">{t('voice.wpm')}</span>
-                                        </div>
-                                    </div>
-                                    <div className="character-editor-field-group">
-                                        <FieldLabel hint={t('voice.audioChanceHint')}>{t('voice.audioChance')}</FieldLabel>
-                                        <div className="char-editor-number-row">
-                                            <input
-                                                type="number"
-                                                name="audio_response_chance_percent"
-                                                value={audioResponseChance}
-                                                onChange={(e) => setAudioResponseChance(e.target.value)}
-                                                onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
-                                                min={0}
-                                                max={100}
-                                                step={1}
-                                                className="input-field char-editor-number"
-                                            />
-                                            <span className="char-editor-number-unit">%</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="char-editor-note">
-                                    <p className="character-editor-hint">{t('voice.ttsExplainer')}</p>
-                                    {typeof onOpenModules === 'function' && (
-                                        <button
-                                            type="button"
-                                            onClick={onOpenModules}
-                                            className="char-editor-inline-link"
-                                        >
-                                            {t('voice.openModules')} →
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </Section>
-
-                        <Section
-                            id="aiLifecycle"
-                            title={t('sections.aiLifecycle')}
-                            open={openSections.aiLifecycle}
-                            onToggle={toggleSection}
-                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>}
-                        >
-                            <div className="space-y-4">
-                                <p className="character-editor-hint">{t('lifecycle.defaultsNote')}</p>
-                                <LifecycleConfigEditor
-                                    config={lifecycleConfig}
-                                    onChange={setLifecycleConfig}
-                                />
-                            </div>
-                        </Section>
+                            </Section>
+                        )}
                     </div>
                 );
             case 'advanced':
+                // 03-6: persona-hidden. Card-spec-only fields — a persona is not
+                // a character card, and `rawCardData` is the tab's only section,
+                // so the tab itself drops out of `visibleTabs`.
+                if (!sectionVisible('rawCardData')) return null;
                 return (
                     <div className="space-y-4">
                         <Section
@@ -1163,7 +1196,9 @@ export default function CharacterProfileEditor({
 
     // Distinct title + one-line description for the active tab, so each section
     // is instantly recognisable instead of looking like the same wall of fields.
-    const activeTabInfo = tabs.find((tab) => tab.id === activeTab);
+    // 03-6: read `visibleTabs` (not `tabs`) — a tab the persona guard removed must
+    // never contribute a heading to the pane.
+    const activeTabInfo = visibleTabs.find((tab) => tab.id === activeTab);
 
     const renderError = () => error && (
         <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--color-error)' }}>
@@ -1222,7 +1257,11 @@ export default function CharacterProfileEditor({
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                        {profile && <CharacterCardExport profile={profile} variant="editor" />}
+                        {/* 03-6: personas have no Export card action. Android
+                            blocks the greeting test in this editor for the same
+                            reason — a persona is not a chat partner, and a card
+                            export of one is equally meaningless. */}
+                        {profile && !personaMode && <CharacterCardExport profile={profile} variant="editor" />}
                         {renderSaveButton('char-editor-save-btn')}
                     </div>
                 </div>
@@ -1313,7 +1352,8 @@ export default function CharacterProfileEditor({
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            {profile && <CharacterCardExport profile={profile} variant="editor" />}
+                            {/* 03-6: no Export card in the persona editor. */}
+                            {profile && !personaMode && <CharacterCardExport profile={profile} variant="editor" />}
                             <Tooltip content={t('buttons.close')}>
                                 <button
                                     onClick={onClose}

@@ -86,6 +86,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const toggleReaction = useChatStore((s) => s.toggleReaction);
     const setMessagePinned = useChatStore((s) => s.setMessagePinned);
     const requestForward = useChatStore((s) => s.requestForward);
+    const retranscribeMessage = useChatStore((s) => s.retranscribeMessage);
     const setReplyMode = useChatStore((s) => s.setReplyMode);
     const loadOlderMessages = useChatStore((s) => s.loadOlderMessages);
     const sendGreetingAlternate = useChatStore((s) => s.sendGreetingAlternate);
@@ -640,6 +641,19 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
 
     const handleSendAudio = (audio) => sendAudio(ownEntityId, audio);
 
+    /**
+     * Retry a failed transcription (Task 04-3).
+     *
+     * Goes through the engine's retranscribe route, which re-runs STT on the
+     * STORED audio and patches the same row — so the voice note is filled in
+     * rather than duplicated. The store owns the optimistic pending state and the
+     * error toast; this only forwards the intent.
+     */
+    const handleRetranscribe = (message) => {
+        if (!message?.id) return;
+        retranscribeMessage(message.id);
+    };
+
     const handleSendEmojiAction = (action) => {
         // An emoji action is a short substitution text plus its emotion effect.
         const content = action.substitution_text || action.emoji_native;
@@ -864,6 +878,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                                 onForward={handleForward}
                                 onTogglePin={handleTogglePin}
                                 onOpenImage={(msg, url) => setLightbox({ open: true, url })}
+                                onRetranscribe={handleRetranscribe}
                             />
                         </div>
                     ))}

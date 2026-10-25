@@ -302,6 +302,36 @@ export async function setMessagePinned(messageId, pinned) {
 }
 
 /**
+ * Re-run speech-to-text on a voice note's STORED audio and patch the same row
+ * (Task 04-3).
+ *
+ * Deliberately NOT a re-sent `STT_INPUT_AUDIO`: on this engine the inbound
+ * utterance path mints a new server-side message id and persists a new row, so
+ * retrying that way would fork the voice note into a second bubble and leave the
+ * original untranscribed. The engine re-reads the stored `audio_data` instead,
+ * which is why no audio crosses this wire.
+ *
+ * The body is optional and only carries STT overrides; with no body the engine
+ * uses the conversation's mapped STT config — the same one the live path would
+ * have used.
+ *
+ * @param {string} messageId
+ * @param {{ stt_config_id?: string, provider?: string, provider_account_id?: string }} [options]
+ * @returns {Promise<{status: string, id: string, content: string,
+ *   message_type: string, updated_at: string}>}
+ */
+export async function retranscribeMessage(messageId, options = {}) {
+    if (!messageId) throw new Error('This message has not been saved yet.');
+    const body = JSON.stringify(options || {});
+    const resp = await fetch(
+        apiUrl(`/messages/${encodeURIComponent(messageId)}/retranscribe`),
+        { method: 'POST', headers: getJsonHeaders(), body }
+    );
+    await handleResponse(resp, 'Failed to transcribe this voice note');
+    return await resp.json();
+}
+
+/**
  * Soft-delete one message (a tombstone — the row is never hard-deleted, because
  * the phone learns about a deletion by seeing `deleted_at`).
  *

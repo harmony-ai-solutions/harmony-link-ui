@@ -9,6 +9,11 @@ import {
     replyQuoteText,
     QUICK_REACTIONS,
 } from '../../store/chatStoreUtils.js';
+import {
+    TRANSCRIPTION_PENDING,
+    canRetranscribeMessage,
+    hasTranscribedText,
+} from '../../store/transcriptionUtils.js';
 import { fetchMessageImageObjectUrl } from '../../services/management/chatReadService.js';
 import { toast } from '../../store/toastStore.js';
 import AudioBubble from './AudioBubble.jsx';
@@ -52,6 +57,7 @@ const ChatBubble = ({
     onForward,
     onTogglePin,
     onOpenImage,
+    onRetranscribe,
 }) => {
     const { t } = useTranslation();
     const [menuOpen, setMenuOpen] = useState(false);
@@ -82,7 +88,25 @@ const ChatBubble = ({
         ? ''
         : time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const isAudioOnly = message.has_audio && !message.has_image;
+    /**
+     * ── AUDIO + TEXT ARE NOT EITHER/OR (Task 04-3 step 4) ────────────────
+     *
+     * This used to be `has_audio && !has_image`, and the text block was gated on
+     * `!isAudioOnly`. That is correct for the two states the OLD pipeline could
+     * produce (a voice note with no text yet, or a finished text message), but it
+     * erases the third state this task introduces: an audio message whose
+     * transcription arrived. Android patches `content` in place and loses the
+     * "this was a voice note" affordance entirely; the desktop keeps BOTH, which
+     * is what `message_type = 'combined'` already means to this engine
+     * (modules/cognition.go derives exactly that for audio + content).
+     *
+     * So the audio bubble renders whenever there is audio, and the text paragraph
+     * renders whenever there is text. `isAudioOnly` now only suppresses the
+     * composer-placeholder fallback (there is nothing to preview on a note).
+     */
+    const isAudioOnly = message.has_audio && !hasTranscribedText(message);
+    const transcriptionPending = message.transcription === TRANSCRIPTION_PENDING;
+    const showRetryTranscription = canRetranscribeMessage(message);
     const reactions = parseReactions(message.reactions_json);
     const proactive = isProactiveMessage(message);
     const quote = replyQuoteText(message, timeline);
@@ -131,12 +155,42 @@ const ChatBubble = ({
                 )}
                 {message.has_audio && <AudioBubble message={message} />}
 
-                {/* Text */}
-                {!isAudioOnly && (
-                    <p className="chat-bubble-text">
-                        {message.content || (message.has_image ? '' : conversationPreview(message))}
-                    </p>
+                {/* Transcription surface (Task 04-3). Three states, and each gets
+                    exactly one affordance so the bubble is never a dead end:
+                      pending → "Transcribing…" (the attempt is live),
+                      failed  → Retry (the ONLY way back; nothing re-sends audio),
+                      done    → nothing here; the text paragraph below is the result. */}
+                {transcriptionPending && (
+                    <div className="chat-bubble-transcription chat-bubble-transcription-pending"
+                        role="status" aria-live="polite">
+                        <span className="chat-bubble-transcription-spinner" aria-hidden="true" />
+                        {t('chat:bubble.transcribing')}
+                    </div>
                 )}
+                {showRetryTranscription && (
+                    <div className="chat-bubble-transcription chat-bubble-transcription-failed">
+                        <span className="chat-bubble-transcription-label">
+                            {t('chat:bubble.failedTranscription')}
+                        </span>
+                        <button
+                            type="button"
+                            className="chat-bubble-transcription-retry"
+                            onClick={() => onRetranscribe?.(message)}
+                        >
+                            <RefreshIcon className="w-3 h-3" />
+                            {t('chat:bubble.retryTranscription')}
+                        </button>
+                    </div>
+                )}
+
+                {/* Text. Rendered whenever there IS text — including on an audio
+                    message, so a transcribed voice note shows the words AND keeps
+                    its play button. A media-only row still shows nothing. */}
+                {message.content ? (
+                    <p className="chat-bubble-text">{message.content}</p>
+                ) : (!isAudioOnly && !message.has_image && (
+                    <p className="chat-bubble-text">{conversationPreview(message)}</p>
+                ))}
 
                 {/* Reactions (F14 / Task 02-6 step 1). Aggregated chips with
                     counts; clicking one toggles YOUR reaction, so the chip row

@@ -28,6 +28,16 @@ import {
 } from './searchUtils.js';
 import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
 import { announceConversationAction } from './conversationActions.js';
+import {
+    TRANSCRIPTION_TIMEOUT_MS,
+    TRANSCRIPTION_FAILED,
+    TRANSCRIPTION_DONE,
+    stampTranscriptionStates,
+    markPendingTranscriptionsFailed,
+    transcriptionPatchFromResponse,
+    canRetranscribeMessage,
+    transcriptionErrorMessage,
+} from './transcriptionUtils.js';
 import { toast } from './toastStore.js';
 import { translate } from '../i18n/translate.js';
 
@@ -62,6 +72,121 @@ import { translate } from '../i18n/translate.js';
 
 /** Per-entity socket registry (module scope — not reactive state). */
 const sockets = new Map();
+
+/**
+ * Open transcription attempt windows, keyed by message id (Task 04-3).
+ *
+ * Module scope rather than store state because these are TIMERS, not rendered
+ * values: the bubble renders `message.transcription`, which is stamped from this
+ * map. Keeping them out of state also means a timeout firing does not itself
+ * look like a state change to any subscriber.
+ *
+ * Two entries per attempt are needed:
+ *   - `since` — the epoch ms the attempt began (audio sent, or Retry pressed),
+ *   - `timer` — the 20 s deadline that flips an unfulfilled attempt to failed.
+ */
+const transcriptionAttempts = new Map();
+
+/**
+ * Begin (or restart) the transcription window for `messageId`.
+ *
+ * Restarting is the retry case: a second press must give the attempt a fresh
+ * 20 s, otherwise a retry pressed at t=19 s would be declared failed a second
+ * later and the button would reappear instantly.
+ *
+ * @param {string} messageId
+ * @param {() => void} onTimeout called when the deadline passes unfulfilled
+ */
+function openTranscriptionAttempt(messageId, onTimeout) {
+    if (!messageId) return;
+    clearTranscriptionAttempt(messageId);
+    const since = Date.now();
+    const timer = setTimeout(() => {
+        transcriptionAttempts.delete(messageId);
+        onTimeout();
+    }, TRANSCRIPTION_TIMEOUT_MS);
+    // Node's test runner (and any non-browser host) must not be held open by a
+    // 20 s deadline; browsers return a number and ignore this branch.
+    if (timer && typeof timer.unref === 'function') timer.unref();
+    transcriptionAttempts.set(messageId, { since, timer });
+}
+
+/** Close the window for `messageId`, cancelling its deadline. */
+function clearTranscriptionAttempt(messageId) {
+    const entry = transcriptionAttempts.get(messageId);
+    if (!entry) return;
+    if (entry.timer) clearTimeout(entry.timer);
+    transcriptionAttempts.delete(messageId);
+}
+
+/** Close every open window (conversation switch / store reset). */
+function clearAllTranscriptionAttempts() {
+    for (const [, entry] of transcriptionAttempts) {
+        if (entry.timer) clearTimeout(entry.timer);
+    }
+    transcriptionAttempts.clear();
+}
+
+/**
+ * The window opened by the most recent SENT voice note, or null.
+ *
+ * ── WHY A SECOND KIND OF WINDOW ──────────────────────────────────────────
+ *
+ * A retry addresses a message id we already hold, so it can be tracked per id in
+ * {@link transcriptionAttempts}. A freshly sent voice note cannot: the engine
+ * mints the message id server-side (modules/cognition.go overrides the client's
+ * id deliberately, so two entities never collide), so at send time there is no
+ * id to key anything by. This window therefore records only WHEN the send
+ * happened, and the row is recognised as belonging to it by its `created_at`
+ * falling inside the window — see deriveTranscriptionState.
+ */
+let pendingAudioSend = null;
+
+/**
+ * Arm the 20 s deadline for a just-sent voice note.
+ *
+ * The deadline is what turns "the engine never answered" into an actionable
+ * bubble: nothing else in the client knows the attempt is over, because a
+ * silent failure produces no event at all on this path.
+ *
+ * @param {() => object} get
+ * @param {(patch: object) => void} set
+ */
+function armAudioSendWindow(get, set) {
+    if (pendingAudioSend?.timer) clearTimeout(pendingAudioSend.timer);
+    const since = Date.now();
+    const timer = setTimeout(() => {
+        pendingAudioSend = null;
+        // Every row still awaiting a transcription is now failed. Rows with text
+        // are `done` and untouched; older audio-only rows were already failed, so
+        // this is a no-op for them.
+        set({ messages: markPendingTranscriptionsFailed(get().messages) });
+    }, TRANSCRIPTION_TIMEOUT_MS);
+    if (timer && typeof timer.unref === 'function') timer.unref();
+    pendingAudioSend = { since, timer };
+}
+
+/**
+ * The epoch-ms at which the newest attempt for ANY message began, or null.
+ *
+ * This is the value {@link stampTranscriptionStates} needs: rows are stamped
+ * against it, so an audio-only message is `pending` only while it belongs to the
+ * attempt currently in flight. Returning null when nothing is in flight is what
+ * keeps OLD untranscribed notes at `failed` instead of animating them all again
+ * on every load.
+ */
+function latestTranscriptionAttemptSince() {
+    let latest = pendingAudioSend ? pendingAudioSend.since : null;
+    for (const [, entry] of transcriptionAttempts) {
+        if (latest === null || entry.since > latest) latest = entry.since;
+    }
+    return latest;
+}
+
+/** Stamp the current timeline with transcription states. */
+function stampMessagesWithTranscription(messages) {
+    return stampTranscriptionStates(messages, { expectSinceMs: latestTranscriptionAttemptSince() });
+}
 
 /**
  * Patch one inbox row in place (by participant_key) across BOTH list arrays.
@@ -406,6 +531,10 @@ export const useChatStore = create((set, get) => ({
      */
     openConversation: async (conversation) => {
         get().closeSocket();
+        // Transcript attempt windows belong to the thread that was open; carrying
+        // them across would show the new thread's voice notes as pending.
+        clearAllTranscriptionAttempts();
+        pendingAudioSend = null;
         set({
             activeConversation: conversation,
             messages: [],
@@ -442,7 +571,15 @@ export const useChatStore = create((set, get) => ({
                 participantKey,
                 { limit: 50 }
             );
-            set({ messages: mergeMessages([], messages), hasMore, nextCursor, loadingMessages: false });
+            // Stamp on the way in: an audio row with no text and no live attempt
+            // is `failed` (Retry offered), never a phantom `pending`. This is why
+            // opening a thread full of old voice notes does not animate them all.
+            set({
+                messages: stampMessagesWithTranscription(mergeMessages([], messages)),
+                hasMore,
+                nextCursor,
+                loadingMessages: false,
+            });
         } catch (error) {
             set({ error: error.message, loadingMessages: false });
         }
@@ -945,6 +1082,10 @@ export const useChatStore = create((set, get) => ({
 
     /** Close the socket for the open conversation. */
     closeSocket: () => {
+        // The engine cannot answer for this thread once the socket is gone, so an
+        // open attempt window could only expire into a false failure.
+        clearAllTranscriptionAttempts();
+        pendingAudioSend = null;
         const { activeConversation } = get();
         if (!activeConversation) return;
         const socket = sockets.get(activeConversation.entityId);
@@ -1009,7 +1150,12 @@ export const useChatStore = create((set, get) => ({
                 // The engine returns the persisted message with an id; append it.
                 const message = normalizeIncomingMessage(data);
                 if (message) {
-                    set({ messages: mergeMessages(get().messages, message) });
+                    const merged = mergeMessages(get().messages, message);
+                    // Task 04-3: a freshly arrived voice note is born `pending`,
+                    // and a text message is born `done`. Stamping HERE rather
+                    // than at the bubble keeps the state on the row, so it
+                    // survives the render-window cap and re-mounts.
+                    set({ messages: stampMessagesWithTranscription(merged) });
                 }
                 // An inbound utterance clears the typing flag for that entity.
                 if (data.entity_id) {
@@ -1039,15 +1185,30 @@ export const useChatStore = create((set, get) => ({
                 break;
             }
             case 'STT_OUTPUT_TEXT': {
-                // Transcribed voice note: patch the message's content in place.
+                // Transcribed voice note: patch the message's content in place
+                // (Task 04-3 step 1: `done`).
+                //
+                // The engine's STT_OUTPUT_TEXT carries an `events.Utterance`, so
+                // both `message_id` and `content` are at the top level. The
+                // attempt window closes here: a late answer still lands, and the
+                // content alone is enough for the state to derive `done`.
                 if (data.message_id) {
-                    set({
-                        messages: replaceMessage(get().messages, {
-                            id: data.message_id,
-                            content: data.content || '',
-                        }),
+                    clearTranscriptionAttempt(data.message_id);
+                    const patched = replaceMessage(get().messages, {
+                        id: data.message_id,
+                        content: data.content || '',
                     });
+                    set({ messages: stampMessagesWithTranscription(patched) });
                 }
+                break;
+            }
+            case 'STT_ERROR': {
+                // An explicit STT failure. Nothing in the engine emits this today
+                // (the direct-audio path only logs), but the state machine has to
+                // honour it if it ever does — and the 20 s timeout covers the
+                // silent case, which is the one that actually happens.
+                clearAllTranscriptionAttempts();
+                set({ messages: markPendingTranscriptionsFailed(get().messages) });
                 break;
             }
             default:
@@ -1117,7 +1278,88 @@ export const useChatStore = create((set, get) => ({
         if (!activeConversation) return false;
         const socket = sockets.get(activeConversation.entityId);
         if (!socket) return false;
-        return socket.sendAudio({ entityId: ownEntityId, audioBase64, mimeType, duration });
+
+        // Optimistic `pending` (Task 04-3 step 1).
+        //
+        // Unlike sendText, the row here has NO local id yet: the engine mints the
+        // message id server-side (modules/cognition.go assigns
+        // utils.GenerateMessageID(), deliberately ignoring the client's), so
+        // there is nothing to append optimistically. The attempt window is
+        // therefore keyed by the local event id and is used only to arm the
+        // 20 s deadline; the PENDING state that matters visually is stamped once
+        // the engine's row arrives — {@link handleSocketEvent} stamps every
+        // incoming batch, so the row is born pending, without a second request.
+        //
+        // When it arrives it is stamped `pending`, its window expires into
+        // `failed` and the bubble offers Retry. That is exactly the acceptance
+        // path ("a forced STT failure shows Retry").
+        const ok = socket.sendAudio({ entityId: ownEntityId, audioBase64, mimeType, duration });
+        if (ok) armAudioSendWindow(get, set);
+        return ok;
+    },
+
+    /**
+     * Re-run speech-to-text for one voice note WITHOUT creating a second message
+     * (Task 04-3 step 3, option b).
+     *
+     * The endpoint re-reads the stored blob server-side, so no audio is sent and
+     * the row is patched in place. On success the returned content and
+     * `message_type` are applied verbatim — the engine promotes an audio row to
+     * 'combined', which is what keeps the audio bubble (and the "this was a voice
+     * note" affordance) alongside the new text.
+     *
+     * @param {string} messageId
+     * @returns {Promise<boolean>} true when the text landed
+     */
+    retranscribeMessage: async (messageId) => {
+        const target = get().messages.find((message) => message.id === messageId);
+        if (!target || !canRetranscribeMessage(target)) return false;
+
+        // Optimistic `pending`: the button disappears and a spinner takes its
+        // place, so a second press is impossible while the request is in flight.
+        set({
+            messages: replaceMessage(get().messages, {
+                id: messageId,
+                transcription: 'pending',
+            }),
+        });
+        openTranscriptionAttempt(messageId, () => {
+            set({
+                messages: markPendingTranscriptionsFailed(get().messages),
+            });
+        });
+
+        try {
+            const response = await chatActionService.retranscribeMessage(messageId);
+            clearTranscriptionAttempt(messageId);
+            set({
+                messages: replaceMessage(
+                    get().messages,
+                    transcriptionPatchFromResponse(messageId, response),
+                ),
+            });
+            return true;
+        } catch (error) {
+            clearTranscriptionAttempt(messageId);
+            // Failed retry → back to `failed` so Retry is pressable again, plus
+            // the provider's message verbatim: it is the whole diagnostic value
+            // of the feature (a bad key, a missing model, an unsupported audio
+            // container all read differently).
+            set({
+                messages: replaceMessage(get().messages, {
+                    id: messageId,
+                    transcription: TRANSCRIPTION_FAILED,
+                }),
+            });
+            // The engine's body is surfaced VERBATIM, matching every other write
+            // in this store (`error.message || translate(...)`). That is also what
+            // makes the provider's own words ("401 invalid api key", "unsupported
+            // audio container") visible — the entire diagnostic value of the
+            // feature — without interpolating them through a translation, which
+            // would mangle a message that is not a template.
+            toast.error(transcriptionErrorMessage(error) || translate('chat:bubble.retryTranscriptionFailed'));
+            return false;
+        }
     },
 
     /**

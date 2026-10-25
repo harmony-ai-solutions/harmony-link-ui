@@ -246,8 +246,10 @@
     "editedTooltip": "This message was edited",
     "voiceMessage": "Voice message",
     "image": "Photo",
+    "transcribing": "Transcribing…",
     "failedTranscription": "Transcription failed",
-    "retryTranscription": "Retry",
+    "retryTranscription": "Retry transcription",
+    "retryTranscriptionFailed": "Could not transcribe this voice note.",
     "play": "Play",
     "pause": "Pause"
   },

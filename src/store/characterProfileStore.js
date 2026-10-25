@@ -161,14 +161,27 @@ const useCharacterProfileStore = create((set, get) => ({
     },
     
     /**
-     * Import a character card from a PNG file
-     * @param {File} file 
+     * Import a character card from a PNG file.
+     *
+     * `isLoading` is deliberately NOT set here any more (plan 03-5d). The
+     * import is no longer fire-and-forget: the caller first runs
+     * `previewCharacterCardImport` and then, on confirm, this action. Flipping
+     * the grid's skeleton flag during the REVIEW would flash the whole
+     * character grid before the user has decided anything.
+     *
+     * @param {File} file
+     * @param {{onConflict?: 'error'|'copy', name?: string}} [options]
      * @returns {Promise<import('../services/management/characterService').CharacterCardImportResult>}
      */
-    importCharacterCard: async (file) => {
-        set({ isLoading: true, error: null });
+    importCharacterCard: async (file, options = {}) => {
+        set({ error: null });
         try {
-            const result = await characterService.importCharacterCard(file);
+            const result = await characterService.importCharacterCard(file, options);
+            // The import route answers `{status, id, name}` — NOT a full profile
+            // row (or `{profile, image}` in older fixtures). Only the latter can
+            // be pushed directly; the caller reloads for the real row, so no
+            // placeholder is invented here (a half-populated card would render
+            // blank fields for a frame).
             set(produce(state => {
                 if (result && result.profile) {
                     state.profiles.push(result.profile);
@@ -176,14 +189,24 @@ const useCharacterProfileStore = create((set, get) => ({
                         state.images[result.profile.id] = [result.image];
                     }
                 }
-                state.isLoading = false;
             }));
             return result;
         } catch (error) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.message });
             throw error;
         }
     },
+
+    /**
+     * Review a card without persisting it (plan 03-5d).
+     *
+     * Pure pass-through to the service: the review is read-only, so it must not
+     * touch `profiles`, `isLoading` or `error` — a rejected file is reported by
+     * the component that asked for the preview.
+     *
+     * @param {File} file
+     */
+    previewImport: async (file) => characterService.previewCharacterCardImport(file),
     
     /**
      * Select a profile by ID

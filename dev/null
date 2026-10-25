@@ -1,0 +1,150 @@
+import { EKMAN_EMOTIONS } from "./emojiActionUtils.js";
+import { COPY_SUFFIX_PATTERN } from "./duplicateNamePreview.js";
+export const CARD_SPECS = ["v1", "v2", "v3"];
+export function detectCardSpec(detection) {
+  if (!detection) return "v1";
+  const spec = String(detection.spec || "").toLowerCase();
+  const version = String(detection.spec_version || "").toLowerCase();
+  if (spec.includes("v3") || version.startsWith("3.")) return "v3";
+  if (spec.includes("v2") || version.startsWith("2.")) return "v2";
+  return "v1";
+}
+export function textLength(text) {
+  if (!text) return 0;
+  return Array.from(String(text)).length;
+}
+export function countLorebookEntries(book) {
+  if (!book) return 0;
+  let parsed = book;
+  if (typeof book === "string") {
+    try {
+      parsed = JSON.parse(book);
+    } catch {
+      return 0;
+    }
+  }
+  if (!parsed || typeof parsed !== "object") return 0;
+  const entries = parsed.entries;
+  return Array.isArray(entries) ? entries.length : 0;
+}
+export function countEmbeddedImages(assets, carrierImages = 1) {
+  let list = assets;
+  if (typeof assets === "string") {
+    if (!assets.trim()) {
+      list = [];
+    } else {
+      try {
+        list = JSON.parse(assets);
+      } catch {
+        list = [];
+      }
+    }
+  }
+  const manifest = Array.isArray(list) ? list.filter((a) => a && typeof a === "object" && String(a.type || "").startsWith("icon")) : [];
+  const manifestCount = manifest.length;
+  const carrier = Number.isFinite(Number(carrierImages)) ? Math.max(0, Number(carrierImages)) : 1;
+  return Math.max(manifestCount, carrier);
+}
+export function countAlternateGreetings(alternates) {
+  if (!alternates) return 0;
+  let list = alternates;
+  if (typeof alternates === "string") {
+    try {
+      list = JSON.parse(alternates);
+    } catch {
+      return 0;
+    }
+  }
+  if (!Array.isArray(list)) return 0;
+  return list.filter((g) => typeof g === "string" && g.trim() !== "").length;
+}
+export function stripCopySuffix(name) {
+  const trimmed = String(name || "").trim();
+  const match = COPY_SUFFIX_PATTERN.exec(trimmed);
+  return match ? match[1].trim() : trimmed;
+}
+export function namesCollide(a, b) {
+  return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+}
+export function findNameCollision(cardName, profiles) {
+  if (!cardName || !Array.isArray(profiles)) return null;
+  return profiles.find((p) => p && namesCollide(p.name, cardName)) || null;
+}
+export function nextCopyName(cardName, profiles) {
+  const base = stripCopySuffix(cardName);
+  if (!base) return "";
+  const lowerBase = base.toLowerCase();
+  const taken = /* @__PURE__ */ new Set();
+  for (const profile of Array.isArray(profiles) ? profiles : []) {
+    const lower = String(profile?.name || "").trim().toLowerCase();
+    if (!lower) continue;
+    if (lower === lowerBase) {
+      taken.add(1);
+      continue;
+    }
+    if (lower.startsWith(lowerBase)) {
+      const match = COPY_SUFFIX_PATTERN.exec(lower.slice(lowerBase.length));
+      if (match) {
+        const num = Number.parseInt(match[2], 10);
+        if (Number.isFinite(num) && num >= 1) taken.add(num);
+      }
+    }
+  }
+  let next = 2;
+  while (taken.has(next)) next += 1;
+  return `${base} ${next}`;
+}
+export function buildImportReview(detection, profiles, options = {}) {
+  const source = detection || {};
+  const name = String(source.name || "").trim();
+  const collision = findNameCollision(name, profiles);
+  const carrierImages = Number.isFinite(Number(options.carrierImages)) ? Number(options.carrierImages) : 1;
+  return {
+    spec: detectCardSpec(source),
+    name,
+    descriptionLength: textLength(source.description || ""),
+    alternateGreetingCount: countAlternateGreetings(source.alternate_greetings),
+    lorebookEntryCount: countLorebookEntries(source.character_book),
+    embeddedImageCount: countEmbeddedImages(source.assets, carrierImages),
+    greetingPreview: String(source.first_mes || "").trim(),
+    collision,
+    copyName: collision ? nextCopyName(name, profiles) : "",
+    mode: collision ? "blocked" : "create"
+  };
+}
+export function createdFieldKeys(detection) {
+  const source = detection || {};
+  const keys = [];
+  const add = (key, value) => {
+    if (typeof value === "boolean") {
+      if (value) keys.push(key);
+      return;
+    }
+    if (value === void 0 || value === null) return;
+    if (typeof value === "string" && value.trim() === "") return;
+    if (Array.isArray(value) && value.length === 0) return;
+    if (typeof value === "object" && Object.keys(value).length === 0) return;
+    keys.push(key);
+  };
+  add("name", source.name);
+  add("description", source.description);
+  add("personality", source.personality);
+  add("scenario", source.scenario);
+  add("first_mes", source.first_mes);
+  add("mes_example", source.mes_example);
+  add("alternate_greetings", countAlternateGreetings(source.alternate_greetings) > 0);
+  add("character_book", countLorebookEntries(source.character_book) > 0);
+  add("creator", source.creator);
+  add("character_version", source.character_version);
+  add("nickname", source.nickname);
+  add("tags", source.tags);
+  add("group_only_greetings", source.group_only_greetings);
+  add("assets", countEmbeddedImages(source.assets, 0) > 0);
+  add("extensions", source.extensions);
+  add("card_provenance", true);
+  return keys;
+}
+export function overwrittenFieldKeys() {
+  return [];
+}
+export const IMPORT_REVIEW_EKMAN = EKMAN_EMOTIONS;

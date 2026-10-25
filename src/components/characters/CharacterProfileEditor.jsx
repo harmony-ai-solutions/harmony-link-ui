@@ -8,10 +8,20 @@ import LorebookEditor from './LorebookEditor';
 import ErrorDialog from '../modals/ErrorDialog.jsx';
 import LifecycleConfigEditor from '../settings/LifecycleConfigEditor.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
-import NumberStepper from '../ui/NumberStepper.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import useUIModeStore, { isModeAllowed } from '../../store/uiModeStore';
 import { toast } from '../../store/toastStore.js';
+import {
+    GREETING_WARN_CHARS,
+    greetingStats,
+    countLongGreetings,
+    totalGreetingChars,
+    updateAlternateGreeting,
+    addAlternateGreeting,
+    removeAlternateGreeting,
+    moveAlternateGreeting,
+    serialiseAlternateGreetings,
+} from '../../utils/greetingEditorUtils.js';
 
 // ---------------------------------------------------------------------------
 // Inline helpers (Character Card V3 data editing)
@@ -122,6 +132,89 @@ function FieldLabel({ children, hint, unit, required }) {
     );
 }
 
+/**
+ * One greeting block in the **Greeting** tab (plan 03-5a).
+ *
+ * `first_mes` is rendered by the same component as the alternates but is
+ * labelled "Default greeting" and has no reorder/remove controls — it is a
+ * column of its own, not slot 0 of `alternate_greetings`. Reordering it into
+ * the alternate list would silently rewrite a different database column.
+ *
+ * The live character count is the point of the redesign: a greeting is injected
+ * into every prompt, so its length is a recurring token cost, and the warning
+ * appears at {@link GREETING_WARN_CHARS} without ever blocking the save.
+ */
+function GreetingBlock({ label, value, onChange, onMoveUp, onMoveDown, onRemove, canMoveUp, canMoveDown, readOnly }) {
+    const { t } = useTranslation('characters');
+    const stats = greetingStats(value);
+    return (
+        <div className="char-greeting-block">
+            <div className="char-greeting-block-head">
+                <span className="char-greeting-block-label">{label}</span>
+                <span className={`char-greeting-block-count ${stats.tooLong ? 'is-over' : ''}`}>
+                    {stats.chars}
+                </span>
+                {!readOnly && (
+                    <div className="char-greeting-block-actions">
+                        <Tooltip content={t('greeting.moveUp')}>
+                            <button
+                                type="button"
+                                onClick={onMoveUp}
+                                disabled={!canMoveUp}
+                                className="char-greeting-icon-btn"
+                                aria-label={t('greeting.moveUp')}
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                </svg>
+                            </button>
+                        </Tooltip>
+                        <Tooltip content={t('greeting.moveDown')}>
+                            <button
+                                type="button"
+                                onClick={onMoveDown}
+                                disabled={!canMoveDown}
+                                className="char-greeting-icon-btn"
+                                aria-label={t('greeting.moveDown')}
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </Tooltip>
+                        {onRemove && (
+                            <Tooltip content={t('editor.remove')}>
+                                <button
+                                    type="button"
+                                    onClick={onRemove}
+                                    className="char-greeting-icon-btn is-danger"
+                                    aria-label={t('editor.remove')}
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </Tooltip>
+                        )}
+                    </div>
+                )}
+            </div>
+            <textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                rows={4}
+                placeholder={t('fields.firstMessagePlaceholder')}
+                className="input-field w-full resize-y"
+            />
+            {stats.tooLong && (
+                <p className="char-greeting-warn">
+                    {t('greeting.tooLong', { count: stats.chars, over: stats.overBy })}
+                </p>
+            )}
+        </div>
+    );
+}
+
 /** Collapsible section wrapper — the whole header row toggles the body. */
 function Section({ id, title, icon, open, onToggle, children }) {
     return (
@@ -160,7 +253,22 @@ function Section({ id, title, icon, open, onToggle, children }) {
  *   the editor calls `onSave(payload)` instead of its own store save and only
  *   closes on success; thrown errors surface in the editor's error UI.
  */
-export default function CharacterProfileEditor({ profile, onClose, referencedEntities = [], personaMode = false, nameReadOnly = false, onSave = null, variant = 'modal' }) {
+export default function CharacterProfileEditor({
+    profile,
+    onClose,
+    referencedEntities = [],
+    personaMode = false,
+    nameReadOnly = false,
+    onSave = null,
+    variant = 'modal',
+    /**
+     * Plan 03-5b: navigate to Settings → Modules (Pro). Optional on purpose —
+     * the persona modal has no navigation context, and a dead "open Modules"
+     * button is worse than no button. When absent the explainer still renders,
+     * just without the link.
+     */
+    onOpenModules = null,
+}) {
     const { t } = useTranslation('characters');
     const [activeTab, setActiveTab] = useState('basic');
     const isReferenced = Array.isArray(referencedEntities) && referencedEntities.length > 0;
@@ -174,7 +282,8 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
         identity: true,
         cardInfo: true,
         aiPrompt: true,
-        chatBehavior: true,
+        // 03-5b replaced the old `chatBehavior` section with `voiceBehavior`.
+        voiceBehavior: true,
         aiLifecycle: true,
         rawCardData: false,
     });
@@ -411,7 +520,10 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
             // Character Card V3 fields (snake_case to match the API)
             first_mes: firstMes,
             mes_example: mesExample,
-            alternate_greetings: JSON.stringify(alternateGreetings),
+            // Plan 03-5a: blank blocks are dropped before the column is
+            // written. An empty textarea is not a greeting, and storing `""`
+            // would make the chat's greeting swiper offer an empty bubble.
+            alternate_greetings: JSON.stringify(serialiseAlternateGreetings(alternateGreetings)),
             post_history_instructions: postHistoryInstructions,
             creator_notes: creatorNotes,
             creator,
@@ -572,29 +684,21 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                         <p className="character-editor-hint mt-1">{t('personas:editor.nameLocked')}</p>
                                     )}
                                 </div>
-                                <div className="char-editor-grid-2">
-                                    <div className="character-editor-field-group">
-                                        <FieldLabel hint={t('fields.nicknameHint')}>{t('fields.nickname')}</FieldLabel>
-                                        <input
-                                            type="text"
-                                            name="nickname"
-                                            value={nickname}
-                                            onChange={(e) => setNickname(e.target.value)}
-                                            placeholder={t('fields.nicknamePlaceholder')}
-                                            className="input-field w-full"
-                                        />
-                                    </div>
-                                    <div className="character-editor-field-group">
-                                        <FieldLabel hint={t('fields.voiceCharacteristicsHint')}>{t('fields.voiceCharacteristics')}</FieldLabel>
-                                        <textarea
-                                            name="voice_characteristics"
-                                            value={voiceCharacteristics}
-                                            onChange={(e) => setVoiceCharacteristics(e.target.value)}
-                                            rows={2}
-                                            placeholder={t('fields.voiceCharacteristicsPlaceholder')}
-                                            className="input-field w-full resize-none"
-                                        />
-                                    </div>
+                                {/* 03-5b moved Voice Characteristics to the Voice &
+                                    Behaviour section (AI Behaviour tab), where it sits
+                                    next to the two fields it belongs with. It used to
+                                    live here; keeping BOTH would give one state two
+                                    inputs on two tabs, which reads as a bug. */}
+                                <div className="character-editor-field-group">
+                                    <FieldLabel hint={t('fields.nicknameHint')}>{t('fields.nickname')}</FieldLabel>
+                                    <input
+                                        type="text"
+                                        name="nickname"
+                                        value={nickname}
+                                        onChange={(e) => setNickname(e.target.value)}
+                                        placeholder={t('fields.nicknamePlaceholder')}
+                                        className="input-field w-full"
+                                    />
                                 </div>
                                 <div className="character-editor-field-group">
                                     <FieldLabel hint={t('fields.descriptionHint')}>{t('fields.description')}</FieldLabel>
@@ -698,21 +802,75 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                         </Section>
                     </div>
                 );
-            case 'greeting':
+            case 'greeting': {
+                // Plan 03-5a. The tab is now a LIST of greeting blocks instead
+                // of a single textarea plus a one-line-at-a-time list editor.
+                //
+                // Two rules the render encodes:
+                //  1. `first_mes` renders FIRST and is labelled "Default
+                //     greeting" — it is a separate column, so it can never be
+                //     reordered into or removed from `alternate_greetings`.
+                //  2. The character count is always visible; the warning is
+                //     additive. Greeting length is a per-prompt token cost, so
+                //     silence is the wrong default.
+                const allGreetings = [firstMes, ...alternateGreetings];
+                const longCount = countLongGreetings(allGreetings);
+                const totalChars = totalGreetingChars(allGreetings);
                 return (
                     <div className="space-y-4">
-                        <div className="character-editor-field-group">
-                            <FieldLabel hint={t('fields.firstMessageHint')}>{t('fields.firstMessage')}</FieldLabel>
-                            <textarea
-                                name="first_mes"
-                                value={firstMes}
-                                onChange={(e) => setFirstMes(e.target.value)}
-                                rows={6}
-                                placeholder={t('fields.firstMessagePlaceholder')}
-                                className="input-field w-full resize-none"
-                            />
+                        <div className="char-greeting-summary">
+                            <span>{t('greeting.summary', { count: allGreetings.length, chars: totalChars })}</span>
+                            <span className="char-greeting-summary-hint">
+                                {longCount > 0
+                                    ? t('greeting.summaryWarn', { count: longCount, limit: GREETING_WARN_CHARS })
+                                    : t('greeting.summaryOk', { limit: GREETING_WARN_CHARS })}
+                            </span>
                         </div>
-                        <div className="character-editor-field-group">
+
+                        <GreetingBlock
+                            label={t('greeting.defaultLabel')}
+                            value={firstMes}
+                            onChange={setFirstMes}
+                            readOnly
+                        />
+
+                        <div className="space-y-3">
+                            {alternateGreetings.map((greeting, index) => (
+                                <GreetingBlock
+                                    key={`alt-${index}`}
+                                    label={t('greeting.alternateLabel', { index: index + 1 })}
+                                    value={greeting}
+                                    onChange={(text) =>
+                                        setAlternateGreetings((prev) => updateAlternateGreeting(prev, index, text))
+                                    }
+                                    onMoveUp={() =>
+                                        setAlternateGreetings((prev) => moveAlternateGreeting(prev, index, index - 1))
+                                    }
+                                    onMoveDown={() =>
+                                        setAlternateGreetings((prev) => moveAlternateGreeting(prev, index, index + 1))
+                                    }
+                                    onRemove={() =>
+                                        setAlternateGreetings((prev) => removeAlternateGreeting(prev, index))
+                                    }
+                                    canMoveUp={index > 0}
+                                    canMoveDown={index < alternateGreetings.length - 1}
+                                />
+                            ))}
+                            {alternateGreetings.length === 0 && (
+                                <p className="character-editor-hint">{t('greeting.noAlternates')}</p>
+                            )}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => setAlternateGreetings((prev) => addAlternateGreeting(prev))}
+                            data-tutorial-id="char-editor-add-greeting"
+                            className="btn-secondary px-4 py-2 text-sm font-semibold"
+                        >
+                            + {t('fields.addGreeting')}
+                        </button>
+
+                        <div className="character-editor-field-group pt-2">
                             <FieldLabel hint={t('fields.exampleMessageHint')}>{t('fields.exampleMessage')}</FieldLabel>
                             <textarea
                                 name="mes_example"
@@ -723,17 +881,9 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                                 className="input-field w-full resize-none font-mono text-sm"
                             />
                         </div>
-                        <div className="character-editor-field-group">
-                            <FieldLabel hint={t('fields.alternateGreetingsHint')}>{t('fields.alternateGreetings')}</FieldLabel>
-                            <StringListEditor
-                                values={alternateGreetings}
-                                onChange={setAlternateGreetings}
-                                placeholder={t('fields.alternateGreetingsPlaceholder')}
-                                addLabel={t('fields.addGreeting')}
-                            />
-                        </div>
                     </div>
                 );
+            }
             case 'lorebook':
                 return (
                     <div className="space-y-4">
@@ -787,35 +937,82 @@ export default function CharacterProfileEditor({ profile, onClose, referencedEnt
                             </div>
                         </Section>
 
+                        {/* Plan 03-5b — Voice & Behaviour.
+                            Android's block, surfaced coherently on desktop:
+                            the voice description (which feeds TTS), typing
+                            speed and audio-reply chance. Compact
+                            `<input type="number">` rows with a trailing unit
+                            label, NOT the old NumberStepper — this matches the
+                            editor polish pass and keeps three fields on one
+                            screen. */}
                         <Section
-                            id="chatBehavior"
-                            title={t('sections.chatBehavior')}
-                            open={openSections.chatBehavior}
+                            id="voiceBehavior"
+                            title={t('sections.voiceBehavior')}
+                            open={openSections.voiceBehavior}
                             onToggle={toggleSection}
                             icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
                         >
-                            <div className="char-editor-grid-2">
+                            <div className="space-y-4">
                                 <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('advanced.typingSpeedHint')} unit={t('advanced.wordsPerMinute')}>{t('advanced.typingSpeed')}</FieldLabel>
-                                    <NumberStepper
-                                        name="typing_speed_wpm"
-                                        value={typingSpeedWPM}
-                                        onChange={(e) => setTypingSpeedWPM(e.target.value)}
-                                        onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
-                                        min={1}
-                                        max={200}
+                                    <FieldLabel hint={t('voice.characteristicsHint')}>{t('voice.characteristics')}</FieldLabel>
+                                    <textarea
+                                        name="voice_characteristics"
+                                        value={voiceCharacteristics}
+                                        onChange={(e) => setVoiceCharacteristics(e.target.value)}
+                                        rows={3}
+                                        placeholder={t('fields.voiceCharacteristicsPlaceholder')}
+                                        className="input-field w-full resize-y"
                                     />
                                 </div>
-                                <div className="character-editor-field-group">
-                                    <FieldLabel hint={t('advanced.audioChanceHint')} unit="%">{t('advanced.audioResponseChance')}</FieldLabel>
-                                    <NumberStepper
-                                        name="audio_response_chance_percent"
-                                        value={audioResponseChance}
-                                        onChange={(e) => setAudioResponseChance(e.target.value)}
-                                        onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
-                                        min={0}
-                                        max={100}
-                                    />
+
+                                <div className="char-editor-grid-2">
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('voice.typingSpeedHint')}>{t('voice.typingSpeed')}</FieldLabel>
+                                        <div className="char-editor-number-row">
+                                            <input
+                                                type="number"
+                                                name="typing_speed_wpm"
+                                                value={typingSpeedWPM}
+                                                onChange={(e) => setTypingSpeedWPM(e.target.value)}
+                                                onBlur={(e) => validateTypingSpeedAndUpdate(e.target.value)}
+                                                min={1}
+                                                max={200}
+                                                step={1}
+                                                className="input-field char-editor-number"
+                                            />
+                                            <span className="char-editor-number-unit">{t('voice.wpm')}</span>
+                                        </div>
+                                    </div>
+                                    <div className="character-editor-field-group">
+                                        <FieldLabel hint={t('voice.audioChanceHint')}>{t('voice.audioChance')}</FieldLabel>
+                                        <div className="char-editor-number-row">
+                                            <input
+                                                type="number"
+                                                name="audio_response_chance_percent"
+                                                value={audioResponseChance}
+                                                onChange={(e) => setAudioResponseChance(e.target.value)}
+                                                onBlur={(e) => validateAudioChanceAndUpdate(e.target.value)}
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                className="input-field char-editor-number"
+                                            />
+                                            <span className="char-editor-number-unit">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="char-editor-note">
+                                    <p className="character-editor-hint">{t('voice.ttsExplainer')}</p>
+                                    {typeof onOpenModules === 'function' && (
+                                        <button
+                                            type="button"
+                                            onClick={onOpenModules}
+                                            className="char-editor-inline-link"
+                                        >
+                                            {t('voice.openModules')} →
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </Section>

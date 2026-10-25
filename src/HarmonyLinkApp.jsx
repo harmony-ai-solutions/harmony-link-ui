@@ -556,7 +556,9 @@ function HarmonyLinkAppInner() {
                         {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabCharacters &&
                             <CharacterProfilesView onCreatePersonaFromCard={handleCreatePersonaFromCard}
                                 onCreateEntityFromCard={handleCreateEntityFromCard}
-                                onStartChatFromCard={handleStartChatFromCard}></CharacterProfilesView>
+                                onStartChatFromCard={handleStartChatFromCard}
+                                /* 03-5b: the Voice & Behaviour explainer links to Modules (Pro). */
+                                onOpenModules={() => setSettingsTab(SettingsTabModules)}></CharacterProfilesView>
                         }
                         {isModeAllowed(uiMode, 'simple') && settingsTab === SettingsTabPersonas &&
                             <PersonasView></PersonasView>

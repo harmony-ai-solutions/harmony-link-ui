@@ -221,3 +221,72 @@ export async function setEntityDisabled(entityId, disabled) {
     await handleResponse(resp, "Failed to update entity disabled flag");
     return await resp.json();
 }
+
+// ── Emoji actions (plan 03-5c) ────────────────────────────────────────
+//
+// `entity_emoji_actions` was readable from the chat picker but had NO editor,
+// so a user could not change what an emoji does to their character's mood.
+//
+// The routes are already per-row on the engine
+// (`POST`/`PUT`/`DELETE /entities/:id/emoji-actions[/:actionId]`), so there is
+// no bulk write to add — one Save button fans out over the change plan from
+// `emojiActionUtils.planEmojiActionChanges`.
+
+/**
+ * Create one emoji action. The engine assigns a uuidv7 when `id` is absent.
+ *
+ * @param {string} entityId
+ * @param {{id?: string|null, emoji_native: string, substitution_text?: string,
+ *   emotion_effect?: string|null, auto_generated?: boolean, is_default?: boolean}} action
+ */
+export async function createEmojiAction(entityId, action) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}/emoji-actions`,
+        {
+            method: "POST",
+            headers: getJsonHeaders(),
+            // `id` is omitted rather than sent as null: the handler treats an
+            // empty id as "generate one", but `null` would fail the string bind.
+            body: JSON.stringify({
+                ...(action.id ? { id: action.id } : {}),
+                emoji_native: action.emoji_native,
+                substitution_text: action.substitution_text ?? null,
+                emotion_effect: action.emotion_effect ?? null,
+                auto_generated: !!action.auto_generated,
+                is_default: !!action.is_default,
+            }),
+        },
+    );
+    await handleResponse(resp, "Failed to create emoji action");
+    return await resp.json();
+}
+
+/** Update one existing emoji action (`PUT`, replace-fields semantics). */
+export async function updateEmojiAction(entityId, actionId, action) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}/emoji-actions/${encodeURIComponent(actionId)}`,
+        {
+            method: "PUT",
+            headers: getJsonHeaders(),
+            body: JSON.stringify({
+                emoji_native: action.emoji_native,
+                substitution_text: action.substitution_text ?? null,
+                emotion_effect: action.emotion_effect ?? null,
+                auto_generated: !!action.auto_generated,
+                is_default: !!action.is_default,
+            }),
+        },
+    );
+    await handleResponse(resp, "Failed to update emoji action");
+    return await resp.json();
+}
+
+/** Soft-delete one emoji action. */
+export async function deleteEmojiAction(entityId, actionId) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/entities/${encodeURIComponent(entityId)}/emoji-actions/${encodeURIComponent(actionId)}`,
+        { method: "DELETE", headers: getAuthHeaders() },
+    );
+    await handleResponse(resp, "Failed to delete emoji action");
+    return await resp.json();
+}

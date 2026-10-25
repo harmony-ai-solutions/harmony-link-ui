@@ -17,6 +17,7 @@ import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
 import InputDialog from "./modals/InputDialog.jsx";
 import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
+import EmojiActionsEditor from './characters/EmojiActionsEditor.jsx';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import useDockerStatus from '../hooks/useDockerStatus';
 import Tooltip from './ui/Tooltip.jsx';
@@ -26,6 +27,7 @@ import Skeleton from './ui/Skeleton.jsx';
 import { RobotIcon, ActivityIcon } from '../constants/icons.jsx';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 import { toast } from '../store/toastStore.js';
+import useUIModeStore, { isModeAllowed } from '../store/uiModeStore';
 
 
 export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
@@ -55,6 +57,11 @@ export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onCh
 
 const EntitySettingsView = ({ appName }) => {
     const { t } = useTranslation();
+    // Plan 03-5c: the emoji-actions table is Pro-only. Read the mode here (the
+    // view is already Pro-gated at the nav level, so this is about not showing a
+    // four-column table to a Pro user who has not opted into the section yet —
+    // and about keeping Dev as the only place with raw JSON).
+    const uiMode = useUIModeStore((state) => state.mode);
     const {
         entities,
         selectedEntityId,
@@ -992,6 +999,26 @@ const EntitySettingsView = ({ appName }) => {
                                             configs={getConfigs('vision')} isLoading={isModuleLoading} />
                                     </div>
                                 </section>
+
+                                {/* Emoji actions (plan 03-5c) — Pro only.
+                                    entity_emoji_actions feeds the chat picker's
+                                    action grid, so editing it here is what makes
+                                    the picker editable on desktop at all. The
+                                    whole section is Pro-gated: a Simple user never
+                                    needs to author mood deltas, and the table has
+                                    four columns.
+
+                                    Persona entities are filtered out of this view
+                                    upstream (aiEntities), so no persona guard is
+                                    needed here. */}
+                                {isModeAllowed(uiMode, 'pro') && selectedEntityId && (
+                                    <section data-tutorial-id="entity-emoji-actions-section" className="space-y-4">
+                                        <h3 className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                            <span className="text-gradient-primary">{tes('sections.emojiActions')}</span>
+                                        </h3>
+                                        <EmojiActionsEditor entityId={selectedEntityId} />
+                                    </section>
+                                )}
 
                                 {/* Lifecycle Settings Section */}
                                 <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">

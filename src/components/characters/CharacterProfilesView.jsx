@@ -50,7 +50,16 @@ import { duplicateCandidates } from '../../utils/duplicateNamePreview.js';
  *   start-chat request in chatStore, then calls this callback so the shell can
  *   switch to the Chat tab, where the new conversation opens.
  */
-export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreateEntityFromCard, onStartChatFromCard }) {
+export default function CharacterProfilesView({
+    onCreatePersonaFromCard,
+    onCreateEntityFromCard,
+    onStartChatFromCard,
+    /**
+     * 03-5b: open Settings → Modules. Optional — the view is also mounted in
+     * modes/tests without navigation context.
+     */
+    onOpenModules = null,
+}) {
     const { t } = useTranslation();
     const { profiles, isLoading, loadProfiles, loadImages, deleteProfile, getProfile } = useCharacterProfileStore();
     const { entities, loadEntities, selectEntity } = useEntityStore();
@@ -112,6 +121,10 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
      */
     const uiMode = useUIModeStore((state) => state.mode);
     const canOpenEntities = isModeAllowed(uiMode, 'pro');
+    // 03-5b: the editor's Voice & Behaviour explainer links to Settings →
+    // Modules, which is a Pro destination — so the link only exists when the
+    // mode can actually reach it.
+    const canOpenModules = typeof onOpenModules === 'function' && isModeAllowed(uiMode, 'pro');
 
     /**
      * 2-1: ids of profiles owned by personas (referenced by ≥1 user entity).
@@ -473,6 +486,10 @@ export default function CharacterProfilesView({ onCreatePersonaFromCard, onCreat
                 variant="page"
                 profile={editingProfile}
                 referencedEntities={editingProfile ? (referencingByProfile[editingProfile.id] || []) : []}
+                // 03-5b: the Voice & Behaviour explainer links to Modules. Only
+                // passed at Pro+ — Modules is a Pro destination, and a link a
+                // Simple user cannot follow would be a dead end.
+                onOpenModules={canOpenModules ? onOpenModules : null}
                 onClose={() => { setShowEditor(false); setEditingProfile(null); }}
             />
         );

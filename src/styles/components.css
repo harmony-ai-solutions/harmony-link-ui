@@ -8329,3 +8329,282 @@ html[data-scrolling="true"] .ui-skeleton {
         animation: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Plan 03-5 — Editor gaps
+   Greeting blocks, Voice & Behaviour rows, the emoji-actions table and the
+   import review panel. Token-driven like the rest of the editor; no
+   backdrop-filter inside the scrolling column (see the scroll-shake note).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 03-5a: greeting blocks ─────────────────────────────────────────── */
+
+.char-greeting-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    align-items: baseline;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-md);
+    background: var(--color-background-surface-translucent);
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+}
+
+.char-greeting-summary-hint {
+    color: var(--color-text-muted);
+    font-size: 0.72rem;
+}
+
+.char-greeting-block {
+    border: 1px solid var(--color-border-glass);
+    border-radius: var(--radius-md);
+    padding: 0.6rem 0.7rem 0.7rem;
+    background: var(--color-background-elevated);
+}
+
+.char-greeting-block-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.char-greeting-block-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+/* Live character count — the whole point of the redesign. */
+.char-greeting-block-count {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    padding: 0 0.3rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-glass);
+}
+
+.char-greeting-block-count.is-over {
+    color: var(--color-warning, #f5b942);
+    border-color: currentColor;
+}
+
+.char-greeting-block-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.char-greeting-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    color: var(--color-text-muted);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.15s var(--ease-spring), border-color 0.15s var(--ease-spring);
+}
+
+.char-greeting-icon-btn:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-glass);
+}
+
+.char-greeting-icon-btn.is-danger:hover:not(:disabled) {
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
+.char-greeting-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.char-greeting-warn {
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    color: var(--color-warning, #f5b942);
+}
+
+/* ── 03-5b: compact number rows + explainer ─────────────────────────── */
+
+.char-editor-number-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Compact: the number and its unit share one row, no stepper chrome. */
+.char-editor-number {
+    max-width: 7rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.char-editor-number-unit {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.char-editor-note {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.6rem 0.75rem;
+    border-left: 2px solid var(--color-accent-primary);
+    border-radius: var(--radius-sm);
+    background: var(--color-background-surface-translucent);
+}
+
+.char-editor-inline-link {
+    align-self: flex-start;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-accent-primary);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.char-editor-inline-link:hover {
+    text-decoration: underline;
+}
+
+/* ── 03-5c: emoji-actions table ─────────────────────────────────────── */
+
+.char-emoji-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.char-emoji-row {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr) 1.8rem;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.char-emoji-row-head {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    padding: 0 0.1rem;
+}
+
+.char-emoji-row.is-invalid {
+    outline: 1px solid var(--color-error);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.char-emoji-emoji {
+    text-align: center;
+    font-size: 1.1rem;
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+}
+
+.char-emoji-test {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+}
+
+.char-emoji-test code {
+    font-family: var(--font-mono, monospace);
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.char-emoji-test-body {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: italic;
+}
+
+@media (max-width: 900px) {
+    .char-emoji-row {
+        grid-template-columns: 4rem minmax(0, 1fr) minmax(0, 1fr) 1.8rem;
+    }
+
+    /* The Test column is the first thing to go on a narrow viewport; the
+       payload is still reachable through the row's title. */
+    .char-emoji-row > .char-emoji-test,
+    .char-emoji-row-head > span:nth-child(4) {
+        display: none;
+    }
+}
+
+/* ── 03-5d: import review panel ─────────────────────────────────────── */
+
+.char-import-spec-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-accent-primary);
+    color: var(--color-accent-primary);
+    white-space: nowrap;
+}
+
+.char-import-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 1rem;
+    margin: 0;
+}
+
+.char-import-facts dt {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.char-import-facts dd {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.char-import-greeting {
+    margin: 0;
+    max-height: 7.5rem;
+    overflow-y: auto;
+    padding: 0.55rem 0.7rem;
+    border-left: 2px solid var(--color-accent-primary);
+    border-radius: var(--radius-sm);
+    background: var(--color-background-base);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+    .char-import-facts {
+        grid-template-columns: 1fr;
+    }
+}

@@ -40,6 +40,8 @@
     "identityTooltip": "Configure the character identity for this entity.",
     "moduleConfigurations": "Module Configurations",
     "moduleTooltip": "Select pre-configured module settings for this entity.",
+    "emojiActions": "Emoji Actions",
+    "emojiActionsTooltip": "What each emoji from the chat picker does to this AI partner's mood.",
     "lifecycleSettings": "Lifecycle Settings",
     "lifecycleTooltip": "Per-entity lifecycle configuration overrides."
   },

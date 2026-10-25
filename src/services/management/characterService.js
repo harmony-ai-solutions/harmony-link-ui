@@ -323,23 +323,95 @@ export async function reorderCharacterCategories(orderedIds) {
 // Character Card Import
 
 /**
- * Import a character card from a PNG file
+ * POST the card file to the import route and return the parsed JSON.
+ *
  * @param {File} file
- * @returns {Promise<CharacterCardImportResult>}
+ * @param {Record<string,string>} [query] - extra query params (`dry_run`, `on_conflict`, `name`)
+ * @returns {Promise<any>}
  */
-export async function importCharacterCard(file) {
+async function postCharacterCardImport(file, query = {}) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/import`, {
-        method: 'POST',
-        headers: getAuthHeaders(), // NOTE: Do NOT set Content-Type for FormData - browser sets it with boundary
-        body: formData,
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+    });
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-profiles/import${suffix}`,
+        {
+            method: 'POST',
+            headers: getAuthHeaders(), // NOTE: Do NOT set Content-Type for FormData - browser sets it with boundary
+            body: formData,
+        },
+    );
+    return response;
+}
+
+/**
+ * Review a character card WITHOUT persisting anything (plan 03-5d).
+ *
+ * Calls the same import route with `?dry_run=1`, which parses the card and
+ * answers with the detection summary (spec, counts, dropped fields) plus the
+ * name-collision state — then returns before any write.
+ *
+ * This exists so the desktop preview is the SERVER's answer. Re-deriving the
+ * spec, the lorebook count and the copy name in the browser would be a second
+ * implementation of three rules, and a preview that disagrees with the import
+ * is exactly the bug the review step is meant to remove.
+ *
+ * @param {File} file
+ * @returns {Promise<{
+ *   status: 'review', spec: string, spec_version: string, name: string,
+ *   description_length: number, alternate_greeting_count: number,
+ *   lorebook_entry_count: number, image_count: number, first_mes: string,
+ *   dropped_field_count: number, dropped_fields?: string[],
+ *   name_taken: boolean|null, existing_id?: string, existing_name?: string,
+ *   suggested_name?: string,
+ * }>}
+ */
+export async function previewCharacterCardImport(file) {
+    const response = await postCharacterCardImport(file, { dry_run: 1 });
+    if (!response.ok) {
+        let message = 'Failed to read character card';
+        try {
+            const error = await response.json();
+            message = error.error || message;
+        } catch { /* no JSON body */ }
+        throw new Error(message);
+    }
+    return response.json();
+}
+
+/**
+ * Import a character card from a PNG file.
+ *
+ * @param {File} file
+ * @param {{onConflict?: 'error'|'copy', name?: string}} [options]
+ *   `onConflict: 'copy'` lets the engine pick the next copy name itself (the
+ *   app/script path); `name` is the explicit "Import as copy" name from the
+ *   review panel. Omitting both keeps the strict behaviour: a name clash
+ *   answers **409** with the review summary attached, so nothing is written.
+ * @returns {Promise<CharacterCardImportResult>}
+ */
+export async function importCharacterCard(file, options = {}) {
+    const response = await postCharacterCardImport(file, {
+        on_conflict: options.onConflict,
+        name: options.name,
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to import character card');
+        const error = await response.json().catch(() => ({}));
+        const err = new Error(error.error || 'Failed to import character card');
+        // 409 carries the review payload so the caller can offer "Import as
+        // copy" without re-parsing the file.
+        err.status = response.status;
+        err.nameTaken = !!error.name_taken;
+        err.suggestedName = error.suggested || '';
+        err.preview = error.dry_run || null;
+        throw err;
     }
 
     return response.json();

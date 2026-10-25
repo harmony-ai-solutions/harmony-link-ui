@@ -1,9 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SmileIcon, ImageIcon, MicIcon, StopIcon, SparklesIcon } from '../../constants/icons.jsx';
+import {
+    SmileIcon,
+    ImageIcon,
+    MicIcon,
+    StopIcon,
+    SparklesIcon,
+    XIcon,
+    ChevronDownIcon,
+} from '../../constants/icons.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import { toast } from '../../store/toastStore.js';
+import useChatPrefsStore from '../../store/chatPrefsStore.js';
+import { createVoiceRecorder, listInputDevices } from '../../services/audio/recorder.js';
+import {
+    MAX_RECORDING_MS,
+    describeMicError,
+    deviceLabel,
+    formatDuration,
+    micErrorKey,
+    recordingProgress,
+    ringGeometry,
+} from '../../services/audio/recorderUtils.js';
 import {
     MAX_IMAGES,
     MAX_IMAGE_BYTES,
@@ -26,6 +45,21 @@ import {
 /**
  * Chat input box (F4) with an emoji picker (F11), a picture button (F15) and a
  * voice-note recorder (F7).
+ *
+ * Task 04-1 turns the recorder into a real one:
+ *
+ *   1. **2:00 ceiling** — the take stops itself at {@link MAX_RECORDING_MS} and
+ *      says so. The live timer and the ring inside the mic button make the
+ *      limit visible before it arrives rather than as a surprise truncation.
+ *   2. **MIME negotiation** — the type is probed and sent as `audio_type`, so
+ *      the engine is told what the bytes actually are.
+ *   3. **Device choice** — a picker in the recording popover, persisted in
+ *      `chatPrefsStore` (`hl.chat.prefs` → `inputDeviceId`) and passed as
+ *      `deviceId: { exact }`.
+ *   4. **Level meter** — an `AnalyserNode` bar proves the mic is capturing; a
+ *      completely silent take warns instead of silently producing nothing.
+ *   5. **Cancel vs send** — ✕ discards, release sends, and a sub-0.5 s tap is
+ *      thrown away with an explanation instead of becoming an empty bubble.
  *
  * Task 02-8 brings the composer to parity with Android:
  *
@@ -74,7 +108,6 @@ const ChatInput = ({
     const { t } = useTranslation();
     const [text, setText] = useState('');
     const [showEmoji, setShowEmoji] = useState(false);
-    const [recording, setRecording] = useState(false);
     const [error, setError] = useState(null);
     const [images, setImages] = useState([]);
     /**
@@ -96,11 +129,33 @@ const ChatInput = ({
     const [dismissedToken, setDismissedToken] = useState('');
     const [showHint, setShowHint] = useState(false);
 
+    /* ── Recording state (Task 04-1) ─────────────────────────────────── */
+    /** True between `start` and the take resolving (send, cancel or error). */
+    const [recording, setRecording] = useState(false);
+    /** Elapsed milliseconds, republished every {@link TIMER_INTERVAL_MS}. */
+    const [elapsedMs, setElapsedMs] = useState(0);
+    /** Smoothed 0..1 input level for the meter. */
+    const [level, setLevel] = useState(0);
+    /** Audio inputs; populated after the permission grant fills in labels. */
+    const [devices, setDevices] = useState([]);
+    const [showDevicePicker, setShowDevicePicker] = useState(false);
+
     const fileInputRef = useRef(null);
     const textareaRef = useRef(null);
+    /**
+     * Live recorder driver.
+     *
+     * A ref, not state: the driver owns timers and an `AudioContext`, so a
+     * re-render must never be able to replace or garbage-collect it mid-take.
+     */
     const recorderRef = useRef(null);
-    const chunksRef = useRef([]);
-    const startedAtRef = useRef(0);
+    /** True while a start request is in flight (guards double-clicks). */
+    const startingRef = useRef(false);
+    /** The take was finished by the 2:00 ceiling, so `onstop` must not re-toast. */
+    const autoStoppedRef = useRef(false);
+
+    const inputDeviceId = useChatPrefsStore((state) => state.inputDeviceId);
+    const updatePrefs = useChatPrefsStore((state) => state.updatePrefs);
     /** Caret to restore after a programmatic text edit (emoji completion). */
     const pendingCaretRef = useRef(null);
     /** Object URLs created for the staged previews — revoked when they leave. */
@@ -420,42 +475,153 @@ const ChatInput = ({
         updateText(result.text, result.caret);
     };
 
-    const startRecording = async () => {
-        setError(null);
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            chunksRef.current = [];
-            startedAtRef.current = Date.now();
-            recorder.ondataavailable = (event) => {
-                if (event.data.size > 0) chunksRef.current.push(event.data);
-            };
-            recorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-                const duration = (Date.now() - startedAtRef.current) / 1000;
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = String(reader.result || '');
-                    const base64 = result.includes(',') ? result.split(',')[1] : result;
-                    onSendAudio?.({ audioBase64: base64, mimeType: blob.type, duration });
-                };
-                reader.onerror = () => setError(t('chat:input.recordingFailed'));
-                reader.readAsDataURL(blob);
-                stream.getTracks().forEach((track) => track.stop());
-            };
-            recorderRef.current = recorder;
-            recorder.start();
-            setRecording(true);
-        } catch {
-            setError(t('chat:input.micDenied'));
-        }
-    };
+    /* ── Recording (Task 04-1) ────────────────────────────────────────── */
 
-    const stopRecording = () => {
-        recorderRef.current?.stop();
-        recorderRef.current = null;
+    /** Reset the transient recording UI. */
+    const resetRecordingUi = useCallback(() => {
         setRecording(false);
-    };
+        setElapsedMs(0);
+        setLevel(0);
+        setShowDevicePicker(false);
+    }, []);
+
+    /**
+     * Begin a take.
+     *
+     * The device id comes from persisted prefs, so the picker choice survives a
+     * restart. Every failure class gets its own copy — one generic "could not
+     * record" is what made the phone's voice bugs unreportable.
+     */
+    const startRecording = useCallback(async () => {
+        if (recorderRef.current || startingRef.current || disabled) return;
+        startingRef.current = true;
+        setError(null);
+        autoStoppedRef.current = false;
+        setElapsedMs(0);
+        setLevel(0);
+
+        const recorder = createVoiceRecorder({
+            onTick: ({ elapsedMs: next }) => setElapsedMs(next),
+            onLevel: setLevel,
+            // `toastStore` has no `warning` kind; an info toast with explicit
+            // copy is the honest way to say "nothing is reaching the mic".
+            onSilence: () => toast.info(t('chat:input.micSilent')),
+            onAutoStop: () => {
+                autoStoppedRef.current = true;
+            },
+            onDeviceList: setDevices,
+        });
+        recorderRef.current = recorder;
+
+        try {
+            // `start` hands back the take promise, which resolves for EVERY exit
+            // — the Send button, ✕ cancel and the 2:00 ceiling. Awaiting it here
+            // is what makes the automatic stop actually deliver the audio.
+            const { take } = await recorder.start({ deviceId: inputDeviceId });
+            setRecording(true);
+
+            try {
+                const result = await take;
+                if (result && !result.cancelled && result.audioBase64) {
+                    if (autoStoppedRef.current) {
+                        toast.info(t('chat:input.recordingCapped', {
+                            limit: formatDuration(MAX_RECORDING_MS),
+                        }));
+                    }
+                    onSendAudio?.({
+                        audioBase64: result.audioBase64,
+                        mimeType: result.mimeType,
+                        duration: result.durationSeconds,
+                    });
+                }
+            } catch (takeError) {
+                // Sub-0.5 s take: discarded and explained, never sent.
+                if (takeError?.code === 'tooShort') {
+                    toast.info(t('chat:input.recordingTooShort'));
+                } else if (takeError?.code !== 'cancelled') {
+                    setError(t('chat:input.recordingFailed'));
+                }
+            }
+        } catch (startError) {
+            setError(t(micErrorKey(describeMicError(startError))));
+        } finally {
+            recorder.dispose();
+            recorderRef.current = null;
+            resetRecordingUi();
+            startingRef.current = false;
+        }
+    }, [disabled, inputDeviceId, onSendAudio, resetRecordingUi, t]);
+
+    /**
+     * Finish the take and hand it to the caller.
+     *
+     * Only starts the stop; the delivery happens in {@link startRecording}'s
+     * `await take`, so the send path exists exactly once.
+     */
+    const stopRecording = useCallback(() => {
+        const recorder = recorderRef.current;
+        if (!recorder) return;
+        // The awaiting `take` in startRecording receives the result.
+        recorder.stop().catch(() => {});
+    }, []);
+
+    /**
+     * Discard the take without sending anything.
+     *
+     * `cancel()` alone is enough: it stops the recorder, settles the shared take
+     * as `cancelled`, and releases the stream + `AudioContext`. Calling
+     * `dispose()` here too would settle a take that is already settled, and the
+     * `finally` in {@link startRecording} disposes as a backstop anyway.
+     */
+    const cancelRecording = useCallback(() => {
+        const recorder = recorderRef.current;
+        resetRecordingUi();
+        recorder?.cancel();
+    }, [resetRecordingUi]);
+
+    /** Remember the chosen microphone for the next take and the next launch. */
+    const pickDevice = useCallback((deviceId) => {
+        updatePrefs({ inputDeviceId: deviceId });
+        setShowDevicePicker(false);
+    }, [updatePrefs]);
+
+    /** Escape cancels a running take (the button has its own ✕). */
+    useEffect(() => {
+        if (!recording) return undefined;
+        const onKey = (event) => {
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            cancelRecording();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [recording, cancelRecording]);
+
+    /**
+     * Enumerate inputs while the popover is open.
+     *
+     * Device LABELS are only populated once permission has been granted, and the
+     * grant is what `startRecording` just performed — so this intentionally runs
+     * after the take begins, not on app start (no auto-prompt, task 04-2 step 3).
+     */
+    useEffect(() => {
+        if (!recording) return;
+        listInputDevices().then((found) => {
+            if (found.length > 0) setDevices(found);
+        });
+    }, [recording]);
+
+    /**
+     * Release everything on unmount.
+     *
+     * Without this the `AudioContext` and the microphone track outlive the
+     * composer and the OS keeps showing the recording indicator.
+     */
+    useEffect(() => () => {
+        const recorder = recorderRef.current;
+        recorderRef.current = null;
+        recorder?.dispose();
+    }, []);
 
     /**
      * Auto-grow the textarea.
@@ -533,6 +699,98 @@ const ChatInput = ({
                 </div>
             )}
 
+            {/* Recording popover (Task 04-1 steps 3–5). One place that answers
+                the only three questions a user has mid-take: is it picking up
+                sound, which microphone is it using, and how do I get out. */}
+            {recording && (
+                <div className="chat-recording-bar" role="group" aria-label={t('chat:input.recordingPanel')}>
+                    <button
+                        type="button"
+                        className="chat-recording-cancel"
+                        onClick={cancelRecording}
+                        aria-label={t('chat:input.cancelRecording')}
+                        title={t('chat:input.cancelRecording')}
+                    >
+                        <XIcon className="w-4 h-4" />
+                    </button>
+
+                    {/* Level meter: the only proof the mic is actually capturing. */}
+                    <div className="chat-recording-meter" role="presentation">
+                        <div
+                            className="chat-recording-meter-fill"
+                            style={{ width: `${Math.round(Math.min(1, Math.max(0, level)) * 100)}%` }}
+                        />
+                    </div>
+
+                    <div className="chat-recording-meta">
+                        <button
+                            type="button"
+                            className="chat-recording-device"
+                            onClick={() => setShowDevicePicker((open) => !open)}
+                            aria-expanded={showDevicePicker}
+                            aria-haspopup="listbox"
+                        >
+                            <span className="chat-recording-device-label">
+                                {deviceLabel(
+                                    devices.find((device) => device.deviceId === inputDeviceId)
+                                        || { deviceId: inputDeviceId, isDefault: !inputDeviceId },
+                                    t,
+                                    0,
+                                )}
+                            </span>
+                            <ChevronDownIcon className="w-3.5 h-3.5" />
+                        </button>
+
+                        {showDevicePicker && (
+                            <div
+                                className="chat-recording-device-list"
+                                role="listbox"
+                                aria-label={t('chat:input.micDevice')}
+                            >
+                                <button
+                                    type="button"
+                                    role="option"
+                                    aria-selected={!inputDeviceId}
+                                    className={`chat-recording-device-option ${!inputDeviceId ? 'is-active' : ''}`}
+                                    onClick={() => pickDevice('')}
+                                >
+                                    {t('chat:input.micDeviceDefault')}
+                                </button>
+                                {devices
+                                    .filter((device) => !device.isDefault)
+                                    .map((device, index) => (
+                                        <button
+                                            key={device.deviceId}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={device.deviceId === inputDeviceId}
+                                            className={`chat-recording-device-option ${device.deviceId === inputDeviceId ? 'is-active' : ''}`}
+                                            onClick={() => pickDevice(device.deviceId)}
+                                        >
+                                            {deviceLabel(device, t, index + 1)}
+                                        </button>
+                                    ))}
+                                {devices.length <= 1 && (
+                                    <span className="chat-recording-device-empty">
+                                        {t('chat:input.micDeviceNone')}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <Tooltip content={t('chat:input.cancelRecording')}>
+                        <button
+                            type="button"
+                            className="chat-recording-send"
+                            onClick={stopRecording}
+                        >
+                            {t('chat:input.sendVoiceNote')}
+                        </button>
+                    </Tooltip>
+                </div>
+            )}
+
             <div className="chat-input-bar">
                 <Tooltip content={t('chat:input.emoji')}>
                     <button
@@ -595,16 +853,47 @@ const ChatInput = ({
                     aria-label={placeholder}
                 />
 
+                {/* Mic button (Task 04-1). While recording it becomes the
+                    progress ring: the ring is the ceiling, the glyph stops the
+                    take, and the timer beside it states the elapsed time so the
+                    2:00 limit arrives visibly rather than as a cut-off. */}
                 <Tooltip content={recording ? t('chat:input.stopRecording') : t('chat:input.record')}>
                     <button
                         type="button"
-                        className={`chat-input-icon-btn ${recording ? 'chat-input-icon-btn-recording' : ''}`}
+                        className={`chat-input-icon-btn chat-input-mic ${recording ? 'chat-input-icon-btn-recording' : ''}`}
                         onClick={recording ? stopRecording : startRecording}
                         disabled={disabled}
+                        aria-pressed={recording}
+                        aria-label={recording ? t('chat:input.stopRecording') : t('chat:input.record')}
                     >
-                        {recording ? <StopIcon className="w-5 h-5" /> : <MicIcon className="w-5 h-5" />}
+                        {recording && (
+                            <svg
+                                className="chat-input-mic-ring"
+                                viewBox="0 0 36 36"
+                                aria-hidden="true"
+                                focusable="false"
+                            >
+                                <circle className="chat-input-mic-ring-track" cx="18" cy="18" r="15.5" />
+                                <circle
+                                    className="chat-input-mic-ring-progress"
+                                    cx="18"
+                                    cy="18"
+                                    r="15.5"
+                                    strokeDasharray={ringGeometry(recordingProgress).dashArray}
+                                    strokeDashoffset={ringGeometry(recordingProgress).dashOffset}
+                                />
+                            </svg>
+                        )}
+                        {recording ? <StopIcon className="w-4 h-4" /> : <MicIcon className="w-5 h-5" />}
                     </button>
                 </Tooltip>
+
+                {recording && (
+                    <span className="chat-input-timer" role="timer" aria-live="off">
+                        {formatDuration(elapsedMs)}
+                        <span className="chat-input-timer-limit">/{formatDuration(MAX_RECORDING_MS)}</span>
+                    </span>
+                )}
 
                 <button
                     type="button"

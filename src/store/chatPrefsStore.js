@@ -22,6 +22,14 @@ export const DEFAULT_CHAT_PREFS = {
     // ~10s of artificial typing delay on top of generation time. Users can
     // still opt into Realistic in chat preferences.
     replyMode: 'instant',
+    /**
+     * Preferred microphone (Task 04-1 step 3).
+     *
+     * `''` means "let the system decide" — the correct default, because device
+     * ids are per-origin AND per-session on some Chromium builds, so a
+     * hard-coded id would be wrong on the next launch.
+     */
+    inputDeviceId: '',
 };
 
 /** Load persisted prefs (best-effort; falls back to defaults). */
@@ -35,6 +43,11 @@ export function loadPrefs() {
             spacing: SPACINGS.includes(parsed.spacing) ? parsed.spacing : DEFAULT_CHAT_PREFS.spacing,
             sound: parsed.sound !== false,
             replyMode: parsed.replyMode === 'instant' ? 'instant' : 'realistic',
+            // Any string is a valid stored id (including the empty default);
+            // a non-string means a hand-edited localStorage row — ignore it.
+            inputDeviceId: typeof parsed.inputDeviceId === 'string'
+                ? parsed.inputDeviceId
+                : DEFAULT_CHAT_PREFS.inputDeviceId,
         };
     } catch {
         return { ...DEFAULT_CHAT_PREFS };

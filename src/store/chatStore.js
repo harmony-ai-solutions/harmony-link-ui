@@ -38,6 +38,7 @@ import {
     canRetranscribeMessage,
     transcriptionErrorMessage,
 } from './transcriptionUtils.js';
+import { markUserSend, resetUserSend } from '../services/chat/userActivity.js';
 import { toast } from './toastStore.js';
 import { translate } from '../i18n/translate.js';
 
@@ -535,6 +536,10 @@ export const useChatStore = create((set, get) => ({
         // them across would show the new thread's voice notes as pending.
         clearAllTranscriptionAttempts();
         pendingAudioSend = null;
+        // The autoplay window belongs to the thread the user was watching.
+        // Carrying it across would let a voice note in a thread they just opened
+        // play on its own because they sent something in the PREVIOUS one.
+        resetUserSend();
         set({
             activeConversation: conversation,
             messages: [],
@@ -1253,6 +1258,9 @@ export const useChatStore = create((set, get) => ({
             updated_at: now,
         };
         set({ messages: mergeMessages(get().messages, optimistic) });
+        // Task 04-4 step 4: the user is demonstrably watching this thread, so an
+        // AI voice reply within the next 30 s may play on its own.
+        markUserSend();
 
         const ok = socket.sendText({
             entityId: ownEntityId,
@@ -1294,7 +1302,10 @@ export const useChatStore = create((set, get) => ({
         // `failed` and the bubble offers Retry. That is exactly the acceptance
         // path ("a forced STT failure shows Retry").
         const ok = socket.sendAudio({ entityId: ownEntityId, audioBase64, mimeType, duration });
-        if (ok) armAudioSendWindow(get, set);
+        if (ok) {
+            armAudioSendWindow(get, set);
+            markUserSend();
+        }
         return ok;
     },
 
@@ -1372,7 +1383,11 @@ export const useChatStore = create((set, get) => ({
         if (!activeConversation) return false;
         const socket = sockets.get(activeConversation.entityId);
         if (!socket) return false;
-        return socket.sendImage({ entityId: ownEntityId, imageBase64, mimeType, caption });
+        const ok = socket.sendImage({ entityId: ownEntityId, imageBase64, mimeType, caption });
+        // An image send also counts as "the user is watching" for the autoplay
+        // window: they are in the composer, and an AI voice reply is expected.
+        if (ok) markUserSend();
+        return ok;
     },
 
     /**

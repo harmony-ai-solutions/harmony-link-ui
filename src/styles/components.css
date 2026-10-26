@@ -6961,6 +6961,16 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     align-items: center;
     gap: 0.5rem;
     min-width: 12rem;
+    border-radius: 0.5rem;
+    /* The bubble is a focus target (Task 04-4 step 3: Space / ← / → act on the
+       bubble that HAS focus). The ring is drawn with a negative-offset outline
+       so it never nudges the row's layout when focus lands. */
+    outline: none;
+}
+
+.chat-audio-bubble:focus-visible {
+    outline: 2px solid var(--color-accent-primary, #8b5cf6);
+    outline-offset: 3px;
 }
 
 .chat-audio-play {
@@ -6974,20 +6984,95 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
     color: inherit;
 }
 
-.chat-audio-track {
+/* ── Scrub track (Task 04-4 step 1) ───────────────────────────────────
+   A real range input, styled down to a 3 px line. The played portion is a
+   background gradient driven by `--chat-audio-progress` (set inline from the
+   player's clock), so the fill and the thumb can never disagree — one custom
+   property paints both.
+
+   `appearance: none` is required on the input AND its thumb, otherwise the
+   native Chrome/Edge track ignores the height and the thin-line look is lost.
+   The input keeps its native keyboard behaviour (arrows for a focused range),
+   which is why the bubble's own ← / → handler calls `preventDefault` only when
+   it actually seeks. */
+.chat-audio-scrub {
     flex: 1;
     height: 3px;
+    margin: 0;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.3);
-    overflow: hidden;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background:
+        linear-gradient(
+            to right,
+            currentColor 0%,
+            currentColor var(--chat-audio-progress, 0%),
+            rgba(255, 255, 255, 0.3) var(--chat-audio-progress, 0%),
+            rgba(255, 255, 255, 0.3) 100%
+        );
+    /* A taller hit area than the 3 px line: the visual stays thin, but the
+       pointer target is ~16 px so scrubbing a short note is not a pixel hunt. */
+    padding: 6px 0;
+    background-clip: content-box;
 }
 
-.chat-bubble-in .chat-audio-track { background: var(--color-border-glass); }
+.chat-bubble-in .chat-audio-scrub {
+    background:
+        linear-gradient(
+            to right,
+            currentColor 0%,
+            currentColor var(--chat-audio-progress, 0%),
+            var(--color-border-glass) var(--chat-audio-progress, 0%),
+            var(--color-border-glass) 100%
+        );
+    background-clip: content-box;
+}
 
-.chat-audio-progress {
-    height: 100%;
+.chat-audio-scrub:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.chat-audio-scrub:focus-visible {
+    outline: 2px solid var(--color-accent-primary, #8b5cf6);
+    outline-offset: 2px;
+}
+
+.chat-audio-scrub::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0.75rem;
+    height: 0.75rem;
+    border: none;
+    border-radius: 9999px;
     background: currentColor;
-    transition: width 0.2s linear;
+    /* Pull the thumb up so it straddles the 3 px line rather than sitting on
+       its bottom edge. */
+    margin-top: -0.28rem;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18);
+    transition: transform 0.12s var(--ease-spring);
+}
+
+.chat-audio-scrub::-moz-range-thumb {
+    width: 0.75rem;
+    height: 0.75rem;
+    border: none;
+    border-radius: 9999px;
+    background: currentColor;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.18);
+}
+
+.chat-audio-scrub:hover::-webkit-slider-thumb,
+.chat-audio-scrub:focus-visible::-webkit-slider-thumb {
+    transform: scale(1.25);
+}
+
+.chat-audio-scrub::-moz-range-track {
+    height: 3px;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
 }
 
 .chat-audio-duration {
@@ -7065,9 +7150,13 @@ html[data-theme-mode="light"] .dynamic-bg-waves .wave-item {
 }
 
 /* Respect a reduced-motion preference: the spinner is decoration, the status
-   text already says what is happening. */
+   text already says what is happening. The scrub thumb's hover grow is
+   decoration too — the position is still readable from the filled track. */
 @media (prefers-reduced-motion: reduce) {
     .chat-bubble-transcription-spinner { animation: none; }
+    .chat-audio-scrub::-webkit-slider-thumb { transition: none; }
+    .chat-audio-scrub:hover::-webkit-slider-thumb,
+    .chat-audio-scrub:focus-visible::-webkit-slider-thumb { transform: none; }
 }
 
 /* ── Images (F15) ─────────────────────────────────────────────────── */

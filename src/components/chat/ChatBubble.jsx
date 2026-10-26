@@ -15,6 +15,7 @@ import {
     hasTranscribedText,
 } from '../../store/transcriptionUtils.js';
 import { fetchMessageImageObjectUrl } from '../../services/management/chatReadService.js';
+import { acquireObjectUrl, releaseObjectUrl } from '../../services/chat/objectUrlCache.js';
 import { toast } from '../../store/toastStore.js';
 import AudioBubble from './AudioBubble.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
@@ -342,7 +343,23 @@ const ForwardGlyph = () => (
     </svg>
 );
 
-/** Lazily fetches and renders a message's image (F15). */
+/**
+ * Lazily fetches and renders a message's image (F15).
+ *
+ * ── OBJECT-URL OWNERSHIP (Task 04-4 step 5) ──────────────────────────────
+ *
+ * This component is the HOLDER for the image: it acquires the URL through the
+ * ref-counted registry and RELEASES IT ON UNMOUNT. That single line is the fix
+ * for the leak — every thumbnail that scrolls out of the render window used to
+ * leave its blob pinned for the lifetime of the window, so scrolling a long
+ * thread with photos grew memory monotonically.
+ *
+ * It is a `release` rather than a raw `revokeObjectURL` because the lightbox may
+ * still be displaying this very URL when the thumbnail unmounts (it takes its
+ * own reference in `ImageLightbox`), and the same message can be mounted twice
+ * while the timeline is mid-swap. The registry revokes only when the last holder
+ * lets go, so nothing is pulled from under a live `<img>`.
+ */
 const ChatImageThumb = ({ message, onOpen }) => {
     const { t } = useTranslation();
     const [url, setUrl] = useState(null);
@@ -351,12 +368,25 @@ const ChatImageThumb = ({ message, onOpen }) => {
     useEffect(() => {
         let active = true;
         (async () => {
-            const objectUrl = await fetchMessageImageObjectUrl(message.id);
+            const objectUrl = await acquireObjectUrl(
+                'image',
+                message.id,
+                () => fetchMessageImageObjectUrl(message.id),
+            );
+            // No extra release here: the cleanup below has ALREADY released this
+            // mount's hold if we unmounted mid-fetch, and a second release would
+            // decrement a hold belonging to another live component (two bubbles
+            // for one message, or the lightbox still showing this URL). The
+            // registry itself revokes a URL whose last holder left before the
+            // fetch resolved.
             if (!active) return;
             if (objectUrl) setUrl(objectUrl);
             else setFailed(true);
         })();
-        return () => { active = false; };
+        return () => {
+            active = false;
+            releaseObjectUrl('image', message.id);
+        };
     }, [message.id]);
 
     if (failed) {

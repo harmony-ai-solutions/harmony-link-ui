@@ -251,7 +251,9 @@
     "retryTranscription": "Retry transcription",
     "retryTranscriptionFailed": "Could not transcribe this voice note.",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "audioSeek": "Seek within this voice message",
+    "audioPosition": "{{position}} of {{duration}}"
   },
   "actions": {
     "edit": "Edit",
@@ -301,7 +303,9 @@
     "spacing": "Message spacing",
     "spacingComfortable": "Comfortable",
     "spacingCompact": "Compact",
-    "soundOnMessage": "Play a sound for new messages"
+    "soundOnMessage": "Play a sound for new messages",
+    "playbackRate": "Voice message speed",
+    "playbackRateHint": "Applies to voice messages. Changes take effect immediately."
   },
   "impersonation": {
     "label": "Chatting as",

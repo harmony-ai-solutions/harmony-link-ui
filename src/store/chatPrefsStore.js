@@ -1,4 +1,9 @@
 import { create } from 'zustand';
+import {
+    DEFAULT_PLAYBACK_RATE,
+    PLAYBACK_RATES,
+    sanitizePlaybackRate,
+} from '../services/chat/playbackUtils.js';
 
 /**
  * Desktop-only chat display preferences (F10 extras).
@@ -30,6 +35,15 @@ export const DEFAULT_CHAT_PREFS = {
      * hard-coded id would be wrong on the next launch.
      */
     inputDeviceId: '',
+    /**
+     * Voice-note playback speed (Task 04-4 step 2).
+     *
+     * Persisted here rather than in the player so the choice survives a restart
+     * (the player is a single shared element with no storage of its own), and
+     * sanitised on load so a hand-edited or stale value cannot put the element
+     * at 0× or 7×.
+     */
+    playbackRate: DEFAULT_PLAYBACK_RATE,
 };
 
 /** Load persisted prefs (best-effort; falls back to defaults). */
@@ -48,6 +62,7 @@ export function loadPrefs() {
             inputDeviceId: typeof parsed.inputDeviceId === 'string'
                 ? parsed.inputDeviceId
                 : DEFAULT_CHAT_PREFS.inputDeviceId,
+            playbackRate: sanitizePlaybackRate(parsed.playbackRate),
         };
     } catch {
         return { ...DEFAULT_CHAT_PREFS };
@@ -78,6 +93,19 @@ const useChatPrefsStore = create((set, get) => ({
         set(next);
         persist(next);
     },
+
+    /**
+     * Set the voice-note playback speed. Only the three supported rates are
+     * accepted; `updatePrefs` is not used because it would happily persist a
+     * number the player cannot apply.
+     */
+    setPlaybackRate: (rate) => {
+        const next = { ...get(), playbackRate: sanitizePlaybackRate(rate) };
+        set(next);
+        persist(next);
+    },
 }));
+
+export { PLAYBACK_RATES };
 
 export default useChatPrefsStore;

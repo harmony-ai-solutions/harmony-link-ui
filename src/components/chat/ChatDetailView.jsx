@@ -19,6 +19,17 @@ import {
 } from '../../store/chatStoreUtils.js';
 import { draftStorageKey } from '../../store/chatInputUtils.js';
 import useChatPrefsStore from '../../store/chatPrefsStore.js';
+import {
+    toggle as togglePlayback,
+    stop as stopPlayback,
+    setRate as setPlaybackRate,
+} from '../../services/chat/audioPlayer.js';
+import {
+    newestInboundAudioMessage,
+    shouldAutoplayAudio,
+} from '../../services/chat/playbackUtils.js';
+import { getLastUserSendAt } from '../../services/chat/userActivity.js';
+import { fetchMessageAudioObjectUrl } from '../../services/management/chatReadService.js';
 import ChatBubble from './ChatBubble.jsx';
 import ChatInput from './ChatInput.jsx';
 import TypingIndicator from './TypingIndicator.jsx';
@@ -110,7 +121,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const prefs = useChatPrefsStore();
     const [replyTo, setReplyTo] = useState(null);
     const [editing, setEditing] = useState(null);
-    const [lightbox, setLightbox] = useState({ open: false, url: null });
+    const [lightbox, setLightbox] = useState({ open: false, url: null, messageId: '' });
     const [showPrefs, setShowPrefs] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [showJump, setShowJump] = useState(false);
@@ -586,6 +597,77 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
         return () => { cancelled = true; };
     }, [focusMessage, clearFocusMessage, loadUntilMessage, scrollToMessage]);
 
+    // ── Playback: rate, autoplay, teardown (Task 04-4) ───────────────────
+
+    /**
+     * Push the persisted rate into the shared player.
+     *
+     * The player holds no storage of its own, so this effect is the ONE seam
+     * between `chatPrefsStore` and the element. It also runs before the first
+     * note is loaded, which is what makes a saved 1.25× apply to the first play
+     * instead of the second.
+     */
+    useEffect(() => {
+        setPlaybackRate(prefs.playbackRate);
+    }, [prefs.playbackRate]);
+
+    /**
+     * Ids that have already been considered for autoplay in this mount.
+     *
+     * A ref, not state: it is bookkeeping, and re-rendering on it would re-arm
+     * the effect that writes it. It must be per-mount rather than persisted —
+     * "already played" for a note the user never heard (because the window had
+     * expired) would suppress a legitimate later autoplay.
+     */
+    const autoplayConsideredRef = useRef(new Set());
+
+    /**
+     * Autoplay policy (step 4). Deliberately keyed on the NEWEST inbound audio
+     * id, not on `messages.length`: a text reply must not re-run this and revive
+     * an older voice note, and a re-render of the same timeline must not fire it
+     * again.
+     *
+     * Never autoplay on load falls out of the policy itself — `getLastUserSendAt`
+     * is 0 on a fresh mount (the store resets it in `openConversation`, and it is
+     * never persisted), so opening a thread full of voice notes resolves to "not
+     * watching" and plays nothing.
+     */
+    const newestAudio = useMemo(
+        () => newestInboundAudioMessage(messages, ownEntityId),
+        [messages, ownEntityId]
+    );
+    const newestAudioId = newestAudio?.id || '';
+
+    useEffect(() => {
+        if (!newestAudioId) return;
+        if (autoplayConsideredRef.current.has(newestAudioId)) return;
+
+        const allowed = shouldAutoplayAudio({
+            message: newestAudio,
+            ownEntityId,
+            lastUserActionAt: getLastUserSendAt(),
+            now: Date.now(),
+            alreadyPlayed: autoplayConsideredRef.current,
+            documentHidden: typeof document !== 'undefined' && document.hidden,
+        });
+        // Marked EITHER WAY: a rejected note must not be reconsidered every time
+        // any unrelated state changes, or a note sent 29 s ago could start
+        // playing minutes later when a stale message list re-renders.
+        autoplayConsideredRef.current.add(newestAudioId);
+        if (!allowed) return;
+
+        togglePlayback(newestAudioId, () => fetchMessageAudioObjectUrl(newestAudioId));
+    }, [newestAudioId, newestAudio, ownEntityId]);
+
+    /**
+     * Stop and unload on unmount.
+     *
+     * Leaving the thread (or switching to another partner) must not leave a note
+     * playing over the chat list — and the unload is what releases the audio
+     * object URL, so the blob does not outlive the screen that fetched it.
+     */
+    useEffect(() => () => { stopPlayback(); }, []);
+
     /**
      * Retire the flash. `flashedId` is a dependency, so a second jump on the same
      * message re-arms it; `''` is a no-op.
@@ -877,7 +959,14 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                                 onReact={handleReact}
                                 onForward={handleForward}
                                 onTogglePin={handleTogglePin}
-                                onOpenImage={(msg, url) => setLightbox({ open: true, url })}
+                                /* The id rides along so the lightbox can take
+                                   its own reference on the shared image URL
+                                   (Task 04-4 step 5). */
+                                onOpenImage={(msg, url) => setLightbox({
+                                    open: true,
+                                    url,
+                                    messageId: msg?.id || '',
+                                })}
                                 onRetranscribe={handleRetranscribe}
                             />
                         </div>
@@ -973,13 +1062,22 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                 replyMode={prefs.replyMode}
                 onReplyModeChange={(mode) => { setReplyMode(mode); prefs.setReplyMode(mode); }}
                 prefs={prefs}
-                onPrefsChange={prefs.updatePrefs}
+                /* A playback-rate change goes through its own setter so an
+                   unsupported value can never be persisted — `updatePrefs`
+                   writes whatever it is handed. Everything else is a plain
+                   patch. */
+                onPrefsChange={(patch) => {
+                    const { playbackRate, ...rest } = patch || {};
+                    if (Object.keys(rest).length > 0) prefs.updatePrefs(rest);
+                    if (playbackRate !== undefined) prefs.setPlaybackRate(playbackRate);
+                }}
                 onClose={() => setShowPrefs(false)}
             />
             <ImageLightbox
                 isOpen={lightbox.open}
                 url={lightbox.url}
-                onClose={() => setLightbox({ open: false, url: null })}
+                messageId={lightbox.messageId || ''}
+                onClose={() => setLightbox({ open: false, url: null, messageId: '' })}
             />
             <ConfirmDialog
                 isOpen={confirmDelete !== null}

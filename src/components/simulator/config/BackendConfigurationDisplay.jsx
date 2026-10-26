@@ -105,7 +105,14 @@ function BackendConfigurationDisplay({ config, loading, error }) {
                     <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Model Settings</h5>
                     <div className="space-y-1 text-xs">
                         {providerConfig?.temperature !== undefined && <ConfigRow label="Temperature" value={providerConfig.temperature} />}
-                        {providerConfig?.maxtokens && <ConfigRow label="Max Tokens" value={providerConfig.maxtokens} />}
+                        {(providerConfig?.maxcompletiontokens > 0 || providerConfig?.maxtokens || providerConfig?.maxoutputtokens) && (
+                            <ConfigRow
+                                label="Max Completion Tokens"
+                                value={providerConfig?.maxcompletiontokens > 0
+                                    ? providerConfig.maxcompletiontokens
+                                    : (providerConfig?.maxtokens || providerConfig?.maxoutputtokens)}
+                            />
+                        )}
                         {providerConfig?.topp !== undefined && <ConfigRow label="Top P" value={providerConfig.topp} />}
                         {providerConfig?.n && <ConfigRow label="N (Completions)" value={providerConfig.n} />}
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (

@@ -8,7 +8,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -16,7 +15,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             reasoningeffort: "",
@@ -31,7 +30,6 @@ export const MODULE_DEFAULTS = {
             baseurl: "http://localhost:8080/v1",
             apikey: "",
             model: "example-model",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -39,7 +37,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -52,7 +50,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENROUTER]: {
             apikey: "",
             model: "google/gemini-flash-2.5",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -60,7 +57,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -95,7 +92,7 @@ export const MODULE_DEFAULTS = {
             model: 'grok-3-mini',
             temperature: 0.7,
             topp: 1.0,
-            maxtokens: 4096,
+            maxcompletiontokens: 4096,
             frequencypenalty: 0,
             presencepenalty: 0,
             reasoningeffort: '',
@@ -212,7 +209,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 100,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -220,7 +216,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 100,
             seed: -1,
             responseformat: "",
             reasoningeffort: "",
@@ -235,7 +231,6 @@ export const MODULE_DEFAULTS = {
             baseurl: "http://127.0.0.1:5000",
             apikey: "",
             model: "example-model",
-            maxtokens: 100,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -243,7 +238,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 100,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -256,7 +251,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENROUTER]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 100,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -264,7 +258,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 100,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -286,7 +280,7 @@ export const MODULE_DEFAULTS = {
             model: 'grok-3-mini',
             temperature: 0.7,
             topp: 1.0,
-            maxtokens: 4096,
+            maxcompletiontokens: 4096,
             frequencypenalty: 0,
             presencepenalty: 0,
             reasoningeffort: '',
@@ -306,7 +300,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -314,7 +307,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             reasoningeffort: "",
@@ -329,7 +322,6 @@ export const MODULE_DEFAULTS = {
             baseurl: "http://127.0.0.1:5000",
             apikey: "",
             model: "example-model",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -337,7 +329,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -350,7 +342,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENROUTER]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 200,
             temperature: 0.7,
             topp: 1.0,
             n: -1,
@@ -358,7 +349,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 200,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -380,7 +371,7 @@ export const MODULE_DEFAULTS = {
             model: 'grok-3-mini',
             temperature: 0.7,
             topp: 1.0,
-            maxtokens: 200,
+            maxcompletiontokens: 200,
             frequencypenalty: 0,
             presencepenalty: 0,
             reasoningeffort: '',
@@ -431,7 +422,7 @@ export const MODULE_DEFAULTS = {
             model: 'openai/dall-e-3',
             imageaspectratio: '1:1',
             imagesize: '1024x1024',
-            maxtokens: 4096,
+            maxcompletiontokens: 4096,
             temperature: 0.7,
         },
         [PROVIDERS.GOOGLE]: {
@@ -452,7 +443,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENAI]: {
             apikey: "",
             model: "gpt-4o",
-            maxtokens: 500,
             temperature: 0.7,
             topp: 1.0,
             n: 1,
@@ -460,7 +450,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 500,
             seed: -1,
             responseformat: "",
             reasoningeffort: "",
@@ -474,7 +464,6 @@ export const MODULE_DEFAULTS = {
         [PROVIDERS.OPENROUTER]: {
             apikey: "",
             model: "google/gemini-2.0-flash-exp",
-            maxtokens: 500,
             temperature: 0.7,
             topp: 1.0,
             n: 1,
@@ -482,7 +471,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 500,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -496,7 +485,6 @@ export const MODULE_DEFAULTS = {
             baseurl: "http://localhost:8080/v1",
             apikey: "",
             model: "",
-            maxtokens: 500,
             temperature: 0.7,
             topp: 1.0,
             n: 1,
@@ -504,7 +492,7 @@ export const MODULE_DEFAULTS = {
             // New LLM params (Migration 20) - -1 to disable
             frequencypenalty: -1,
             presencepenalty: -1,
-            maxcompletiontokens: -1,
+            maxcompletiontokens: 500,
             seed: -1,
             responseformat: "",
             topk: -1,
@@ -526,7 +514,7 @@ export const MODULE_DEFAULTS = {
             model: 'grok-3-mini',
             temperature: 0.4,
             topp: 1.0,
-            maxtokens: 4096,
+            maxcompletiontokens: 4096,
             frequencypenalty: 0,
             presencepenalty: 0,
             reasoningeffort: '',

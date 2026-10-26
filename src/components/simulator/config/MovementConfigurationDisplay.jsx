@@ -89,7 +89,14 @@ function MovementConfigurationDisplay({ config, loading, error }) {
                         {config.startupsynctimeout !== undefined && <ConfigRow label="Startup Sync Timeout" value={`${config.startupsynctimeout}ms`} />}
                         {config.executionthreshold !== undefined && <ConfigRow label="Execution Threshold" value={config.executionthreshold} />}
                         {providerConfig?.temperature !== undefined && <ConfigRow label="Temperature" value={providerConfig.temperature} />}
-                        {providerConfig?.maxtokens && <ConfigRow label="Max Tokens" value={providerConfig.maxtokens} />}
+                        {(providerConfig?.maxcompletiontokens > 0 || providerConfig?.maxtokens || providerConfig?.maxoutputtokens) && (
+                            <ConfigRow
+                                label="Max Completion Tokens"
+                                value={providerConfig?.maxcompletiontokens > 0
+                                    ? providerConfig.maxcompletiontokens
+                                    : (providerConfig?.maxtokens || providerConfig?.maxoutputtokens)}
+                            />
+                        )}
                         {providerConfig?.topp !== undefined && <ConfigRow label="Top P" value={providerConfig.topp} />}
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
                             <div>

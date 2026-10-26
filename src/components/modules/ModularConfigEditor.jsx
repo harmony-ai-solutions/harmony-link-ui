@@ -298,11 +298,16 @@ const ModularConfigEditor = ({ schemaId, moduleType, providerId, initialSettings
         const updated = { ...moduleSettings };
         updated[fieldKey] = presetName;
 
-        // Map preset param names to our field keys
+        // Map preset param names to our field keys. Dual-field providers now
+        // expose a single canonical input (maxcompletiontokens); single-field
+        // providers keep the legacy alias key.
+        const schemaFields = schema.fields || [];
+        const usesMaxCompletionTokens = schemaFields.some((f) => f.key === 'maxcompletiontokens')
+            && !schemaFields.some((f) => f.key === 'maxtokens');
         const PRESET_TO_FIELD_KEY = {
             'temperature': 'temperature',
             'top_p': 'topp',
-            'max_tokens': 'maxtokens',
+            'max_tokens': usesMaxCompletionTokens ? 'maxcompletiontokens' : 'maxtokens',
             'frequency_penalty': 'frequencypenalty',
             'presence_penalty': 'presencepenalty',
             'seed': 'seed',

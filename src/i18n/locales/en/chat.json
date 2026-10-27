@@ -241,6 +241,57 @@
     "openSoundSettings": "Open sound settings",
     "openSoundSettingsFailed": "Could not open the sound settings on this system. Open them manually: Windows Settings → System → Sound → Input."
   },
+  "sttTest": {
+    "title": "Test speech-to-text",
+    "description": "Records five seconds (or takes a file), sends it to the configured speech-to-text provider and shows what came back. Nothing is saved to a conversation, so it is safe to run as often as you like.",
+    "record": "Record {{seconds}} s",
+    "stop": "Stop ({{seconds}} s left)",
+    "upload": "Use a file",
+    "transcribe": "Transcribe",
+    "transcribing": "Transcribing…",
+    "configLabel": "Configuration",
+    "configAuto": "Use the configuration chat uses",
+    "clip": {
+      "recording": "Recording · {{seconds}} s",
+      "file": "File · {{name}}"
+    },
+    "hints": {
+      "recording": "Recording — Transcribe becomes available when the recording stops.",
+      "transcribing": "Waiting for the provider…",
+      "noAudio": "Record a clip or choose a file first."
+    },
+    "successTitle": "Transcribed",
+    "emptyTitle": "The provider heard no speech",
+    "emptyBody": "The request succeeded, so the configuration and credentials are fine. The audio was silent, too short, or in a format the provider could not decode — try recording again, closer to the microphone.",
+    "failedTitle": "The provider rejected the request",
+    "failed": "Transcription failed.",
+    "language": "Language",
+    "languageAuto": "not set (provider decides)",
+    "elapsed": "Took",
+    "notSet": "not set",
+    "resolvedTitle": "Resolved configuration",
+    "resolvedHint": "This is what the engine actually used, read back from the provider resolution — not what was requested. A blank field above is a misconfiguration worth fixing.",
+    "fields": {
+      "config": "Configuration",
+      "provider": "Provider",
+      "model": "Model",
+      "language": "Language",
+      "source": "Chosen by"
+    },
+    "source": {
+      "config": "the configuration selected above",
+      "entityMapping": "your shared Voice Input configuration",
+      "inline": "credentials supplied directly",
+      "unknown": "the engine"
+    },
+    "fileErrors": {
+      "missing": "No file was selected.",
+      "empty": "That file is empty.",
+      "size": "That file is larger than the {{limit}} transcription limit.",
+      "type": "That file does not look like audio. Choose a WAV, MP3, M4A, WebM or OGG file.",
+      "unreadable": "That file could not be read."
+    }
+  },
   "bubble": {
     "edited": "edited",
     "editedTooltip": "This message was edited",

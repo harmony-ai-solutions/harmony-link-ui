@@ -9129,3 +9129,245 @@ html[data-scrolling="true"] .ui-skeleton {
         grid-template-columns: 1fr;
     }
 }
+/* ── 04-5: STT test panel ────────────────────────────────────────────── */
+/*
+ * The panel is a diagnostic, so the visual hierarchy is deliberately the same
+ * shape as the failure taxonomy: inputs on one row, then the clip, then the
+ * RESULT (colour-coded by tone), then the resolved config. The resolved config
+ * is last on screen but first in importance when something is broken — it stays
+ * visible after a failure, which is exactly when it is needed.
+ */
+
+.stt-test {
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border-default);
+}
+
+.stt-test-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.stt-test-note {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    margin: 0 0 1rem;
+    max-width: 62ch;
+}
+
+.stt-test-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.6rem;
+}
+
+.stt-test-record,
+.stt-test-upload,
+.stt-test-transcribe {
+    font-size: 0.82rem;
+    padding: 0.45rem 0.9rem;
+    white-space: nowrap;
+}
+
+/* A recording button that looks like a recording button — the panel is a
+   diagnostic, and "is it listening?" must be answerable at a glance. */
+.stt-test-record.is-recording {
+    background: var(--color-danger, #ef4444);
+    border-color: var(--color-danger, #ef4444);
+    animation: stt-test-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes stt-test-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
+
+.stt-test-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 15rem;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+}
+
+.stt-test-config select {
+    font-size: 0.82rem;
+    padding: 0.42rem 0.6rem;
+}
+
+.stt-test-clip {
+    margin: 0.75rem 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+}
+
+.stt-test-clip-type {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    color: var(--color-text-muted);
+}
+
+.stt-test-hint {
+    margin: 0.4rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.stt-test-file-error {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: var(--color-danger, #ef4444);
+}
+
+/* ── result ─────────────────────────────────────────────────────────── */
+
+.stt-test-result {
+    margin-top: 1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-default);
+    background: var(--color-background-base);
+}
+
+.stt-test-result.is-success { border-color: var(--color-success, #22c55e); }
+.stt-test-result.is-empty { border-color: var(--color-warning, #f59e0b); }
+.stt-test-result.is-error { border-color: var(--color-danger, #ef4444); }
+
+.stt-test-result-head {
+    margin: 0 0 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.stt-test-result.is-success .stt-test-result-head { color: var(--color-success, #22c55e); }
+.stt-test-result.is-empty .stt-test-result-head { color: var(--color-warning, #f59e0b); }
+.stt-test-result.is-error .stt-test-result-head { color: var(--color-danger, #ef4444); }
+
+.stt-test-result-body {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+}
+
+/* The transcript is the payload — it gets the readable type size, not the
+   0.75rem footnote size everything else uses. */
+.stt-test-transcript {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.stt-test-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.stt-test-timing {
+    margin: 0.5rem 0 0;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Verbatim provider text: monospace so a stack trace or a JSON body stays
+   readable, and wrapping so a long upstream message is never clipped. */
+.stt-test-provider-message {
+    margin: 0;
+    padding: 0.55rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border-default);
+    color: var(--color-text-primary);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 14rem;
+    overflow-y: auto;
+}
+
+.stt-test-result-foot {
+    margin: 0.45rem 0 0;
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+}
+
+/* ── resolved config ────────────────────────────────────────────────── */
+
+.stt-test-resolved {
+    margin-top: 1.25rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-default);
+    background: var(--color-background-surface);
+}
+
+.stt-test-resolved-head {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.stt-test-resolved-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.6rem 1.1rem;
+    margin: 0;
+}
+
+.stt-test-resolved-row dt {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+}
+
+.stt-test-resolved-row dd {
+    margin: 0.1rem 0 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+}
+
+/* "not set" must READ as a finding, not as an empty cell. */
+.stt-test-resolved-row dd.is-missing {
+    color: var(--color-warning, #f59e0b);
+    font-style: italic;
+    font-weight: 500;
+}
+
+.stt-test-resolved-hint {
+    margin: 0.7rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stt-test-record.is-recording { animation: none; }
+}
+
+@media (max-width: 640px) {
+    .stt-test-controls { flex-direction: column; align-items: stretch; }
+    .stt-test-config { min-width: 0; }
+}

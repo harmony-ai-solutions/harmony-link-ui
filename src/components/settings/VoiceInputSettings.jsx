@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import MicIssuePanel from '../chat/MicIssuePanel.jsx';
+import SttTestPanel from './SttTestPanel.jsx';
 
 /**
  * Voice Input settings section (Task 04-2 step 2, first half).
@@ -36,6 +37,12 @@ const VoiceInputSettings = () => {
                 </p>
                 <p>{t('chat:mic.managePermissionsBody')}</p>
             </div>
+
+            {/* Task 04-5. The recorder check above answers "can this machine
+                record at all"; this panel answers the next question — "and can
+                the engine turn what it recorded into text?" — by running one
+                real transcription against the resolved config. */}
+            <SttTestPanel />
         </section>
     );
 };

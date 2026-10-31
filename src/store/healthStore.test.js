@@ -5,8 +5,11 @@ import useHealthStore, {
     nextPollDelay,
     resolveEngineHealthUrl,
     isOffline,
+    shouldShowOfflineBanner,
+    bindResumeProbe,
     HEALTH_POLL_INTERVAL_MS,
     HEALTH_MAX_BACKOFF_MS,
+    HEALTH_BANNER_MIN_FAILURES,
 } from './healthStore.js';
 
 /** Build a fetch stub: `map` decides per-URL what the probe sees. */
@@ -163,7 +166,7 @@ test('failures climb while down and reset on the first success', async () => {
     assert.equal(useHealthStore.getState().failures, 0);
 });
 
-test('retry resets the backoff ladder and re-probes both endpoints', async () => {
+test('retry re-probes both endpoints immediately and clears the ladder on success', async () => {
     reset();
     await probeOnce(() => 'network-error');
     await probeOnce(() => 'network-error');
@@ -202,4 +205,170 @@ test('start is idempotent so a StrictMode double-invoke cannot double-poll', () 
         globalThis.fetch = originalFetch;
     }
     assert.equal(useHealthStore.getState().running, false);
+});
+
+// ── Startup resilience: banner debounce + return-to-page probe ────────────
+
+/** Let a probe's promise chain settle (both fetch promises resolve). */
+const flushProbe = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/**
+ * Minimal window/document stand-in: tracks listeners so a leaked mount can be
+ * told apart from a properly cleaned one.
+ */
+function fakeEventTarget(visibilityState = 'visible') {
+    const listeners = new Map();
+    return {
+        visibilityState,
+        addEventListener(type, handler) {
+            listeners.set(type, [...(listeners.get(type) || []), handler]);
+        },
+        removeEventListener(type, handler) {
+            listeners.set(type, (listeners.get(type) || []).filter((h) => h !== handler));
+        },
+        emit(type) {
+            for (const handler of listeners.get(type) || []) handler();
+        },
+        listenerCount(type) {
+            return (listeners.get(type) || []).length;
+        },
+    };
+}
+
+test('banner stays hidden after one failed probe and appears after the second', async () => {
+    reset();
+
+    // The pill is honest immediately: one failure is already Offline.
+    await probeOnce(() => 'network-error');
+    let state = useHealthStore.getState();
+    assert.equal(state.status, 'offline');
+    assert.equal(state.failures, 1);
+    assert.equal(shouldShowOfflineBanner(state.status, state.failures), false);
+
+    // The second consecutive failure is what earns the persistent banner.
+    await probeOnce(() => 'network-error');
+    state = useHealthStore.getState();
+    assert.equal(state.failures, HEALTH_BANNER_MIN_FAILURES);
+    assert.equal(shouldShowOfflineBanner(state.status, state.failures), true);
+
+    // Healthy again: gone, even though the first failure is history.
+    await probeOnce(() => 'ok');
+    state = useHealthStore.getState();
+    assert.equal(state.status, 'connected');
+    assert.equal(shouldShowOfflineBanner(state.status, state.failures), false);
+});
+
+test('a manual Retry that still fails counts as another failure (banner stays up)', async () => {
+    reset();
+    await probeOnce(() => 'network-error');
+    await probeOnce(() => 'network-error');
+    assert.equal(useHealthStore.getState().failures, 2);
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+        throw new Error('Failed to fetch');
+    };
+    try {
+        const status = await useHealthStore.getState().retry();
+        assert.equal(status, 'offline');
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+
+    const state = useHealthStore.getState();
+    assert.equal(state.failures, 3, 'the retry failure extends the streak');
+    assert.equal(shouldShowOfflineBanner(state.status, state.failures), true);
+});
+
+test('a returning page re-probes at once only when the last probe failed', async () => {
+    reset();
+    const doc = fakeEventTarget();
+    const win = fakeEventTarget();
+
+    const originalFetch = globalThis.fetch;
+    let probed = 0;
+    globalThis.fetch = async () => {
+        probed += 1;
+        return { ok: true, status: 200 };
+    };
+
+    const cleanup = bindResumeProbe({ document: doc, window: win });
+    try {
+        // Not polling yet: a stray event must not start one.
+        useHealthStore.setState({ failures: 1 });
+        doc.emit('visibilitychange');
+        win.emit('focus');
+        assert.equal(probed, 0, 'no probe while polling is stopped');
+
+        // Polling, but the last answer was healthy: still nothing to do.
+        useHealthStore.setState({ running: true, failures: 0 });
+        doc.emit('visibilitychange');
+        win.emit('focus');
+        assert.equal(probed, 0, 'no probe while healthy');
+
+        // Tab hidden again: the event is not a return.
+        useHealthStore.setState({ failures: 1 });
+        doc.visibilityState = 'hidden';
+        doc.emit('visibilitychange');
+        assert.equal(probed, 0, 'hidden visibility is not a return');
+        doc.visibilityState = 'visible';
+
+        // Polling after a failure: re-probe immediately (both endpoints).
+        doc.emit('visibilitychange');
+        assert.equal(probed, 2, 'visibility return probes both endpoints');
+        await flushProbe();
+        assert.equal(useHealthStore.getState().status, 'connected');
+        assert.equal(useHealthStore.getState().failures, 0);
+
+        // And once healthy, focus must not add a probe.
+        win.emit('focus');
+        assert.equal(probed, 2, 'focus while healthy is a no-op');
+    } finally {
+        cleanup();
+        useHealthStore.getState().stop();
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('StrictMode mount/unmount/remount leaves one listener pair and one poller', async () => {
+    reset();
+    const doc = fakeEventTarget();
+    const win = fakeEventTarget();
+
+    const originalFetch = globalThis.fetch;
+    let probed = 0;
+    globalThis.fetch = async () => {
+        probed += 1;
+        return { ok: true, status: 200 };
+    };
+
+    let cleanup = bindResumeProbe({ document: doc, window: win });
+    try {
+        // First mount, then the StrictMode teardown.
+        useHealthStore.getState().start();
+        await flushProbe();
+        cleanup();
+        useHealthStore.getState().stop();
+        assert.equal(doc.listenerCount('visibilitychange'), 0);
+        assert.equal(win.listenerCount('focus'), 0);
+
+        // Remount: exactly one of each, even though start() runs again.
+        cleanup = bindResumeProbe({ document: doc, window: win });
+        useHealthStore.getState().start();
+        await flushProbe();
+        assert.equal(doc.listenerCount('visibilitychange'), 1);
+        assert.equal(win.listenerCount('focus'), 1);
+        assert.equal(useHealthStore.getState().running, true);
+
+        // One event → one probe (two fetches), not two overlapping pollers.
+        probed = 0;
+        useHealthStore.setState({ failures: 1 });
+        doc.emit('visibilitychange');
+        await flushProbe();
+        assert.equal(probed, 2, 'a single re-probe, both endpoints');
+    } finally {
+        cleanup();
+        useHealthStore.getState().stop();
+        globalThis.fetch = originalFetch;
+    }
 });

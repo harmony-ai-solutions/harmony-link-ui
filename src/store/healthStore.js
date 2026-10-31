@@ -50,6 +50,12 @@ import { resolveWebSocketUrl } from '../services/chat/chatSocketService.js';
  * {@link HEALTH_MAX_BACKOFF_MS} while failing, so a stopped engine is not
  * hammered by a tab left open overnight. The first success resets the ladder,
  * which is what makes recovery land within one poll.
+ *
+ * Two startup-specific guards sit on top of that: the persistent banner is
+ * debounced to {@link HEALTH_BANNER_MIN_FAILURES} consecutive failures (the pill
+ * still flips on the first), and {@link bindResumeProbe} re-probes immediately
+ * when a hidden/minimised page comes back after a failure, so the slow end of
+ * the ladder is never what the user stares at.
  */
 
 /** Healthy poll cadence (the plan's 15 s). */
@@ -60,6 +66,16 @@ export const HEALTH_MAX_BACKOFF_MS = 120000;
 
 /** Per-probe request timeout. Shorter than the healthy interval by design. */
 export const HEALTH_PROBE_TIMEOUT_MS = 4000;
+
+/**
+ * Consecutive failures required before the persistent banner is rendered.
+ *
+ * The pill flips on the very first failure (it is a live status read), but the
+ * banner waits for a second: on desktop the UI loads as soon as Vite is up while
+ * the engine binary starts ~20 s later, so the first probe legitimately fails
+ * with "Failed to fetch" and a one-strike banner would flash on every boot.
+ */
+export const HEALTH_BANNER_MIN_FAILURES = 2;
 
 /** States a chat socket can be in that mean "live events are NOT flowing". */
 export const SOCKET_DOWN_STATES = ['connecting', 'reconnecting', 'error'];
@@ -130,6 +146,23 @@ export function nextPollDelay(failures) {
 
 /** True when the state should render the persistent offline banner. */
 export const isOffline = (state) => state === 'offline';
+
+/**
+ * True only once the offline state has survived
+ * {@link HEALTH_BANNER_MIN_FAILURES} consecutive failed probes.
+ *
+ * A single failure still shows as Offline in the pill; the banner is the loud,
+ * persistent surface, so it is debounced against the startup window where the
+ * engine is merely late rather than down. A manual Retry that also fails counts
+ * (it does not reset the failure streak), so clicking Retry never hides it.
+ *
+ * @param {string} status - `checking|connected|degraded|offline`
+ * @param {number} failures - consecutive failed probes (`healthStore.failures`)
+ * @returns {boolean}
+ */
+export function shouldShowOfflineBanner(status, failures) {
+    return isOffline(status) && (Number(failures) || 0) >= HEALTH_BANNER_MIN_FAILURES;
+}
 
 /**
  * Fetch with an abort-based timeout. Resolves to the `Response`; rejects on
@@ -302,17 +335,38 @@ export const useHealthStore = create((set, get) => ({
     },
 
     /**
-     * Manual Retry (offline banner button): reset the backoff ladder and
-     * re-probe both endpoints immediately, so recovery does not have to wait out
-     * a 120 s backoff.
+     * Manual Retry (offline banner button): re-probe both endpoints immediately,
+     * so recovery does not have to wait out a 120 s backoff.
+     *
+     * `failures` is deliberately NOT zeroed first: a retry that still fails is
+     * another consecutive failure, so it keeps the banner's debounce honest
+     * (and its count) instead of restarting the streak. The immediate probe is
+     * what escapes the ladder — it clears the pending timer either way.
      *
      * @returns {Promise<string>} the resulting status
      */
     retry: () => {
-        set({ failures: 0 });
         // Keep `running` as-is: a manual retry must not start a poller the shell
         // never asked for, and must not stop one that is already going.
         return get().probe();
+    },
+
+    /**
+     * "The user came back" hook — called from
+     * {@link bindResumeProbe} on `visibilitychange`/`focus`.
+     *
+     * A tab that was hidden while the engine started would otherwise sit out the
+     * backoff ladder (up to 120 s) before noticing. Only acts when polling is
+     * running and the last answer was a failure; `retry()` re-probes at once and
+     * `probe()` clears `pollTimer`, so this cannot stack a second poller.
+     *
+     * @returns {boolean} true when a re-probe was kicked off
+     */
+    resumeIfFailed: () => {
+        const { running, probing, failures } = get();
+        if (!running || probing || failures < 1) return false;
+        get().retry();
+        return true;
     },
 
     /** Reset to the boot state (tests / teardown). */
@@ -331,5 +385,44 @@ export const useHealthStore = create((set, get) => ({
         });
     },
 }));
+
+/**
+ * Wire "the page came back" events to {@link useHealthStore.resumeIfFailed}.
+ *
+ * Both the tab becoming visible again and the window regaining focus count: a
+ * minimised window fires `focus` without `visibilitychange`, and an unfocused
+ * tab fires `visibilitychange` without `focus`. The returned cleanup removes
+ * exactly the listeners this call added, so a StrictMode
+ * mount/unmount/remount leaves one pair rather than two.
+ *
+ * @param {Object} [targets]
+ * @param {EventTarget} [targets.document] - receives `visibilitychange`
+ * @param {EventTarget} [targets.window] - receives `focus`
+ * @param {{getState: Function}} [store] - injectable for `healthStore.test.js`
+ * @returns {() => void} cleanup
+ */
+export function bindResumeProbe({ document: doc, window: win } = {}, store = useHealthStore) {
+    const docTarget = doc ?? (typeof document !== 'undefined' ? document : null);
+    const winTarget = win ?? (typeof window !== 'undefined' ? window : null);
+    if (!docTarget && !winTarget) return () => {};
+
+    const onVisibilityChange = () => {
+        // Only "visible" means the user is back; "hidden" means they left.
+        const visibility = docTarget?.visibilityState;
+        if (visibility && visibility !== 'visible') return;
+        store.getState().resumeIfFailed();
+    };
+    const onFocus = () => {
+        store.getState().resumeIfFailed();
+    };
+
+    docTarget?.addEventListener('visibilitychange', onVisibilityChange);
+    winTarget?.addEventListener('focus', onFocus);
+
+    return () => {
+        docTarget?.removeEventListener('visibilitychange', onVisibilityChange);
+        winTarget?.removeEventListener('focus', onFocus);
+    };
+}
 
 export default useHealthStore;

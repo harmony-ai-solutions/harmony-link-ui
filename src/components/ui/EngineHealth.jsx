@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import useHealthStore, { isOffline } from '../../store/healthStore.js';
+import useHealthStore, { bindResumeProbe, shouldShowOfflineBanner } from '../../store/healthStore.js';
 import useChatStore from '../../store/chatStore.js';
 import Tooltip from './Tooltip.jsx';
 import { RefreshIcon } from '../../constants/icons.jsx';
@@ -15,7 +15,8 @@ import { RefreshIcon } from '../../constants/icons.jsx';
  *   live chat socket down) and **Offline**. During the very first probe it reads
  *   **Checking** instead of guessing.
  * - {@link HealthBanner} — a persistent strip above the content column, rendered
- *   only while **Offline**, with a single **Retry** action.
+ *   once **Offline** has survived a second consecutive failed probe (the first
+ *   failure is the engine-still-starting window), with a single **Retry** action.
  *
  * Colour semantics are deliberately the existing `.chat-detail-status-*` ones
  * (`connected` → success, `reconnecting` → warning, `error` → danger), so the
@@ -68,8 +69,8 @@ function useSocketHealthBridge() {
 }
 
 /**
- * Own the health lifecycle: start polling, bridge the chat socket, stop on
- * unmount.
+ * Own the health lifecycle: start polling, bridge the chat socket, re-probe when
+ * the page returns after a failure, stop on unmount.
  *
  * Call this ONCE, in the shell. The two surfaces below are pure subscribers, so
  * rendering `<HealthIndicator />` in the nav and `<HealthBanner />` in the
@@ -80,6 +81,10 @@ export function useEngineHealth() {
         useHealthStore.getState().start();
         return () => useHealthStore.getState().stop();
     }, []);
+    // Coming back to the tab must not wait out the failure backoff: when the last
+    // probe failed, re-probe at once. The cleanup removes exactly the listeners
+    // this mount added, so a StrictMode double-invoke cannot stack them.
+    useEffect(() => bindResumeProbe(), []);
     useSocketHealthBridge();
 }
 
@@ -129,7 +134,8 @@ export function HealthIndicator({ className = '' }) {
 }
 
 /**
- * Persistent banner above the content column while the engine is **Offline**.
+ * Persistent banner above the content column once the engine has been
+ * **Offline** for two consecutive probes (one is the startup window).
  *
  * Rendered as a normal block (not an overlay) on purpose: navigation and every
  * cached view stay usable, which is the task's fourth requirement. It disappears
@@ -138,13 +144,16 @@ export function HealthIndicator({ className = '' }) {
 export function HealthBanner() {
     const { t } = useTranslation();
     const status = useHealthStore((s) => s.status);
+    const failures = useHealthStore((s) => s.failures);
     const probing = useHealthStore((s) => s.probing);
     const retry = useHealthStore((s) => s.retry);
     const managementOk = useHealthStore((s) => s.managementOk);
     const engineOk = useHealthStore((s) => s.engineOk);
     const lastError = useHealthStore((s) => s.lastError);
 
-    if (!isOffline(status)) return null;
+    // One failure is the startup window (engine binary still booting, "Failed to
+    // fetch"); only a second consecutive failure makes it the persistent banner.
+    if (!shouldShowOfflineBanner(status, failures)) return null;
 
     // Name the layer that is down — "engine is down" is misleading when only one
     // of the two servers failed to answer.

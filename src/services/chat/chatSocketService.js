@@ -162,9 +162,40 @@ export class ChatSocketService {
                 reject(err);
                 return;
             }
+            const previous = this.ws;
             this.ws = ws;
+            // A socket is superseded, not layered: close the one this attempt
+            // replaces so its handlers cannot stay live in the background. Its
+            // `close` is ignored by the stale guard below.
+            if (previous && previous !== ws) {
+                try { previous.close(); } catch { /* already closing */ }
+            }
+
+            /**
+             * A handler only speaks for the socket that is CURRENT.
+             *
+             * A reconnect opens a new socket while the old one may still be
+             * closing (or may never have fired `close` — a black-holed
+             * connection does not). Without this check the old socket's late
+             * `close` flips the shared `connected` flag off and emits
+             * `disconnected` while the new socket is happily open, which is
+             * exactly the header flashing "Reconnecting…" forever. Frames from
+             * a stale socket are ignored for the same reason: they would be
+             * applied twice (once per leaked connection).
+             */
+            const isCurrent = () => this.ws === ws;
 
             ws.onopen = () => {
+                if (!isCurrent()) {
+                    // The service already moved on. Close this one quietly so a
+                    // superseded attempt cannot stay open in the background.
+                    try { ws.close(); } catch { /* already closing */ }
+                    if (!settled) {
+                        settled = true;
+                        reject(new Error('Connection superseded'));
+                    }
+                    return;
+                }
                 this.connected = true;
                 this.reconnectAttempts = 0;
                 this.emit('connected');
@@ -178,9 +209,13 @@ export class ChatSocketService {
                 }
             };
 
-            ws.onmessage = (event) => this.handleMessage(event);
+            ws.onmessage = (event) => {
+                if (!isCurrent()) return;
+                this.handleMessage(event);
+            };
 
             ws.onerror = (error) => {
+                if (!isCurrent()) return;
                 this.emit('error', error);
                 if (!settled) {
                     settled = true;
@@ -189,11 +224,27 @@ export class ChatSocketService {
             };
 
             ws.onclose = () => {
+                if (!isCurrent()) return;
                 this.connected = false;
                 this.stopHeartbeat();
-                this.emit('disconnected');
+                this.ws = null;
+                /**
+                 * A MANUAL close is not a drop. Emitting `disconnected` here is
+                 * what made the detail header say "Reconnecting…" after leaving
+                 * or switching a thread: the caller had already set `idle`, and
+                 * this stale event overwrote it with a retry state even though
+                 * no reconnect was scheduled.
+                 */
                 if (!this.manuallyClosed) {
+                    this.emit('disconnected');
                     this.scheduleReconnect();
+                }
+                // A close before `open` never resolved the connect() promise;
+                // reject so the store's `connectSocket` cannot hang in
+                // `connecting` forever (browsers may skip `error`).
+                if (!settled) {
+                    settled = true;
+                    reject(new Error('WebSocket closed before it opened'));
                 }
             };
         });
@@ -343,12 +394,43 @@ export class ChatSocketService {
     startHeartbeat() {
         this.stopHeartbeat();
         this.heartbeatTimer = setInterval(() => {
+            // A reconnect is in flight: there is no socket to ping, and sending
+            // on a closed one would only arm a timeout against a connection
+            // that is already being replaced.
+            if (!this.connected) return;
             this.sendEvent('CONNECTION_PING', {});
+            this.clearHeartbeatTimeout();
             this.heartbeatTimeoutTimer = setTimeout(() => {
+                this.heartbeatTimeoutTimer = null;
                 this.emit('error', { message: 'Connection heartbeat timeout', code: 'HEARTBEAT_TIMEOUT' });
-                this.scheduleReconnect();
+                this.handleHeartbeatTimeout();
             }, HEARTBEAT_TIMEOUT_MS);
         }, HEARTBEAT_INTERVAL_MS);
+    }
+
+    /**
+     * The heartbeat proved the socket is dead even though the browser has not
+     * told us (a half-open TCP connection).
+     *
+     * CLOSE the socket and let the ONE `onclose` path own the reconnect.
+     * Scheduling a reconnect here while leaving the socket open used to create
+     * a SECOND live socket per timeout: the leaked first socket kept its
+     * handlers, its late `close` then set the shared `connected` flag false and
+     * emitted `disconnected` under the new connection, which scheduled yet
+     * another reconnect. That is the reconnect storm the chat header showed as
+     * a permanent "Reconnecting…".
+     */
+    handleHeartbeatTimeout() {
+        this.connected = false;
+        this.stopHeartbeat();
+        const ws = this.ws;
+        if (ws) {
+            try { ws.close(); } catch { /* already closing */ }
+        }
+        // `scheduleReconnect` is idempotent (it returns while a timer exists),
+        // so calling it here guarantees progress even if a pathological
+        // implementation never fires `onclose`.
+        this.scheduleReconnect();
     }
 
     clearHeartbeatTimeout() {

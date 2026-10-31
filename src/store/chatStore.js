@@ -39,6 +39,11 @@ import {
     transcriptionErrorMessage,
 } from './transcriptionUtils.js';
 import { markUserSend, resetUserSend } from '../services/chat/userActivity.js';
+import {
+    canPromoteToReconnecting,
+    reconnectGraceElapsed,
+    RECONNECT_STATUS_GRACE_MS,
+} from '../services/chat/chatConnectionUtils.js';
 import { toast } from './toastStore.js';
 import { translate } from '../i18n/translate.js';
 
@@ -73,6 +78,58 @@ import { translate } from '../i18n/translate.js';
 
 /** Per-entity socket registry (module scope — not reactive state). */
 const sockets = new Map();
+
+/**
+ * Pending "the drop is real" deadline (module scope — a timer, not a rendered
+ * value).
+ *
+ * A socket drop is NOT admitted immediately: the first reconnect attempt is
+ * 2 s away and usually succeeds, so flipping the header to "Reconnecting…" on
+ * every blip is the flicker the owner reported. The drop is only surfaced once
+ * {@link RECONNECT_STATUS_GRACE_MS} has elapsed without a `connected`; a
+ * successful reconnect clears the timer and the label never changes.
+ */
+let reconnectStatusTimer = null;
+
+/** Cancel the pending drop-status admission (reconnect, or thread closed). */
+function clearReconnectStatusTimer() {
+    if (reconnectStatusTimer) {
+        clearTimeout(reconnectStatusTimer);
+        reconnectStatusTimer = null;
+    }
+}
+
+/**
+ * Arm the one-shot promotion to `reconnecting`.
+ *
+ * Idempotent: a drop emits `disconnected` AND the first `reconnecting`
+ * (attempt scheduled) event, and a retry storm emits the second repeatedly —
+ * only the first arms the timer, so the header can flip at most once.
+ *
+ * @param {(patch: object) => void} set
+ * @param {() => object} get
+ */
+function armReconnectStatus(set, get) {
+    if (reconnectStatusTimer) return;
+    const dropSince = get().connectionDropSince;
+    if (dropSince === null || dropSince === undefined) return;
+    if (!canPromoteToReconnecting(get().connectionState)) return;
+    reconnectStatusTimer = setTimeout(() => {
+        reconnectStatusTimer = null;
+        if (!reconnectGraceElapsed({ dropSince: get().connectionDropSince, now: Date.now() })) return;
+        if (!get().activeConversation) return;
+        // A reconnect may have landed while the timer was queued: never
+        // overwrite a live `connected` (or an honest `error`) with a stale
+        // "reconnecting".
+        if (!canPromoteToReconnecting(get().connectionState)) return;
+        set({ connectionState: 'reconnecting' });
+    }, RECONNECT_STATUS_GRACE_MS);
+    // Node's test runner (and any non-browser host) must not be held open by
+    // the grace window; browsers return a number and ignore this branch.
+    if (reconnectStatusTimer && typeof reconnectStatusTimer.unref === 'function') {
+        reconnectStatusTimer.unref();
+    }
+}
 
 /**
  * Open transcription attempt windows, keyed by message id (Task 04-3).
@@ -317,6 +374,15 @@ export const useChatStore = create((set, get) => ({
     /** Connection state of the active socket: idle|connecting|connected|reconnecting|error. */
     connectionState: 'idle',
     /**
+     * Epoch ms of the FIRST unexpected drop since the last `connected`, or null.
+     *
+     * Kept separate from `connectionState` so the label can stay calm: a drop
+     * inside the grace window is recorded here (and retried) without the header
+     * admitting it yet. {@link RECONNECT_STATUS_GRACE_MS} decides when it
+     * becomes visible.
+     */
+    connectionDropSince: null,
+    /**
      * Rolling log of raw wire frames for the Developer-mode wire inspector
      * (Phase 3, D7). Each entry is `{ direction: 'in'|'out', at, frame }`.
      * Capped so a long session cannot grow without bound.
@@ -531,6 +597,9 @@ export const useChatStore = create((set, get) => ({
      *   participantIds: string[], replyMode?: string }} conversation
      */
     openConversation: async (conversation) => {
+        // A drop status armed for the PREVIOUS thread must not surface over the
+        // one being opened.
+        clearReconnectStatusTimer();
         get().closeSocket();
         // Transcript attempt windows belong to the thread that was open; carrying
         // them across would show the new thread's voice notes as pending.
@@ -556,6 +625,7 @@ export const useChatStore = create((set, get) => ({
             typingByEntity: {},
             recordingByEntity: {},
             connectionState: 'idle',
+            connectionDropSince: null,
             error: null,
         });
 
@@ -629,6 +699,47 @@ export const useChatStore = create((set, get) => ({
             });
         } catch (error) {
             set({ error: error.message, loadingOlder: false });
+        }
+    },
+
+    /**
+     * Re-read the newest page after a reconnect and MERGE it into the timeline.
+     *
+     * The engine keeps no replay queue for web sessions (only phone sessions are
+     * suspended/resumed), so anything the AI said while the socket was down is
+     * not delivered on reconnect — a REST tail read is the only way to catch up.
+     *
+     * It MERGES rather than replaces: `loadInitialMessages` would throw away the
+     * older pages the reader scrolled back through, and drop them out from under
+     * the scroll anchor. `hasMore`/`nextCursor` are untouched for the same
+     * reason (the tail read says nothing about the older history).
+     *
+     * This deliberately does NOT scroll. The detail view only auto-scrolls while
+     * the reader is already at the bottom, so catching up cannot yank someone
+     * who was reading history (the second half of the owner's complaint).
+     *
+     * @returns {Promise<boolean>} true when the tail was applied
+     */
+    refreshNewestMessages: async () => {
+        const active = get().activeConversation;
+        const key = active?.participantKey || active?.participant_key;
+        if (!active?.entityId || !key) return false;
+        const personaId = active.personaId || getActivePersonaId();
+        try {
+            const { messages: newest } = await chatReadService.listMessages(
+                personaId,
+                key,
+                { limit: 50 }
+            );
+            // The thread may have changed while the request was in flight; the
+            // rows belong to the OLD conversation and must not be merged in.
+            const current = get().activeConversation;
+            if (!current || (current.participantKey || current.participant_key) !== key) return false;
+            set({ messages: stampMessagesWithTranscription(mergeMessages(get().messages, newest)) });
+            return true;
+        } catch (error) {
+            set({ error: error.message });
+            return false;
         }
     },
 
@@ -1084,7 +1195,10 @@ export const useChatStore = create((set, get) => ({
         socket.onFrame((direction, frame) => get().pushWireFrame(direction, frame));
         sockets.set(key, socket);
 
-        set({ connectionState: 'connecting' });
+        // A fresh open is not a "reconnecting" situation, whatever happened to
+        // the thread that was open before.
+        clearReconnectStatusTimer();
+        set({ connectionState: 'connecting', connectionDropSince: null });
         try {
             await socket.connect({
                 entityId: conversation.entityId,
@@ -1105,14 +1219,19 @@ export const useChatStore = create((set, get) => ({
         // open attempt window could only expire into a false failure.
         clearAllTranscriptionAttempts();
         pendingAudioSend = null;
+        // A pending "admit the drop" deadline belongs to the thread being closed.
+        clearReconnectStatusTimer();
         const { activeConversation } = get();
-        if (!activeConversation) return;
+        if (!activeConversation) {
+            set({ connectionDropSince: null });
+            return;
+        }
         const socket = sockets.get(activeConversation.entityId);
         if (socket) {
             socket.disconnect();
             sockets.delete(activeConversation.entityId);
         }
-        set({ connectionState: 'idle' });
+        set({ connectionState: 'idle', connectionDropSince: null });
     },
 
     /** Record one raw wire frame for the Developer wire inspector (D7). */
@@ -1130,15 +1249,33 @@ export const useChatStore = create((set, get) => ({
         // NOTE: raw frames are captured by the socket's onFrame tap (D7), not
         // here — capturing 'event' frames in both places would duplicate them.
         if (type === 'connected') {
-            set({ connectionState: 'connected' });
+            const dropped = get().connectionDropSince !== null;
+            clearReconnectStatusTimer();
+            set({ connectionState: 'connected', connectionDropSince: null });
+            /**
+             * A reconnect after a gap may have missed messages. The engine has
+             * no replay queue for web sessions, so the tail is re-read over
+             * REST — merged, never scrolled (see refreshNewestMessages). The
+             * FIRST connect of a thread has no drop recorded, so opening a chat
+             * still costs exactly the initial page it always did.
+             */
+            if (dropped) get().refreshNewestMessages();
             return;
         }
-        if (type === 'disconnected') {
-            set({ connectionState: 'reconnecting' });
-            return;
-        }
-        if (type === 'reconnecting') {
-            set({ connectionState: 'reconnecting' });
+        if (type === 'disconnected' || type === 'reconnecting') {
+            /**
+             * A drop is only ADMITTED after the grace window. The event is
+             * still recorded immediately (`connectionDropSince`), because the
+             * timer needs to know it happened; what changes is that the header
+             * keeps saying "Connected" through the 2 s first retry, and only
+             * says "Reconnecting…" if the drop outlives it. This is the phone
+             * app's rule: transient reconnects do not endlessly flash.
+             */
+            if (!get().activeConversation) return;
+            if (get().connectionDropSince === null) {
+                set({ connectionDropSince: Date.now() });
+            }
+            armReconnectStatus(set, get);
             return;
         }
         if (type === 'error') {
@@ -1613,6 +1750,7 @@ export const useChatStore = create((set, get) => ({
 
     /** Reset all chat state (on leaving the chat tab). */
     reset: () => {
+        clearReconnectStatusTimer();
         get().closeSocket();
         set({
             conversations: [],
@@ -1626,6 +1764,7 @@ export const useChatStore = create((set, get) => ({
             hasMore: false,
             nextCursor: null,
             connectionState: 'idle',
+            connectionDropSince: null,
             typingByEntity: {},
             recordingByEntity: {},
             wireFrames: [],

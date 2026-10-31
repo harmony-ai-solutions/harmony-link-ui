@@ -30,6 +30,8 @@ import {
 } from '../../services/chat/playbackUtils.js';
 import { getLastUserSendAt } from '../../services/chat/userActivity.js';
 import { fetchMessageAudioObjectUrl } from '../../services/management/chatReadService.js';
+import { isNearBottom, NEAR_BOTTOM_THRESHOLD_PX } from '../../services/chat/chatScrollUtils.js';
+import { connectionStatusKey } from '../../services/chat/chatConnectionUtils.js';
 import ChatBubble from './ChatBubble.jsx';
 import ChatInput from './ChatInput.jsx';
 import TypingIndicator from './TypingIndicator.jsx';
@@ -154,6 +156,21 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const scrollRef = useRef(null);
     const bottomRef = useRef(null);
     /**
+     * Whether the reader is following the live tail (phone parity).
+     *
+     * A REF, not state: it is read inside the scroll/auto-scroll effects, and
+     * re-rendering on every scroll event would defeat the point. `true` at mount
+     * so the initial page is treated as "watching" until the first real scroll.
+     */
+    const nearBottomRef = useRef(true);
+    /**
+     * Id of the message a search jump is landing on, or ''. While it is set the
+     * auto-scroll is suspended: the jump deliberately places the reader at an
+     * OLD message, and a page load that happens to land at the tail must not
+     * undo it. Declared here because the initial-load effect consults it too.
+     */
+    const jumpTargetIdRef = useRef('');
+    /**
      * Scroll anchor for pagination (Task 02-7 step 5).
      *
      * `before` is captured AFTER every commit; on the next commit the same
@@ -276,15 +293,45 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
      * are not mounted, so scrolling would land on the last MOUNTED row instead of
      * the real tail. Clearing it re-follows the live tail, which is also what the
      * "jump to latest" button means.
+     *
+     * Every caller either IS the user asking to go to the bottom (the button,
+     * the initial load) or has already checked `nearBottomRef` — this helper
+     * itself no longer implies "always scroll".
      */
     const scrollToBottom = useCallback((behavior = 'smooth') => {
         setRenderEndId(null);
         bottomRef.current?.scrollIntoView({ behavior, block: 'end' });
+        nearBottomRef.current = true;
+        setShowJump(false);
     }, []);
 
+    /**
+     * Land on the tail ONCE per thread, when its first page arrives.
+     *
+     * The old effect keyed on `conversation.interactionId` ran at mount, before
+     * the first page existed: it scrolled an empty timeline, so the initial load
+     * did not actually end up at the bottom. Keying on the loading→loaded edge
+     * (and on a message actually being present) makes the landing real. The ref
+     * is per-thread so a re-render or an older-page load cannot re-fire it.
+     */
+    const initialScrollKeyRef = useRef('');
     useEffect(() => {
-        scrollToBottom('auto');
-    }, [conversation.interactionId]);
+        const key = threadRow.participant_key || partnerId;
+        if (!key || initialScrollKeyRef.current === key) return;
+        // A thread with nothing loaded yet is still "new": arm the stickiness so
+        // the first message sent into it follows the tail, even if the reader
+        // had scrolled up in the PREVIOUS thread.
+        if (loadingMessagesState || messages.length === 0) {
+            nearBottomRef.current = true;
+            setShowJump(false);
+            return;
+        }
+        initialScrollKeyRef.current = key;
+        // A search jump is deliberately placing the reader on an OLD message;
+        // landing at the tail first is harmless (the jump runs after), but
+        // skipping it keeps the frame from ever showing the wrong end.
+        if (!jumpTargetIdRef.current) scrollToBottom('auto');
+    }, [loadingMessagesState, messages.length, threadRow.participant_key, partnerId, scrollToBottom]);
 
     /**
      * Mark read ONCE the first page has landed — never on every scroll.
@@ -476,7 +523,12 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     }, [visibleMessages, ownEntityId]);
 
     /**
-     * Scroll handler: pagination trigger, window sliding and the jump button.
+     * Scroll handler: pagination trigger, window sliding, stickiness and the
+     * jump button.
+     *
+     * `nearBottomRef` is the phone app's `isNearBottom`: updated on EVERY scroll
+     * from the same 150 px threshold the auto-scroll effect reads, so "the user
+     * is following the tail" cannot drift from "the button is hidden".
      *
      * The render window SLIDES toward older messages when the reader reaches the
      * top of the mounted slice, so a long scrollback stays bounded. It slides
@@ -501,7 +553,12 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                 setRenderEndId((current) => slideWindowEnd(messages, current, TIMELINE_PAGE));
             }
         }
-        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+        const nearBottom = isNearBottom({
+            scrollHeight: el.scrollHeight,
+            scrollTop: el.scrollTop,
+            clientHeight: el.clientHeight,
+        }, NEAR_BOTTOM_THRESHOLD_PX);
+        nearBottomRef.current = nearBottom;
         setShowJump(!nearBottom);
     };
 
@@ -514,20 +571,26 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
      * pagination in the background can no longer yank the view to the bottom
      * (which is what made "load older" jump before the anchor existed).
      *
+     * `nearBottomRef` is updated by the scroll handler, i.e. it describes the
+     * reader's position BEFORE this message grew the content — the same
+     * semantics as the phone app's `isNearBottom` ref. Re-measuring here would
+     * be wrong for a tall message (an image bubble can push the old bottom out
+     * of the 150 px window even though the reader never scrolled).
+     *
      * A search jump suspends this: the jump is placing the reader at an OLD
-     * message, and "near the bottom" is false there, so the auto-scroll would
-     * otherwise be harmless — but a page load that lands at the tail (the newest
-     * page) would fire it and undo the jump. The guard is the explicit target.
+     * message, and a page load that lands at the tail (the newest page) would
+     * otherwise fire it and undo the jump. The guard is the explicit target.
      */
-    const jumpTargetIdRef = useRef('');
     useEffect(() => {
         if (jumpTargetIdRef.current) return;
-        const el = scrollRef.current;
-        if (!el) return;
-        const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-        if (nearBottom) scrollToBottom('smooth');
-        else setShowJump(true);
-    }, [visibleMessages.length]);
+        if (!nearBottomRef.current) {
+            // New content above/at the tail while the reader is back in history:
+            // offer the way down instead of taking it for them.
+            setShowJump(true);
+            return;
+        }
+        scrollToBottom('smooth');
+    }, [visibleMessages.length, scrollToBottom]);
 
     /**
      * Centre one message in the scroller and flash it (Task 02-9).
@@ -810,9 +873,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         {aiDisabled && <span className="chat-detail-flag" role="img" aria-label={t('chat:list.statusDisabled')}>🚫</span>}
                     </span>
                     <span className={`chat-detail-status chat-detail-status-${connectionState}`}>
-                        {t(`chat:conversation.connection.${connectionState === 'connected' ? 'connected'
-                            : connectionState === 'reconnecting' ? 'reconnecting'
-                                : connectionState === 'connecting' ? 'connecting' : 'offline'}`)}
+                        {t(`chat:conversation.connection.${connectionStatusKey(connectionState)}`)}
                     </span>
                 </div>
                 {/* Thread actions — the SAME menu the list rows open, so every
@@ -992,7 +1053,13 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                 </div>
 
                 {showJump && (
-                    <button type="button" className="chat-jump-latest" onClick={() => scrollToBottom()}>
+                    <button
+                        type="button"
+                        className="chat-jump-latest"
+                        onClick={() => scrollToBottom()}
+                        aria-label={t('chat:conversation.jumpToLatest')}
+                        title={t('chat:conversation.jumpToLatest')}
+                    >
                         <ArrowDownIcon className="w-4 h-4" />
                         {t('chat:conversation.jumpToLatest')}
                     </button>

@@ -25,6 +25,7 @@
   "list": {
     "empty": "No personas yet. Create one to get started.",
     "builtIn": "Built-in",
+    "active": "Active",
     "personaBadge": "Persona",
     "noProfile": "No linked profile"
   },

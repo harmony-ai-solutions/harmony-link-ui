@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import useCharacterProfileStore from '../../store/characterProfileStore';
-import { EditIcon, TrashIcon, RobotIcon, MessageIcon } from '../../constants/icons.jsx';
+import useCategoryStore from '../../store/categoryStore.js';
+import { EditIcon, TrashIcon, RobotIcon, MessageIcon, HeartIcon } from '../../constants/icons.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
 import { toast } from '../../store/toastStore.js';
+import { isFavoriteProfile } from '../../utils/characterFilterUtils.js';
 
 /**
  * Card component for displaying a character profile summary.
@@ -37,16 +39,31 @@ import { toast } from '../../store/toastStore.js';
  * @param {Function} [props.onStartChat] - "Start chatting" — receives the FULL
  *   profile; the app resolves (or creates) the AI partner for it and opens a
  *   brand-new chat in the Chat tab.
+ * @param {Function} [props.onOpenDetail] - 03-4: open the read-only detail page.
+ *   Bound to the card TITLE only — the card body keeps opening the editor, so
+ *   the new destination is additive and nothing that worked before changes.
  */
-export default function CharacterProfileCard({ profile, onClick, onDelete, referencingEntities, onCreatePersona, onCreateEntity, onStartChat }) {
+export default function CharacterProfileCard({ profile, onClick, onDelete, onOpenDetail, referencingEntities, onCreatePersona, onCreateEntity, onStartChat }) {
     const { t } = useTranslation('characters');
     const primaryImage = useCharacterProfileStore(state => state.getPrimaryImage(profile.id));
     const exportCharacterCard = useCharacterProfileStore(state => state.exportCharacterCard);
+    const toggleFavorite = useCharacterProfileStore(state => state.toggleFavorite);
+    const [favoriteBusy, setFavoriteBusy] = useState(false);
     const [busy, setBusy] = useState(null); // null | 'json' | 'png'
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+    /**
+     * 03-2: "Add to category" is a COLLAPSED section inside the same menu, not a
+     * nested flyout — a second portal anchored to a portaled menu is brittle,
+     * and the menu is already narrow enough that an inline checkbox list reads
+     * cleanly. Collapsed by default so the existing actions keep their position.
+     */
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
     const btnRef = useRef(null);
     const menuRef = useRef(null);
+    const categories = useCategoryStore((state) => state.categories);
+    const setProfileCategories = useCategoryStore((state) => state.setProfileCategories);
+    const categoryBusy = useCategoryStore((state) => state.pendingProfileId) === profile?.id;
     const referenced = Array.isArray(referencingEntities) ? referencingEntities : [];
 
     // Menu width is fixed in CSS (176px) so the panel can be right-aligned to
@@ -85,13 +102,64 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
         };
     }, [menuOpen, positionMenu]);
 
-    // Close when the card unmounts.
+    // Close when the card unmounts, and collapse the category section whenever
+    // the menu itself closes so reopening always starts from a predictable shape.
     useEffect(() => () => setMenuOpen(false), []);
+    useEffect(() => {
+        if (!menuOpen) setCategoriesOpen(false);
+    }, [menuOpen]);
+
+    /**
+     * 03-2 category membership.
+     *
+     * Read from the ALREADY-LOADED category list rather than fetching per card:
+     * every category carries its `profile_ids`, so pre-checking the boxes costs
+     * no request. The write is REPLACE-style (the store sends the complete set),
+     * so unchecking works in the same single interaction.
+     */
+    const memberCategoryIds = new Set(
+        (categories || [])
+            .filter((category) => Array.isArray(category.profile_ids) && category.profile_ids.includes(profile?.id))
+            .map((category) => category.id)
+    );
+
+    const handleToggleCategory = async (categoryId) => {
+        if (!profile?.id || categoryBusy) return;
+        const next = new Set(memberCategoryIds);
+        if (next.has(categoryId)) next.delete(categoryId);
+        else next.add(categoryId);
+        try {
+            await setProfileCategories(profile.id, [...next]);
+        } catch (error) {
+            toast.error(t('category.toast.assignFailed', { message: error.message }));
+        }
+    };
 
     const runAndClose = (fn) => (e) => {
         e.stopPropagation();
         setMenuOpen(false);
         fn?.();
+    };
+
+    /**
+     * Heart toggle (plan 03-1). The store patches the row optimistically, so
+     * the glyph flips on the click itself; a failed write rolls back and the
+     * user is told why. `favoriteBusy` only guards against a double-fire while
+     * the request is in flight — it deliberately does NOT disable the rest of
+     * the card.
+     */
+    const favorited = isFavoriteProfile(profile);
+    const handleToggleFavorite = async (e) => {
+        e.stopPropagation();
+        if (!profile?.id || favoriteBusy) return;
+        setFavoriteBusy(true);
+        try {
+            await toggleFavorite(profile.id, !favorited);
+        } catch (error) {
+            toast.error(t('toast.favoriteFailed', { message: error.message }));
+        } finally {
+            setFavoriteBusy(false);
+        }
     };
 
     const handleExport = async (format) => {
@@ -100,7 +168,7 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
         try {
             await exportCharacterCard(profile.id, format, profile.name);
             // The card downloads straight to disk — confirm the copy landed.
-            toast.success(t('characters:toast.characterExported'));
+            toast.success(t('common:toast.characterExported'));
         } catch (e) {
             // eslint-disable-next-line no-alert
             alert(t('exportFailed', { message: e.message }));
@@ -153,6 +221,49 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
                 </button>
             )}
 
+            {/* 03-2: Add to category — an inline collapsed checkbox list.
+                Disabled (not hidden) when no category exists yet, so the action
+                does not appear and disappear; the hint points at Manage. */}
+            <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCategoriesOpen((v) => !v); }}
+                className={`${rowClass()} char-category-menu-toggle`}
+                aria-expanded={categoriesOpen}
+                disabled={categoryBusy}
+            >
+                <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a2 2 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                {t('category.addToCategory')}
+                <svg
+                    className="char-category-menu-chevron"
+                    style={{ transform: categoriesOpen ? 'rotate(180deg)' : 'none' }}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {categoriesOpen && (
+                <div className="char-category-menu-list" onClick={(e) => e.stopPropagation()}>
+                    {(categories || []).length === 0 ? (
+                        <p className="char-category-menu-empty">{t('category.noneYet')}</p>
+                    ) : (
+                        categories.map((category) => (
+                            <label key={category.id} className="char-category-menu-option">
+                                <input
+                                    type="checkbox"
+                                    checked={memberCategoryIds.has(category.id)}
+                                    disabled={categoryBusy}
+                                    onChange={() => handleToggleCategory(category.id)}
+                                />
+                                <span className="char-category-menu-option-name">{category.name}</span>
+                            </label>
+                        ))
+                    )}
+                </div>
+            )}
+
             <Separator />
 
             <button type="button" disabled={busy !== null} onClick={runAndClose(() => handleExport('png'))} className={`${rowClass()} ${busy ? 'opacity-50 cursor-not-allowed' : ''}`}>
@@ -203,6 +314,24 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
 
                 <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none" />
 
+                {/* Favourite heart (plan 03-1). Unlike the kebab this is always
+                    visible: it is a piece of STATE, not just an action — a
+                    hover-only heart would hide which characters are favourited.
+                    Solid glyph = favourited, outline = not, so the state does
+                    not depend on colour. */}
+                <Tooltip content={favorited ? t('favorite.remove') : t('favorite.add')}>
+                    <button
+                        type="button"
+                        onClick={handleToggleFavorite}
+                        className={`absolute top-2 left-2 z-30 transition-all hover:scale-110 focus:opacity-100 ${favorited ? 'character-card-favorite-active' : 'character-card-favorite'}`}
+                        aria-label={favorited ? t('favorite.remove') : t('favorite.add')}
+                        aria-pressed={favorited}
+                        disabled={favoriteBusy}
+                    >
+                        <HeartIcon className="w-4 h-4" filled={favorited} />
+                    </button>
+                </Tooltip>
+
                 {/* Small kebab (vertical three-dot) — hover-revealed. The menu
                     itself is portaled to <body> (see `menu` above). */}
                 <Tooltip content={t('menu.title')}>
@@ -224,7 +353,23 @@ export default function CharacterProfileCard({ profile, onClick, onDelete, refer
             </div>
 
             <div className="p-4">
-                <h3 className="font-semibold text-accent-primary truncate">{profile.name}</h3>
+                {/* 03-4: the title is the door to the detail page. It is a real
+                    <button> so it is reachable by keyboard, and it stops the
+                    click from bubbling into the card body — otherwise opening the
+                    detail would immediately open the editor underneath it. When
+                    no handler is supplied the title stays a plain heading. */}
+                <h3 className="font-semibold text-accent-primary truncate">
+                    {onOpenDetail ? (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onOpenDetail(profile); }}
+                            className="character-card-title-btn truncate"
+                            title={t('detail.openTitle', { name: profile.name })}
+                        >
+                            {profile.name}
+                        </button>
+                    ) : profile.name}
+                </h3>
                 <p className="text-sm text-text-muted line-clamp-2 mt-1 min-h-[2.5rem]">
                     {profile.description || t('noDescription')}
                 </p>

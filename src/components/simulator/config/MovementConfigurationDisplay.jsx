@@ -1,13 +1,16 @@
 import React from 'react';
+import Skeleton from '../../ui/Skeleton.jsx';
 
 // Movement Configuration Display Component
 function MovementConfigurationDisplay({ config, loading, error }) {
     if (loading) {
+        /* The card shows a fixed set of config rows, so show their shape. */
         return (
-            <div className="card-compact">
-                <div className="flex items-center text-text-muted text-sm">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary mr-2"></div>
-                    Loading movement configuration...
+            <div className="card-compact" aria-busy="true">
+                <div className="space-y-2">
+                    <Skeleton className="ui-skeleton-line" width="40%" height="0.7rem" />
+                    <Skeleton className="ui-skeleton-line" width="65%" height="0.65rem" />
+                    <Skeleton className="ui-skeleton-line" width="52%" height="0.65rem" />
                 </div>
             </div>
         );
@@ -89,7 +92,14 @@ function MovementConfigurationDisplay({ config, loading, error }) {
                         {config.startupsynctimeout !== undefined && <ConfigRow label="Startup Sync Timeout" value={`${config.startupsynctimeout}ms`} />}
                         {config.executionthreshold !== undefined && <ConfigRow label="Execution Threshold" value={config.executionthreshold} />}
                         {providerConfig?.temperature !== undefined && <ConfigRow label="Temperature" value={providerConfig.temperature} />}
-                        {providerConfig?.maxtokens && <ConfigRow label="Max Tokens" value={providerConfig.maxtokens} />}
+                        {(providerConfig?.maxcompletiontokens > 0 || providerConfig?.maxtokens || providerConfig?.maxoutputtokens) && (
+                            <ConfigRow
+                                label="Max Completion Tokens"
+                                value={providerConfig?.maxcompletiontokens > 0
+                                    ? providerConfig.maxcompletiontokens
+                                    : (providerConfig?.maxtokens || providerConfig?.maxoutputtokens)}
+                            />
+                        )}
                         {providerConfig?.topp !== undefined && <ConfigRow label="Top P" value={providerConfig.topp} />}
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (
                             <div>

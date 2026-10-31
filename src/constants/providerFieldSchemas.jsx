@@ -121,7 +121,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI provider schema
-     * 7 fields: apikey, model, maxtokens, temperature, topp, n, stoptokens
+     * 7 fields: apikey, model, maxcompletiontokens, temperature, topp, n, stoptokens
      */
     openai: {
         hasModelFetch: true,
@@ -158,20 +158,6 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
                 width: '1/2',
                 labelWidth: '1/3'
-            },
-            {
-                key: 'maxtokens',
-                label: 'Max Tokens',
-                type: 'number',
-                placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
-                width: '1/2',
-                labelWidth: '1/3',
-                validation: {
-                    type: 'range',
-                    min: 1,
-                    message: 'Max tokens must be at least 1.'
-                }
             },
             {
                 key: 'temperature',
@@ -243,15 +229,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'maxcompletiontokens',
                 label: 'Max Completion Tokens',
                 type: 'number',
-                placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    disableValue: -1,
-                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -407,7 +392,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenAI Compatible provider schema
-     * 8 fields: baseurl, apikey, model, maxtokens, temperature, topp, n, stoptokens
+     * 8 fields: baseurl, apikey, model, maxcompletiontokens, temperature, topp, n, stoptokens
      */
     openaicompatible: {
         hasModelFetch: true,
@@ -454,20 +439,6 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
                 width: '1/2',
                 labelWidth: '1/3'
-            },
-            {
-                key: 'maxtokens',
-                label: 'Max Tokens',
-                type: 'number',
-                placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
-                width: '1/2',
-                labelWidth: '1/3',
-                validation: {
-                    type: 'range',
-                    min: 1,
-                    message: 'Max tokens must be at least 1.'
-                }
             },
             {
                 key: 'temperature',
@@ -539,15 +510,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'maxcompletiontokens',
                 label: 'Max Completion Tokens',
                 type: 'number',
-                placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    disableValue: -1,
-                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -688,7 +658,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * OpenRouter provider schema
-     * 7 fields: apikey, model, maxtokens, temperature, topp, n, stoptokens
+     * 7 fields: apikey, model, maxcompletiontokens, temperature, topp, n, stoptokens
      */
     openrouter: {
         hasModelFetch: true,
@@ -725,20 +695,6 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 tooltip: 'Select a sampling preset to pre-fill LLM parameters.\nPreset values can be overridden by explicit settings below.',
                 width: '1/2',
                 labelWidth: '1/3'
-            },
-            {
-                key: 'maxtokens',
-                label: 'Max Tokens',
-                type: 'number',
-                placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
-                width: '1/2',
-                labelWidth: '1/3',
-                validation: {
-                    type: 'range',
-                    min: 1,
-                    message: 'Max tokens must be at least 1.'
-                }
             },
             {
                 key: 'temperature',
@@ -810,15 +766,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'maxcompletiontokens',
                 label: 'Max Completion Tokens',
                 type: 'number',
-                placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    disableValue: -1,
-                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -1793,16 +1748,16 @@ export const PROVIDER_FIELD_SCHEMAS = {
             },
             {
                 key: 'maxoutputtokens',
-                label: 'Max Output Tokens',
+                label: 'Max Completion Tokens',
                 type: 'number',
                 placeholder: '8192',
-                tooltip: 'Maximum number of tokens that can be generated in the response.',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    message: 'Max Output Tokens must be at least 1.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -1974,7 +1929,7 @@ export const PROVIDER_FIELD_SCHEMAS = {
 
     /**
      * xAI (Grok) provider schema (Backend / Cognition / Vision)
-     * Fields: apikey, model, maxtokens, maxcompletiontokens, temperature, topp, frequencypenalty, presencepenalty, reasoningeffort, seed, responseformat, stoptokens, samplingpresetname
+     * Fields: apikey, model, maxcompletiontokens, temperature, topp, frequencypenalty, presencepenalty, reasoningeffort, seed, responseformat, stoptokens, samplingpresetname
      */
     xai: {
         hasModelFetch: true,
@@ -2005,32 +1960,17 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
-                key: 'maxtokens',
-                label: 'Max Tokens',
-                type: 'number',
-                placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
-                width: '1/2',
-                labelWidth: '1/3',
-                validation: {
-                    type: 'range',
-                    min: 1,
-                    message: 'Max tokens must be at least 1.'
-                }
-            },
-            {
                 key: 'maxcompletiontokens',
                 label: 'Max Completion Tokens',
                 type: 'number',
-                placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens. Leave empty or set to -1 to use Max Tokens.',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    disableValue: -1,
-                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -2272,16 +2212,16 @@ export const PROVIDER_FIELD_SCHEMAS = {
             },
             {
                 key: 'maxtokens',
-                label: 'Max Tokens',
+                label: 'Max Completion Tokens',
                 type: 'number',
                 placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    message: 'Max tokens must be at least 1.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {
@@ -2770,20 +2710,6 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 labelWidth: '1/3'
             },
             {
-                key: 'maxtokens',
-                label: 'Max Tokens',
-                type: 'number',
-                placeholder: '4096',
-                tooltip: 'Maximum new tokens to generate per request.',
-                width: '1/2',
-                labelWidth: '1/3',
-                validation: {
-                    type: 'range',
-                    min: 1,
-                    message: 'Max tokens must be at least 1.'
-                }
-            },
-            {
                 key: 'temperature',
                 label: 'Temperature',
                 type: 'number',
@@ -2853,15 +2779,14 @@ export const PROVIDER_FIELD_SCHEMAS = {
                 key: 'maxcompletiontokens',
                 label: 'Max Completion Tokens',
                 type: 'number',
-                placeholder: '(use Max Tokens)',
-                tooltip: 'Upper bound for total completion tokens (including reasoning tokens).\nIf set, overrides Max Tokens for models that support it.\nLeave empty or set to -1 to use Max Tokens.',
+                placeholder: '4096',
+                tooltip: 'Maximum new tokens generated per request.\nAutomatically sent using the parameter your model supports.',
                 width: '1/2',
                 labelWidth: '1/3',
                 validation: {
                     type: 'range',
                     min: 1,
-                    disableValue: -1,
-                    message: 'Max Completion Tokens must be at least 1, or -1 to disable.'
+                    message: 'Max Completion Tokens must be at least 1.'
                 }
             },
             {

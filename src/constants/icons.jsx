@@ -144,6 +144,17 @@ export const SmileIcon = ({ className = defaultSize }) => (
     </svg>
 );
 
+// Task 02-8: the scenario button. Three four-point stars — the conventional
+// "insert generated/magic context" glyph, and distinct from the emoji face
+// sitting next to it in the same toolbar.
+export const SparklesIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l1.6 4.1L18 8.7l-4.4 1.6L12 14.4l-1.6-4.1L6 8.7l4.4-1.6L12 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.5 14.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9.9-2.3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7L5 15z" />
+    </svg>
+);
+
 /* ── Event Type Icons ─────────────────────────────────────────────────── */
 
 // Optical-size normalization: every nav glyph is scaled to the same 18-unit
@@ -371,6 +382,34 @@ export const ArrowDownIcon = ({ className = defaultSize }) => (
 export const SearchIcon = ({ className = defaultSize }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+);
+
+// Archive box (Conversations group). Drawn as a lidded box rather than the
+// generic folder glyph, so "archived" does not read as "browse files".
+export const ArchiveIcon = ({ className = defaultSize }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 01-2-2V5a1 1 0 011-1h16a1 1 0 011 1v1a2 2 0 01-2 2M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4" />
+    </svg>
+);
+
+// Heart — the character favourite toggle (plan 03-1). `filled` renders the
+// solid glyph (favourited) and the outline (not favourited) so the state is
+// readable without relying on colour alone.
+export const HeartIcon = ({ className = defaultSize, filled = false }) => (
+    <svg
+        className={className}
+        fill={filled ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={filled ? 0 : 2}
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+        />
     </svg>
 );
 

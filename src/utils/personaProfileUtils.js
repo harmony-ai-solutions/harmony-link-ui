@@ -27,3 +27,34 @@ export function personaOwnedProfileIds(entities, profiles = []) {
     });
     return owned;
 }
+
+/**
+ * The profile list the **Characters** grid is allowed to render (2-1).
+ *
+ * 03-6 verifies this survives the category work: categories are a local
+ * organisation feature whose membership rows carry raw profile ids, so a
+ * persona-owned profile CAN be a member of a character category (the card menu
+ * of the Personas tab knows nothing about the Characters grid's exclusion).
+ * Running the filter over the raw list would therefore resurface exactly the
+ * cards 2-1 removed — the chip would count them, and `All` would show them.
+ *
+ * The exclusion must therefore be applied to the **list the toolbar receives**,
+ * once, before any search/category/favourite filtering. `CharacterProfilesView`
+ * uses this helper for `visibleProfiles`, which is what it passes to
+ * `CategoryFilterDropdown`, `ManageCategoriesModal`, `CharacterDetailView` and
+ * `filterCharacterProfiles` — so every downstream consumer inherits the guard
+ * instead of each having to remember it.
+ *
+ * Order is preserved (the engine's list order is meaningful) and a new array is
+ * always returned, so this is safe to hand straight to React / `useMemo`.
+ *
+ * @param {Array} profiles - every profile the store knows about
+ * @param {Array} entities - entity list; `entity_type === 'user'` rows own cards
+ * @returns {Array} profiles not owned by any persona
+ */
+export function excludePersonaOwnedProfiles(profiles, entities) {
+    if (!Array.isArray(profiles)) return [];
+    const owned = personaOwnedProfileIds(entities, profiles);
+    if (owned.size === 0) return profiles.slice();
+    return profiles.filter(profile => profile && !owned.has(profile.id));
+}

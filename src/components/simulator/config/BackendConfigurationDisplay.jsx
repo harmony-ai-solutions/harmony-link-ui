@@ -1,13 +1,16 @@
 import React from 'react';
+import Skeleton from '../../ui/Skeleton.jsx';
 
 // Backend Configuration Display Component
 function BackendConfigurationDisplay({ config, loading, error }) {
     if (loading) {
+        /* The card shows a fixed set of config rows, so show their shape. */
         return (
-            <div className="card-compact">
-                <div className="flex items-center text-text-muted text-sm">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary mr-2"></div>
-                    Loading backend configuration...
+            <div className="card-compact" aria-busy="true">
+                <div className="space-y-2">
+                    <Skeleton className="ui-skeleton-line" width="40%" height="0.7rem" />
+                    <Skeleton className="ui-skeleton-line" width="65%" height="0.65rem" />
+                    <Skeleton className="ui-skeleton-line" width="52%" height="0.65rem" />
                 </div>
             </div>
         );
@@ -105,7 +108,14 @@ function BackendConfigurationDisplay({ config, loading, error }) {
                     <h5 className="font-semibold text-accent-primary mb-1.5 text-sm">Model Settings</h5>
                     <div className="space-y-1 text-xs">
                         {providerConfig?.temperature !== undefined && <ConfigRow label="Temperature" value={providerConfig.temperature} />}
-                        {providerConfig?.maxtokens && <ConfigRow label="Max Tokens" value={providerConfig.maxtokens} />}
+                        {(providerConfig?.maxcompletiontokens > 0 || providerConfig?.maxtokens || providerConfig?.maxoutputtokens) && (
+                            <ConfigRow
+                                label="Max Completion Tokens"
+                                value={providerConfig?.maxcompletiontokens > 0
+                                    ? providerConfig.maxcompletiontokens
+                                    : (providerConfig?.maxtokens || providerConfig?.maxoutputtokens)}
+                            />
+                        )}
                         {providerConfig?.topp !== undefined && <ConfigRow label="Top P" value={providerConfig.topp} />}
                         {providerConfig?.n && <ConfigRow label="N (Completions)" value={providerConfig.n} />}
                         {providerConfig?.stoptokens && providerConfig.stoptokens.length > 0 && (

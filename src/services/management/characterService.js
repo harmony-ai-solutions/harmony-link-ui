@@ -121,8 +121,36 @@ export async function updateCharacterProfile(id, profile) {
 }
 
 /**
+ * Toggle a character profile's favourite bit.
+ *
+ * Mirrors the engine's NARROW `PUT /api/v1/character-profiles/:id/favorite`
+ * route (`{ is_favorite: boolean }`). This exists so the UI never sends a
+ * partial profile body to `PUT /character-profiles/:id`: that handler binds the
+ * FULL `CharacterProfileConfig`, so any field omitted from the body is written
+ * back as its zero value — a partial update there would wipe the card. Use this
+ * for favourites, and mirror the same narrow shape for any future flag
+ * (pinned-style) rather than reusing the full update.
+ *
+ * The engine also re-stamps `updated_at`, which is what carries the change to
+ * the phone: the app's only change tracking is `updated_at > lastSync`.
+ *
+ * @param {string} id
+ * @param {boolean} favorite
+ * @returns {Promise<{id: string, is_favorite: boolean}>}
+ */
+export async function setCharacterProfileFavorite(id, favorite) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/${id}/favorite`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ is_favorite: !!favorite })
+    });
+    await handleResponse(resp, "Failed to update favorite");
+    return await resp.json();
+}
+
+/**
  * Delete a character profile
- * @param {string} id 
+ * @param {string} id
  * @returns {Promise<void>}
  */
 export async function deleteCharacterProfile(id) {
@@ -156,26 +184,234 @@ export async function duplicateCharacterProfile(profileId, overrides = {}) {
     return await resp.json();
 }
 
+// Character Categories (plan 03-2)
+//
+// Desktop-local organisation — NOT synced. The phone keeps its own categories
+// in app-local SQLite, so these exist only on this machine. Categories group
+// character PROFILES; deleting one never deletes a character.
+
+/**
+ * @typedef {Object} CharacterCategory
+ * @property {string} id
+ * @property {string} name
+ * @property {number} sort_order
+ * @property {number} member_count - Projection filled by the engine, not a column
+ * @property {string[]} profile_ids - Projection: the live profiles in the category
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * List every category in the user's drag order.
+ *
+ * Each item carries `member_count` and `profile_ids`, so the chip row and the
+ * card menu's checkbox list are served by ONE request — no per-chip follow-up.
+ *
+ * @returns {Promise<CharacterCategory[]>}
+ */
+export async function listCharacterCategories() {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories`, {
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to list character categories");
+    return await resp.json();
+}
+
+/**
+ * Create a category.
+ *
+ * Throws on a 409 ("category name is already in use") — the caller surfaces the
+ * clash inline so the user can pick another name. A name held by a DELETED
+ * category is revived by the engine rather than rejected.
+ *
+ * @param {string} name
+ * @returns {Promise<CharacterCategory>}
+ */
+export async function createCharacterCategory(name) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ name })
+    });
+    await handleResponse(resp, "Failed to create category");
+    return await resp.json();
+}
+
+/**
+ * Rename a category.
+ * @param {string} id
+ * @param {string} name
+ * @returns {Promise<CharacterCategory>}
+ */
+export async function renameCharacterCategory(id, name) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${id}`, {
+        method: "PATCH",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ name })
+    });
+    await handleResponse(resp, "Failed to rename category");
+    return await resp.json();
+}
+
+/**
+ * Delete a category. Characters are never deleted — they simply stop being
+ * grouped, so the UI can warn about that explicitly.
+ * @param {string} id
+ * @returns {Promise<{status: string, id: string}>}
+ */
+export async function deleteCharacterCategory(id) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+    });
+    await handleResponse(resp, "Failed to delete category");
+    return await resp.json();
+}
+
+/**
+ * Set a category's membership to exactly `profileIds`.
+ *
+ * This is a REPLACE, not an add: the card menu sends the complete checked set,
+ * so unchecking a character works in the same single call. An empty array
+ * clears the category.
+ *
+ * @param {string} categoryId
+ * @param {string[]} profileIds
+ * @returns {Promise<CharacterCategory>} the category with its resulting membership
+ */
+export async function setCharacterCategoryMembers(categoryId, profileIds) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/${categoryId}/members`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ profile_ids: Array.isArray(profileIds) ? profileIds : [] })
+    });
+    await handleResponse(resp, "Failed to update category members");
+    return await resp.json();
+}
+
+/**
+ * Remove one profile from one category. Removing a non-member is a success.
+ * @param {string} categoryId
+ * @param {string} profileId
+ * @returns {Promise<Object>}
+ */
+export async function removeCharacterCategoryMember(categoryId, profileId) {
+    const resp = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-categories/${categoryId}/members/${profileId}`,
+        { method: "DELETE", headers: getAuthHeaders() }
+    );
+    await handleResponse(resp, "Failed to remove category member");
+    return await resp.json();
+}
+
+/**
+ * Persist the drag order. Index becomes `sort_order`; ids the engine no longer
+ * knows (deleted on another window) are skipped rather than failing the drag.
+ * @param {string[]} orderedIds
+ * @returns {Promise<CharacterCategory[]>} the re-ordered list
+ */
+export async function reorderCharacterCategories(orderedIds) {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-categories/reorder`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({ ordered_ids: Array.isArray(orderedIds) ? orderedIds : [] })
+    });
+    await handleResponse(resp, "Failed to reorder categories");
+    return await resp.json();
+}
+
 // Character Card Import
 
 /**
- * Import a character card from a PNG file
+ * POST the card file to the import route and return the parsed JSON.
+ *
  * @param {File} file
- * @returns {Promise<CharacterCardImportResult>}
+ * @param {Record<string,string>} [query] - extra query params (`dry_run`, `on_conflict`, `name`)
+ * @returns {Promise<any>}
  */
-export async function importCharacterCard(file) {
+async function postCharacterCardImport(file, query = {}) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${getManagementApiUrl()}${getApiPath()}/character-profiles/import`, {
-        method: 'POST',
-        headers: getAuthHeaders(), // NOTE: Do NOT set Content-Type for FormData - browser sets it with boundary
-        body: formData,
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+    });
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+
+    const response = await fetch(
+        `${getManagementApiUrl()}${getApiPath()}/character-profiles/import${suffix}`,
+        {
+            method: 'POST',
+            headers: getAuthHeaders(), // NOTE: Do NOT set Content-Type for FormData - browser sets it with boundary
+            body: formData,
+        },
+    );
+    return response;
+}
+
+/**
+ * Review a character card WITHOUT persisting anything (plan 03-5d).
+ *
+ * Calls the same import route with `?dry_run=1`, which parses the card and
+ * answers with the detection summary (spec, counts, dropped fields) plus the
+ * name-collision state — then returns before any write.
+ *
+ * This exists so the desktop preview is the SERVER's answer. Re-deriving the
+ * spec, the lorebook count and the copy name in the browser would be a second
+ * implementation of three rules, and a preview that disagrees with the import
+ * is exactly the bug the review step is meant to remove.
+ *
+ * @param {File} file
+ * @returns {Promise<{
+ *   status: 'review', spec: string, spec_version: string, name: string,
+ *   description_length: number, alternate_greeting_count: number,
+ *   lorebook_entry_count: number, image_count: number, first_mes: string,
+ *   dropped_field_count: number, dropped_fields?: string[],
+ *   name_taken: boolean|null, existing_id?: string, existing_name?: string,
+ *   suggested_name?: string,
+ * }>}
+ */
+export async function previewCharacterCardImport(file) {
+    const response = await postCharacterCardImport(file, { dry_run: 1 });
+    if (!response.ok) {
+        let message = 'Failed to read character card';
+        try {
+            const error = await response.json();
+            message = error.error || message;
+        } catch { /* no JSON body */ }
+        throw new Error(message);
+    }
+    return response.json();
+}
+
+/**
+ * Import a character card from a PNG file.
+ *
+ * @param {File} file
+ * @param {{onConflict?: 'error'|'copy', name?: string}} [options]
+ *   `onConflict: 'copy'` lets the engine pick the next copy name itself (the
+ *   app/script path); `name` is the explicit "Import as copy" name from the
+ *   review panel. Omitting both keeps the strict behaviour: a name clash
+ *   answers **409** with the review summary attached, so nothing is written.
+ * @returns {Promise<CharacterCardImportResult>}
+ */
+export async function importCharacterCard(file, options = {}) {
+    const response = await postCharacterCardImport(file, {
+        on_conflict: options.onConflict,
+        name: options.name,
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to import character card');
+        const error = await response.json().catch(() => ({}));
+        const err = new Error(error.error || 'Failed to import character card');
+        // 409 carries the review payload so the caller can offer "Import as
+        // copy" without re-parsing the file.
+        err.status = response.status;
+        err.nameTaken = !!error.name_taken;
+        err.suggestedName = error.suggested || '';
+        err.preview = error.dry_run || null;
+        throw err;
     }
 
     return response.json();

@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageIcon, RobotIcon, PlusIcon } from '../../constants/icons.jsx';
+import { MessageIcon, RobotIcon } from '../../constants/icons.jsx';
 import ChatListView from './ChatListView.jsx';
 import ChatDetailView from './ChatDetailView.jsx';
+import ForwardPicker from './ForwardPicker.jsx';
+import PageHeader from '../ui/PageHeader.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import { toast } from '../../store/toastStore.js';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
+import { getActivePersonaId } from '../../services/management/activePersona.js';
 import CharacterImage from '../common/CharacterImage.jsx';
 
 /**
@@ -25,9 +30,16 @@ const ChatView = ({ onNavigate }) => {
 
     const chatEntities = useChatStore((s) => s.chatEntities);
     const loadChatEntities = useChatStore((s) => s.loadChatEntities);
-    const loadConversations = useChatStore((s) => s.loadConversations);
+    const loadInbox = useChatStore((s) => s.loadInbox);
     const openChat = useChatStore((s) => s.openConversation);
     const closeSocket = useChatStore((s) => s.closeSocket);
+    const detailCloseTick = useChatStore((s) => s.detailCloseTick);
+    const clearDetailCloseTick = useChatStore((s) => s.clearDetailCloseTick);
+    const forwardRequest = useChatStore((s) => s.forwardRequest);
+    const clearForwardRequest = useChatStore((s) => s.clearForwardRequest);
+    const sendText = useChatStore((s) => s.sendText);
+    const searchJump = useChatStore((s) => s.searchJump);
+    const clearSearchJump = useChatStore((s) => s.clearSearchJump);
 
     const { partners, personas } = useMemo(() => partitionChatEntities(chatEntities), [chatEntities]);
 
@@ -53,6 +65,8 @@ const ChatView = ({ onNavigate }) => {
                 const enriched = {
                     interactionId: null,
                     entityId: request.entityId,
+                    // The POV every read/write pivots on (v1: the `user` seam).
+                    personaId: persona?.id || getActivePersonaId(),
                     participantIds,
                     partnerEntityId: request.entityId,
                     isNew: true,
@@ -72,6 +86,78 @@ const ChatView = ({ onNavigate }) => {
             setOwnEntityId(personas[0].id);
         }
     }, [personas, ownEntityId]);
+
+    /**
+     * Open a thread requested from ANOTHER view (the Archived screen).
+     *
+     * Same one-shot handoff as `startChatRequest`: the request is stashed in the
+     * store because navigating here unmounts the requester. The row is already
+     * inbox-shaped (snake_case), so it is normalised before being handed to the
+     * SAME `handleOpenConversation` path the list uses — the persona/participant
+     * resolution must not be duplicated.
+     */
+    useEffect(() => {
+        const request = useChatStore.getState().openConversationRequest;
+        if (!request) return;
+        useChatStore.getState().clearRequestOpenConversation();
+        const normalized = {
+            interactionId: request.interaction_id || request.interactionId || null,
+            entityId: request.entity_id || request.entityId,
+            participantIds: request.participant_ids || request.participantIds || [],
+            partnerEntityId: request.partner_entity_id || request.partnerEntityId,
+            participantKey: request.participant_key || request.participantKey,
+        };
+        if (normalized.entityId) handleOpenConversation(normalized);
+        // Mount-only: the request is consumed once, and `handleOpenConversation`
+        // closes over the entity/persona lists this mount loaded.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /**
+     * Drop back to the list when a thread action removed the open conversation
+     * (Task 02-5 delete).
+     *
+     * `openConversation` is LOCAL state here, so the store clearing
+     * `activeConversation` cannot unmount the detail view on its own. The store
+     * bumps `detailCloseTick` for exactly this case and the signal is consumed
+     * once.
+     */
+    useEffect(() => {
+        if (!detailCloseTick) return;
+        clearDetailCloseTick();
+        setOpenConversation(null);
+        loadInbox();
+    }, [detailCloseTick, clearDetailCloseTick, loadInbox]);
+
+    /**
+     * Open the thread a search hit points at (Task 02-9).
+     *
+     * The jump crosses two components: the search panel lives in the LIST (or in
+     * a thread's own header) and opening a conversation REPLACES what is
+     * mounted, so the request travels through the store — the same one-shot
+     * handoff `openConversationRequest` and `forwardRequest` use.
+     *
+     * Crucially, this goes through `handleOpenConversation`, the SAME path a row
+     * click takes: the persona/participant resolution must not fork for search,
+     * or a jump could mint a second private interaction. `focusMessage` was set
+     * alongside the request and is what the detail view consumes for the scroll.
+     */
+    useEffect(() => {
+        if (!searchJump?.entityId) return;
+        const request = searchJump;
+        clearSearchJump();
+        handleOpenConversation({
+            interactionId: request.interactionId,
+            entityId: request.entityId,
+            participantKey: request.participantKey,
+            participantIds: request.participantIds,
+            partnerEntityId: request.partnerEntityId,
+        });
+        // `handleOpenConversation` is recreated each render by design (it closes
+        // over the entity/persona lists); the request itself is one-shot, so
+        // depending on it alone is what keeps this from re-firing.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchJump]);
 
     const handleOpenConversation = async (conversation) => {
         const partner = chatEntities.find((e) => e.id === conversation.entityId);
@@ -94,6 +180,9 @@ const ChatView = ({ onNavigate }) => {
         if (rowPersona && rowPersona !== ownEntityId) setOwnEntityId(rowPersona);
         const enriched = {
             ...conversation,
+            // POV for every history read and conversation write. `entityId`
+            // remains the companion (row label / socket address).
+            personaId: conversation.personaId || persona || getActivePersonaId(),
             participantIds,
             title: entityDisplayName(partner) || conversation.entityId,
         };
@@ -132,45 +221,71 @@ const ChatView = ({ onNavigate }) => {
     const handleBack = () => {
         closeSocket();
         setOpenConversation(null);
-        // Refresh the inbox so the newest message shows (all companions —
-        // `loadConversations()` defaults to the merged app-style list).
-        loadConversations();
+        // Refresh the inbox so the newest message shows. `loadInbox()` is the
+        // global list — every companion in one request, ordered by the engine.
+        loadInbox();
+    };
+
+    /**
+     * Send a forwarded message into the chosen partner's thread.
+     *
+     * A forward in 1.0 is "copy the text": the target conversation is opened
+     * (which connects its socket) and the SAME content is sent as a normal new
+     * message. The request is cleared FIRST so the picker cannot reopen if the
+     * send below fails — a failed forward would otherwise leave the modal up
+     * over a thread that already switched.
+     */
+    const handleForwardPick = async (partner) => {
+        const content = forwardRequest?.content || '';
+        clearForwardRequest();
+        if (!partner?.id || !content) return;
+        await handleOpenConversation({
+            interactionId: null,
+            entityId: partner.id,
+            participantIds: [partner.id],
+            partnerEntityId: partner.id,
+            isNew: true,
+        });
+        const sent = sendText(ownEntityId || partner.id, content);
+        if (sent) toast.success(t('chat:forward.sent', { name: entityDisplayName(partner) }));
+        // A closed socket is reported by the store; there is nothing to retry
+        // here, and the composer is the obvious next step for the user.
     };
 
     const hasCompanions = partners.length > 0;
 
     return (
         <div className="flex flex-col min-h-full">
-            {/* View Header */}
-            <div className="bg-background-surface px-6 py-4">
-                <h1 className="text-2xl font-extrabold tracking-tight">
-                    <span className="text-gradient-primary">{t('chat:header.title')}</span>
-                </h1>
-                <p className="text-xs text-text-muted mt-0.5 font-medium">
-                    {t('chat:header.subtitle')}
-                </p>
-            </div>
+            {/* Chat used to be the odd one out: its header sat above a scroll
+                container of its own instead of scrolling with the content like
+                every other view now does. It shares the same non-sticky header
+                as the other eight, so all nine behave identically.
+                `PageHeader` also accepts `sticky` if a view ever needs it —
+                `.ui-page-header-sticky` is position: sticky only, which leaves
+                the fixed chat lightbox and pickers this view renders inside the
+                scroll column anchored to the viewport. */}
+            <PageHeader
+                title={t('chat:header.title')}
+                subtitle={t('chat:header.subtitle')}
+            />
 
             <div className="flex-1 p-6">
                 {!hasCompanions ? (
-                    <div className="max-w-2xl mx-auto">
-                        <div className="text-center py-16">
-                            <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-2xl bg-accent-primary/10 mb-6">
-                                <MessageIcon className="w-9 h-9 text-accent-primary" />
-                            </div>
-                            <h2 className="text-xl font-bold text-text-primary mb-8">
-                                {t('chat:placeholder.title')}
-                            </h2>
-                            <button
-                                type="button"
-                                onClick={() => setShowPicker(true)}
-                                className="btn-primary inline-flex items-center gap-2"
-                            >
-                                <PlusIcon className="w-4 h-4" />
-                                {t('chat:placeholder.startChatting')}
-                            </button>
-                        </div>
-                    </div>
+                    /* Chat landing: there are literally no AI partners yet, so
+                       both next steps are real — create one, or talk to an
+                       existing character card. Same shape as every other
+                       empty view (EmptyState), which is what Phase 01 task 3
+                       asked this screen to keep. */
+                    <EmptyState
+                        className="mx-auto max-w-2xl"
+                        icon={MessageIcon}
+                        title={t('chat:placeholder.title')}
+                        description={t('chat:placeholder.description')}
+                        actionLabel={t('chat:placeholder.startChatting')}
+                        onAction={() => setShowPicker(true)}
+                        secondaryLabel={t('chat:placeholder.createCharacter')}
+                        onSecondary={handleCreateCharacter}
+                    />
                 ) : openConversation ? (
                     <ChatDetailView
                         conversation={openConversation}
@@ -183,9 +298,22 @@ const ChatView = ({ onNavigate }) => {
                     <ChatListView
                         onOpenConversation={handleOpenConversation}
                         onNavigate={onNavigate}
+                        onOpenArchived={() => onNavigate?.('archived')}
                     />
                 )}
             </div>
+
+            {/* Forward target picker (Task 02-6 step 4). Lives here, not in the
+                detail view: picking a partner REPLACES the open conversation,
+                which unmounts the bubble that started the forward. */}
+            <ForwardPicker
+                isOpen={!!forwardRequest}
+                partners={partners}
+                content={forwardRequest?.content || ''}
+                fromTitle={forwardRequest?.fromTitle || ''}
+                onPick={handleForwardPick}
+                onClose={clearForwardRequest}
+            />
 
             {/* New-chat companion picker (opened by the welcome "+ Start
                 Chatting" button). Shares the ChatListView picker styling; its
@@ -196,17 +324,14 @@ const ChatView = ({ onNavigate }) => {
                     <div className="chat-picker" onClick={(e) => e.stopPropagation()}>
                         <h3 className="chat-picker-title">{t('chat:list.selectCompanion')}</h3>
                         {partners.length === 0 ? (
-                            <>
-                                <p className="chat-picker-empty">{t('chat:list.noCompanions')}</p>
-                                <button
-                                    type="button"
-                                    onClick={handleCreateCharacter}
-                                    className="btn-primary inline-flex items-center gap-2"
-                                >
-                                    <PlusIcon className="w-4 h-4" />
-                                    {t('chat:placeholder.createCharacter')}
-                                </button>
-                            </>
+                            <EmptyState
+                                size="compact"
+                                icon={RobotIcon}
+                                title={t('chat:list.noCompanionsTitle')}
+                                description={t('chat:list.noCompanions')}
+                                actionLabel={t('chat:placeholder.createCharacter')}
+                                onAction={handleCreateCharacter}
+                            />
                         ) : (
                             <ul className="chat-picker-list">
                                 {partners.map((partner) => (

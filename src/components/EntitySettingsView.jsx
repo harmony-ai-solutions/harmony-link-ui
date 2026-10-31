@@ -17,11 +17,17 @@ import ErrorDialog from "./modals/ErrorDialog.jsx";
 import ConfirmDialog from "./modals/ConfirmDialog.jsx";
 import InputDialog from "./modals/InputDialog.jsx";
 import LifecycleConfigEditor from './settings/LifecycleConfigEditor.jsx';
+import EmojiActionsEditor from './characters/EmojiActionsEditor.jsx';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances';
 import useDockerStatus from '../hooks/useDockerStatus';
 import Tooltip from './ui/Tooltip.jsx';
+import PageHeader from './ui/PageHeader.jsx';
+import EmptyState from './ui/EmptyState.jsx';
+import Skeleton from './ui/Skeleton.jsx';
+import { RobotIcon, ActivityIcon } from '../constants/icons.jsx';
 import IntegrationStatusBanner from './integrations/IntegrationStatusBanner.jsx';
 import { toast } from '../store/toastStore.js';
+import useUIModeStore, { isModeAllowed } from '../store/uiModeStore';
 
 
 export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onChange, configs, isLoading, disabled }) {
@@ -51,6 +57,11 @@ export function ModuleConfigSelector({ label, moduleType, selectedConfigId, onCh
 
 const EntitySettingsView = ({ appName }) => {
     const { t } = useTranslation();
+    // Plan 03-5c: the emoji-actions table is Pro-only. Read the mode here (the
+    // view is already Pro-gated at the nav level, so this is about not showing a
+    // four-column table to a Pro user who has not opted into the section yet —
+    // and about keeping Dev as the only place with raw JSON).
+    const uiMode = useUIModeStore((state) => state.mode);
     const {
         entities,
         selectedEntityId,
@@ -588,21 +599,36 @@ const EntitySettingsView = ({ appName }) => {
     };
 
     if (isEntityLoading && entities === null) {
+        // The layout is a fixed entity rail plus a config pane, so show that
+        // shape (rail rows + config blocks) instead of a centred spinner — the
+        // page does not flash empty and then reflow when the data lands.
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--color-accent-primary)' }}></div>
-                    <p className="text-text-muted">{t('common:status.loading')}</p>
+            <div className="flex flex-col min-h-full">
+                <PageHeader title={tes('header.title')} subtitle={tes('header.subtitle')} />
+                <div className="flex flex-1" aria-busy="true">
+                    <div className="w-1/4 p-4 space-y-3 border-r border-white/10 min-h-[600px]">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <div key={index} className="ui-skeleton-row">
+                                <Skeleton className="ui-skeleton-circle" width="2.5rem" height="2.5rem" />
+                                <div className="ui-skeleton-row-body">
+                                    <Skeleton className="ui-skeleton-line" width="65%" />
+                                    <Skeleton className="ui-skeleton-line" width="40%" height="0.6rem" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="w-3/4 p-6 space-y-4">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="space-y-2">
+                                <Skeleton className="ui-skeleton-line" width="22%" height="0.65rem" />
+                                <Skeleton height="2.25rem" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         );
     }
-
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
 
     return (
         <>
@@ -616,14 +642,10 @@ const EntitySettingsView = ({ appName }) => {
 
             <div className="flex flex-col min-h-full">
                 {/* View Header */}
-                <div className="bg-background-surface px-6 py-4">
-                    <h1 className="text-2xl font-extrabold tracking-tight">
-                        {colorFirstWord(tes('header.title'))}
-                    </h1>
-                    <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        {tes('header.subtitle')}
-                    </p>
-                </div>
+                <PageHeader
+                    title={tes('header.title')}
+                    subtitle={tes('header.subtitle')}
+                />
 
                 <div className="flex flex-1">
                     {/* Left Panel: Entity List */}
@@ -723,14 +745,22 @@ const EntitySettingsView = ({ appName }) => {
                                     );
                                 })}
                                 {visibleEntities.length === 0 && presenceFilter === 'active' && aiEntities.length > 0 && (
-                                    <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
-                                        {tes('entityList.noActiveEntities')}
-                                    </div>
+                                    <EmptyState
+                                        size="compact"
+                                        icon={ActivityIcon}
+                                        title={tes('entityList.noActiveEntities')}
+                                        actionLabel={tes('entityList.filterAll')}
+                                        onAction={() => setPresenceFilter('all')}
+                                    />
                                 )}
                                 {visibleEntities.length === 0 && aiEntities.length === 0 && (
-                                    <div className="h-full flex items-center justify-center text-text-muted italic text-xs">
-                                        {tes('entityList.noEntities')}
-                                    </div>
+                                    <EmptyState
+                                        size="compact"
+                                        icon={RobotIcon}
+                                        title={tes('entityList.noEntities')}
+                                        actionLabel={tes('buttons.add')}
+                                        onAction={handleAdd}
+                                    />
                                 )}
                             </div>
                         </div>
@@ -751,11 +781,16 @@ const EntitySettingsView = ({ appName }) => {
                     {/* Right Panel: Configuration */}
                     <div className="w-3/4 p-6 space-y-6">
                         {!selectedEntityId ? (
-                            <div className="flex flex-col items-center justify-center h-full text-text-muted">
-                                <svg className="w-16 h-16 mb-4 opacity-20" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                </svg>
-                                <p className="text-xl text-text-primary">{tes('entityList.selectPlaceholder')}</p>
+                            <div className="h-full flex items-center justify-center">
+                                <EmptyState
+                                    icon={RobotIcon}
+                                    title={tes('entityList.selectPlaceholder')}
+                                    description={aiEntities.length > 0
+                                        ? tes('entityList.selectPlaceholderHint')
+                                        : tes('entityList.noEntitiesHint')}
+                                    actionLabel={aiEntities.length > 0 ? undefined : tes('buttons.add')}
+                                    onAction={aiEntities.length > 0 ? undefined : handleAdd}
+                                />
                             </div>
                         ) : (
                             <div className="space-y-6 animate-fadeIn">
@@ -965,7 +1000,39 @@ const EntitySettingsView = ({ appName }) => {
                                     </div>
                                 </section>
 
-                                {/* Lifecycle Settings Section */}
+                                {/* Emoji actions (plan 03-5c) — Pro only.
+                                    entity_emoji_actions feeds the chat picker's
+                                    action grid, so editing it here is what makes
+                                    the picker editable on desktop at all. The
+                                    whole section is Pro-gated: a Simple user never
+                                    needs to author mood deltas, and the table has
+                                    four columns.
+
+                                    03-6: persona entities are filtered out of
+                                    this view upstream (`aiEntities`), BUT the
+                                    selection-constraining effect only runs when
+                                    at least one AI entity exists — so with zero
+                                    AI entities a persona selected on the Personas
+                                    tab can still be the current selection. The
+                                    emoji/lifecycle guards therefore read
+                                    `isPersonaSelected` explicitly instead of
+                                    trusting the rail filter (Android hides both
+                                    for personas too). */}
+                                {isModeAllowed(uiMode, 'pro') && selectedEntityId && !isPersonaSelected && (
+                                    <section data-tutorial-id="entity-emoji-actions-section" className="space-y-4">
+                                        <h3 className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
+                                            <span className="text-gradient-primary">{tes('sections.emojiActions')}</span>
+                                        </h3>
+                                        <EmojiActionsEditor entityId={selectedEntityId} />
+                                    </section>
+                                )}
+
+                                {/* Lifecycle Settings Section — 03-6: hidden for
+                                    personas (they never run autonomous beats, and
+                                    Android hides the same block). See the emoji
+                                    section above for why the rail filter alone is
+                                    not sufficient. */}
+                                {!isPersonaSelected && (
                                 <section data-tutorial-id="entity-lifecycle-section" className="space-y-4">
                                     <h3 data-tutorial-id="entity-lifecycle-header" className="text-lg font-bold text-text-primary pb-2 flex items-center gap-2 w-full mb-6 mt-8">
                                         <span className="text-gradient-primary">{tes('sections.lifecycleSettings')}</span>
@@ -1005,6 +1072,7 @@ const EntitySettingsView = ({ appName }) => {
                                         </div>
                                     )}
                                 </section>
+                                )}
                             </div>
                         )}
                     </div>

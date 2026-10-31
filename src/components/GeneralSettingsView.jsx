@@ -15,12 +15,14 @@ import DeviceManagementModal from './modals/DeviceManagementModal.jsx';
 import LocalAISetupCard from './chat/LocalAISetupCard.jsx';
 import BackupConflictModal from './modals/BackupConflictModal.jsx';
 import CloudAccountCard from './settings/CloudAccountCard.jsx';
+import VoiceInputSettings from './settings/VoiceInputSettings.jsx';
 import DirectoryBrowserModal from './integrations/DirectoryBrowserModal.jsx';
 import useCloudAccount from '../hooks/useCloudAccount.js';
 import useDynamicBackgroundStore, { BACKGROUND_VARIANTS, AURA_STYLES } from '../store/dynamicBackgroundStore';
 import useUIModeStore, { UI_MODES, isModeAllowed } from '../store/uiModeStore';
 import Toggle from './ui/Toggle.jsx';
 import Tooltip from './ui/Tooltip.jsx';
+import PageHeader from './ui/PageHeader.jsx';
 import NumberStepper from './ui/NumberStepper.jsx';
 import ThemedSelect from './widgets/ThemedSelect.jsx';
 import { FONT_SCALE_OPTIONS, applyFontScale, getStoredFontScale, isKnownFontScale, DEFAULT_FONT_SCALE } from '../utils/fontScale.js';
@@ -45,6 +47,7 @@ const OFFICIAL_THEME_IDS = ['soulbits-dark', 'soulbits-light'];
 const SUB_TABS = [
     { id: 'general', labelKey: 'generalSettings:tabs.general' },
     { id: 'appearance', labelKey: 'generalSettings:tabs.appearance' },
+    { id: 'voice', labelKey: 'generalSettings:tabs.voice' },
     { id: 'notifications', labelKey: 'generalSettings:tabs.notifications' },
     { id: 'dataSupport', labelKey: 'generalSettings:tabs.dataSupport' },
 ];
@@ -618,33 +621,23 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
     const tgs = (key, opts) => t(`generalSettings:${key}`, opts);
     const tc = (key, opts) => t(`common:${key}`, opts);
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     return (
         <div className="flex flex-col min-h-full">
             {/* View Header */}
-            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-extrabold tracking-tight">
-                        {colorFirstWord(tgs('header.title'))}
-                    </h1>
-                    <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        {tgs('header.subtitle')}
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowDeviceManagementModal(true)}
-                    className="btn-primary flex items-center gap-2 flex-shrink-0">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    {tgs('buttons.manageDevices')}
-                </button>
-            </div>
+            <PageHeader
+                title={tgs('header.title')}
+                subtitle={tgs('header.subtitle')}
+                actions={(
+                    <button
+                        onClick={() => setShowDeviceManagementModal(true)}
+                        className="btn-primary flex items-center gap-2 flex-shrink-0">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        {tgs('buttons.manageDevices')}
+                    </button>
+                )}
+            />
 
             {/* Feedback Toast */}
             {feedbackMessage && (
@@ -1212,6 +1205,11 @@ const GeneralSettingsView = ({ generalSettings, saveGeneralSettings }) => {
                     </div>
                 </section>
                 )}
+
+                {/* Voice Input Section (Task 04-2). Runs a non-prompting
+                    microphone check on open, so a user whose recording never
+                    worked can find out why without touching the composer. */}
+                {activeSection === 'voice' && <VoiceInputSettings />}
 
                 {/* Sound & Audio Section */}
                 {activeSection === 'appearance' && (

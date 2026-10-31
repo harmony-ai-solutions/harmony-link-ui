@@ -11,11 +11,18 @@
     "tools": "Tools",
     "actionGraphTester": "ActionGraph Tester"
   },
+  "logs": {
+    "empty": {
+      "title": "No log entries yet",
+      "description": "Entries appear here as the engine works. Interact with an AI partner to generate activity."
+    }
+  },
   "inspector": {
     "entity": "Entity",
     "connected": "Connected",
     "noEntities": "No entities configured",
     "selectEntity": "Select an entity to inspect",
+    "selectEntityHint": "Pick an entity from the list above to see its modules, sessions, state and conversations.",
     "loading": "Loading…",
     "tabs": {
       "overview": "Overview",
@@ -25,6 +32,7 @@
     "modules": {
       "title": "Modules & Capabilities",
       "empty": "No modules are enabled for this entity.",
+      "emptyHint": "Map module configurations for this entity in Entity Settings.",
       "disabled": "Disabled"
     },
     "sessions": {
@@ -46,18 +54,23 @@
     "prompts": {
       "filterType": "Type",
       "allTypes": "All types",
-      "empty": "No prompts have been logged yet."
+      "empty": "No prompts have been logged yet.",
+      "emptyHint": "Prompts are recorded when an AI partner processes a message."
     },
     "events": {
       "hint": "A timeline of this session's events. Expand a row to see its payload.",
-      "empty": "No events recorded for this entity."
+      "empty": "No events recorded for this entity.",
+      "emptyHint": "Connect a client to this entity, or send it a message, to see events."
     }
   },
   "rag": {
     "entity": "Entity",
     "collection": "Collection",
     "selectCollection": "Select a collection…",
-    "selectCollectionHint": "Pick an entity and a collection to start debugging.",
+    "loadingCollections": "Loading collections…",
+    "reload": "Reload",
+    "selectCollectionHint": "Nothing selected",
+    "selectCollectionDescription": "Pick an entity and a collection above to run a similarity test or browse its documents.",
     "allArchetypes": "All archetypes",
     "allCategories": "All categories",
     "tabs": {
@@ -94,7 +107,10 @@
     "schema": {
       "filter": "Filter tables and indexes…",
       "count": "{{count}} objects",
-      "raw": "Raw Schema"
+      "raw": "Raw Schema",
+      "empty": "No schema objects",
+      "emptyHint": "The engine reported no tables, indexes, views or triggers. Reload to try again.",
+      "reload": "Reload schema"
     },
     "migrations": {
       "applied": "{{applied}} of {{total}} migrations applied",

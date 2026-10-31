@@ -100,30 +100,90 @@ export function isProactiveMessage(message) {
 }
 
 /**
- * Parse a message's reactions_json into `[{emoji, count}]`. Malformed/absent
- * JSON degrades to an empty list (never throws).
+ * The six quick reactions offered on every bubble (Task 02-6 step 1). They are
+ * the wire-presence set, NOT `EmojiPicker.QUICK_EMOJI` (that one appends emoji
+ * to the composer text and is a much wider palette).
+ */
+export const QUICK_REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '🎉'];
+
+/**
+ * Parse a message's `reactions_json` into `[{emoji, count}]`, in the order the
+ * emoji were first seen.
+ *
+ * ── THE CANONICAL SHAPE IS A STRING ARRAY ────────────────────────────────
+ *
+ * The engine stores `["❤️","😂"]` (see convrepo.ToggleConversationMessageReaction
+ * — a plain JSON array of emoji strings, because `formatReactionsAnnotation` and
+ * the like counters both depend on that form). This reader used to accept ONLY
+ * `[{emoji,count}]` and a map, so a canonical row parsed to `[]` and the chips
+ * silently vanished. All three shapes are now accepted:
+ *
+ *   ["❤️","😂"]                     — canonical (engine writes this)
+ *   [{"emoji":"❤️","count":2}, …]   — app/desktop batch shape
+ *   {"❤️": 2, …}                    — hypothetical per-user/count map
+ *
+ * A plain string element counts as ONE occurrence, so duplicates aggregate:
+ * `["❤️","❤️"]` → `[{emoji:'❤️', count:2}]` — which is how "two people
+ * reacted" will read once the phone syncs per-user rows. Malformed/absent JSON
+ * degrades to an empty list (never throws).
+ *
+ * @param {string|object|null|undefined} reactionsJson
+ * @returns {Array<{emoji: string, count: number}>}
  */
 export function parseReactions(reactionsJson) {
     if (!reactionsJson) return [];
-    try {
-        const parsed = JSON.parse(reactionsJson);
-        if (Array.isArray(parsed)) {
-            return parsed
-                .filter((r) => r && r.emoji)
-                .map((r) => ({ emoji: r.emoji, count: Number(r.count) || 1 }));
+
+    let parsed = reactionsJson;
+    if (typeof reactionsJson === 'string') {
+        try {
+            parsed = JSON.parse(reactionsJson);
+        } catch {
+            return [];
         }
-        if (parsed && typeof parsed === 'object') {
-            return Object.entries(parsed).map(([emoji, count]) => ({ emoji, count: Number(count) || 1 }));
-        }
-        return [];
-    } catch {
-        return [];
     }
+
+    const counts = new Map();
+    const bump = (emoji, count) => {
+        const key = typeof emoji === 'string' ? emoji.trim() : '';
+        if (!key) return;
+        const n = Number(count);
+        counts.set(key, (counts.get(key) || 0) + (Number.isFinite(n) && n > 0 ? n : 1));
+    };
+
+    if (Array.isArray(parsed)) {
+        for (const entry of parsed) {
+            if (typeof entry === 'string') {
+                bump(entry, 1);
+            } else if (entry && typeof entry === 'object' && entry.emoji) {
+                bump(entry.emoji, entry.count);
+            }
+        }
+        return [...counts].map(([emoji, count]) => ({ emoji, count }));
+    }
+
+    if (parsed && typeof parsed === 'object') {
+        for (const [emoji, count] of Object.entries(parsed)) {
+            // A per-user map (emoji → sender ids) counts its senders; a plain
+            // count map uses the number.
+            if (Array.isArray(count)) bump(emoji, count.length);
+            else bump(emoji, count);
+        }
+    }
+
+    return [...counts].map(([emoji, count]) => ({ emoji, count }));
 }
 
 /**
  * Toggle a reaction on a reactions list, returning the new list plus its JSON
  * string form (ready for the `reactions_json` column).
+ *
+ * Adding PRESERVES POSITION (an existing chip is bumped, never moved) because a
+ * re-ordered chip row reads as "the reaction jumped" even though the set is
+ * identical. Removing an emoji whose count reaches zero drops the chip.
+ *
+ * @param {Array<{emoji: string, count: number}>} reactions
+ * @param {string} emoji
+ * @returns {{reactions: Array<{emoji: string, count: number}>, json: string}}
  */
 export function toggleReaction(reactions, emoji) {
     const list = (reactions || []).map((r) => ({ ...r }));
@@ -138,6 +198,47 @@ export function toggleReaction(reactions, emoji) {
     return { reactions: list, json: JSON.stringify(list) };
 }
 
+/**
+ * True when the local user has already reacted with `emoji` — presence in the
+ * canonical array already means "I reacted" (one local user), and a count > 0
+ * means the same for the aggregated shapes.
+ *
+ * @param {string} reactionsJson
+ * @param {string} emoji
+ * @returns {boolean}
+ */
+export function hasReaction(reactionsJson, emoji) {
+    return parseReactions(reactionsJson).some((r) => r.emoji === emoji && r.count > 0);
+}
+
+/**
+ * The op to send for a chip tap: tapping an emoji you already reacted with
+ * removes yours, anything else adds it. Mirrors the engine's add/remove verbs.
+ *
+ * @param {string} reactionsJson
+ * @param {string} emoji
+ * @returns {'add'|'remove'}
+ */
+export function nextReactionOp(reactionsJson, emoji) {
+    return hasReaction(reactionsJson, emoji) ? 'remove' : 'add';
+}
+
+/**
+ * The quoted-text line for a bubble: the server-computed `reply_preview`, or a
+ * short excerpt of the parent message when the timeline still holds it (a
+ * just-sent reply has no preview until the next page load).
+ *
+ * @param {object|null|undefined} message
+ * @param {Array<object>} timeline - the loaded messages (lookup fallback)
+ * @returns {string} empty when this is not a reply
+ */
+export function replyQuoteText(message, timeline) {
+    if (!message?.reply_to_message_id) return '';
+    if (message.reply_preview) return message.reply_preview;
+    const parent = (timeline || []).find((m) => m.id === message.reply_to_message_id);
+    return truncatePreview((parent?.content || '').trim(), 80);
+}
+
 /** Truncate a preview string to `max` characters with an ellipsis. */
 export function truncatePreview(text, max = 80) {
     if (!text) return '';
@@ -145,14 +246,26 @@ export function truncatePreview(text, max = 80) {
 }
 
 /**
- * Sort conversations the way the app's inbox does: pinned threads first, then
- * most-recent activity (descending). Sorting is stable, so rows with the same
- * timestamp keep their incoming order.
+ * Sort conversations the way the engine's inbox does (owner decision
+ * 2026-10-31, mirroring the phone app): pinned threads first, then last
+ * MESSAGE time (descending); message-less threads sink to the bottom, where
+ * they keep their incoming order (stable sort).
+ *
+ * `last_activity_at` takes no part in the ordering — the server rule this
+ * mirrors is `pinned DESC, last_message_at DESC, pk DESC`.
  */
 export function sortConversations(conversations) {
+    const messageTime = (c) => toTime(c?.last_message?.created_at);
     return (conversations || []).slice().sort((a, b) => {
         if (!!a?.pinned !== !!b?.pinned) return a?.pinned ? -1 : 1;
-        return toTime(b.last_activity_at) - toTime(a.last_activity_at);
+        const at = messageTime(a);
+        const bt = messageTime(b);
+        // Message-less rows sort below every dated one, exactly like the
+        // engine's SQL (NULLs last in DESC).
+        if (!at && !bt) return 0;
+        if (!at) return 1;
+        if (!bt) return -1;
+        return bt - at;
     });
 }
 
@@ -181,67 +294,14 @@ export function removeConversation(conversations, participantKey) {
     return (conversations || []).filter((c) => conversationKey(c) !== participantKey);
 }
 
-/**
- * Merge per-companion chat-list pages into ONE inbox list (the app's chat-list
- * semantics).
- *
- * The engine lists conversations from a POV entity's perspective, so a private
- * thread between companion A and the persona appears only in A's list — the
- * desktop inbox therefore fetches one page per AI partner and merges them.
- * Group/world participant sets can legitimately appear in more than one
- * partner's page under the SAME participant_key, so rows are deduped by that
- * key: the freshest copy wins and the unread badges are combined with max() so
- * a duplicate can never hide unread messages.
- *
- * @param {Array<Array<object>>} pages - one array of conversation rows per partner
- * @returns {Array<object>} deduped, sorted rows (pinned first, then recency)
+/*
+ * NOTE (2026-10-31): mergeConversations/mergeConversationPages — the
+ * pre-convergence fan-out inbox that fetched one chat-list page per AI
+ * partner and merged them client-side — were removed. The desktop inbox
+ * reads the SAME global route the app converged on
+ * (`GET /entities/chat-list?pov_entity_id=…`, server order authoritative),
+ * so nothing called them anymore.
  */
-export function mergeConversations(pages) {
-    const byKey = new Map();
-    for (const page of pages || []) {
-        for (const row of page || []) {
-            const key = conversationKey(row);
-            if (!key) continue;
-            const existing = byKey.get(key);
-            if (!existing) {
-                byKey.set(key, row);
-                continue;
-            }
-            const rowIsFresher = toTime(row.last_activity_at) >= toTime(existing.last_activity_at);
-            const fresher = rowIsFresher ? row : existing;
-            byKey.set(key, {
-                ...fresher,
-                unread_count: Math.max(existing.unread_count || 0, row.unread_count || 0),
-            });
-        }
-    }
-    return sortConversations([...byKey.values()]);
-}
-
-/**
- * Fold `Promise.allSettled`-style results from the per-partner chat-list
- * loads into one inbox. A single failing partner must not blank the list: its
- * page is skipped and only the failure count is reported.
- *
- * @param {Array<{status: 'fulfilled'|'rejected', value?: object[], reason?: any}>} results
- * @returns {{ conversations: object[], failures: number, total: number }}
- */
-export function mergeConversationPages(results) {
-    const pages = [];
-    let failures = 0;
-    for (const result of results || []) {
-        if (result?.status === 'fulfilled') {
-            pages.push(result.value);
-        } else {
-            failures += 1;
-        }
-    }
-    return {
-        conversations: mergeConversations(pages),
-        failures,
-        total: (results || []).length,
-    };
-}
 
 /**
  * Immutably set a boolean flag for an entity in a flag map (typing / recording).
@@ -336,14 +396,26 @@ export function conversationCompanion(conversation, entityById) {
     return (id && entityById && entityById[id]) || null;
 }
 
-/** Display name for a chat-list row — always the owning AI companion. */
+/**
+ * Display name for a chat-list row — always the owning AI companion.
+ *
+ * The GLOBAL inbox row states the companion's name itself
+ * (`partner_display_name`), so a row can be named before (or without) the
+ * entity list. That server name wins; `entityById` is the fallback for the
+ * per-entity surface, which leaves the global fields zero-valued.
+ */
 export function conversationDisplayName(conversation, entityById) {
-    return entityDisplayName(conversationCompanion(conversation, entityById)) || conversation?.entity_id || '';
+    return conversation?.companion_display_name
+        || entityDisplayName(conversationCompanion(conversation, entityById))
+        || conversation?.entity_id
+        || '';
 }
 
 /** Linked character-profile id for a chat-list row's companion (avatar). */
 export function conversationAvatarProfileId(conversation, entityById) {
-    return conversationCompanion(conversation, entityById)?.character_profile_id || '';
+    return conversation?.companion_profile_id
+        || conversationCompanion(conversation, entityById)?.character_profile_id
+        || '';
 }
 
 /**
@@ -441,6 +513,9 @@ export function normalizeChatMessage(msg) {
         is_edited: !!msg.is_edited,
         edit_of_message_id: msg.edit_of_message_id || '',
         reply_to_message_id: msg.reply_to_message_id || '',
+        // Server-computed quote text (Task 02-6). Empty for a non-reply; the
+        // bubble falls back to a timeline lookup for a just-sent reply.
+        reply_preview: msg.reply_preview || '',
         reactions_json: msg.reactions_json || '',
         is_pinned: !!msg.is_pinned,
         is_read: typeof msg.is_read === 'boolean' ? msg.is_read : null,
@@ -450,28 +525,41 @@ export function normalizeChatMessage(msg) {
 }
 
 /**
- * Normalise one parity chat-list row into the shape the chat list renders. The
- * POV entity id is not on the row (it is the request path parameter), so the
- * caller supplies it.
+ * Normalise one parity chat-list row into the shape the chat list renders.
+ *
+ * The POV entity id is the per-entity route's path parameter, so it is supplied
+ * by the caller for that surface. The GLOBAL inbox (Task 02-4) states it on the
+ * row (`entity_id`), along with everything needed to name and badge it without
+ * a second request — those fields are read here and `entityId` merely fills in
+ * for a row that omits one (the per-entity route emits them zero-valued).
  *
  * @param {object} row
- * @param {string} entityId
+ * @param {string} [entityId] - fallback POV/owning entity id
  * @returns {object}
  */
-export function normalizeChatConversation(row, entityId) {
+export function normalizeChatConversation(row, entityId = '') {
     const participantIds = parseParticipantIds(row?.participant_ids);
     const lastMessage = normalizeChatMessage(row?.last_message);
+    const owningEntityId = row?.entity_id || entityId || '';
     return {
         interaction_id: row?.interaction_id || '',
         participant_key: row?.participant_key || '',
-        entity_id: entityId,
+        entity_id: owningEntityId,
         participant_ids: participantIds,
-        partner_entity_id: derivePartnerEntityId(participantIds, entityId),
+        partner_entity_id: row?.partner_entity_id || derivePartnerEntityId(participantIds, owningEntityId),
         scope: row?.interaction_scope || 'private',
-        last_activity_at: row?.last_message_at || lastMessage?.created_at || null,
+        last_activity_at: row?.last_activity_at || row?.last_message_at || lastMessage?.created_at || null,
         unread_count: row?.unread_count || 0,
         pinned: !!row?.pinned,
         archived: !!row?.archived,
+        // Global-inbox flags (entities.is_muted / is_disabled). The unread badge
+        // is suppressed for a muted thread, matching the Android rule.
+        muted: !!row?.muted,
+        entity_disabled: !!row?.entity_disabled,
+        // Companion identity as stated by the server, so naming a row costs no
+        // entity lookup (and works before chatEntities has loaded).
+        companion_display_name: row?.partner_display_name || '',
+        companion_profile_id: row?.partner_profile_id || '',
         reply_mode: row?.reply_mode || 'realistic',
         last_message: lastMessage,
     };
@@ -487,4 +575,311 @@ export function deriveParticipantKey(participantIds, entityId, scope) {
         return 'group:' + (participantIds || []).slice().sort().join('+');
     }
     return 'world:' + (entityId || '');
+}
+
+// ── Timeline readability (Task 02-7) ─────────────────────────────────────
+//
+// Everything below backs the day dividers, the greeting alternates, the
+// read-receipt reconciliation of the "new messages" divider and the render
+// window that keeps a long thread from mounting every loaded message.
+
+/**
+ * Rows the timeline mounts at once.
+ *
+ * This is the cheap alternative to virtualization: a thread that has paged ten
+ * times still mounts at most this many bubbles, and older rows arrive a page at
+ * a time as the user scrolls back. Android caps its timeline at 200 the same
+ * way, and `react-window` was deliberately NOT added — see the task note in
+ * `.current_work/desktop-app-readiness/02-Chat-Parity.md`.
+ */
+export const TIMELINE_RENDER_LIMIT = 200;
+
+/** Rows the "show older" control reveals per step (the engine's page size). */
+export const TIMELINE_PAGE = 50;
+
+/**
+ * Local calendar day of a timestamp as `YYYY-MM-DD`, or '' when unparseable.
+ *
+ * Built from the LOCAL date parts on purpose: `toISOString()` answers in UTC, so
+ * a message sent at 23:30 in UTC+1 would file under the NEXT day — and the
+ * divider would appear a day early.
+ *
+ * @param {string|number|Date|null|undefined} value
+ * @returns {string} '' for a missing/unparseable timestamp
+ */
+export function dayKey(value) {
+    const time = toTime(value);
+    if (!time) return '';
+    const date = new Date(time);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
+ * Label descriptor for a day divider: `{ kind: 'today'|'yesterday'|'date',
+ * key, date }`, or null when the timestamp cannot be read.
+ *
+ * "Yesterday" steps the LOCAL calendar back one day (`setDate(getDate() - 1)`)
+ * instead of subtracting 24 hours — the subtraction is wrong across a DST
+ * boundary, where a day can be 23 or 25 hours long.
+ *
+ * @param {string|number|Date|null|undefined} createdAt
+ * @param {Date} [now]
+ * @returns {{kind: 'today'|'yesterday'|'date', key: string, date: Date}|null}
+ */
+export function dayDividerInfo(createdAt, now = new Date()) {
+    const key = dayKey(createdAt);
+    if (!key) return null;
+    const date = new Date(toTime(createdAt));
+    if (key === dayKey(now)) return { kind: 'today', key, date };
+    const yesterday = new Date(toTime(now));
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (key === dayKey(yesterday)) return { kind: 'yesterday', key, date };
+    return { kind: 'date', key, date };
+}
+
+/**
+ * One entry per message: the divider that belongs ABOVE it, or null.
+ *
+ * The first message with a readable date always opens a divider — the top of the
+ * loaded history needs a label — and every later one only when the local date
+ * changes. An unparseable timestamp opens no divider AND does not reset the
+ * running day, so one bad row cannot re-open the same day twice.
+ *
+ * @param {Array<object>} messages - oldest → newest
+ * @param {Date} [now]
+ * @returns {Array<object|null>} same length as `messages`
+ */
+export function buildDayDividers(messages, now = new Date()) {
+    const list = messages || [];
+    const dividers = [];
+    let previousKey = '';
+    for (const message of list) {
+        const info = dayDividerInfo(message?.created_at, now);
+        if (!info || info.key === previousKey) {
+            dividers.push(null);
+            continue;
+        }
+        previousKey = info.key;
+        dividers.push(info);
+    }
+    return dividers;
+}
+
+/**
+ * Bounds of the rendered slice of the timeline.
+ *
+ * `endId` is the id of the NEWEST rendered message (`null` = the live tail). The
+ * window is addressed by ID rather than by index because older pages PREPEND: an
+ * index would shift under a new page, while an id keeps pointing at the same
+ * message.
+ *
+ * @param {Array<object>} messages
+ * @param {string|null} endId
+ * @param {number} [limit]
+ * @returns {{start: number, end: number}}
+ */
+export function timelineWindow(messages, endId, limit = TIMELINE_RENDER_LIMIT) {
+    const list = messages || [];
+    const size = Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : TIMELINE_RENDER_LIMIT;
+    let end = list.length;
+    if (endId) {
+        const index = list.findIndex((message) => message?.id === endId);
+        if (index !== -1) end = index + 1;
+    }
+    return { start: Math.max(0, end - size), end };
+}
+
+/**
+ * Slide the render window by `delta` rows (negative = toward older messages) and
+ * return the new `endId`, or null for "follow the live tail".
+ *
+ * Sliding rather than GROWING the window is what keeps the mount bounded: rows
+ * that fall off one edge leave the DOM. The scroll anchor is what makes the swap
+ * invisible.
+ *
+ * @param {Array<object>} messages
+ * @param {string|null} endId
+ * @param {number} delta
+ * @param {number} [limit]
+ * @returns {string|null}
+ */
+export function slideWindowEnd(messages, endId, delta, limit = TIMELINE_RENDER_LIMIT) {
+    const list = messages || [];
+    if (list.length === 0) return null;
+    const { end } = timelineWindow(list, endId, limit);
+    const step = Number.isFinite(delta) ? Math.trunc(delta) : 0;
+    // Clamped to [1, length]: a window end of 0 would render NOTHING of a
+    // non-empty timeline, so the first message is always mounted.
+    const nextEnd = Math.min(list.length, Math.max(1, end + step));
+    // Covering the tail means "no window" — the caller follows new messages.
+    if (nextEnd >= list.length) return null;
+    return list[nextEnd - 1]?.id || null;
+}
+
+/**
+ * Mark every still-unread message read — the local half of a read receipt.
+ *
+ * ── WHY NOT "INBOUND ONLY" ───────────────────────────────────────────────
+ *
+ * The engine's receipt stamps `sender_entity_id != <interaction.entity_id>`,
+ * i.e. the rows the PARTNER sent. But `conversation_messages.entity_id` is the
+ * character for EVERY row (both the incoming handler in `modules/cognition.go`
+ * and the outgoing one in `processor.go` write `EntityID: <the character>`), so
+ * that predicate selects the USER's rows — the opposite of what it intends.
+ * Rows the AI sent therefore stay `is_read = 0` for life, which is exactly the
+ * set `isUnreadInbound` counts.
+ *
+ * Mirroring the engine predicate locally would leave those phantom unread rows
+ * in the timeline and the "new messages" divider would never retire. The honest
+ * local rule is therefore "an open thread has nothing unread": every row whose
+ * flag is still false is flipped, whichever side sent it. Outbound rows gain a
+ * `true` they should have had from birth, and nothing in the UI reads `is_read`
+ * on them — bubble side comes from `messageDirection`, not from this flag.
+ *
+ * This is what retires the divider the moment `markRead` succeeds, instead of
+ * waiting for the next page load.
+ *
+ * @param {Array<object>} messages
+ * @returns {Array<object>} the same array when nothing was unread
+ */
+export function markMessagesRead(messages) {
+    let changed = false;
+    const next = (messages || []).map((message) => {
+        if (!message || message.is_read !== false) return message;
+        changed = true;
+        return { ...message, is_read: true };
+    });
+    return changed ? next : messages || [];
+}
+
+/**
+ * Set the read flag of specific messages — the rollback path for a failed
+ * `markRead`. Addressed by id so a message that arrived meanwhile survives the
+ * restore.
+ *
+ * @param {Array<object>} messages
+ * @param {Iterable<string>} ids
+ * @param {boolean} read
+ * @returns {Array<object>}
+ */
+export function setMessagesReadFlag(messages, ids, read) {
+    const target = ids instanceof Set ? ids : new Set(ids || []);
+    if (target.size === 0) return messages || [];
+    return (messages || []).map((message) => (
+        message && target.has(message.id) ? { ...message, is_read: !!read } : message
+    ));
+}
+
+/**
+ * Ids of the messages that are still unread — the rollback snapshot for
+ * {@link markMessagesRead}. Deliberately direction-agnostic so the snapshot
+ * covers exactly the rows the flip touched (see that function for why).
+ *
+ * @param {Array<object>} messages
+ * @returns {string[]}
+ */
+export function unreadMessageIds(messages) {
+    return (messages || [])
+        .filter((message) => message?.is_read === false)
+        .map((message) => message.id);
+}
+
+/**
+ * Parse a JSON string-array column (`alternate_greetings`, `tags`, …) into a
+ * trimmed string array. Accepts an already-parsed array and tolerates '' / null
+ * / malformed JSON by returning an empty array (never throws).
+ *
+ * @param {string|string[]|null|undefined} raw
+ * @returns {string[]}
+ */
+export function parseJsonStringArray(raw) {
+    if (!raw) return [];
+    let parsed = raw;
+    if (typeof raw === 'string') {
+        const text = raw.trim();
+        if (!text) return [];
+        try {
+            parsed = JSON.parse(text);
+        } catch {
+            return [];
+        }
+    }
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+        .filter((value) => typeof value === 'string' && value.trim())
+        .map((value) => value.trim());
+}
+
+/**
+ * A chat entity's authored alternate greetings.
+ *
+ * The `GET /entities` payload nests the profile (`character_profile`) and the
+ * chat-entity option may also flatten `alternate_greetings` onto itself, so both
+ * shapes are accepted.
+ *
+ * @param {object|null|undefined} entity
+ * @returns {string[]}
+ */
+export function entityAlternateGreetings(entity) {
+    if (!entity) return [];
+    return parseJsonStringArray(
+        entity.alternate_greetings ?? entity.character_profile?.alternate_greetings
+    );
+}
+
+/**
+ * A chat entity's authored `scenario` text (Task 02-8 step 3).
+ *
+ * The `GET /entities` payload nests the profile (`character_profile`) and the
+ * chat-entity option may also flatten `scenario` onto itself, so both shapes are
+ * accepted — the same tolerance {@link entityAlternateGreetings} has, and for
+ * the same reason: the ✨ button must read the profile ChatView already loaded
+ * rather than issue a second request per keystroke-free render.
+ *
+ * @param {object|null|undefined} entity
+ * @returns {string} '' when the character has no scenario
+ */
+export function entityScenario(entity) {
+    if (!entity) return '';
+    const raw = entity.scenario ?? entity.character_profile?.scenario;
+    return typeof raw === 'string' ? raw.trim() : '';
+}
+
+/**
+ * Next index when cycling a fixed-length list (wraps, never throws).
+ * @param {number} current
+ * @param {number} length
+ * @returns {number}
+ */
+export function nextGreetingIndex(current, length) {
+    const size = Number.isFinite(length) ? Math.trunc(length) : 0;
+    if (size <= 0) return 0;
+    const index = Number.isFinite(current) ? Math.trunc(current) : 0;
+    return ((index + 1) % size + size) % size;
+}
+
+/**
+ * True while the thread is still in its OPENING state: the first message is the
+ * character's greeting and the user has not spoken yet.
+ *
+ * This mirrors the engine's own rule for a greeting regenerate (the greeting must
+ * still be the only thing that has happened) without pretending the desktop can
+ * re-run greeting generation — it cannot. Which is why the control offers the
+ * character's AUTHORED alternates and sends the chosen one as the user's first
+ * message, a normal `ENTITY_UTTERANCE` the pipeline already understands.
+ *
+ * @param {Array<object>} messages
+ * @param {string} ownEntityId
+ * @returns {boolean}
+ */
+export function isGreetingOpening(messages, ownEntityId) {
+    const list = messages || [];
+    if (list.length === 0) return false;
+    if (list[0]?.message_type !== 'greeting') return false;
+    for (let i = 1; i < list.length; i += 1) {
+        if (messageDirection(list[i], ownEntityId) === 'out') return false;
+    }
+    return true;
 }

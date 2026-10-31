@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useLogStream from '../../hooks/useLogStream.js';
 import { fetchLogs, fetchLogComponents, fetchLogEntities, fetchLogPromptTypes, getLogStreamUrl } from '../../services/management/logService.js';
 import LogEntry from './LogEntry.jsx';
 import FilterToolbar from './FilterToolbar.jsx';
 import LogLevelSettings from './LogLevelSettings.jsx';
 import Tooltip from '../ui/Tooltip.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { TerminalIcon } from '../../constants/icons.jsx';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 1000];
 
@@ -16,6 +20,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 1000];
  * entries via WebSocket. Duplicates are removed by entry ID.
  */
 export default function LogViewer() {
+    const { t } = useTranslation();
     // ── Filter state ──
     const [filters, setFilters] = useState({
         component: '',
@@ -339,9 +344,25 @@ export default function LogViewer() {
                 onScroll={handleScroll}
             >
                 {displayedEntries.length === 0 ? (
-                    <div className="flex items-center justify-center h-32 text-text-muted text-sm">
-                        {isLoadingHistory ? 'Loading logs...' : 'No log entries. Waiting for data...'}
-                    </div>
+                    isLoadingHistory ? (
+                        /* The page size is known, so show that many rows'
+                           worth of shape instead of the word "Loading". */
+                        <div className="log-viewer-scroll p-2 space-y-1" aria-busy="true">
+                            {Array.from({ length: Math.min(pageSize, 12) }).map((_, index) => (
+                                <div key={index} className="flex items-center gap-2 px-2 py-1.5">
+                                    <Skeleton inline width="4.5rem" height="0.6rem" />
+                                    <Skeleton inline width="3.5rem" height="1.1rem" radius="9999px" />
+                                    <Skeleton inline width={`${35 + ((index * 13) % 45)}%`} height="0.6rem" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={TerminalIcon}
+                            title={t('development:logs.empty.title')}
+                            description={t('development:logs.empty.description')}
+                        />
+                    )
                 ) : (
                     <>
                         {displayedEntries.map(entry => (

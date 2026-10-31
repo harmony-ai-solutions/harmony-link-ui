@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { setTranslator } from './translate.js';
 
 // Locale JSON imports
 import commonEn from './locales/en/common.json';
@@ -90,6 +91,17 @@ i18n
     defaultNS: 'common',
     ns: Object.keys(resources.en),
   });
+
+/**
+ * Publish `t` for non-React modules (stores/services).
+ *
+ * They must not import THIS module: it pulls in the locale JSON, which Node
+ * cannot load without import attributes, so any store that did would become
+ * unloadable under `node --test`. They import `translate.js` instead, and this
+ * one registration is the only bridge. Bound to i18n itself so a language
+ * change is picked up automatically.
+ */
+setTranslator((key, options) => i18n.t(key, options));
 
 /**
  * Switch the i18n language at runtime.

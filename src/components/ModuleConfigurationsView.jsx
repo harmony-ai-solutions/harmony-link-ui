@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import useModuleConfigStore from '../store/moduleConfigStore.js';
 import ModuleCard from './modules/ModuleCard.jsx';
+import PageHeader from './ui/PageHeader.jsx';
 import { MODULE_TYPE_OPTIONS } from '../constants/moduleConfiguration.js';
 import useAllIntegrationInstances from '../hooks/useAllIntegrationInstances.js';
 import useDockerStatus from '../hooks/useDockerStatus.js';
@@ -31,22 +32,12 @@ export default function ModuleConfigurationsView() {
         loadAllConfigs();
     };
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     return (
         <div className="flex flex-col min-h-full">
-            <div className="bg-background-surface px-6 py-4">
-                <h1 className="text-2xl font-extrabold tracking-tight">
-                    {colorFirstWord(t('moduleConfig:header.title'))}
-                </h1>
-                <p className="text-xs text-text-muted mt-0.5 font-medium">
-                    {t('moduleConfig:header.subtitle')}
-                </p>
-            </div>
+            <PageHeader
+                title={t('moduleConfig:header.title')}
+                subtitle={t('moduleConfig:header.subtitle')}
+            />
 
             <div data-tutorial-id="module-cards-container" className="flex-1 p-6 space-y-3">
                 {MODULE_TYPE_OPTIONS.map((moduleInfo) => (

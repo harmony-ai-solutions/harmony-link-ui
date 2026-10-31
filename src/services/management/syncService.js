@@ -247,3 +247,37 @@ export async function createCloudPairing() {
     if (!response.ok) throw await readPairingError(response, 'Failed to create cloud pairing code');
     return await response.json();
 }
+
+/**
+ * Read the sync-group key state (GET /api/sync/group/key-status) — never the
+ * key itself, only `{state, has_key, fingerprint?, rotation_required}`.
+ *
+ * @returns {Promise<Object>}
+ */
+export async function getSyncGroupKeyStatus() {
+    const response = await fetch(`${API_BASE_URL}/sync/group/key-status`, {
+        method: 'GET',
+        headers: getJsonHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch sync group key status');
+    return await response.json();
+}
+
+/**
+ * Turn cloud sync on: mint the sync-group key (POST /api/sync/group/init).
+ *
+ * On a signed-in desktop the engine also escrows the key at the account escrow
+ * itself, so a failed escrow surfaces here as an error (the key is minted but
+ * not shareable) — the UI retries via rotate rather than pretending success.
+ *
+ * @returns {Promise<Object>} the GroupKeyStatus (with the raw key on the
+ *                            app-led flow; never rendered by the UI)
+ */
+export async function initSyncGroup() {
+    const response = await fetch(`${API_BASE_URL}/sync/group/init`, {
+        method: 'POST',
+        headers: getJsonHeaders()
+    });
+    if (!response.ok) throw await readPairingError(response, 'Failed to turn on cloud sync');
+    return await response.json();
+}

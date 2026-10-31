@@ -6,6 +6,7 @@ import { toast } from '../../store/toastStore.js';
 import ConfirmDialog from '../modals/ConfirmDialog.jsx';
 import ThemedSelect from './ThemedSelect';
 import Tooltip from '../ui/Tooltip.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
 
 /**
  * Preset selector dropdown that loads available presets and fires onChange.
@@ -130,7 +131,9 @@ const PresetSelector = ({ value, onChange }) => {
                     disabled={isLoading}
                     className="flex-1 min-w-0"
                 />
-                {isLoading && <span className="ml-2 text-xs text-text-muted">Loading...</span>}
+                {/* Inline placeholder instead of the word "Loading" — the
+                    select keeps its width, so nothing shifts. */}
+                {isLoading && <Skeleton inline className="ml-2" width="3.5rem" height="0.65rem" />}
                 <Tooltip content="Upload or create a new preset">
                     <button
                         type="button"

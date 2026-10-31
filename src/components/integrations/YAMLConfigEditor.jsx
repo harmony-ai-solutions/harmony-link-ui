@@ -2,6 +2,7 @@ import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { getIntegrationTemplate, getIntegrationInstanceConfig, saveIntegrationInstanceConfig, deleteIntegrationInstance, getIntegrationInstanceStatus } from '../../services/management/integrationsService.js';
 import { Editor } from '@monaco-editor/react';
+import Skeleton from '../ui/Skeleton.jsx';
 
 const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSave }) => {
     const [config, setConfig] = useState('');
@@ -162,7 +163,12 @@ const YAMLConfigEditor = ({ integrationName, instanceName, isOpen, onClose, onSa
                                         </div>
                                     )}
                                     {loading ? (
-                                        <div className="text-white">Loading...</div>
+                                        /* The editor is a fixed-height block, so
+                                           the placeholder matches its height. */
+                                        <div className="space-y-2" aria-busy="true">
+                                            <Skeleton className="ui-skeleton-line" width="25%" />
+                                            <Skeleton height="500px" radius="0.5rem" />
+                                        </div>
                                     ) : (
                                         showEditor && <Editor
                                             height="500px"

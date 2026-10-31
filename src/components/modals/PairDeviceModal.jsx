@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
-import { createLanPairing, createCloudPairing } from '../../services/management/syncService.js';
+import { createLanPairing, createCloudPairing, getSyncGroupKeyStatus } from '../../services/management/syncService.js';
 import useCloudAccount from '../../hooks/useCloudAccount.js';
 import { LogPrint } from '../../utils/logger.js';
 
@@ -17,11 +17,11 @@ import { LogPrint } from '../../utils/logger.js';
  * each call — displaying the QR is the consent gesture — so we fetch on tab-open
  * and on every regenerate. QR content is the payload JSON.
  *
- * Cloud (engine E2): POST /api/sync/pairing/cloud returns the exact shape phones
- * already parse (`{ relay_url, pairing_token, account_hint }`). It requires
- * `device_authorized`; while a portal sign-in is in flight
- * (`signed_in:false, device_authorization_pending:true`) the tab shows a
- * "finish signing in in your browser" waiting state instead of a QR.
+ * Cloud (engine E2): POST /api/sync/pairing/cloud returns the v3 cloud QR
+ * payload (`{v, kind, relay_url, pairing_token, account_hint, dataset_id}`). It
+ * requires `device_authorized` AND an initialized sync group (contract 1.9.0):
+ * a QR minted before the group exists can never be joined, so the tab shows
+ * "Turn on cloud sync first" and mints automatically once the key appears.
  */
 
 const DEFAULT_TTL = 300;
@@ -106,6 +106,10 @@ export const PairDeviceModal = ({ show, onClose }) => {
     const [error, setError] = useState(null);
     const [remaining, setRemaining] = useState(0);
     const [expired, setExpired] = useState(false);
+    // Cloud sync (contract 1.9.0): the account's sync group must exist before a
+    // QR can be minted. `hasGroupKey` gates the mint; the tab polls the key
+    // status so the QR appears as soon as cloud sync is turned on elsewhere.
+    const [hasGroupKey, setHasGroupKey] = useState(false);
 
     const totalRef = useRef(DEFAULT_TTL);
     const deadlineRef = useRef(0);
@@ -114,6 +118,17 @@ export const PairDeviceModal = ({ show, onClose }) => {
     const authorized = account?.device_authorized === true;
     const pending = account?.device_authorization_pending === true;
     const cloudReady = signedIn && authorized;
+
+    const refreshGroupKey = useCallback(async () => {
+        try {
+            const ks = await getSyncGroupKeyStatus();
+            setHasGroupKey(ks?.has_key === true);
+            return ks?.has_key === true;
+        } catch (err) {
+            LogPrint('Sync group key status failed: ' + err.message);
+            return false;
+        }
+    }, []);
 
     const fetchPayload = useCallback(async (kind) => {
         setLoading(true);
@@ -129,7 +144,14 @@ export const PairDeviceModal = ({ show, onClose }) => {
         } catch (err) {
             LogPrint(`Pairing payload (${kind}) failed: ` + err.message);
             setPayload(null);
-            setError(err);
+            if (kind === 'cloud' && err?.status === 409) {
+                // The group disappeared (or was never on): show the guidance
+                // state instead of a red error the user cannot act on.
+                setHasGroupKey(false);
+                setError(null);
+            } else {
+                setError(err);
+            }
         } finally {
             setLoading(false);
         }
@@ -140,6 +162,7 @@ export const PairDeviceModal = ({ show, onClose }) => {
         if (!show) return;
         setTab('lan');
         setExpired(false);
+        setHasGroupKey(false);
         fetchPayload('lan');
     }, [show, fetchPayload]);
 
@@ -156,15 +179,32 @@ export const PairDeviceModal = ({ show, onClose }) => {
         return () => clearInterval(id);
     }, [show, payload]);
 
-    // Auto-mint the cloud QR once the device becomes authorized while the cloud
-    // tab is open (the portal Allow click flips the engine's status to
-    // signed_in + device_authorized).
+    // Cloud tab: watch the sync-group key. Cloud pairing is impossible until
+    // the desktop owns a group, so poll while the tab is open and no key exists
+    // (the user may turn cloud sync on in the Sync view in another window).
+    useEffect(() => {
+        if (!show || tab !== 'cloud' || !cloudReady || hasGroupKey) return undefined;
+        let cancelled = false;
+        const check = () => {
+            if (!cancelled) refreshGroupKey();
+        };
+        check();
+        const id = setInterval(check, 3000);
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
+    }, [show, tab, cloudReady, hasGroupKey, refreshGroupKey]);
+
+    // Auto-mint the cloud QR once the device becomes authorized AND the group key
+    // exists while the cloud tab is open (the portal Allow click flips the
+    // engine's status; turning cloud sync on flips the key).
     useEffect(() => {
         if (!show || tab !== 'cloud') return;
-        if (cloudReady && !payload && !loading && !error) {
+        if (cloudReady && hasGroupKey && !payload && !loading && !error) {
             fetchPayload('cloud');
         }
-    }, [show, tab, cloudReady, payload, loading, error, fetchPayload]);
+    }, [show, tab, cloudReady, hasGroupKey, payload, loading, error, fetchPayload]);
 
     const handleSelectTab = (next) => {
         if (next === tab) return;
@@ -172,7 +212,7 @@ export const PairDeviceModal = ({ show, onClose }) => {
         setError(null);
         if (next === 'lan') {
             fetchPayload('lan');
-        } else if (next === 'cloud' && cloudReady) {
+        } else if (next === 'cloud' && cloudReady && hasGroupKey) {
             fetchPayload('cloud');
         } else {
             setPayload(null);
@@ -181,14 +221,14 @@ export const PairDeviceModal = ({ show, onClose }) => {
 
     const regenerate = () => {
         if (tab === 'lan') fetchPayload('lan');
-        else if (cloudReady) fetchPayload('cloud');
+        else if (cloudReady && hasGroupKey) fetchPayload('cloud');
     };
 
     if (!show) return null;
 
     const isCloud = tab === 'cloud';
     const qrValue = payload ? JSON.stringify(payload) : '';
-    const showQr = payload && !loading && (isCloud ? cloudReady : true);
+    const showQr = payload && !loading && (isCloud ? cloudReady && hasGroupKey : true);
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -298,7 +338,16 @@ export const PairDeviceModal = ({ show, onClose }) => {
                                 </div>
                             )}
 
-                            {cloudReady && (
+                            {/* Contract 1.9.0: no sync group ⇒ no joinable QR.
+                                Point at the Sync view instead of a dead code. */}
+                            {cloudReady && !hasGroupKey && (
+                                <div className="text-center space-y-3 py-8">
+                                    <p className="text-text-primary font-medium">{t('pairing.cloudGroupRequiredTitle')}</p>
+                                    <p className="text-text-muted text-sm">{t('pairing.cloudGroupRequiredHint')}</p>
+                                </div>
+                            )}
+
+                            {cloudReady && hasGroupKey && (
                                 <>
                                     {loading && !payload && (
                                         <div className="flex items-center justify-center h-64">

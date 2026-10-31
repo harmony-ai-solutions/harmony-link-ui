@@ -13,3 +13,8 @@ export const SettingsTabSimulator = "simulator";
 // used to be reachable only through a modal opened from General Settings; that
 // modal entry point is kept for compatibility, this tab is the primary path.
 export const SettingsTabSync = "sync";
+// Conversations group (Phase 02). The inbox itself lives on the Chat tab; these
+// two are the "filed away" destinations beside it. Both are Simple-mode: filing
+// a thread away and turning a partner back on are not power features.
+export const SettingsTabArchived = "archived";
+export const SettingsTabDisabledAIs = "disabled-ais";

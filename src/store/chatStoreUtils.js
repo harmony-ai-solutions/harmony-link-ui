@@ -246,14 +246,26 @@ export function truncatePreview(text, max = 80) {
 }
 
 /**
- * Sort conversations the way the app's inbox does: pinned threads first, then
- * most-recent activity (descending). Sorting is stable, so rows with the same
- * timestamp keep their incoming order.
+ * Sort conversations the way the engine's inbox does (owner decision
+ * 2026-10-31, mirroring the phone app): pinned threads first, then last
+ * MESSAGE time (descending); message-less threads sink to the bottom, where
+ * they keep their incoming order (stable sort).
+ *
+ * `last_activity_at` takes no part in the ordering — the server rule this
+ * mirrors is `pinned DESC, last_message_at DESC, pk DESC`.
  */
 export function sortConversations(conversations) {
+    const messageTime = (c) => toTime(c?.last_message?.created_at);
     return (conversations || []).slice().sort((a, b) => {
         if (!!a?.pinned !== !!b?.pinned) return a?.pinned ? -1 : 1;
-        return toTime(b.last_activity_at) - toTime(a.last_activity_at);
+        const at = messageTime(a);
+        const bt = messageTime(b);
+        // Message-less rows sort below every dated one, exactly like the
+        // engine's SQL (NULLs last in DESC).
+        if (!at && !bt) return 0;
+        if (!at) return 1;
+        if (!bt) return -1;
+        return bt - at;
     });
 }
 
@@ -282,67 +294,14 @@ export function removeConversation(conversations, participantKey) {
     return (conversations || []).filter((c) => conversationKey(c) !== participantKey);
 }
 
-/**
- * Merge per-companion chat-list pages into ONE inbox list (the app's chat-list
- * semantics).
- *
- * The engine lists conversations from a POV entity's perspective, so a private
- * thread between companion A and the persona appears only in A's list — the
- * desktop inbox therefore fetches one page per AI partner and merges them.
- * Group/world participant sets can legitimately appear in more than one
- * partner's page under the SAME participant_key, so rows are deduped by that
- * key: the freshest copy wins and the unread badges are combined with max() so
- * a duplicate can never hide unread messages.
- *
- * @param {Array<Array<object>>} pages - one array of conversation rows per partner
- * @returns {Array<object>} deduped, sorted rows (pinned first, then recency)
+/*
+ * NOTE (2026-10-31): mergeConversations/mergeConversationPages — the
+ * pre-convergence fan-out inbox that fetched one chat-list page per AI
+ * partner and merged them client-side — were removed. The desktop inbox
+ * reads the SAME global route the app converged on
+ * (`GET /entities/chat-list?pov_entity_id=…`, server order authoritative),
+ * so nothing called them anymore.
  */
-export function mergeConversations(pages) {
-    const byKey = new Map();
-    for (const page of pages || []) {
-        for (const row of page || []) {
-            const key = conversationKey(row);
-            if (!key) continue;
-            const existing = byKey.get(key);
-            if (!existing) {
-                byKey.set(key, row);
-                continue;
-            }
-            const rowIsFresher = toTime(row.last_activity_at) >= toTime(existing.last_activity_at);
-            const fresher = rowIsFresher ? row : existing;
-            byKey.set(key, {
-                ...fresher,
-                unread_count: Math.max(existing.unread_count || 0, row.unread_count || 0),
-            });
-        }
-    }
-    return sortConversations([...byKey.values()]);
-}
-
-/**
- * Fold `Promise.allSettled`-style results from the per-partner chat-list
- * loads into one inbox. A single failing partner must not blank the list: its
- * page is skipped and only the failure count is reported.
- *
- * @param {Array<{status: 'fulfilled'|'rejected', value?: object[], reason?: any}>} results
- * @returns {{ conversations: object[], failures: number, total: number }}
- */
-export function mergeConversationPages(results) {
-    const pages = [];
-    let failures = 0;
-    for (const result of results || []) {
-        if (result?.status === 'fulfilled') {
-            pages.push(result.value);
-        } else {
-            failures += 1;
-        }
-    }
-    return {
-        conversations: mergeConversations(pages),
-        failures,
-        total: (results || []).length,
-    };
-}
 
 /**
  * Immutably set a boolean flag for an entity in a flag map (typing / recording).

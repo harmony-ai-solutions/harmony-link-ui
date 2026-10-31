@@ -28,9 +28,10 @@ import { duplicateNameHints } from './chatNameHints.js';
  * ONE list, every thread across every AI companion, exactly the mobile app's
  * inbox: the engine returns the rows already deduped by `participant_key`,
  * flagged (pinned / archived / muted / disabled) and ordered
- * `pinned DESC, last_activity_at DESC`. The client never re-sorts — live
- * updates patch rows in place, and a client-side sort would make a row jump
- * under the pointer.
+ * `pinned DESC, last_message_at DESC` (message time only — activity takes no
+ * part; message-less threads sink to the bottom). The client never re-sorts —
+ * live updates patch rows in place, and a client-side sort would make a row
+ * jump under the pointer.
  *
  * Presented for scanning rather than filtered by a required "pick an entity
  * first" step:

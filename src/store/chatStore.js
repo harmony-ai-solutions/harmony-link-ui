@@ -63,7 +63,8 @@ import { translate } from '../i18n/translate.js';
  * Chat list: the desktop inbox IS the mobile inbox — ONE request
  * (`GET /api/entities/chat-list`) returns every active thread across all
  * companions, already deduped by `participant_key`, flagged (pinned / archived
- * / muted / disabled) and ordered `pinned DESC, last_activity_at DESC` in SQL.
+ * / muted / disabled) and ordered `pinned DESC, last_message_at DESC` in SQL
+ * (message time only; message-less threads sink to the bottom).
  * Each row is named and avatar'd by the AI companion that owns it
  * (`conversation.entity_id`); `partner_entity_id` is the persona "user" on a
  * private companion thread and is deliberately NOT the row label.
@@ -255,7 +256,7 @@ function stampMessagesWithTranscription(messages) {
  * to address both or a flag change on an archived thread would be lost.
  *
  * The incoming order is preserved (no re-sort): the engine owns the ordering
- * (`pinned DESC, last_activity_at DESC`) and re-sorting here would make a row
+ * (`pinned DESC, last_message_at DESC`) and re-sorting here would make a row
  * jump while the user is reading it.
  *
  * @param {Array<object>} rows
@@ -484,7 +485,7 @@ export const useChatStore = create((set, get) => ({
      * This replaces the old per-entity fan-out (`loadConversations(entityId)`),
      * which listed one companion at a time and could not be scanned. The engine
      * now dedupes by `participant_key`, joins the settings and mute state and
-     * orders `pinned DESC, last_activity_at DESC` — all in SQL. The returned
+     * orders `pinned DESC, last_message_at DESC` — all in SQL. The returned
      * order is therefore AUTHORITATIVE: it is stored as-is and never re-sorted
      * client-side, because re-sorting on each live update makes rows jump.
      *

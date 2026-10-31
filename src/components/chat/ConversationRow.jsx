@@ -135,7 +135,11 @@ const ConversationRow = ({
                         </span>
                         {renderStatus()}
                         <span className="chat-list-time">
-                            {formatRowTime(conversation.last_activity_at || conversation.last_message?.created_at)}
+                            {/* The row's date is the last MESSAGE time — the
+                                same time the list orders by. Activity is only
+                                the fallback for message-less threads, whose
+                                rows sort to the bottom anyway. */}
+                            {formatRowTime(conversation.last_message?.created_at || conversation.last_activity_at)}
                         </span>
                     </span>
                     <span className="chat-list-preview">

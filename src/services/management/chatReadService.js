@@ -115,7 +115,7 @@ export async function listConversations(entityId, { limit = 200 } = {}) {
  * call (`GET /entities/chat-list`, Tasks 02-1/02-4). This replaces the
  * per-companion fan-out (one `listConversations` per partner, merged
  * client-side): the dedupe by `participant_key`, the unread count, the settings
- * join and the `pinned DESC, last_activity_at DESC` ordering all happen in SQL,
+ * join and the `pinned DESC, last_message_at DESC` ordering all happen in SQL,
  * so the client must never re-sort the result.
  *
  * Each row already carries everything the inbox renders — its owning companion

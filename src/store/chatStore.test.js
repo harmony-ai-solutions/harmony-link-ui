@@ -14,8 +14,6 @@ import {
   upsertConversation,
   removeConversation,
   conversationKey,
-  mergeConversations,
-  mergeConversationPages,
   conversationDisplayName,
   conversationAvatarProfileId,
   isConversationLastMessageOutgoing,
@@ -125,19 +123,30 @@ test('truncatePreview caps long strings with an ellipsis', () => {
   assert.equal(truncatePreview('abcdefghij', 5), 'abcd…');
 });
 
-test('sortConversations orders by most recent activity', () => {
+test('sortConversations orders by most recent last message', () => {
   const list = [
-    { participant_key: 'a+b', interaction_id: 'old', last_activity_at: '2026-01-01T00:00:00Z' },
-    { participant_key: 'a+c', interaction_id: 'new', last_activity_at: '2026-01-03T00:00:00Z' },
+    { participant_key: 'a+b', interaction_id: 'old', last_message: msg('m1', '2026-01-01T00:00:00Z') },
+    { participant_key: 'a+c', interaction_id: 'new', last_message: msg('m2', '2026-01-03T00:00:00Z') },
   ];
   assert.deepEqual(sortConversations(list).map((c) => c.participant_key), ['a+c', 'a+b']);
 });
 
+test('sortConversations sinks message-less threads below dated ones (activity never lifts them)', () => {
+  const list = [
+    { participant_key: 'quiet', last_activity_at: '2026-10-01T00:00:00Z' },
+    { participant_key: 'dated', last_message: msg('m1', '2026-01-01T00:00:00Z'), last_activity_at: '2025-12-01T00:00:00Z' },
+    { participant_key: 'quieter', last_activity_at: '2026-09-01T00:00:00Z' },
+  ];
+  // Mirrors the engine rule (owner decision 2026-10-31): message time only;
+  // NULLs last. The quiet threads keep their incoming order among themselves.
+  assert.deepEqual(sortConversations(list).map((c) => c.participant_key), ['dated', 'quiet', 'quieter']);
+});
+
 test('upsertConversation inserts, replaces and re-sorts', () => {
-  const list = [{ participant_key: 'a+b', interaction_id: 'i1', last_activity_at: '2026-01-01T00:00:00Z' }];
-  const inserted = upsertConversation(list, { participant_key: 'a+c', interaction_id: 'i2', last_activity_at: '2026-01-02T00:00:00Z' });
+  const list = [{ participant_key: 'a+b', interaction_id: 'i1', last_message: msg('m1', '2026-01-01T00:00:00Z') }];
+  const inserted = upsertConversation(list, { participant_key: 'a+c', interaction_id: 'i2', last_message: msg('m2', '2026-01-02T00:00:00Z') });
   assert.deepEqual(inserted.map((c) => c.participant_key), ['a+c', 'a+b']);
-  const replaced = upsertConversation(inserted, { participant_key: 'a+b', interaction_id: 'i1', last_activity_at: '2026-01-05T00:00:00Z' });
+  const replaced = upsertConversation(inserted, { participant_key: 'a+b', interaction_id: 'i1', last_message: msg('m3', '2026-01-05T00:00:00Z') });
   assert.deepEqual(replaced.map((c) => c.participant_key), ['a+b', 'a+c']);
   assert.equal(replaced.length, 2);
 });
@@ -241,7 +250,7 @@ test('toTime parses timestamps and treats garbage as zero', () => {
   assert.equal(toTime(null), 0);
 });
 
-// ── App-style inbox: per-companion pages merged into one list ──────────────
+// ── Inbox rows (global route; the fan-out merge helpers are gone) ─────────
 
 const conv = (participantKey, entityId, extra = {}) => ({
   participant_key: participantKey,
@@ -253,40 +262,10 @@ const conv = (participantKey, entityId, extra = {}) => ({
 
 test('sortConversations keeps pinned threads above newer unpinned ones', () => {
   const list = [
-    conv('a+b', 'a', { last_activity_at: '2026-01-03T00:00:00Z' }),
-    conv('a+c', 'a', { pinned: true, last_activity_at: '2026-01-01T00:00:00Z' }),
+    conv('a+b', 'a', { last_message: msg('m1', '2026-01-03T00:00:00Z') }),
+    conv('a+c', 'a', { pinned: true, last_message: msg('m2', '2026-01-01T00:00:00Z') }),
   ];
   assert.deepEqual(sortConversations(list).map((c) => c.participant_key), ['a+c', 'a+b']);
-});
-
-test('mergeConversations merges per-companion pages into one inbox', () => {
-  const merged = mergeConversations([
-    [conv('ai1:user', 'ai1', { last_activity_at: '2026-01-02T00:00:00Z' })],
-    [conv('ai2:user', 'ai2', { last_activity_at: '2026-01-03T00:00:00Z' })],
-  ]);
-  assert.deepEqual(merged.map((c) => c.participant_key), ['ai2:user', 'ai1:user']);
-});
-
-test('mergeConversations dedupes by participant_key: freshest row wins, unread is max', () => {
-  const merged = mergeConversations([
-    [conv('ai1:ai2:user', 'ai1', { unread_count: 1, last_activity_at: '2026-01-01T00:00:00Z', interaction_id: 'old' })],
-    [conv('ai1:ai2:user', 'ai1', { unread_count: 3, last_activity_at: '2026-01-05T00:00:00Z', interaction_id: 'new' })],
-  ]);
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0].interaction_id, 'new');
-  assert.equal(merged[0].unread_count, 3);
-  // Rows without a participant_key cannot identify a thread and are ignored.
-  assert.equal(mergeConversations([[conv('', 'ai1')]]).length, 0);
-});
-
-test('mergeConversationPages tolerates a failing companion', () => {
-  const result = mergeConversationPages([
-    { status: 'fulfilled', value: [conv('ai1:user', 'ai1')] },
-    { status: 'rejected', reason: new Error('engine unavailable') },
-  ]);
-  assert.equal(result.total, 2);
-  assert.equal(result.failures, 1);
-  assert.deepEqual(result.conversations.map((c) => c.participant_key), ['ai1:user']);
 });
 
 test('a chat row is named and avatar\'d by its AI companion, not the persona partner', () => {

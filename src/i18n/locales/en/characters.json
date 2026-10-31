@@ -31,6 +31,100 @@
     "uploading": "Uploading…"
   },
   "searchPlaceholder": "Search profiles...",
+  "favorite": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites"
+  },
+  "filter": {
+    "filterLabel": "Filter characters",
+    "all": "All",
+    "favorites": "Favorites"
+  },
+  "category": {
+    "chipGroupLabel": "Filter characters by category",
+    "manage": "Manage",
+    "manageHint": "Create, rename, reorder or delete categories",
+    "manageTitle": "Manage categories",
+    "manageSubtitle": "Organise your characters. Categories live on this computer only.",
+    "newPlaceholder": "New category name",
+    "add": "Add",
+    "addToCategory": "Add to category",
+    "noneYet": "No categories yet. Use Manage in the filter row to create one.",
+    "filterHint": "Show only characters in {{name}} ({{count}})",
+    "loading": "Loading categories…",
+    "reorderHint": "Drag a row, or use the arrow buttons, to change the order of the chips.",
+    "rename": "Rename {{name}}",
+    "renameLabel": "New name for {{name}}",
+    "delete": "Delete {{name}}",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "empty": {
+      "title": "No categories yet",
+      "description": "Add one above to start grouping your characters."
+    },
+    "deleteDialog": {
+      "title": "Delete \"{{name}}\"?",
+      "message": "The category is removed and its {{count}} character(s) stay exactly where they are — they are only un-grouped, never deleted.",
+      "confirm": "Delete category",
+      "cancel": "Keep it"
+    },
+    "toast": {
+      "created": "Category \"{{name}}\" created",
+      "createFailed": "Could not create category: {{message}}",
+      "renamed": "Category renamed",
+      "renameFailed": "Could not rename category: {{message}}",
+      "deleted": "Category \"{{name}}\" deleted — its characters were kept",
+      "deleteFailed": "Could not delete category: {{message}}",
+      "reorderFailed": "Could not save the new order: {{message}}",
+      "assignFailed": "Could not update categories: {{message}}"
+    }
+  },
+  "toast": {
+    "favoriteFailed": "Could not update favorite: {{message}}"
+  },
+  "duplicate": {
+    "headerButton": "Duplicate",
+    "headerButtonHint": "Pick an AI partner from a carousel and see the copy's name before creating it",
+    "title": "Duplicate an AI partner",
+    "subtitle": "Pick the partner to copy. You will see the new name before anything is created.",
+    "pickerLabel": "Choose the AI partner to duplicate",
+    "plainLabel": "Only one AI partner",
+    "position": "{{current}} of {{total}}",
+    "previous": "Previous partner",
+    "next": "Next partner",
+    "confirm": "Duplicate",
+    "duplicating": "Duplicating…",
+    "unnamed": "Untitled",
+    "facts": {
+      "mappings_one": "{{count}} module configuration will be copied",
+      "mappings_other": "{{count}} module configurations will be copied",
+      "mappingsNone": "No module configurations are set, so none will be copied",
+      "profileLinked": "The character itself is shared, not copied — edits apply to both"
+    },
+    "warning": {
+      "notCopied": "Greetings and memories are NOT copied. The new partner starts with the same character card but a fresh conversation and no remembered history."
+    },
+    "note": {
+      "serverDecides": "The engine picks the final name. The one shown above is the name it will use next.",
+      "noAlias": "This partner has no separate display name, so the copy keeps the character's name."
+    },
+    "empty": {
+      "title": "Nothing to duplicate yet",
+      "description": "Create an AI partner from a character card first — then you can copy it from here."
+    },
+    "error": {
+      "generic": "Could not duplicate this partner."
+    },
+    "result": {
+      "title": "\"{{name}}\" created",
+      "hint": "The copy uses the same character card. Edit its name or module configurations in the Entities screen.",
+      "openEntity": "Open in Entities",
+      "startChat": "Start chatting"
+    },
+    "toast": {
+      "created": "\"{{name}}\" created"
+    }
+  },
   "cardSize": "Card Size:",
   "cardSizes": {
     "small": "Small cards",
@@ -41,6 +135,8 @@
     "title": "No profiles found",
     "noResults": "No matching profiles",
     "tryAdjustingSearch": "Try adjusting your search query.",
+    "noFavoriteResults": "No favorites match your search. Try a different query or clear the filter.",
+    "noCategoryResults": "No characters in this category match your search. Assign some from a card's menu, or clear the filter.",
     "getStarted": "Get started by creating a new profile or importing a character card.",
     "personaOwnedHint": "Persona-owned cards are managed in the Personas tab."
   },
@@ -55,7 +151,51 @@
     "aiPrefix": "AI · {{name}}",
     "personaPrefix": "Persona · {{name}}"
   },
+  "importReview": {
+    "title": "Review before importing",
+    "untitled": "Untitled character",
+    "spec": {
+      "v1": "Character Card V1",
+      "v2": "Character Card V2",
+      "v3": "Character Card V3"
+    },
+    "descriptionLength": "Description",
+    "alternateGreetings": "Alternate greetings",
+    "lorebookEntries": "Lorebook entries",
+    "embeddedImages": "Embedded images",
+    "greetingPreview": "Opening greeting",
+    "createdFields": "Will be created",
+    "overwrittenFields": "Will be overwritten",
+    "noFields": "No card fields detected",
+    "nothingOverwritten": "Nothing — an import never overwrites an existing profile.",
+    "import": "Import",
+    "importAsCopy": "Import as \"{{copy}}\"",
+    "nameTakenTitle": "A profile named \"{{name}}\" already exists",
+    "nameTakenHint": "Importing will create \"{{copy}}\" instead. The existing profile is left untouched.",
+    "nameTakenHintNoCopy": "The suggested copy name could not be resolved. Cancel and rename the existing profile, or retry.",
+    "collisionUnknownTitle": "Could not check whether this name is already used",
+    "collisionUnknownHint": "The engine did not answer the duplicate-name check, so importing now could silently create a second character with the same name. Nothing has been saved — cancel, make sure the engine is running, and try again.",
+    "fields": {
+      "name": "name",
+      "description": "description",
+      "personality": "personality",
+      "scenario": "scenario",
+      "first_mes": "default greeting",
+      "mes_example": "example dialogue",
+      "alternate_greetings": "alternate greetings",
+      "character_book": "lorebook",
+      "creator": "creator",
+      "character_version": "version",
+      "nickname": "nickname",
+      "tags": "tags",
+      "group_only_greetings": "group-only greetings",
+      "assets": "assets",
+      "extensions": "extensions",
+      "card_provenance": "card provenance"
+    }
+  },
   "import": {
+    "reading": "Reading character card…",
     "uploading": "Importing character card...",
     "dropActive": "Drop the PNG file here",
     "dropIdle": "Drag & drop a character card PNG",
@@ -142,6 +282,7 @@
     "identity": "Identity",
     "cardInfo": "Card Info",
     "aiPrompt": "AI Prompt",
+    "voiceBehavior": "Voice & Behaviour",
     "chatBehavior": "Chat Behavior",
     "aiLifecycle": "AI Lifecycle",
     "rawCardData": "Raw Card Data",
@@ -151,10 +292,143 @@
     "collapse": "Collapse section",
     "expand": "Expand section"
   },
+  "greeting": {
+    "summary": "{{count}} greetings · {{chars}} characters total",
+    "summaryOk": "Each greeting is under {{limit}} characters.",
+    "summaryWarn": "{{count}} greeting(s) exceed {{limit}} characters — long greetings are sent with every prompt.",
+    "summaryWarn_one": "{{count}} greeting exceeds {{limit}} characters — long greetings are sent with every prompt.",
+    "defaultLabel": "Default greeting",
+    "alternateLabel": "Alternate greeting {{index}}",
+    "noAlternates": "No alternate greetings yet. Users pick one when starting a new chat.",
+    "tooLong": "{{count}} characters — {{over}} over the {{limit}}-character guideline.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "limit": "600"
+  },
+  "voice": {
+    "characteristics": "Voice Characteristics",
+    "characteristicsHint": "Describes how this character sounds. Fed to the TTS module — it shapes delivery, not the words.",
+    "typingSpeed": "Typing Speed",
+    "typingSpeedHint": "Average human: 40–60 WPM. Only affects how long the typing indicator shows.",
+    "wpm": "WPM",
+    "audioChance": "Audio Reply Chance",
+    "audioChanceHint": "Probability that a reply is delivered as audio instead of text.",
+    "ttsExplainer": "Audio replies only happen when a local TTS module is configured and mapped to this AI partner.",
+    "openModules": "Open Modules"
+  },
+  "emoji": {
+    "title": "Emoji Actions",
+    "hint": "Each row maps an emoji from the chat picker to the text it sends and the mood shift it causes.",
+    "empty": "No emoji actions yet. Without any, the chat picker only offers plain reactions.",
+    "loading": "Loading emoji actions…",
+    "emojiColumn": "Emoji",
+    "substitutionColumn": "Substitution text",
+    "emotionColumn": "Emotion effect",
+    "testColumn": "Test",
+    "removeColumn": "Remove",
+    "substitutionPlaceholder": "What the character says…",
+    "none": "— None —",
+    "noEffects": "no effects",
+    "testHint": "Payload sent with the message — shown read-only to confirm what the engine will apply.",
+    "unknownEmotion": "Unrecognised emotion \"{{value}}\" — choose one of the eight Ekman emotions.",
+    "remove": "Remove row",
+    "addRow": "Add row",
+    "save": "Save emoji actions",
+    "saving": "Saving…",
+    "saved": "Emoji actions saved",
+    "pending": "{{count}} unsaved change(s)",
+    "pending_one": "{{count}} unsaved change",
+    "incompleteRows": "{{count}} row(s) have no emoji. Add an emoji or remove the row.",
+    "incompleteRows_one": "{{count}} row has no emoji. Add an emoji or remove the row.",
+    "duplicateEmojis": "{{emoji}} is used more than once. Each emoji may appear only once.",
+    "emotions": {
+      "joy": "Joy",
+      "sadness": "Sadness",
+      "trust": "Trust",
+      "disgust": "Disgust",
+      "fear": "Fear",
+      "anger": "Anger",
+      "surprise": "Surprise",
+      "anticipation": "Anticipation"
+    }
+  },
   "page": {
     "back": "Back to AI Characters",
     "sections": "Sections",
     "modeHint": "Some advanced sections are hidden in Simple mode. Switch to Pro or Developer in Settings → General to reveal them."
+  },
+  "detail": {
+    "back": "Back to characters",
+    "untitled": "Untitled character",
+    "openTitle": "Open the detail page for {{name}}",
+    "chat": "Chat",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "duplicating": "Duplicating…",
+    "modeHint": "Switch to Pro in Settings → General to see this character's gallery, copy series and linked AI partners.",
+    "section": {
+      "description": "Description",
+      "personality": "Personality",
+      "scenario": "Scenario",
+      "greeting": "Greeting"
+    },
+    "greeting": {
+      "default": "Default greeting",
+      "alternate": "Alternate greeting {{index}}",
+      "previous": "Previous greeting",
+      "next": "Next greeting",
+      "position": "{{current}} of {{total}}",
+      "none": "This character has no authored greeting — the chat will open without an opening message."
+    },
+    "stats": {
+      "linked_one": "{{count}} linked AI partner",
+      "linked_other": "{{count}} linked AI partners",
+      "greetings_one": "{{count}} greeting",
+      "greetings_other": "{{count}} greetings"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "gallery": "Gallery",
+      "copies": "Copies",
+      "partners": "Linked partners",
+      "raw": "Card JSON"
+    },
+    "gallery": {
+      "hint": "Click any image to open it full size. Images marked VL have been analysed by the vision model.",
+      "noVision": "No Vision module is configured for this character, so images cannot be analysed here. Pick one in the editor's Images tab."
+    },
+    "copies": {
+      "hint": "Other characters in this copy series — same base name, a trailing number apart.",
+      "emptyTitle": "No copies yet",
+      "emptyDescription": "Duplicating this character creates \"{{name}}\" with the next free number, and it will appear here.",
+      "open": "Open",
+      "duplicate": "Duplicate",
+      "duplicateHint": "Create another copy of this character with the next free name"
+    },
+    "partners": {
+      "heading": "AI partners using this character",
+      "personasHeading": "Personas using this character",
+      "ai": "AI partner",
+      "persona": "Persona",
+      "chat": "Chat",
+      "emptyTitle": "No linked AI partners",
+      "emptyDescription": "Create an AI partner from this character card to start chatting with it."
+    },
+    "raw": {
+      "hint": "The stored profile row, including JSON columns exactly as the engine holds them. Read-only."
+    },
+    "deleteDialog": {
+      "title": "Delete \"{{name}}\"?",
+      "message": "This character profile and its images will be removed.\n\nThis action cannot be undone.",
+      "linkedMessage": "{{count}} entity reference(s) use \"{{name}}\". Deleting the character leaves them pointing at a missing profile, so remove or re-link them first.\n\nThis action cannot be undone.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "cancel": "Cancel"
+    },
+    "toast": {
+      "duplicated": "\"{{name}}\" created",
+      "duplicateFailed": "Could not duplicate this character: {{message}}"
+    }
   },
   "fields": {
     "name": "Name",
@@ -304,6 +578,7 @@
     "image": "image",
     "images": "images",
     "noImages": "No images yet. Upload one to get started!",
+    "noImagesReadOnly": "This character has no images yet.",
     "primaryBadge": "Primary",
     "actions": "Actions",
     "characterImageAlt": "Character image",

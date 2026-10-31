@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { XIcon } from '../../constants/icons.jsx';
+import { PLAYBACK_RATES } from '../../services/chat/playbackUtils.js';
 
 /**
  * Chat preferences panel (F10).
@@ -92,6 +93,25 @@ const ChatPreferences = ({ isOpen, replyMode, onReplyModeChange, prefs, onPrefsC
                         {t('chat:preferences.spacingCompact')}
                     </button>
                 </div>
+            </div>
+
+            {/* Voice-note playback speed (Task 04-4 step 2) */}
+            <div className="chat-prefs-group">
+                <span className="chat-prefs-label">{t('chat:preferences.playbackRate')}</span>
+                <div className="chat-prefs-segments">
+                    {PLAYBACK_RATES.map((rate) => (
+                        <button
+                            key={rate}
+                            type="button"
+                            className={`chat-prefs-segment ${Number(prefs.playbackRate) === rate ? 'chat-prefs-segment-active' : ''}`}
+                            aria-pressed={Number(prefs.playbackRate) === rate}
+                            onClick={() => onPrefsChange?.({ playbackRate: rate })}
+                        >
+                            {`${rate}×`}
+                        </button>
+                    ))}
+                </div>
+                <p className="chat-prefs-hint">{t('chat:preferences.playbackRateHint')}</p>
             </div>
 
             {/* Sound (desktop-only) */}

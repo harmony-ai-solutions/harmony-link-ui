@@ -5,6 +5,7 @@ import ActionGraphTester from './dev/ActionGraphTester.jsx';
 import InspectorView from './dev/InspectorView.jsx';
 import RAGDebugView from './dev/RAGDebugView.jsx';
 import DevToolsView from './dev/DevToolsView.jsx';
+import PageHeader from './ui/PageHeader.jsx';
 
 /**
  * Development Tools shell (Phase 3-1).
@@ -27,12 +28,6 @@ function DevelopmentView() {
     const { t } = useTranslation();
     const [activeSubTab, setActiveSubTab] = useState('logs');
 
-    const colorFirstWord = (text) => {
-        const spaceIdx = text.indexOf(' ');
-        if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-        return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-    };
-
     const subTabs = [
         { id: 'logs', label: t('development:tabs.logViewer') },
         { id: 'actiongraph', label: t('development:tabs.actionGraphTester') },
@@ -43,18 +38,14 @@ function DevelopmentView() {
 
     return (
         <div className="flex flex-col" style={{ height: 'calc(100vh - 6rem)' }}>
-            <div className="bg-background-surface px-6 py-4 flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-extrabold tracking-tight">
-                        {colorFirstWord(t('development:header.title'))}
-                    </h1>
-                    <p className="text-xs text-text-muted mt-0.5 font-medium">
-                        {t('development:header.subtitle')}
-                    </p>
-                </div>
-                {/* Persistent Developer Mode badge (safety: always visible). */}
-                <span className="dev-mode-badge">{t('development:header.devBadge')}</span>
-            </div>
+            <PageHeader
+                title={t('development:header.title')}
+                subtitle={t('development:header.subtitle')}
+                actions={(
+                    /* Persistent Developer Mode badge (safety: always visible). */
+                    <span className="dev-mode-badge">{t('development:header.devBadge')}</span>
+                )}
+            />
 
             <div className="character-editor-tab-bar">
                 {subTabs.map((tab) => (

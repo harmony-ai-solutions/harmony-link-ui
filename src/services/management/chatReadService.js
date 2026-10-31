@@ -1,6 +1,7 @@
 ﻿import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handleResponse } from './baseService.js';
 import { listEntities } from './entityService.js';
 import { normalizeChatConversation, normalizeChatMessage } from '../../store/chatStoreUtils.js';
+import { normalizeSearchResults, SEARCH_RESULT_LIMIT } from '../../store/searchUtils.js';
 
 /**
  * Desktop Chat — REST history reads over the engine's parity chat surface
@@ -18,6 +19,7 @@ import { normalizeChatConversation, normalizeChatMessage } from '../../store/cha
  *   GET  /entities/:id/emoji-actions                               → emoji actions
  *   GET  /entities                                                 → entities (partners + personas)
  *   GET  /messages/:id/audio | /messages/:id/image                 → media bytes
+ *   GET  /entities/messages/search?q=                              → message search (Task 02-9)
  *   POST /entities/:id/conversations/:participantKey/read          → mark read (participant_key scoped)
  *
  * This module normalises the parity wire shapes into the flat camel/snake shape
@@ -100,6 +102,67 @@ export async function listConversations(entityId, { limit = 200 } = {}) {
 }
 
 /**
+ * Load the GLOBAL inbox: every active conversation across ALL companions in one
+ * call (`GET /entities/chat-list`, Tasks 02-1/02-4). This replaces the
+ * per-companion fan-out (one `listConversations` per partner, merged
+ * client-side): the dedupe by `participant_key`, the unread count, the settings
+ * join and the `pinned DESC, last_activity_at DESC` ordering all happen in SQL,
+ * so the client must never re-sort the result.
+ *
+ * Each row already carries everything the inbox renders — its owning companion
+ * (`entity_id`, plus the companion's display name / avatar id), the
+ * `pinned` / `archived` / `muted` / `entity_disabled` flags and the last-message
+ * preview — so naming a row costs no second request.
+ *
+ * Archived threads are EXCLUDED by default; with `includeArchived` they come
+ * back in a SEPARATE `archived` array (bounded server-side), which the inbox
+ * renders behind its collapsed "Archived (N)" section.
+ *
+ * @param {{ includeArchived?: boolean, limit?: number }} [options]
+ * @returns {Promise<{conversations: object[], archived: object[], hasMore: boolean}>}
+ */
+export async function listInbox({ includeArchived = false, limit = 200 } = {}) {
+    const conversations = [];
+    const archived = [];
+    let hasMore = false;
+    let offset = 0;
+
+    // Follow has_more/next_offset so a busy inbox cannot silently lose threads
+    // to the page cap. Hard stop so a broken has_more can never loop forever.
+    for (let page = 0; page < 20; page += 1) {
+        const params = new URLSearchParams({ limit: String(limit) });
+        if (offset) params.set('offset', String(offset));
+        if (includeArchived) params.set('include_archived', '1');
+        const resp = await fetch(
+            apiUrl(`/entities/chat-list?${params.toString()}`),
+            { headers: getAuthHeaders() }
+        );
+        await handleResponse(resp, 'Failed to load the inbox');
+        const data = await resp.json();
+        const rows = data?.conversations || [];
+        // A global row names its OWNING companion — that is the POV the thread
+        // is listed from and the entity the row is named/avatar'd by.
+        for (const row of rows) {
+            conversations.push(normalizeChatConversation(row, row?.entity_id || ''));
+        }
+
+        // The archived array is a bounded first page and is repeated verbatim on
+        // every response — collect it once or pagination would duplicate rows.
+        if (page === 0 && Array.isArray(data?.archived)) {
+            for (const row of data.archived) {
+                archived.push(normalizeChatConversation(row, row?.entity_id || ''));
+            }
+        }
+
+        hasMore = !!data?.has_more;
+        if (!hasMore || rows.length === 0) break;
+        offset = Number.isFinite(data?.next_offset) ? data.next_offset : offset + rows.length;
+    }
+
+    return { conversations, archived, hasMore };
+}
+
+/**
  * Load one page of a conversation's messages, oldest-first. The conversation is
  * addressed by `participantKey`, so the window spans EVERY interaction of the
  * key (a membership change closes an interaction but must not truncate the
@@ -153,6 +216,20 @@ export async function listChatEntities() {
             display_name: profileName || entity?.alias || entity?.id || '',
             character_profile_id: profileId,
             is_disabled: !!entity?.is_disabled,
+            // Authored alternate greetings (Task 02-7 step 3). The `GET /entities`
+            // payload nests them on `character_profile`, so they are lifted here
+            // rather than at every call site; the raw JSON string is passed
+            // through and parsed by `entityAlternateGreetings`.
+            alternate_greetings: entity?.alternate_greetings
+                ?? entity?.character_profile?.alternate_greetings
+                ?? '',
+            // Authored scenario (Task 02-8 step 3) — what the composer's ✨
+            // button inserts as a quoted context line. Lifted for exactly the
+            // same reason as the greetings: ChatView has already loaded the
+            // entity, so reading it here costs no request.
+            scenario: entity?.scenario
+                ?? entity?.character_profile?.scenario
+                ?? '',
         };
     }).filter((entity) => entity.id);
 }
@@ -215,6 +292,46 @@ export function getMessageAudioUrl(messageId) {
  */
 export function getMessageImageUrl(messageId) {
     return apiUrl(`/messages/${encodeURIComponent(messageId)}/image`);
+}
+
+/**
+ * Search messages across EVERY conversation (Task 02-9).
+ *
+ * `GET /entities/messages/search?q=&interaction_id=&limit=` answers
+ * `{query, count, results: [{message, interaction_id, participant_key}]}`,
+ * newest first and capped at 100 server-side. The client caps too, so the UI
+ * can never claim to hold more rows than the engine will return.
+ *
+ * ── WHY THE GLOBAL ENDPOINT SERVES THE IN-CONVERSATION FIELD TOO ────────
+ *
+ * The engine supports `interaction_id`, but a thread's messages span EVERY
+ * interaction of its participant key — the engine mints a new interaction each
+ * time the participant set changes, and a membership change must not truncate
+ * the history. Filtering by the *current* interaction would therefore hide the
+ * older messages the user is most likely searching for. So the in-conversation
+ * field calls this same global search and narrows by `participant_key`
+ * client-side (`filterHitsByParticipant`). The trade-off is explicit: a thread
+ * whose matches exceed the global 100-hit cap can show fewer hits than it owns.
+ *
+ * A blank `q` is rejected here before the request: the handler answers `400`
+ * for it, and a `400` for something the UI can determine locally is noise.
+ *
+ * @param {string} query
+ * @param {{ limit?: number }} [options]
+ * @returns {Promise<Array<object>>} normalised hits (see `normalizeSearchHit`)
+ */
+export async function searchMessages(query, { limit = SEARCH_RESULT_LIMIT } = {}) {
+    const term = String(query ?? '').trim();
+    if (!term) return [];
+
+    const params = new URLSearchParams({ q: term, limit: String(limit) });
+    const resp = await fetch(
+        apiUrl(`/entities/messages/search?${params.toString()}`),
+        { headers: getAuthHeaders() }
+    );
+    await handleResponse(resp, 'Failed to search messages');
+    const data = await resp.json();
+    return normalizeSearchResults(data?.results || [], limit);
 }
 
 /**

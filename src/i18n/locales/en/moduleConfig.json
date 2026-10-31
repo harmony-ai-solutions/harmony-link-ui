@@ -4,6 +4,16 @@
     "subtitle": "Manage AI module configurations and provider settings"
   },
   "deleteFailed": "Failed to delete configuration: {{message}}",
+  "card": {
+    "noConfigs": "No configs",
+    "configCount_one": "{{count}} config",
+    "configCount_other": "{{count}} configs",
+    "empty": {
+      "title": "No configurations yet",
+      "description": "A configuration points this module at a provider. Create one to get started.",
+      "action": "Add configuration"
+    }
+  },
   "validation": {
     "loading": "Validating configuration...",
     "loadingModels": "Loading models...",

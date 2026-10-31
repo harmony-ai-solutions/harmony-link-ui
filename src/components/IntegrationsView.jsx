@@ -10,16 +10,14 @@ import YAMLConfigEditor from './integrations/YAMLConfigEditor';
 import ConfigFilesModal from './integrations/ConfigFilesModal';
 import CreateInstanceModal from './integrations/CreateInstanceModal';
 import ConfirmDialog from './modals/ConfirmDialog';
+import PageHeader from './ui/PageHeader.jsx';
+import EmptyState from './ui/EmptyState.jsx';
+import Skeleton from './ui/Skeleton.jsx';
+import { PuzzleIcon } from '../constants/icons.jsx';
 import { toast } from '../store/toastStore.js';
 
 const IntegrationsView = () => {
   const { t } = useTranslation();
-
-  const colorFirstWord = (text) => {
-    const spaceIdx = text.indexOf(' ');
-    if (spaceIdx === -1) return <span className="text-gradient-primary">{text}</span>;
-    return <><span className="text-gradient-primary">{text.slice(0, spaceIdx)}</span>{text.slice(spaceIdx)}</>;
-  };
 
   const [integrations, setIntegrations] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -183,14 +181,10 @@ const IntegrationsView = () => {
   if (!quickstartPathConfigured) {
     return (
       <div className="flex flex-col min-h-full">
-        <div className="bg-background-surface px-6 py-4">
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            {colorFirstWord(t('integrations:header.title'))}
-          </h1>
-          <p className="text-xs text-text-muted mt-0.5 font-medium">
-            {t('integrations:header.subtitle')}
-          </p>
-        </div>
+        <PageHeader
+          title={t('integrations:header.title')}
+          subtitle={t('integrations:header.subtitle')}
+        />
         <div className="flex-1 p-6">
           <div data-tutorial-id="integration-quickstart">
             <QuickstartRepoSettings onPathSet={handleQuickstartPathSet} />
@@ -202,14 +196,10 @@ const IntegrationsView = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="bg-background-surface px-6 py-4">
-        <h1 className="text-2xl font-extrabold tracking-tight">
-          {colorFirstWord(t('integrations:header.title'))}
-        </h1>
-        <p className="text-xs text-text-muted mt-0.5 font-medium">
-          {t('integrations:header.subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        title={t('integrations:header.title')}
+        subtitle={t('integrations:header.subtitle')}
+      />
 
       <div className="flex-1 p-6 space-y-6">
         <div className="flex items-start gap-3">
@@ -235,7 +225,36 @@ const IntegrationsView = () => {
         </div>
 
         <div data-tutorial-id="integration-cards" className="flex flex-col gap-3">
-          {integrations.map((integration) => (
+          {integrations.length === 0 ? (
+            /* The repository is configured but yielded nothing — either it is
+               still being scanned (refreshing) or it genuinely has no
+               integrations. Either way there is a next action: re-scan, or
+               point at a different checkout. */
+            refreshing ? (
+              <div className="flex flex-col gap-3" aria-busy="true">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="ui-skeleton-row" style={{ padding: '1rem 1.25rem' }}>
+                    <Skeleton className="ui-skeleton-circle" width="2.25rem" height="2.25rem" />
+                    <div className="ui-skeleton-row-body">
+                      <Skeleton className="ui-skeleton-line" width="28%" />
+                      <Skeleton className="ui-skeleton-line" width="55%" height="0.6rem" />
+                    </div>
+                    <Skeleton inline width="6rem" height="1.6rem" radius="0.375rem" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={PuzzleIcon}
+                title={t('integrations:empty.title')}
+                description={t('integrations:empty.description')}
+                actionLabel={t('integrations:empty.rescan')}
+                onAction={() => { refreshDockerStatus(); fetchIntegrations(); refreshAllInstances(); }}
+                secondaryLabel={t('integrations:empty.changeRepo')}
+                onSecondary={() => setQuickstartPathConfigured(false)}
+              />
+            )
+          ) : integrations.map((integration) => (
             <IntegrationCard key={integration.name} integration={integration}
               instances={instancesByIntegration[integration.name] || {}}
               onConfigure={handleConfigureClick} onConfigFiles={handleConfigFilesClick}

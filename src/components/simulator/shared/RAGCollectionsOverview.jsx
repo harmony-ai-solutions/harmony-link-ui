@@ -1,13 +1,18 @@
 import React from 'react';
+import EmptyState from '../../ui/EmptyState.jsx';
+import Skeleton from '../../ui/Skeleton.jsx';
+import { BookIcon } from '../../../constants/icons.jsx';
 
 // RAG Collections Overview Component
 function RAGCollectionsOverview({ collections, loading, onOpenManager, onRefresh }) {
     if (loading) {
+        /* A summary line plus a short list — show that, not a spinner. */
         return (
-            <div className="bg-background-surface/40 rounded-lg p-4 border border-border-glass">
-                <div className="flex items-center gap-2 text-text-muted text-sm">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent-primary"></div>
-                    Loading collections...
+            <div className="bg-background-surface/40 rounded-lg p-4 border border-border-glass" aria-busy="true">
+                <div className="space-y-2">
+                    <Skeleton className="ui-skeleton-line" width="32%" height="0.8rem" />
+                    <Skeleton className="ui-skeleton-line" width="50%" height="0.65rem" />
+                    <Skeleton className="ui-skeleton-line" width="44%" height="0.65rem" />
                 </div>
             </div>
         );
@@ -42,12 +47,12 @@ function RAGCollectionsOverview({ collections, loading, onOpenManager, onRefresh
             </div>
 
             {collections.length === 0 ? (
-                <div className="text-center py-8">
-                    <div className="text-text-muted mb-2">No collections found</div>
-                    <div className="text-xs text-text-muted/60">
-                        Collections are created automatically when you sync actions to the RAG module
-                    </div>
-                </div>
+                <EmptyState
+                    size="compact"
+                    icon={BookIcon}
+                    title="No collections found"
+                    description="Collections are created automatically when you sync actions to the RAG module."
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {collections.map(collection => (

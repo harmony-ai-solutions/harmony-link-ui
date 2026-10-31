@@ -63,3 +63,26 @@ export async function openSystemUrl(url) {
     await handleResponse(resp, `Failed to open URL in system browser: ${url}`);
     return await resp.json();
 }
+
+/**
+ * Open the operating system's sound / microphone settings panel (Task 04-2).
+ *
+ * Deliberately a separate call from {@link openSystemUrl}: the engine's
+ * `open-url` route accepts only http/https, and the sound panel needs the
+ * `ms-settings:` / `x-apple.systempreferences:` schemes. Rather than widen that
+ * route into a general "launch any OS handler" seam, the engine exposes a
+ * no-body endpoint whose target is hard-coded per operating system.
+ *
+ * Throws on failure so the caller can fall back to the on-screen instructions —
+ * a headless or containerised Linux box has no `pavucontrol` to launch.
+ *
+ * @returns {Promise<{status: string}>}
+ */
+export async function openMicSoundSettings() {
+    const resp = await fetch(`${getManagementApiUrl()}${getApiPath()}/system/open-sound-settings`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+    });
+    await handleResponse(resp, 'Failed to open the system sound settings');
+    return await resp.json();
+}

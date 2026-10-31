@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useAllIntegrationInstances from '../../hooks/useAllIntegrationInstances.js';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { DockerIcon } from '../../constants/icons.jsx';
 import { controlIntegrationInstance } from '../../services/management/integrationsService.js';
 import { uploadPreset } from '../../services/management/presetService.js';
 import { LogPrint } from '../../utils/logger.js';
@@ -110,9 +113,23 @@ const LocalAISetupCard = () => {
             </div>
 
             {isLoading ? (
-                <p className="text-xs text-text-muted">{t('common:status.loading')}</p>
+                /* At most three instances are listed, so show three rows rather
+                   than the word "Loading" — the card keeps its height. */
+                <div className="space-y-2" aria-busy="true">
+                    {[0, 1, 2].map((index) => (
+                        <div key={index} className="flex items-center justify-between gap-3 bg-background-elevated/40 rounded-lg px-3 py-2">
+                            <Skeleton inline width="11rem" height="0.65rem" />
+                            <Skeleton inline width="3.5rem" height="1.4rem" radius="0.375rem" />
+                        </div>
+                    ))}
+                </div>
             ) : localInstances.length === 0 ? (
-                <p className="text-xs text-text-muted">{t('chat:localAI.noInstances')}</p>
+                <EmptyState
+                    size="compact"
+                    icon={DockerIcon}
+                    title={t('chat:localAI.noInstancesTitle')}
+                    description={t('chat:localAI.noInstances')}
+                />
             ) : stopped.length > 0 ? (
                 <div className="space-y-2">
                     {stopped.slice(0, 3).map((i) => {
@@ -128,7 +145,7 @@ const LocalAISetupCard = () => {
                                     disabled={busyInstance === key}
                                     onClick={() => handleStart(i.integrationName, i.instanceName)}
                                 >
-                                    {busyInstance === key ? t('common:status.loading') : t('chat:localAI.start')}
+                                    {busyInstance === key ? t('chat:localAI.starting') : t('chat:localAI.start')}
                                 </button>
                             </div>
                         );

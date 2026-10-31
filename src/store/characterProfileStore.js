@@ -76,8 +76,71 @@ const useCharacterProfileStore = create((set, get) => ({
     },
     
     /**
+     * Toggle a profile's favourite bit (plan 03-1).
+     *
+     * OPTIMISTIC, then reconciled: the heart must feel instant, so the local row
+     * is patched before the request goes out, and a failure restores the EXACT
+     * previous value (not a blanket `false`) — the user may have been
+     * un-favouriting. The error is re-thrown so the card can toast it.
+     *
+     * Two details that matter:
+     *  - `is_favorite` is patched as a NUMBER (1/0). The engine stores it as a
+     *    SQLite 0/1 INTEGER and the list route marshals `int64`, so writing
+     *    `true` here would make the optimistic row disagree with the next
+     *    refetch and with `isFavorite()`'s wire-value handling.
+     *  - `isLoading` is deliberately NOT touched. It is the grid's skeleton flag;
+     *    flipping it on every heart click would flash the whole character grid.
+     *
+     * @param {string} id
+     * @param {boolean} [nextFavorite] - explicit target; defaults to the inverse
+     * @returns {Promise<{id: string, is_favorite: boolean}>}
+     */
+    toggleFavorite: async (id, nextFavorite) => {
+        const current = get().profiles.find(p => p.id === id);
+        if (!current) return null;
+
+        const previous = current.is_favorite;
+        // Accept both the numeric wire value and a boolean from a caller.
+        const target = typeof nextFavorite === 'boolean'
+            ? nextFavorite
+            : !(previous === true || previous === 1 || previous === '1');
+
+        set(produce(state => {
+            const index = state.profiles.findIndex(p => p.id === id);
+            if (index !== -1) {
+                state.profiles[index].is_favorite = target ? 1 : 0;
+            }
+        }));
+
+        try {
+            const result = await characterService.setCharacterProfileFavorite(id, target);
+            // Reconcile against the engine's answer (authoritative), keeping the
+            // numeric shape.
+            const confirmed = !!result?.is_favorite;
+            set(produce(state => {
+                const index = state.profiles.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    state.profiles[index].is_favorite = confirmed ? 1 : 0;
+                }
+            }));
+            return result;
+        } catch (error) {
+            // Restore the snapshot — a failed toggle must never leave the heart
+            // lying about what the database holds.
+            set(produce(state => {
+                const index = state.profiles.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    state.profiles[index].is_favorite = previous;
+                }
+            }));
+            set({ error: error.message });
+            throw error;
+        }
+    },
+
+    /**
      * Delete a character profile
-     * @param {string} id 
+     * @param {string} id
      */
     deleteProfile: async (id) => {
         set({ isLoading: true, error: null });
@@ -98,14 +161,27 @@ const useCharacterProfileStore = create((set, get) => ({
     },
     
     /**
-     * Import a character card from a PNG file
-     * @param {File} file 
+     * Import a character card from a PNG file.
+     *
+     * `isLoading` is deliberately NOT set here any more (plan 03-5d). The
+     * import is no longer fire-and-forget: the caller first runs
+     * `previewCharacterCardImport` and then, on confirm, this action. Flipping
+     * the grid's skeleton flag during the REVIEW would flash the whole
+     * character grid before the user has decided anything.
+     *
+     * @param {File} file
+     * @param {{onConflict?: 'error'|'copy', name?: string}} [options]
      * @returns {Promise<import('../services/management/characterService').CharacterCardImportResult>}
      */
-    importCharacterCard: async (file) => {
-        set({ isLoading: true, error: null });
+    importCharacterCard: async (file, options = {}) => {
+        set({ error: null });
         try {
-            const result = await characterService.importCharacterCard(file);
+            const result = await characterService.importCharacterCard(file, options);
+            // The import route answers `{status, id, name}` — NOT a full profile
+            // row (or `{profile, image}` in older fixtures). Only the latter can
+            // be pushed directly; the caller reloads for the real row, so no
+            // placeholder is invented here (a half-populated card would render
+            // blank fields for a frame).
             set(produce(state => {
                 if (result && result.profile) {
                     state.profiles.push(result.profile);
@@ -113,14 +189,24 @@ const useCharacterProfileStore = create((set, get) => ({
                         state.images[result.profile.id] = [result.image];
                     }
                 }
-                state.isLoading = false;
             }));
             return result;
         } catch (error) {
-            set({ error: error.message, isLoading: false });
+            set({ error: error.message });
             throw error;
         }
     },
+
+    /**
+     * Review a card without persisting it (plan 03-5d).
+     *
+     * Pure pass-through to the service: the review is read-only, so it must not
+     * touch `profiles`, `isLoading` or `error` — a rejected file is reported by
+     * the component that asked for the preview.
+     *
+     * @param {File} file
+     */
+    previewImport: async (file) => characterService.previewCharacterCardImport(file),
     
     /**
      * Select a profile by ID

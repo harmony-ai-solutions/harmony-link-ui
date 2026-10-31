@@ -1,9 +1,15 @@
 // Base service configuration and utilities
-const mgmtApiURL = import.meta.env.VITE_MGMT_API_URL || "http://localhost";
-const mgmtApiPort = import.meta.env.VITE_MGMT_API_PORT || "28081";
-const mgmtApiPath = import.meta.env.VITE_MGMT_API_PATH || "/api";
-const mgmtPublicApiPath = import.meta.env.VITE_MGMT_PUBLIC_API_PATH || "/public";
-const mgmtApiKey = import.meta.env.VITE_MGMT_API_KEY || "admin";
+//
+// `import.meta.env` is optional-chained on purpose: Vite always defines it, but
+// the store unit tests (`node --test`) import this module outside the bundler,
+// where `import.meta.env` is undefined. A throwing import would make every
+// module that reaches baseService (chat, entities, health, …) untestable.
+const env = import.meta?.env ?? {};
+const mgmtApiURL = env.VITE_MGMT_API_URL || "http://localhost";
+const mgmtApiPort = env.VITE_MGMT_API_PORT || "28081";
+const mgmtApiPath = env.VITE_MGMT_API_PATH || "/api";
+const mgmtPublicApiPath = env.VITE_MGMT_PUBLIC_API_PATH || "/public";
+const mgmtApiKey = env.VITE_MGMT_API_KEY || "admin";
 
 /**
  * Get the management API base URL

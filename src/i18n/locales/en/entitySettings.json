@@ -6,8 +6,10 @@
   "entityList": {
     "totalEntities": "Total Entities: {{count}}",
     "noEntities": "No entities found",
+    "noEntitiesHint": "Create an AI partner to give it module configuration and a character.",
     "noActiveEntities": "No entities with active sessions",
     "selectPlaceholder": "Select an entity to configure",
+    "selectPlaceholderHint": "Pick an AI partner in the list on the left to edit its modules.",
     "filterLabel": "Filter entities by active sessions",
     "filterAll": "All",
     "filterActive": "Active",
@@ -38,6 +40,8 @@
     "identityTooltip": "Configure the character identity for this entity.",
     "moduleConfigurations": "Module Configurations",
     "moduleTooltip": "Select pre-configured module settings for this entity.",
+    "emojiActions": "Emoji Actions",
+    "emojiActionsTooltip": "What each emoji from the chat picker does to this AI partner's mood.",
     "lifecycleSettings": "Lifecycle Settings",
     "lifecycleTooltip": "Per-entity lifecycle configuration overrides."
   },

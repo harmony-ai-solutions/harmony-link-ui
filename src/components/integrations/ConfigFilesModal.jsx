@@ -2,6 +2,9 @@ import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition, Tab } from '@headlessui/react';
 import { Editor } from '@monaco-editor/react';
 import { getIntegrationInstanceStatus, getIntegrationInstanceConfigFiles, readIntegrationInstanceConfigFile, saveIntegrationInstanceConfigFile, revertIntegrationInstanceConfigFile } from '../../services/management/integrationsService.js';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton from '../ui/Skeleton.jsx';
+import { FileIcon } from '../../constants/icons.jsx';
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
@@ -166,9 +169,19 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
                                         </div>
                                     )}
                                     {loading && configFiles.length === 0 ? (
-                                        <div className="text-white text-center py-10">Loading...</div>
+                                        /* One tab per file is expected, so a
+                                           small stack of tab-shaped blocks. */
+                                        <div className="space-y-2 py-6" aria-busy="true">
+                                            {[0, 1, 2].map((index) => (
+                                                <Skeleton key={index} height="2.5rem" radius="0.75rem" />
+                                            ))}
+                                        </div>
                                     ) : configFiles.length === 0 ? (
-                                        <div className="text-white text-center py-10">No configurable files found for this integration and device type.</div>
+                                        <EmptyState
+                                            icon={FileIcon}
+                                            title="No configurable files"
+                                            description="This integration and device type expose no configuration files."
+                                        />
                                     ) : (
                                         <Tab.Group onChange={handleTabChange}>
                                             <Tab.List className="flex space-x-1 rounded-xl bg-neutral-800 p-1">
@@ -199,7 +212,10 @@ const ConfigFilesModal = ({ integrationName, instanceName, isOpen, onClose, onSa
                                                         )}
                                                     >
                                                         {loading && selectedFile?.name === file.name ? (
-                                                            <div className="text-white text-center py-10">Loading file content...</div>
+                                                            <div className="space-y-2 py-6" aria-busy="true">
+                                                                <Skeleton className="ui-skeleton-line" width="30%" />
+                                                                <Skeleton height="12rem" radius="0.5rem" />
+                                                            </div>
                                                         ) : (
                                                             <>
                                                                 <p className="text-neutral-400 text-sm mb-2">{file.description}</p>

@@ -1,13 +1,16 @@
 import React from 'react';
+import Skeleton from '../../ui/Skeleton.jsx';
 
 // Movement Configuration Display Component
 function MovementConfigurationDisplay({ config, loading, error }) {
     if (loading) {
+        /* The card shows a fixed set of config rows, so show their shape. */
         return (
-            <div className="card-compact">
-                <div className="flex items-center text-text-muted text-sm">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary mr-2"></div>
-                    Loading movement configuration...
+            <div className="card-compact" aria-busy="true">
+                <div className="space-y-2">
+                    <Skeleton className="ui-skeleton-line" width="40%" height="0.7rem" />
+                    <Skeleton className="ui-skeleton-line" width="65%" height="0.65rem" />
+                    <Skeleton className="ui-skeleton-line" width="52%" height="0.65rem" />
                 </div>
             </div>
         );

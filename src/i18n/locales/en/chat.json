@@ -5,6 +5,7 @@
   },
   "placeholder": {
     "title": "There is no chat yet.",
+    "description": "Create an AI partner to start talking, or pick one of the characters you already have.",
     "startChatting": "Start Chatting",
     "createCharacter": "Create AI Character"
   },
@@ -14,7 +15,9 @@
     "running": "Running",
     "notRunning": "Not running",
     "start": "Start",
+    "starting": "Starting…",
     "allRunning": "Your local AI service is running.",
+    "noInstancesTitle": "No local AI service yet",
     "noInstances": "No local AI instances are configured yet. Create one from the Integrations tab (advanced mode).",
     "startRequested": "Starting the local AI service…",
     "startFailed": "Could not start the local AI service.",
@@ -27,25 +30,119 @@
     "title": "Conversations",
     "empty": "No conversations yet",
     "emptyHint": "Start a chat with one of your AI partners.",
+    "noMatches": "No conversations match this filter",
+    "noMatchesHint": "Try a different search, or show all conversations again.",
     "newChat": "New Chat",
     "noMessages": "No messages yet",
     "you": "You",
     "searchPlaceholder": "Search conversations",
     "filterAll": "All",
     "filterUnread": "Unread",
+    "filterByPartner": "Filter by AI partner",
+    "allPartners": "All",
+    "statusPinned": "Pinned",
+    "statusMuted": "Muted",
+    "statusDisabled": "This AI partner is disabled",
+    "day": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "Earlier"
+    },
+    "archivedSection": "Archived ({{count}})",
+    "openArchived": "Open archived conversations",
     "selectCompanion": "Who do you want to talk to?",
+    "noCompanionsTitle": "No AI partners yet",
     "noCompanions": "No AI partners yet. Create one in the AI Characters tab first.",
     "openCharacters": "Go to AI Characters",
     "loading": "Loading conversations…",
     "failedToLoad": "Could not load conversations."
   },
+  "menu": {
+    "open": "Conversation actions",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "disableAI": "Disable AI",
+    "enableAI": "Enable AI",
+    "delete": "Delete",
+    "deleteTitle": "Delete conversation",
+    "deleteMessage": "Delete the conversation with {{name}}? This removes the thread and its messages and cannot be undone."
+  },
+  "archived": {
+    "title": "Archived",
+    "subtitle": "Conversations you have filed away",
+    "searchPlaceholder": "Search archived conversations",
+    "empty": "Nothing is archived",
+    "emptyHint": "Archive a conversation from the inbox to move it here.",
+    "noMatches": "No archived conversations match",
+    "noMatchesHint": "Try a different search.",
+    "backToInbox": "Back to the inbox"
+  },
+  "disabled": {
+    "title": "{{name}} is disabled",
+    "hint": "This AI partner is switched off. Enable it to chat again.",
+    "enable": "Enable",
+    "enableFailed": "Could not enable this AI partner."
+  },
+  "disabledAIs": {
+    "title": "Disabled AIs",
+    "subtitle": "AI partners that are currently switched off",
+    "empty": "No disabled AI partners",
+    "emptyHint": "Every AI partner is switched on.",
+    "itemHint": "Off — no chat, no outreach, automations paused",
+    "enable": "Enable",
+    "enabling": "Enabling…",
+    "backToInbox": "Back to the inbox"
+  },
+  "search": {
+    "open": "Search messages",
+    "close": "Close search",
+    "title": "Search messages",
+    "placeholderGlobal": "Search all messages",
+    "placeholderInThread": "Search this conversation",
+    "clear": "Clear the search",
+    "minLength": "Type at least {{count}} characters.",
+    "count": "{{count}} matching messages",
+    "countCapped": "Showing the newest {{limit}} of {{count}} matches",
+    "promptTitle": "Search your messages",
+    "promptHint": "Find a word across every conversation, or inside the one you have open. Choosing a result opens the thread at that message.",
+    "noResultsTitle": "No messages match \"{{term}}\"",
+    "noResultsHint": "Try a shorter word, or check the spelling.",
+    "jumpUnavailable": "That message is no longer available."
+  },
+  "toast": {
+    "conversationDeleted": "Conversation deleted",
+    "markedRead": "Marked as read",
+    "markedUnread": "Marked as unread",
+    "aiDisabled": "AI partner disabled",
+    "aiEnabled": "AI partner enabled",
+    "messagePinned": "Message pinned",
+    "messageUnpinned": "Message unpinned"
+  },
   "conversation": {
     "back": "Back",
     "loadingMessages": "Loading messages…",
     "loadOlder": "Load older messages",
+    "showOlder": "Show {{count}} older messages",
     "noMessages": "Say hello to start the conversation.",
+    "noMessagesHint": "Your first message opens the conversation.",
     "jumpToLatest": "Jump to latest",
     "newMessages": "New messages",
+    "day": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
+    "greeting": {
+      "title": "Try another greeting",
+      "position": "{{current}} of {{total}}",
+      "cycle": "Show next",
+      "send": "Start with this one"
+    },
     "connection": {
       "connecting": "Connecting…",
       "connected": "Connected",
@@ -56,6 +153,8 @@
   "input": {
     "placeholder": "Type a message…",
     "placeholderTyping": "{{name}} is typing…",
+    "placeholderOffline": "Not connected — reconnecting…",
+    "placeholderDisabled": "This AI partner is switched off",
     "send": "Send",
     "record": "Record a voice note",
     "stopRecording": "Stop recording",
@@ -63,35 +162,183 @@
     "emoji": "Emoji",
     "emojiActions": "Emoji actions",
     "sendAs": "Chatting as {{name}}",
-    "micDenied": "Microphone access was denied.",
+    "micDenied": "Microphone blocked. Allow it in the app's permissions and try again.",
+    "micNotFound": "No microphone found.",
+    "micInUse": "The microphone is in use by another app.",
+    "micUnavailable": "This app cannot reach the microphone.",
+    "micAvailable": "The microphone is ready.",
+    "micSilent": "No sound is reaching the microphone — check that it is not muted.",
     "recordingFailed": "Could not record audio.",
-    "sendFailed": "Could not send the message."
+    "recordingTooShort": "That was too short to send — hold the mic button while you speak.",
+    "recordingCapped": "Voice note stopped at {{limit}}.",
+    "recordingPanel": "Voice note recording",
+    "cancelRecording": "Cancel this voice note",
+    "sendVoiceNote": "Send",
+    "micDevice": "Microphone",
+    "micDeviceDefault": "System default microphone",
+    "micDeviceN": "Microphone {{index}}",
+    "micDeviceNone": "No other microphones detected",
+    "micDeviceCount": "{{count}} microphones available",
+    "sendFailed": "Could not send the message.",
+    "imageFallbackName": "picture",
+    "imageCount": "{{count}} of {{max}} pictures",
+    "removeImage": "Remove {{name}}",
+    "imageLimit": "You can send up to {{max}} pictures at a time.",
+    "imageTooLarge": "\"{{name}}\" is too large. Pictures must be under {{size}} MB.",
+    "imageNotAnImage": "\"{{name}}\" is not a picture.",
+    "imageReadFailed": "Could not read that picture.",
+    "emojiSuggestions": "Emoji suggestions",
+    "insertScenario": "Insert the scenario as context",
+    "noScenario": "This character has no scenario to insert.",
+    "scenarioAlreadyThere": "The scenario is already in your message.",
+    "enterHint": "Enter sends · Shift+Enter adds a line"
+  },
+  "mic": {
+    "ok": {
+      "title": "Microphone ready",
+      "primary": "Test again",
+      "secondary": ""
+    },
+    "denied": {
+      "title": "Microphone blocked",
+      "primary": "Retry",
+      "secondary": "Sound settings"
+    },
+    "notFound": {
+      "title": "No microphone found",
+      "primary": "Open sound settings",
+      "secondary": "Retry"
+    },
+    "inUse": {
+      "title": "Microphone busy",
+      "primary": "Retry",
+      "secondary": ""
+    },
+    "unavailable": {
+      "title": "Microphone unavailable",
+      "primary": "",
+      "secondary": ""
+    },
+    "insecure": {
+      "title": "Microphone unavailable",
+      "body": "The app is not running in a secure context, so the microphone cannot be reached. Open the app window itself rather than a page served over plain HTTP.",
+      "primary": "",
+      "secondary": ""
+    },
+    "unknown": {
+      "title": "Could not check the microphone",
+      "primary": "Retry",
+      "secondary": ""
+    },
+    "supportHint": "Still stuck? Check Windows Settings → Privacy & security → Microphone, then Sound settings → Input.",
+    "checking": "Checking the microphone…",
+    "testAgain": "Test the microphone",
+    "lastChecked": "Checked {{time}}",
+    "settingsSection": "Voice Input",
+    "settingsDescription": "Recording a voice note needs a microphone and the app's permission to use it. This is checked here, without asking for permission.",
+    "managePermissions": "How to allow the microphone",
+    "managePermissionsBody": "The microphone prompt belongs to the app window, not to a website. Windows keeps the answer per app: Settings → Privacy & security → Microphone, and make sure the app is listed and switched on. Then press Retry here.",
+    "openSoundSettings": "Open sound settings",
+    "openSoundSettingsFailed": "Could not open the sound settings on this system. Open them manually: Windows Settings → System → Sound → Input."
+  },
+  "sttTest": {
+    "title": "Test speech-to-text",
+    "description": "Records five seconds (or takes a file), sends it to the configured speech-to-text provider and shows what came back. Nothing is saved to a conversation, so it is safe to run as often as you like.",
+    "record": "Record {{seconds}} s",
+    "stop": "Stop ({{seconds}} s left)",
+    "upload": "Use a file",
+    "transcribe": "Transcribe",
+    "transcribing": "Transcribing…",
+    "configLabel": "Configuration",
+    "configAuto": "Use the configuration chat uses",
+    "clip": {
+      "recording": "Recording · {{seconds}} s",
+      "file": "File · {{name}}"
+    },
+    "hints": {
+      "recording": "Recording — Transcribe becomes available when the recording stops.",
+      "transcribing": "Waiting for the provider…",
+      "noAudio": "Record a clip or choose a file first."
+    },
+    "successTitle": "Transcribed",
+    "emptyTitle": "The provider heard no speech",
+    "emptyBody": "The request succeeded, so the configuration and credentials are fine. The audio was silent, too short, or in a format the provider could not decode — try recording again, closer to the microphone.",
+    "failedTitle": "The provider rejected the request",
+    "failed": "Transcription failed.",
+    "language": "Language",
+    "languageAuto": "not set (provider decides)",
+    "elapsed": "Took",
+    "notSet": "not set",
+    "resolvedTitle": "Resolved configuration",
+    "resolvedHint": "This is what the engine actually used, read back from the provider resolution — not what was requested. A blank field above is a misconfiguration worth fixing.",
+    "fields": {
+      "config": "Configuration",
+      "provider": "Provider",
+      "model": "Model",
+      "language": "Language",
+      "source": "Chosen by"
+    },
+    "source": {
+      "config": "the configuration selected above",
+      "entityMapping": "your shared Voice Input configuration",
+      "inline": "credentials supplied directly",
+      "unknown": "the engine"
+    },
+    "fileErrors": {
+      "missing": "No file was selected.",
+      "empty": "That file is empty.",
+      "size": "That file is larger than the {{limit}} transcription limit.",
+      "type": "That file does not look like audio. Choose a WAV, MP3, M4A, WebM or OGG file.",
+      "unreadable": "That file could not be read."
+    }
   },
   "bubble": {
     "edited": "edited",
     "editedTooltip": "This message was edited",
     "voiceMessage": "Voice message",
     "image": "Photo",
+    "transcribing": "Transcribing…",
     "failedTranscription": "Transcription failed",
-    "retryTranscription": "Retry",
+    "retryTranscription": "Retry transcription",
+    "retryTranscriptionFailed": "Could not transcribe this voice note.",
     "play": "Play",
-    "pause": "Pause"
+    "pause": "Pause",
+    "audioSeek": "Seek within this voice message",
+    "audioPosition": "{{position}} of {{duration}}"
   },
   "actions": {
     "edit": "Edit",
     "delete": "Delete",
     "regenerate": "Regenerate",
+    "regenerateUnavailable": "Regenerating a reply is not available in this build. The engine has no way to re-run a reply without sending your last message again.",
     "reply": "Reply",
     "copy": "Copy",
-    "pin": "Pin",
-    "unpin": "Unpin",
+    "forward": "Forward…",
+    "forwardUnavailable": "This message has no text to forward.",
+    "pin": "Pin message",
+    "unpin": "Unpin message",
+    "pinned": "Pinned message",
+    "pinnedTooltip": "Pinned — tap Unpin to remove",
     "react": "React",
+    "removeReaction": "Remove your reaction",
     "deleteConfirmTitle": "Delete message",
     "deleteConfirmMessage": "Delete this message? This cannot be undone.",
     "editTitle": "Edit message",
-    "replyingTo": "Replying to a message",
+    "replyingTo": "Replying to",
+    "replyUnavailable": "the original message is no longer available",
     "cancelReply": "Cancel reply",
     "copied": "Copied to clipboard"
+  },
+  "forward": {
+    "title": "Forward to…",
+    "hint": "Choose who receives this message.",
+    "hintFrom": "Send this message to another conversation (from {{name}}).",
+    "previewLabel": "Message text",
+    "searchPlaceholder": "Search AI partners",
+    "noPartners": "There is no other AI partner to forward to yet.",
+    "noMatches": "No AI partner matches that name.",
+    "cancel": "Cancel",
+    "sent": "Message sent to {{name}}"
   },
   "preferences": {
     "title": "Chat Preferences",
@@ -107,7 +354,9 @@
     "spacing": "Message spacing",
     "spacingComfortable": "Comfortable",
     "spacingCompact": "Compact",
-    "soundOnMessage": "Play a sound for new messages"
+    "soundOnMessage": "Play a sound for new messages",
+    "playbackRate": "Voice message speed",
+    "playbackRateHint": "Applies to voice messages. Changes take effect immediately."
   },
   "impersonation": {
     "label": "Chatting as",

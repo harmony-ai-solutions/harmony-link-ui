@@ -2,9 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
     RefreshIcon, MessageIcon, BookIcon, BrainIcon, ActivityIcon, TerminalIcon,
+    CrosshairIcon, PuzzleIcon,
 } from '../../constants/icons.jsx';
 import ThemedSelect from '../widgets/ThemedSelect.jsx';
 import ConfigurableJsonViewer from '../widgets/ConfigurableJsonViewer.jsx';
+import EmptyState from '../ui/EmptyState.jsx';
+import Skeleton, { SkeletonText } from '../ui/Skeleton.jsx';
 import { getDevInspector, listDevPrompts } from '../../services/management/devtoolsService.js';
 import { getConnectedEntities } from '../../services/management/developmentService.js';
 import { listEntities } from '../../services/management/entityService.js';
@@ -212,8 +215,33 @@ const InspectorView = () => {
                 {/* ── D1: Overview ── */}
                 {subTab === 'overview' && (
                     <>
+                        {/* Loading: the overview is a fixed set of sections, so
+                            show those sections' shape rather than a sentence. */}
                         {overviewLoading && (
-                            <p className="text-sm text-text-muted">{t('development:inspector.loading')}</p>
+                            <div className="space-y-6" aria-busy="true">
+                                <section className="character-editor-section">
+                                    <div className="character-editor-section-header">
+                                        {t('development:inspector.modules.title')}
+                                    </div>
+                                    <div className="p-4 flex flex-wrap gap-2">
+                                        {Array.from({ length: 6 }).map((_, index) => (
+                                            <Skeleton key={index} inline width="5.5rem" height="1.4rem" radius="9999px" />
+                                        ))}
+                                    </div>
+                                </section>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {[0, 1].map((section) => (
+                                        <section key={section} className="character-editor-section">
+                                            <div className="character-editor-section-header">
+                                                <Skeleton className="ui-skeleton-line" width="40%" height="0.7rem" />
+                                            </div>
+                                            <div className="p-4">
+                                                <SkeletonText lines={3} />
+                                            </div>
+                                        </section>
+                                    ))}
+                                </div>
+                            </div>
                         )}
                         {overviewError && !overviewLoading && (
                             <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/5 text-red-400 text-sm">
@@ -221,7 +249,11 @@ const InspectorView = () => {
                             </div>
                         )}
                         {!selectedEntity && !overviewLoading && (
-                            <p className="text-sm text-text-muted">{t('development:inspector.selectEntity')}</p>
+                            <EmptyState
+                                icon={CrosshairIcon}
+                                title={t('development:inspector.selectEntity')}
+                                description={t('development:inspector.selectEntityHint')}
+                            />
                         )}
 
                         {overview && (
@@ -232,7 +264,12 @@ const InspectorView = () => {
                                     </div>
                                     <div className="p-4">
                                         {moduleRows.length === 0 ? (
-                                            <p className="text-xs text-text-muted">{t('development:inspector.modules.empty')}</p>
+                                            <EmptyState
+                                                size="compact"
+                                                icon={PuzzleIcon}
+                                                title={t('development:inspector.modules.empty')}
+                                                description={t('development:inspector.modules.emptyHint')}
+                                            />
                                         ) : (
                                             <div className="flex flex-wrap gap-2">
                                                 {moduleRows.map((m) => (
@@ -361,9 +398,24 @@ const InspectorView = () => {
                             </button>
                         </div>
 
-                        {promptsLoading && <p className="text-sm text-text-muted">{t('development:inspector.loading')}</p>}
+                        {promptsLoading && (
+                            <div className="space-y-3" aria-busy="true">
+                                {Array.from({ length: 3 }).map((_, index) => (
+                                    <section key={index} className="character-editor-section">
+                                        <div className="character-editor-section-header">
+                                            <Skeleton className="ui-skeleton-line" width="30%" height="0.7rem" />
+                                        </div>
+                                        <div className="p-4"><SkeletonText lines={4} /></div>
+                                    </section>
+                                ))}
+                            </div>
+                        )}
                         {!promptsLoading && prompts.length === 0 && (
-                            <p className="text-sm text-text-muted">{t('development:inspector.prompts.empty')}</p>
+                            <EmptyState
+                                icon={TerminalIcon}
+                                title={t('development:inspector.prompts.empty')}
+                                description={t('development:inspector.prompts.emptyHint')}
+                            />
                         )}
 
                         {prompts.map((p) => (
@@ -404,9 +456,23 @@ const InspectorView = () => {
                             </button>
                         </div>
 
-                        {eventsLoading && <p className="text-sm text-text-muted">{t('development:inspector.loading')}</p>}
+                        {eventsLoading && (
+                            <div className="space-y-2" aria-busy="true">
+                                {Array.from({ length: 4 }).map((_, index) => (
+                                    <div key={index} className="character-editor-section p-3 flex items-center gap-2">
+                                        <Skeleton inline width="4.5rem" height="0.6rem" />
+                                        <Skeleton inline width="7rem" height="1.1rem" radius="9999px" />
+                                        <Skeleton inline width="3rem" height="0.6rem" />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {!eventsLoading && events.length === 0 && (
-                            <p className="text-sm text-text-muted">{t('development:inspector.events.empty')}</p>
+                            <EmptyState
+                                icon={ActivityIcon}
+                                title={t('development:inspector.events.empty')}
+                                description={t('development:inspector.events.emptyHint')}
+                            />
                         )}
 
                         <div className="space-y-2">

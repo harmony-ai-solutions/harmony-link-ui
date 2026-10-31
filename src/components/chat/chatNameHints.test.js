@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   nameKey,
-  idDisambiguator,
-  splitIdName,
   resolveChatName,
   duplicateNameHints,
 } from './chatNameHints.js';
@@ -16,70 +14,34 @@ test('nameKey compares names case-insensitively and tolerates non-strings', () =
   assert.equal(nameKey(42), '');
 });
 
-// ── idDisambiguator ───────────────────────────────────────────────────────
-
-test('idDisambiguator strips the name slug, leaving the timestamp/copy suffix', () => {
-  assert.equal(idDisambiguator('Alleycat-Annie-20260904230124', 'Alleycat Annie'), '20260904230124');
-  assert.equal(idDisambiguator('Isabella-20260904230124', 'Isabella'), '20260904230124');
-  assert.equal(idDisambiguator('Alleycat-Annie-2-2026', 'Alleycat Annie'), '2-2026');
-});
-
-test('idDisambiguator tolerates empty and non-string ids', () => {
-  assert.equal(idDisambiguator('', 'Name'), '');
-  assert.equal(idDisambiguator(null, 'Name'), '');
-  // A separator-less id carries no suffix to point at.
-  assert.equal(idDisambiguator('singleword'), '');
-});
-
-// ── splitIdName ───────────────────────────────────────────────────────────
-
-test('splitIdName turns a raw id into a readable name plus its suffix', () => {
-  assert.deepEqual(
-    splitIdName('Isabella-20260904230124', 'Isabella-20260904230124'),
-    { name: 'Isabella', hint: '20260904230124' }
-  );
-  assert.deepEqual(
-    splitIdName('Alleycat-Annie-2-2026', 'Alleycat-Annie-2-2026'),
-    { name: 'Alleycat Annie 2', hint: '2026' }
-  );
-});
-
-test('splitIdName leaves a real display name untouched', () => {
-  assert.deepEqual(
-    splitIdName('Alleycat Annie', 'Alleycat-Annie-2026'),
-    { name: 'Alleycat Annie', hint: '' }
-  );
-  assert.deepEqual(splitIdName('', 'Isabella-1'), { name: '', hint: '' });
-});
-
 // ── resolveChatName ───────────────────────────────────────────────────────
 
-test('resolveChatName prefers a distinct alias over the id suffix', () => {
+test('resolveChatName shows a distinct alias as the hint', () => {
   assert.deepEqual(
-    resolveChatName({ name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2026', alias: 'Annie RP' }),
-    { name: 'Alleycat Annie', hint: 'Annie RP' }
+    resolveChatName({ name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2-2026', alias: 'Alleycat Annie 2' }),
+    { name: 'Alleycat Annie', hint: 'Alleycat Annie 2' }
   );
 });
 
-test('resolveChatName falls back to the id suffix when the alias IS the name', () => {
+test('resolveChatName NEVER falls back to the entity id (owner rule, 2026-10-31)', () => {
+  // The ORIGINAL of a duplicate pair typically carries alias === name.
   assert.deepEqual(
-    resolveChatName({ name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2-2026', alias: 'Alleycat Annie' }),
-    { name: 'Alleycat Annie', hint: '2-2026' }
+    resolveChatName({ name: 'Alleycat Annie', entityId: 'Alleycat-Annie-20260902092847', alias: 'Alleycat Annie' }),
+    { name: 'Alleycat Annie', hint: '' }
   );
+  // No alias at all — still no id.
   assert.deepEqual(
     resolveChatName({ name: 'Isabella', entityId: 'Isabella-20260904234327', alias: '' }),
-    { name: 'Isabella', hint: '20260904234327' }
+    { name: 'Isabella', hint: '' }
   );
 });
 
-test('resolveChatName shortens an entity that renders its raw id', () => {
+test('resolveChatName leaves a raw-id display name unsplit', () => {
+  // An entity without a character profile renders its id as the name. The
+  // id is already unique, so it stays exactly as it is.
   assert.deepEqual(
-    resolveChatName({
-      name: 'Isabella-20260904230124',
-      entityId: 'Isabella-20260904230124',
-      alias: '',
-    }),
-    { name: 'Isabella', hint: '20260904230124' }
+    resolveChatName({ name: 'Isabella-20260904230124', entityId: 'Isabella-20260904230124', alias: '' }),
+    { name: 'Isabella-20260904230124', hint: '' }
   );
 });
 
@@ -95,22 +57,24 @@ test('duplicateNameHints labels BOTH entries of a duplicated name', () => {
   assert.equal(hints.size, 2);
 });
 
-test('duplicateNameHints keeps the id-name twins readable and distinguishable', () => {
+test('duplicateNameHints alias-only: the original keeps a clean name, the copy shows its alias', () => {
+  // The owner's live pair: the original's alias equals the name (no hint),
+  // the import copy carries a differing alias — that alone tells them apart.
   const hints = duplicateNameHints([
-    { key: 'i1', name: 'Isabella-20260904230124', entityId: 'Isabella-20260904230124', alias: '' },
-    { key: 'i2', name: 'Isabella-20260904234327', entityId: 'Isabella-20260904234327', alias: '' },
+    { key: 'orig', name: 'Alleycat Annie', entityId: 'Alleycat-Annie-20260902092847', alias: 'Alleycat Annie' },
+    { key: 'copy', name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2-20260903211838', alias: 'Alleycat Annie 2' },
   ]);
-  assert.deepEqual(hints.get('i1'), { name: 'Isabella', hint: '20260904230124' });
-  assert.deepEqual(hints.get('i2'), { name: 'Isabella', hint: '20260904234327' });
+  assert.deepEqual(hints.get('orig'), { name: 'Alleycat Annie', hint: '' });
+  assert.deepEqual(hints.get('copy'), { name: 'Alleycat Annie', hint: 'Alleycat Annie 2' });
 });
 
-test('duplicateNameHints falls back to ids when the aliases collide too', () => {
+test('duplicateNameHints shows no ids when neither alias differentiates', () => {
   const hints = duplicateNameHints([
     { key: 'a', name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2026', alias: 'Alleycat Annie' },
     { key: 'b', name: 'Alleycat Annie', entityId: 'Alleycat-Annie-2-2026', alias: 'Alleycat Annie' },
   ]);
-  assert.equal(hints.get('a').hint, '2026');
-  assert.equal(hints.get('b').hint, '2-2026');
+  assert.equal(hints.get('a').hint, '');
+  assert.equal(hints.get('b').hint, '');
 });
 
 test('duplicateNameHints leaves unique names clean', () => {

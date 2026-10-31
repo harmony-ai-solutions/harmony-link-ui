@@ -1,28 +1,25 @@
 import { create } from 'zustand';
 import { getManagementApiUrl, getPublicApiPath } from '../services/management/baseService.js';
-import { resolveWebSocketUrl } from '../services/chat/chatSocketService.js';
 
 /**
  * Engine health — the shell's answer to "is the engine actually there?".
  *
  * Before this store, a dead engine and an empty database looked identical: every
  * view renders its empty state, so the user cannot tell *"no characters"* from
- * *"the engine is down"* (plan task 01-6).
+ * *"the engine is down"*.
  *
- * Two independent probes, both cheap and unauthenticated:
+ * There is exactly **one** probe, the same one the phone app relies on:
  *
- * 1. **Event server liveness** — `GET /health` on the event server. That route
- *    is served by [`eventserver/request.go`](../../../eventserver/request.go)
- *    before any auth or session logic, so it answers even when the database or
- *    a module is broken. This is the endpoint the task refers to as "already
- *    exists". It lives on the **event server** port (28080 by default), NOT the
- *    management API port — a distinction worth keeping in mind, because the two
- *    servers come up and go down independently.
- * 2. **Management API reachability** — `GET /public/appversion`, which needs no
- *    admin key. This is the API every data view reads through, so its absence
- *    is what makes the app show stale/empty data.
+ * **Management API reachability** — `GET /public/appversion`, which needs no
+ * admin key. This is the API every data view reads through, so its absence is
+ * what makes the app show stale/empty data; while it answers, the engine is up.
  *
- * The **live chat socket** is a third input, but it is deliberately NOT fetched
+ * An earlier version also probed the event server's `/health`. It was dropped:
+ * that server comes up and goes down independently of the management API, so a
+ * probe racing an engine restart produced false "the event server is not
+ * answering" banners while the app itself was perfectly usable.
+ *
+ * The **live chat socket** is a second input, but it is deliberately NOT fetched
  * here: the chat socket only exists while a conversation is open
  * ([`chatStore.connectSocket`](./chatStore.js)), so an `idle` socket on the
  * Settings tab means "no socket expected", not "socket down". The shell feeds
@@ -32,12 +29,11 @@ import { resolveWebSocketUrl } from '../services/chat/chatSocketService.js';
  *
  * Resulting state machine — see {@link deriveHealthState}:
  *
- * | management | /health | chat socket          | state      |
- * |------------|---------|----------------------|------------|
- * | down       | any     | any                  | `offline`  |
- * | up         | down    | any                  | `offline`  |
- * | up         | up      | connecting/reconnect | `degraded` |
- * | up         | up      | idle or connected    | `connected`|
+ * | management | chat socket           | state      |
+ * |------------|-----------------------|------------|
+ * | down       | any                   | `offline`  |
+ * | up         | connecting/reconnecting/error | `degraded` |
+ * | up         | idle or connected     | `connected`|
  *
  * `checking` is a transient fourth value used only before the first probe
  * resolves (and while a manual Retry runs): claiming "Connected" before the
@@ -45,7 +41,7 @@ import { resolveWebSocketUrl } from '../services/chat/chatSocketService.js';
  * every boot.
  *
  * Polling is a self-rescheduling timeout rather than an interval, so the delay
- * can grow: {@link HEALTH_POLL_INTERVAL_MS} while healthy (the task's 15 s) and
+ * can grow: {@link HEALTH_POLL_INTERVAL_MS} while healthy (15 s) and
  * {@link nextPollDelay}'s exponential backoff up to
  * {@link HEALTH_MAX_BACKOFF_MS} while failing, so a stopped engine is not
  * hammered by a tab left open overnight. The first success resets the ladder,
@@ -84,22 +80,6 @@ export const SOCKET_DOWN_STATES = ['connecting', 'reconnecting', 'error'];
 export const HEALTH_STATES = ['checking', 'connected', 'degraded', 'offline'];
 
 /**
- * Resolve the event server's `/health` URL.
- *
- * Derived from the chat socket URL rather than hard-coded, so a deployment that
- * moves the engine (VITE_HL_WS_URL / VITE_HL_WS_PORT) moves the probe with it —
- * probing a stale hard-coded port would report `offline` for a healthy engine.
- *
- * @param {string} [wsUrl] - defaults to {@link resolveWebSocketUrl}
- * @returns {string} an http(s) URL
- */
-export function resolveEngineHealthUrl(wsUrl) {
-    const base = wsUrl || resolveWebSocketUrl();
-    const httpBase = base.replace(/^ws(s?):\/\//i, 'http$1://');
-    return `${httpBase.replace(/\/+$/, '')}/health`;
-}
-
-/**
  * Resolve the management API's unauthenticated version route (reachability probe).
  * @returns {string}
  */
@@ -113,17 +93,15 @@ export function resolveManagementHealthUrl() {
  * @param {Object} input
  * @param {boolean} input.checking - no result yet, or a manual retry is running
  * @param {boolean} input.managementOk - management API answered
- * @param {boolean} input.engineOk - event server `/health` answered
  * @param {string} input.socketState - `idle|connecting|connected|reconnecting|error`
  * @returns {'checking'|'connected'|'degraded'|'offline'}
  */
-export function deriveHealthState({ checking, managementOk, engineOk, socketState }) {
+export function deriveHealthState({ checking, managementOk, socketState }) {
     // Never assert a state before the first answer (or during a manual retry
     // that follows a failed probe) — the checking pill is honest, a wrong
     // "connected"/"offline" is not.
     if (checking) return 'checking';
     if (!managementOk) return 'offline';
-    if (!engineOk) return 'offline';
     if (SOCKET_DOWN_STATES.includes(socketState)) return 'degraded';
     return 'connected';
 }
@@ -182,7 +160,7 @@ async function fetchWithTimeout(url, timeoutMs, fetchImpl) {
             cache: 'no-store',
             // Opaque cross-origin responses (`no-cors`) would make a reachable
             // engine indistinguishable from a proxy error, so ask for the real
-            // response and rely on the event server's CORS header.
+            // response and rely on the management API's CORS header.
             mode: 'cors',
             ...(controller ? { signal: controller.signal } : {}),
         });
@@ -191,7 +169,7 @@ async function fetchWithTimeout(url, timeoutMs, fetchImpl) {
     }
 }
 
-/** A single probe. Never throws — every failure is folded into the flags. */
+/** A single probe. Never throws — the answer is folded into `{ok}`. */
 async function probeEndpoint(url, fetchImpl) {
     try {
         const response = await fetchWithTimeout(url, HEALTH_PROBE_TIMEOUT_MS, fetchImpl);
@@ -210,15 +188,13 @@ export const useHealthStore = create((set, get) => ({
     status: 'checking',
     /** Management API answered the last probe. */
     managementOk: false,
-    /** Event server answered `GET /health` on the last probe. */
-    engineOk: false,
     /** Last socket state pushed in by the shell (`chatStore.connectionState`). */
     socketState: 'idle',
     /** Consecutive failed probes; drives {@link nextPollDelay}. */
     failures: 0,
     /** Epoch ms of the last completed probe (null before the first one). */
     lastCheckedAt: null,
-    /** Last transport-level error message, for the tooltip. */
+    /** Last transport-level error message from the management probe, for the tooltip. */
     lastError: null,
     /** True while a probe is in flight. */
     probing: false,
@@ -229,7 +205,7 @@ export const useHealthStore = create((set, get) => ({
 
     /** Recompute `status` from the current facts without touching the network. */
     refresh: () => {
-        const { managementOk, engineOk, socketState, lastCheckedAt } = get();
+        const { managementOk, socketState, lastCheckedAt } = get();
         set({
             status: deriveHealthState({
                 // `checking` means "no answer has EVER arrived", not "a probe is
@@ -239,7 +215,6 @@ export const useHealthStore = create((set, get) => ({
                 // `probing` (the banner button's spin) instead.
                 checking: lastCheckedAt === null,
                 managementOk,
-                engineOk,
                 socketState,
             }),
         });
@@ -260,7 +235,7 @@ export const useHealthStore = create((set, get) => ({
     // ── Probing ──────────────────────────────────────────────────────────
 
     /**
-     * Probe both endpoints once and reschedule.
+     * Probe the management API once and reschedule.
      *
      * @param {Object} [options]
      * @param {typeof fetch} [options.fetchImpl] - injectable for tests
@@ -282,23 +257,17 @@ export const useHealthStore = create((set, get) => ({
         set({ probing: true });
         get().refresh();
 
-        const [management, engine] = await Promise.all([
-            probeEndpoint(resolveManagementHealthUrl(), doFetch),
-            probeEndpoint(resolveEngineHealthUrl(), doFetch),
-        ]);
+        const management = await probeEndpoint(resolveManagementHealthUrl(), doFetch);
 
         const managementOk = management.ok;
-        const engineOk = engine.ok;
-        const healthy = managementOk && engineOk;
-        const failures = healthy ? 0 : get().failures + 1;
+        const failures = managementOk ? 0 : get().failures + 1;
 
         set({
             managementOk,
-            engineOk,
             failures,
             probing: false,
             lastCheckedAt: Date.now(),
-            lastError: management.error || engine.error || null,
+            lastError: management.error || null,
         });
         get().refresh();
 
@@ -335,8 +304,8 @@ export const useHealthStore = create((set, get) => ({
     },
 
     /**
-     * Manual Retry (offline banner button): re-probe both endpoints immediately,
-     * so recovery does not have to wait out a 120 s backoff.
+     * Manual Retry (offline banner button): re-probe immediately, so recovery
+     * does not have to wait out a 120 s backoff.
      *
      * `failures` is deliberately NOT zeroed first: a retry that still fails is
      * another consecutive failure, so it keeps the banner's debounce honest
@@ -375,7 +344,6 @@ export const useHealthStore = create((set, get) => ({
         set({
             status: 'checking',
             managementOk: false,
-            engineOk: false,
             socketState: 'idle',
             failures: 0,
             lastCheckedAt: null,

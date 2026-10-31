@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import useHealthStore, {
     deriveHealthState,
     nextPollDelay,
-    resolveEngineHealthUrl,
+    resolveManagementHealthUrl,
     isOffline,
     shouldShowOfflineBanner,
     bindResumeProbe,
@@ -19,7 +19,6 @@ const stubFetch = (map) => async (url) => {
     return { ok: verdict === 'ok', status: verdict === 'ok' ? 200 : 503 };
 };
 
-const isEngineUrl = (url) => url.endsWith('/health');
 const isManagementUrl = (url) => url.endsWith('/public/appversion');
 
 /** Probe without rescheduling, so tests never leave a timer behind. */
@@ -29,12 +28,13 @@ const reset = () => useHealthStore.getState().reset();
 
 // ── URL derivation ────────────────────────────────────────────────────────
 
-test('the health URL follows the chat socket host, as http(s)', () => {
-    // The probe must track VITE_HL_WS_URL/PORT; a hard-coded port would report
-    // "offline" for a healthy engine on any non-default deployment.
-    assert.equal(resolveEngineHealthUrl('ws://localhost:28080'), 'http://localhost:28080/health');
-    assert.equal(resolveEngineHealthUrl('ws://192.168.1.9:28080/'), 'http://192.168.1.9:28080/health');
-    assert.equal(resolveEngineHealthUrl('wss://engine.local:28443'), 'https://engine.local:28443/health');
+test('the probe targets the management API public version route', () => {
+    // Health is management-API reachability alone — the event server's /health
+    // is deliberately not probed (it raced engine restarts and produced false
+    // offline banners).
+    const url = resolveManagementHealthUrl();
+    assert.match(url, /^https?:\/\//);
+    assert.ok(isManagementUrl(url), `expected a /public/appversion URL, got ${url}`);
 });
 
 // ── Pure state machine ────────────────────────────────────────────────────
@@ -42,27 +42,16 @@ test('the health URL follows the chat socket host, as http(s)', () => {
 test('deriveHealthState: management failure is offline regardless of the socket', () => {
     for (const socketState of ['idle', 'connected', 'connecting', 'reconnecting', 'error']) {
         assert.equal(
-            deriveHealthState({ checking: false, managementOk: false, engineOk: true, socketState }),
-            'offline',
-        );
-        assert.equal(
-            deriveHealthState({ checking: false, managementOk: false, engineOk: false, socketState }),
+            deriveHealthState({ checking: false, managementOk: false, socketState }),
             'offline',
         );
     }
 });
 
-test('deriveHealthState: management up but /health down is offline', () => {
-    assert.equal(
-        deriveHealthState({ checking: false, managementOk: true, engineOk: false, socketState: 'idle' }),
-        'offline',
-    );
-});
-
-test('deriveHealthState: both endpoints up with a dead socket is degraded', () => {
+test('deriveHealthState: management up with a dead socket is degraded', () => {
     for (const socketState of ['connecting', 'reconnecting', 'error']) {
         assert.equal(
-            deriveHealthState({ checking: false, managementOk: true, engineOk: true, socketState }),
+            deriveHealthState({ checking: false, managementOk: true, socketState }),
             'degraded',
         );
     }
@@ -72,18 +61,18 @@ test('deriveHealthState: idle socket is NOT degraded (no conversation open)', ()
     // The socket only exists while a chat is open, so `idle` on any other tab
     // must not read as a degraded engine.
     assert.equal(
-        deriveHealthState({ checking: false, managementOk: true, engineOk: true, socketState: 'idle' }),
+        deriveHealthState({ checking: false, managementOk: true, socketState: 'idle' }),
         'connected',
     );
     assert.equal(
-        deriveHealthState({ checking: false, managementOk: true, engineOk: true, socketState: 'connected' }),
+        deriveHealthState({ checking: false, managementOk: true, socketState: 'connected' }),
         'connected',
     );
 });
 
 test('deriveHealthState: checking wins before any answer exists', () => {
     assert.equal(
-        deriveHealthState({ checking: true, managementOk: false, engineOk: false, socketState: 'idle' }),
+        deriveHealthState({ checking: true, managementOk: false, socketState: 'idle' }),
         'checking',
     );
 });
@@ -117,11 +106,25 @@ test('boots in checking (no state is claimed before the first answer)', () => {
     assert.equal(state.lastCheckedAt, null);
 });
 
+test('a probe hits exactly one endpoint: the management API', async () => {
+    reset();
+    const urls = [];
+    await useHealthStore.getState().probe({
+        fetchImpl: async (url) => {
+            urls.push(url);
+            return { ok: true, status: 200 };
+        },
+        reschedule: false,
+    });
+    assert.deepEqual(urls, [resolveManagementHealthUrl()]);
+    assert.equal(urls.some((url) => url.endsWith('/health')), false, 'no event-server probe');
+});
+
 test('connected → degraded → offline → connected, driven by probe results', async () => {
     reset();
 
-    // Both up, no socket open yet.
-    await probeOnce((url) => (isEngineUrl(url) || isManagementUrl(url) ? 'ok' : 'network-error'));
+    // Management API up, no socket open yet.
+    await probeOnce((url) => (isManagementUrl(url) ? 'ok' : 'network-error'));
     assert.equal(useHealthStore.getState().status, 'connected');
 
     // Socket drops to reconnecting: degraded WITHOUT waiting for a poll.
@@ -132,10 +135,6 @@ test('connected → degraded → offline → connected, driven by probe results'
     useHealthStore.getState().setSocketState('connected');
     assert.equal(useHealthStore.getState().status, 'connected');
 
-    // Engine goes away entirely.
-    await probeOnce((url) => (isManagementUrl(url) ? 'ok' : 'network-error'));
-    assert.equal(useHealthStore.getState().status, 'offline');
-
     // Management API goes away (the case that blanks every data view).
     await probeOnce(() => 'network-error');
     assert.equal(useHealthStore.getState().status, 'offline');
@@ -144,6 +143,7 @@ test('connected → degraded → offline → connected, driven by probe results'
     await probeOnce(() => 'ok');
     assert.equal(useHealthStore.getState().status, 'connected');
     assert.equal(useHealthStore.getState().failures, 0);
+    assert.equal(useHealthStore.getState().lastError, null);
 });
 
 test('a non-2xx answer is a failure, not a success', async () => {
@@ -151,8 +151,21 @@ test('a non-2xx answer is a failure, not a success', async () => {
     await probeOnce(() => 'server-error');
     const state = useHealthStore.getState();
     assert.equal(state.status, 'offline');
-    assert.equal(state.engineOk, false);
     assert.equal(state.managementOk, false);
+});
+
+test('lastError reflects only the management probe', async () => {
+    reset();
+    await useHealthStore.getState().probe({
+        fetchImpl: async () => {
+            throw new Error('boom');
+        },
+        reschedule: false,
+    });
+    assert.equal(useHealthStore.getState().lastError, 'boom');
+
+    await probeOnce(() => 'ok');
+    assert.equal(useHealthStore.getState().lastError, null);
 });
 
 test('failures climb while down and reset on the first success', async () => {
@@ -166,7 +179,7 @@ test('failures climb while down and reset on the first success', async () => {
     assert.equal(useHealthStore.getState().failures, 0);
 });
 
-test('retry re-probes both endpoints immediately and clears the ladder on success', async () => {
+test('retry re-probes immediately and clears the ladder on success', async () => {
     reset();
     await probeOnce(() => 'network-error');
     await probeOnce(() => 'network-error');
@@ -182,7 +195,7 @@ test('retry re-probes both endpoints immediately and clears the ladder on succes
     try {
         const status = await useHealthStore.getState().retry();
         assert.equal(status, 'connected');
-        assert.equal(probed, 2, 'both endpoints probed');
+        assert.equal(probed, 1, 'the single management probe ran once');
     } finally {
         globalThis.fetch = originalFetch;
     }
@@ -209,7 +222,7 @@ test('start is idempotent so a StrictMode double-invoke cannot double-poll', () 
 
 // ── Startup resilience: banner debounce + return-to-page probe ────────────
 
-/** Let a probe's promise chain settle (both fetch promises resolve). */
+/** Let a probe's promise chain settle. */
 const flushProbe = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /**
@@ -313,16 +326,16 @@ test('a returning page re-probes at once only when the last probe failed', async
         assert.equal(probed, 0, 'hidden visibility is not a return');
         doc.visibilityState = 'visible';
 
-        // Polling after a failure: re-probe immediately (both endpoints).
+        // Polling after a failure: re-probe immediately.
         doc.emit('visibilitychange');
-        assert.equal(probed, 2, 'visibility return probes both endpoints');
+        assert.equal(probed, 1, 'visibility return runs one probe');
         await flushProbe();
         assert.equal(useHealthStore.getState().status, 'connected');
         assert.equal(useHealthStore.getState().failures, 0);
 
         // And once healthy, focus must not add a probe.
         win.emit('focus');
-        assert.equal(probed, 2, 'focus while healthy is a no-op');
+        assert.equal(probed, 1, 'focus while healthy is a no-op');
     } finally {
         cleanup();
         useHealthStore.getState().stop();
@@ -360,12 +373,12 @@ test('StrictMode mount/unmount/remount leaves one listener pair and one poller',
         assert.equal(win.listenerCount('focus'), 1);
         assert.equal(useHealthStore.getState().running, true);
 
-        // One event → one probe (two fetches), not two overlapping pollers.
+        // One event → one probe, not two overlapping pollers.
         probed = 0;
         useHealthStore.setState({ failures: 1 });
         doc.emit('visibilitychange');
         await flushProbe();
-        assert.equal(probed, 2, 'a single re-probe, both endpoints');
+        assert.equal(probed, 1, 'a single re-probe');
     } finally {
         cleanup();
         useHealthStore.getState().stop();

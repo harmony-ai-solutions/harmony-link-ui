@@ -91,26 +91,26 @@ export function useEngineHealth() {
 /**
  * Slim top-bar status strip: a coloured dot + label, three states.
  *
- * The tooltip carries the detail (which endpoint failed, when it was last
- * checked) so the pill itself can stay one word wide next to the language picker
- * and the theme toggle.
+ * The tooltip carries the detail (why the engine is unreachable or the socket
+ * is down) so the pill itself can stay one word wide next to the language
+ * picker and the theme toggle.
  */
 export function HealthIndicator({ className = '' }) {
     const { t } = useTranslation();
     const status = useHealthStore((s) => s.status);
     const managementOk = useHealthStore((s) => s.managementOk);
-    const engineOk = useHealthStore((s) => s.engineOk);
     const socketState = useHealthStore((s) => s.socketState);
     const lastError = useHealthStore((s) => s.lastError);
 
     const label = t(healthLabelKey(status));
 
-    // One line naming the failing layer, so "Degraded" is actionable.
+    // One line naming the failing layer, so "Degraded" is actionable. `checking`
+    // is tested before `managementOk` because before the first answer it is
+    // still false — otherwise "probing" would be unreachable.
     let detailKey = 'health.detail.allOk';
     if (status === 'degraded') detailKey = 'health.detail.socketDown';
-    else if (!managementOk) detailKey = 'health.detail.managementDown';
-    else if (!engineOk) detailKey = 'health.detail.eventServerDown';
     else if (status === 'checking') detailKey = 'health.detail.probing';
+    else if (!managementOk) detailKey = 'health.detail.managementDown';
 
     const detail = t(detailKey, { socketState, error: lastError || '' });
 
@@ -148,20 +148,17 @@ export function HealthBanner() {
     const probing = useHealthStore((s) => s.probing);
     const retry = useHealthStore((s) => s.retry);
     const managementOk = useHealthStore((s) => s.managementOk);
-    const engineOk = useHealthStore((s) => s.engineOk);
     const lastError = useHealthStore((s) => s.lastError);
 
     // One failure is the startup window (engine binary still booting, "Failed to
     // fetch"); only a second consecutive failure makes it the persistent banner.
     if (!shouldShowOfflineBanner(status, failures)) return null;
 
-    // Name the layer that is down — "engine is down" is misleading when only one
-    // of the two servers failed to answer.
-    const descriptionKey = !managementOk
-        ? 'health.banner.managementDown'
-        : !engineOk
-            ? 'health.banner.eventServerDown'
-            : 'health.banner.default';
+    // Name the layer that is down: the engine itself (management API) or, in the
+    // default copy, an unreachable engine whose transport gave no detail.
+    const descriptionKey = managementOk
+        ? 'health.banner.default'
+        : 'health.banner.managementDown';
 
     return (
         <aside

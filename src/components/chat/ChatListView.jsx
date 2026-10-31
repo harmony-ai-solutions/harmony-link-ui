@@ -20,6 +20,7 @@ import {
     groupByDay,
     partnerChips,
 } from '../../store/inboxUtils.js';
+import { duplicateNameHints } from './chatNameHints.js';
 
 /**
  * Chat list (F1) — the desktop GLOBAL INBOX (Task 02-4).
@@ -117,6 +118,25 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
     );
     const showChips = chips.length >= 2;
 
+    /**
+     * Two partners can share a display name (a characters card linked twice,
+     * or a copy that keeps the profile's name). When the inbox holds such a
+     * pair, each row/chip appends the distinguishing bit in small print — the
+     * entity ALIAS, or the id suffix when no alias differs — so the twins are
+     * tellable apart. Derived from the ACTIVE rows only (the same set the
+     * chips come from) rather than the filtered view: a search or chip filter
+     * must not make one of a colliding pair look unique. See `chatNameHints.js`.
+     */
+    const nameHints = useMemo(
+        () => duplicateNameHints((conversations || []).map((conversation) => ({
+            key: conversation.entity_id,
+            name: conversationDisplayName(conversation, entityById),
+            entityId: conversation.entity_id,
+            alias: entityById?.[conversation.entity_id]?.alias,
+        }))),
+        [conversations, entityById]
+    );
+
     // A stale filter (partner no longer has a thread) must not hide the whole
     // inbox — fall back to "All" instead of rendering "no matches" forever.
     const activeFilter = showChips && chips.some((chip) => chip.id === listEntityId)
@@ -176,6 +196,8 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
             key={conversation.participant_key}
             conversation={conversation}
             entityById={entityById}
+            name={nameHints.get(conversation.entity_id)?.name}
+            nameHint={nameHints.get(conversation.entity_id)?.hint}
             onOpen={openConversation}
             onMenu={openMenu}
             menuOpen={menu?.conversation?.participant_key === conversation.participant_key}
@@ -233,17 +255,25 @@ const ChatListView = ({ onOpenConversation, onNavigate, onOpenArchived }) => {
                     >
                         {t('chat:list.allPartners')}
                     </button>
-                    {chips.map((chip) => (
-                        <button
-                            key={chip.id}
-                            type="button"
-                            className={`chat-inbox-chip ${activeFilter === chip.id ? 'chat-inbox-chip-active' : ''}`}
-                            onClick={() => setListEntityFilter(activeFilter === chip.id ? null : chip.id)}
-                            aria-pressed={activeFilter === chip.id}
-                        >
-                            {chip.name}
-                        </button>
-                    ))}
+                    {chips.map((chip) => {
+                        const resolved = nameHints.get(chip.id);
+                        return (
+                            <button
+                                key={chip.id}
+                                type="button"
+                                className={`chat-inbox-chip ${activeFilter === chip.id ? 'chat-inbox-chip-active' : ''}`}
+                                onClick={() => setListEntityFilter(activeFilter === chip.id ? null : chip.id)}
+                                aria-pressed={activeFilter === chip.id}
+                            >
+                                {resolved?.name || chip.name}
+                                {resolved?.hint && (
+                                    <span className="ml-1 text-[0.7em] font-normal opacity-75">
+                                        {`(${resolved.hint})`}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
 

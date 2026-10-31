@@ -7,6 +7,8 @@ import usePersonaStore from '../../store/personaStore';
 import * as entityService from '../../services/management/entityService.js';
 import * as characterService from '../../services/management/characterService.js';
 import { validatePersonaName } from '../../utils/personaNameUtils';
+import { getActivePersonaId } from '../../services/management/activePersona.js';
+import { isActivePersona } from './personaActive.js';
 import CharacterProfileEditor from '../characters/CharacterProfileEditor.jsx';
 import CharacterCardExport from '../characters/CharacterCardExport.jsx';
 import CharacterImage from '../common/CharacterImage.jsx';
@@ -89,6 +91,15 @@ export default function PersonasView() {
 
     // Helper for translated keys (personas namespace)
     const tes = (key, opts) => t(`personas:${key}`, opts);
+
+    /**
+     * The persona the engine currently speaks as — the SAME value the chat
+     * read/write surfaces and the impersonation selector pivot on
+     * (`services/management/activePersona.js`, default 'user'). Read on each
+     * render so the card's "Active" badge follows a swapped persona; this
+     * screen has no switcher yet, so there is nothing else to subscribe to.
+     */
+    const activePersonaId = getActivePersonaId();
 
     useEffect(() => {
         loadEntities();
@@ -527,6 +538,7 @@ export default function PersonasView() {
                                 {filteredPersonas.map(persona => {
                                 const avatar = persona.profile?.id ? getPrimaryImage(persona.profile.id) : null;
                                 const isBuiltIn = persona.id === 'user';
+                                const isActive = isActivePersona(persona.id, activePersonaId);
                                 return (
                                     <div key={persona.id}
                                         className="rounded-xl border border-white/10 bg-background-surface/30 backdrop-blur-sm overflow-hidden group hover:border-accent-primary/40 transition-all duration-200">
@@ -546,6 +558,18 @@ export default function PersonasView() {
                                             />
                                             <div className="absolute inset-0 bg-accent-primary opacity-0 group-hover:opacity-10 transition-opacity" />
                                             <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
+                                                {/* Which persona the engine is actually speaking as
+                                                    — success tone, matching the status badges in
+                                                    Device Management. Newest info first. */}
+                                                {isActive && (
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                                        style={{
+                                                            background: 'var(--color-success-bg, rgba(76, 175, 130, 0.15))',
+                                                            color: 'var(--color-success, #4caf82)',
+                                                        }}>
+                                                        {tes('list.active')}
+                                                    </span>
+                                                )}
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-secondary/15 text-accent-secondary">
                                                     {tes('list.personaBadge')}
                                                 </span>

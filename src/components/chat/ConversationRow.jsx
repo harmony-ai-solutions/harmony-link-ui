@@ -40,17 +40,30 @@ export function formatRowTime(value, now = new Date()) {
  * @param {{
  *   conversation: object,
  *   entityById?: Record<string, object>,
+ *   name?: string,
+ *   nameHint?: string,
  *   onOpen?: (conversation: object) => void,
  *   onMenu?: (conversation: object, position: {x: number, y: number}) => void,
  *   menuOpen?: boolean,
  * }} props
  */
-const ConversationRow = ({ conversation, entityById, onOpen, onMenu, menuOpen = false }) => {
+const ConversationRow = ({
+    conversation,
+    entityById,
+    name: nameOverride,
+    nameHint = '',
+    onOpen,
+    onMenu,
+    menuOpen = false,
+}) => {
     const { t } = useTranslation();
 
     // Name/avatar by the AI companion that OWNS the row, not by
-    // partner_entity_id (the persona "user").
-    const name = conversationDisplayName(conversation, entityById);
+    // partner_entity_id (the persona "user"). `nameOverride`/`nameHint` come
+    // from ChatListView's duplicate-name disambiguation (`chatNameHints.js`):
+    // the override is the resolved name, the hint the small print that tells
+    // two same-named partners apart.
+    const name = nameOverride || conversationDisplayName(conversation, entityById);
     const avatarProfileId = conversationAvatarProfileId(conversation, entityById);
     const preview = conversationPreview(conversation.last_message);
     const isOutgoing = isConversationLastMessageOutgoing(conversation, entityById);
@@ -112,7 +125,14 @@ const ConversationRow = ({ conversation, entityById, onOpen, onMenu, menuOpen = 
                 </span>
                 <span className="chat-list-body">
                     <span className="chat-list-row-top">
-                        <span className="chat-list-name">{name}</span>
+                        <span className="chat-list-name">
+                            {name}
+                            {nameHint && (
+                                <span className="ml-1 text-[0.75em] font-normal text-text-muted">
+                                    {`(${nameHint})`}
+                                </span>
+                            )}
+                        </span>
                         {renderStatus()}
                         <span className="chat-list-time">
                             {formatRowTime(conversation.last_activity_at || conversation.last_message?.created_at)}

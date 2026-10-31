@@ -184,14 +184,44 @@ test('an ERROR frame degrades the header and records a classified session error'
     assert.equal(state.sessionErrors[0].message, 'provider openai has no API key configured');
 });
 
-test('an ERROR frame without a message still records an entry', () => {
+test('an ERROR frame without any usable field records the honest default', () => {
     reset();
 
     useChatStore.getState().handleSocketEvent('error', {});
 
     const state = useChatStore.getState();
-    assert.equal(state.error, 'Connection error');
-    assert.equal(state.sessionErrors[0].message, 'Connection error');
+    assert.equal(state.error, 'Unknown error');
+    assert.equal(state.sessionErrors[0].message, 'Unknown error');
+});
+
+test('a D35 engine frame lands verbatim with its pinned chip (live-verified shape)', () => {
+    reset();
+
+    // Exactly what the engine sent for a nonexistent entity on 2026-10-31:
+    // {"error":"entity_not_defined","error_code":"entity_not_defined"}
+    useChatStore.getState().handleSocketEvent('error', {
+        error: 'entity_not_defined',
+        error_code: 'entity_not_defined',
+    });
+
+    const state = useChatStore.getState();
+    assert.equal(state.connectionState, 'error');
+    assert.equal(state.error, 'entity_not_defined');
+    assert.equal(state.sessionErrors[0].message, 'entity_not_defined');
+    assert.equal(state.sessionErrors[0].code, 'config');
+});
+
+test('the socket service\'s terminal give-up lands once, as a network-chip error', () => {
+    reset();
+
+    useChatStore.getState().handleSocketEvent('error', {
+        message: 'Gave up reconnecting after 5 failed attempts',
+        code: 'RECONNECT_GAVE_UP',
+    });
+
+    const state = useChatStore.getState();
+    assert.equal(state.sessionErrors.length, 1);
+    assert.equal(state.sessionErrors[0].code, 'network');
 });
 
 test('session errors are newest first and capped at ten', () => {

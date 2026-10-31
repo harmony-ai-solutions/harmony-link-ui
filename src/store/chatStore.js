@@ -18,7 +18,7 @@ import {
     setMessagesReadFlag,
     unreadMessageIds,
 } from './chatStoreUtils.js';
-import { recordSessionError, clearSessionErrors } from './chatSessionErrors.js';
+import { recordSessionError, clearSessionErrors, extractSessionErrorMessage, sessionErrorChip } from './chatSessionErrors.js';
 import {
     SEARCH_RESULT_LIMIT,
     isSearchable,
@@ -1289,14 +1289,24 @@ export const useChatStore = create((set, get) => ({
             return;
         }
         if (type === 'error') {
-            const message = payload?.message || payload?.error || 'Connection error';
+            /**
+             * Engine ERROR frames arrive as `{error, error_code}` (D35 —
+             * live-verified: `{"error":"entity_not_defined","error_code":"entity_not_defined"}`)
+             * and the socket service emits `{message, code}`. Extract the
+             * verbatim text whichever shape arrives (app parity: the phone
+             * reads the same `error` string); the pinned code picks the chip.
+             */
+            const message = extractSessionErrorMessage(payload);
             set({
                 error: message,
                 // An ERROR frame is a session-level failure — the socket itself may
                 // still be live. The header says Degraded (never "offline"), and the
                 // failure joins the modal's list.
                 connectionState: 'error',
-                sessionErrors: recordSessionError(get().sessionErrors, { message }),
+                sessionErrors: recordSessionError(get().sessionErrors, {
+                    message,
+                    code: sessionErrorChip(payload),
+                }),
             });
             return;
         }

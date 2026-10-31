@@ -9386,20 +9386,20 @@ html[data-scrolling="true"] .ui-skeleton {
 .chat-detail-error-bubble:hover { background: color-mix(in srgb, var(--color-warning) 22%, transparent); }
 .chat-detail-error-count { background: var(--color-warning); color: var(--color-background-base, #0b0f19); border-radius: 999px; font-size: 0.66rem; font-weight: 700; padding: 0 5px; }
 .chat-error-overlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(11, 15, 25, 0.55); backdrop-filter: blur(2px); }
-.chat-error-modal { width: 400px; max-width: 90vw; background: var(--color-background-elevated, #151d30); border: 1px solid var(--color-border-glass); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.chat-error-modal { width: 560px; max-width: 92vw; background: var(--color-background-elevated, #151d30); border: 1px solid var(--color-border-glass); border-radius: 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); overflow: hidden; }
 .chat-error-head { display: flex; align-items: flex-start; gap: 10px; padding: 16px 16px 12px; border-bottom: 1px solid var(--color-border-glass); }
 .chat-error-icon { flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px; background: var(--color-warning-bg); border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent); display: flex; align-items: center; justify-content: center; color: var(--color-warning); }
-.chat-error-title { display: block; font-family: var(--font-display, 'Plus Jakarta Sans', Inter, sans-serif); font-weight: 700; font-size: 0.95rem; }
+.chat-error-title { display: block; font-family: var(--font-display, 'Plus Jakarta Sans', Inter, sans-serif); font-weight: 700; font-size: 1rem; }
 .chat-error-sub { display: block; font-size: 0.76rem; color: var(--color-text-muted); margin-top: 2px; }
 .chat-error-x { margin-left: auto; color: var(--color-text-muted); background: none; border: none; font-size: 1rem; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
 .chat-error-x:hover { background: var(--color-background-hover, #1e2842); color: var(--color-text-primary); }
-.chat-error-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 210px; overflow: auto; }
+.chat-error-list { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow: auto; }
 .chat-error-item { border: 1px solid var(--color-border-glass); background: var(--color-background-surface, #0f1525); border-radius: 10px; padding: 9px 11px; }
 .chat-error-item-old { opacity: 0.75; }
 .chat-error-item-top { display: flex; align-items: baseline; gap: 8px; }
 .chat-error-code { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-warning); background: var(--color-warning-bg); border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent); border-radius: 5px; padding: 1px 6px; }
 .chat-error-when { margin-left: auto; font-size: 0.68rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.chat-error-item-msg { font-size: 0.8rem; color: var(--color-text-secondary, var(--color-text-primary)); line-height: 1.5; margin-top: 5px; overflow-wrap: anywhere; }
+.chat-error-item-msg { font-size: 0.84rem; color: var(--color-text-secondary, var(--color-text-primary)); line-height: 1.5; margin-top: 5px; overflow-wrap: anywhere; }
 .chat-error-item-hint { font-size: 0.73rem; color: var(--color-text-muted); margin-top: 4px; }
 .chat-error-foot { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--color-border-glass); align-items: center; }
 .chat-error-btn { font-size: 0.8rem; font-weight: 600; border-radius: 9px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--color-border-glass); background: var(--color-background-surface, #0f1525); color: var(--color-text-secondary, var(--color-text-primary)); }

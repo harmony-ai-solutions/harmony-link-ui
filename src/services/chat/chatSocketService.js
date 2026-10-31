@@ -18,7 +18,9 @@
  *
  * Keep-alive mirrors the phone app: CONNECTION_PING every 30s, and a dead
  * connection is declared when no CONNECTION_PONG arrives within 10s. Reconnect
- * backoff is 2s, 5s, 10s, 20s, 30s (then 30s thereafter).
+ * backoff is 2s, 5s, 10s, 20s, 30s (then 30s thereafter) — but attempts that
+ * never OPENED are capped at MAX_HANDSHAKE_FAILURES before the service gives
+ * up terminally (app parity: no endless retry loop against a dead engine).
  *
  * Design note: for the local desktop client the engine owns all storage, so a
  * single connection per partner entity is enough (the phone app needs one
@@ -33,7 +35,25 @@ const DEFAULT_WS_PORT = '28080';
 export const RECONNECT_DELAYS = [2000, 5000, 10000, 20000, 30000];
 
 const HEARTBEAT_INTERVAL_MS = 30000;
-const HEARTBEAT_TIMEOUT_MS = 10000;
+const HEARTBEAT_TIMEOUT_MS = 10_000;
+
+/**
+ * Give up auto-reconnecting after this many consecutive attempts that never
+ * OPENED (handshake failures — engine stopped, or it refused this page's
+ * origin). App parity: the phone app treats a failed session as terminal
+ * (`sessionFailed` + a Retry card) and never loops; an endless ladder
+ * against a refusing engine only filled the error modal with one
+ * indistinguishable row per attempt (owner incident 2026-10-31).
+ * A successful open resets the count; a user-triggered Retry (connect())
+ * starts a fresh ladder.
+ */
+export const MAX_HANDSHAKE_FAILURES = 5;
+
+/**
+ * Browser WS errors carry no reason (no status, no body), so a handshake
+ * failure gets this canonical text instead of a useless raw Event.
+ */
+const WS_OPEN_FAILED_MESSAGE = 'WebSocket connection failed — the engine is unreachable, or it refused this page\'s origin';
 
 /** Resolve the engine's inline WS URL from env (falls back to localhost). */
 export function resolveWebSocketUrl() {
@@ -83,6 +103,10 @@ export class ChatSocketService {
         this.heartbeatTimer = null;
         this.heartbeatTimeoutTimer = null;
         this.manuallyClosed = false;
+        /** Consecutive openSocket attempts that never opened (see MAX_HANDSHAKE_FAILURES). */
+        this.handshakeFailures = 0;
+        /** Latched once the ladder gives up; cleared by an explicit connect() (Retry). */
+        this.gaveUp = false;
         /** The last INIT_ENTITY payload, replayed verbatim on reconnect. */
         this.initParams = null;
         /** Interaction id resolved from the INIT_ENTITY response. */
@@ -146,6 +170,10 @@ export class ChatSocketService {
             reply_mode: params.replyMode || 'realistic',
         };
         this.manuallyClosed = false;
+        // A user-triggered (re)connect starts a fresh ladder — the previous
+        // conversation's failures must not count against this attempt.
+        this.handshakeFailures = 0;
+        this.gaveUp = false;
         await this.openSocket();
     }
 
@@ -198,6 +226,7 @@ export class ChatSocketService {
                 }
                 this.connected = true;
                 this.reconnectAttempts = 0;
+                this.handshakeFailures = 0;
                 this.emit('connected');
                 // (Re)send INIT_ENTITY — the engine resumes or creates the session.
                 if (this.initParams) {
@@ -214,12 +243,20 @@ export class ChatSocketService {
                 this.handleMessage(event);
             };
 
-            ws.onerror = (error) => {
+            ws.onerror = () => {
                 if (!isCurrent()) return;
-                this.emit('error', error);
+                /**
+                 * A browser WS `error` event carries NO reason — no status, no
+                 * body, no message — so re-emitting the raw event produced
+                 * modal rows reading literally "Connection error"/"Unknown
+                 * error" (owner incident 2026-10-31). Reject with the
+                 * canonical handshake text instead; the store records THAT.
+                 * Post-open socket deaths are owned by `onclose` below.
+                 */
                 if (!settled) {
                     settled = true;
-                    reject(error);
+                    this.handshakeFailures += 1;
+                    reject(new Error(WS_OPEN_FAILED_MESSAGE));
                 }
             };
 
@@ -244,7 +281,8 @@ export class ChatSocketService {
                 // `connecting` forever (browsers may skip `error`).
                 if (!settled) {
                     settled = true;
-                    reject(new Error('WebSocket closed before it opened'));
+                    this.handshakeFailures += 1;
+                    reject(new Error(WS_OPEN_FAILED_MESSAGE));
                 }
             };
         });
@@ -450,7 +488,23 @@ export class ChatSocketService {
 
     /** Schedule a reconnect using the 2s→30s backoff ladder. */
     scheduleReconnect() {
-        if (this.manuallyClosed || this.reconnectTimer) return;
+        if (this.manuallyClosed || this.reconnectTimer || this.gaveUp) return;
+        /**
+         * Terminal give-up (app parity): once MAX_HANDSHAKE_FAILURES
+         * consecutive attempts never even opened, another lap against a
+         * stopped/refusing engine adds nothing but duplicate error rows.
+         * Emit one honest terminal error — the store shows Degraded + the
+         * bubble — and let the user's Retry start a fresh ladder.
+         */
+        if (this.handshakeFailures >= MAX_HANDSHAKE_FAILURES) {
+            this.reconnectAttempts = 0;
+            this.gaveUp = true;
+            this.emit('error', {
+                message: `Gave up reconnecting after ${this.handshakeFailures} failed attempts — the engine may be stopped, or it refused this page's origin. Retry once it is back.`,
+                code: 'RECONNECT_GAVE_UP',
+            });
+            return;
+        }
         const delay = RECONNECT_DELAYS[Math.min(this.reconnectAttempts, RECONNECT_DELAYS.length - 1)];
         this.reconnectAttempts += 1;
         this.emit('reconnecting', { attempt: this.reconnectAttempts, delay });

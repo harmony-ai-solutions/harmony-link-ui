@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ChatSocketService } from './chatSocketService.js';
+import { ChatSocketService, MAX_HANDSHAKE_FAILURES } from './chatSocketService.js';
 
 /** A WebSocket double the test opens/closes/fails on purpose. */
 class FakeWebSocket {
@@ -134,4 +134,73 @@ test('a superseded socket closing late cannot flip the live connection', async (
 
     assert.equal(service.connected, true);
     assert.deepEqual(events.map((e) => e.type), ['connected'], 'nothing was reported for the stale socket');
+});
+
+test('a failed handshake rejects with a real message and emits no raw error', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const { service, events } = makeService();
+
+    const pending = service.connect({ entityId: 'ai1', participantIds: ['ai1'] });
+    const expectFail = assert.rejects(pending, /refused this page's origin/);
+    // Browser WS error events carry no reason — the service must still reject
+    // with canonical text, not the useless raw event (owner incident 2026-10-31).
+    lastSocket().fail(new Error('browser events carry no reason'));
+    await expectFail;
+
+    assert.deepEqual(
+        events.filter((e) => e.type === 'error'),
+        [],
+        'a raw socket error is never re-emitted — the rejection carries the text',
+    );
+    assert.equal(service.handshakeFailures, 1);
+});
+
+test('the ladder gives up after MAX_HANDSHAKE_FAILURES never-opened attempts — one terminal error, no storm', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const { service, events } = makeService();
+
+    const pending = service.connect({ entityId: 'ai1', participantIds: ['ai1'] });
+    const expectFail = assert.rejects(pending, /origin/);
+    lastSocket().fail();
+    await expectFail;
+    assert.equal(FakeWebSocket.instances.length, 1);
+
+    // Attempts #2..#5 fail identically along the 2s→20s backoff ladder.
+    for (const delay of [2000, 5000, 10000, 20000]) {
+        t.mock.timers.tick(delay);
+        lastSocket().fail();
+    }
+    assert.equal(FakeWebSocket.instances.length, MAX_HANDSHAKE_FAILURES, 'exactly five attempts, then give-up');
+
+    // No sixth socket may appear, however much time passes.
+    t.mock.timers.tick(120000);
+    assert.equal(FakeWebSocket.instances.length, MAX_HANDSHAKE_FAILURES);
+
+    const terminal = events.filter((e) => e.type === 'error');
+    assert.equal(terminal.length, 1, 'exactly one terminal error — not one per attempt');
+    assert.equal(terminal[0].payload.code, 'RECONNECT_GAVE_UP');
+    assert.match(terminal[0].payload.message, /Gave up reconnecting after 5/);
+});
+
+test('a user Retry after give-up starts a fresh ladder', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const { service } = makeService();
+
+    const pending = service.connect({ entityId: 'ai1', participantIds: ['ai1'] });
+    const expectFail = assert.rejects(pending);
+    lastSocket().fail();
+    await expectFail;
+    for (const delay of [2000, 5000, 10000, 20000]) {
+        t.mock.timers.tick(delay);
+        lastSocket().fail();
+    }
+    assert.equal(service.gaveUp, true);
+
+    const retry = service.connect({ entityId: 'ai1', participantIds: ['ai1'] });
+    lastSocket().open();
+    await retry;
+
+    assert.equal(service.connected, true);
+    assert.equal(service.handshakeFailures, 0);
+    assert.equal(service.gaveUp, false);
 });

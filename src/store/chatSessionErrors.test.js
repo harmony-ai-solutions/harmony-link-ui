@@ -14,6 +14,8 @@ import {
     recordSessionError,
     clearSessionErrors,
     sessionErrorTime,
+    extractSessionErrorMessage,
+    sessionErrorChip,
 } from './chatSessionErrors.js';
 
 test('classifySessionError: configuration failures say "config"', () => {
@@ -68,6 +70,39 @@ test('recordSessionError keeps an explicit code', () => {
 
 test('clearSessionErrors returns an empty list', () => {
     assert.deepEqual(clearSessionErrors(), []);
+});
+
+test('extractSessionErrorMessage reads every real payload shape', () => {
+    // Engine D35 frame — the exact bytes the engine sent for a nonexistent
+    // entity on 2026-10-31 (live probe).
+    assert.equal(
+        extractSessionErrorMessage({ error: 'entity_not_defined', error_code: 'entity_not_defined' }),
+        'entity_not_defined',
+    );
+    // Socket-service emit shape (heartbeat timeout / terminal give-up).
+    assert.equal(
+        extractSessionErrorMessage({ message: 'Connection heartbeat timeout', code: 'HEARTBEAT_TIMEOUT' }),
+        'Connection heartbeat timeout',
+    );
+    // Nested error object, bare string, code-only, and reason-less payloads.
+    assert.equal(extractSessionErrorMessage({ error: { message: 'nested reason' } }), 'nested reason');
+    assert.equal(extractSessionErrorMessage('plain text'), 'plain text');
+    assert.equal(extractSessionErrorMessage({ error_code: 'entity_disabled' }), 'entity_disabled');
+    assert.equal(extractSessionErrorMessage(undefined), 'Unknown error');
+    assert.equal(extractSessionErrorMessage({ unrelated: true }), 'Unknown error');
+});
+
+test('sessionErrorChip maps pinned codes and classifies the rest', () => {
+    // D35 entity gates → configuration territory (app parity).
+    assert.equal(sessionErrorChip({ error: 'x', error_code: 'entity_disabled' }), 'config');
+    assert.equal(sessionErrorChip({ error_code: 'entity_exists_deleted' }), 'config');
+    assert.equal(sessionErrorChip('entity_not_defined'), 'config');
+    // Socket-level codes the user resolves by checking the engine.
+    assert.equal(sessionErrorChip({ message: 'x', code: 'HEARTBEAT_TIMEOUT' }), 'network');
+    assert.equal(sessionErrorChip({ message: 'x', code: 'RECONNECT_GAVE_UP' }), 'network');
+    // Unpinned codes fall back to free-text classification.
+    assert.equal(sessionErrorChip({ error: 'dial tcp connection refused' }), 'network');
+    assert.equal(sessionErrorChip({ error: 'session state unavailable' }), 'session');
 });
 
 test('sessionErrorTime: today shows the clock, older shows the date', () => {

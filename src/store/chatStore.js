@@ -22,10 +22,10 @@ import {
     SEARCH_RESULT_LIMIT,
     isSearchable,
     normalizeSearchTerm,
-    filterHitsByParticipant,
     jumpTargetFromHit,
     capSearchResults,
 } from './searchUtils.js';
+import { getActivePersonaId } from '../services/management/activePersona.js';
 import { insertByInboxOrder, moveConversation } from './inboxUtils.js';
 import { announceConversationAction } from './conversationActions.js';
 import {
@@ -540,8 +540,15 @@ export const useChatStore = create((set, get) => ({
         // Carrying it across would let a voice note in a thread they just opened
         // play on its own because they sent something in the PREVIOUS one.
         resetUserSend();
+        // History reads and every write pivot on the PERSONA, so it is resolved
+        // once here and carried on the open conversation. `entityId` stays the
+        // companion: it names the row and addresses the live socket.
+        const active = {
+            ...conversation,
+            personaId: conversation.personaId || getActivePersonaId(),
+        };
         set({
-            activeConversation: conversation,
+            activeConversation: active,
             messages: [],
             loadingMessages: false,
             hasMore: false,
@@ -552,27 +559,33 @@ export const useChatStore = create((set, get) => ({
             error: null,
         });
 
-        if (conversation.participantKey) {
-            await get().loadInitialMessages(conversation);
+        if (active.participantKey) {
+            await get().loadInitialMessages(active);
             // Badge hygiene: parity's read write is participant_key scoped, the
             // exact same scope as CountUnreadByParticipantKeys. Fire-and-forget
             // so a failed stamp never blocks opening the chat.
             get().markActiveConversationRead();
         }
-        await get().connectSocket(conversation);
+        await get().connectSocket(active);
     },
 
     /**
      * Load the newest page of messages for the conversation's participant_key.
-     * @param {{ entityId: string, participantKey?: string }} conversation
+     *
+     * `:id` is the ACTIVE PERSONA (`conversation.personaId`), not the
+     * companion — the engine's read is POV-scoped. The companion id stays on
+     * the conversation for naming and the socket only.
+     *
+     * @param {{ entityId: string, personaId?: string, participantKey?: string }} conversation
      */
     loadInitialMessages: async (conversation) => {
         const { entityId, participantKey } = conversation || {};
         if (!entityId || !participantKey) return;
+        const personaId = conversation.personaId || getActivePersonaId();
         set({ loadingMessages: true });
         try {
             const { messages, hasMore, nextCursor } = await chatReadService.listMessages(
-                entityId,
+                personaId,
                 participantKey,
                 { limit: 50 }
             );
@@ -604,7 +617,7 @@ export const useChatStore = create((set, get) => ({
         set({ loadingOlder: true });
         try {
             const { messages: older, hasMore: more, nextCursor: cursor } = await chatReadService.listMessages(
-                activeConversation.entityId,
+                activeConversation.personaId || getActivePersonaId(),
                 activeConversation.participantKey,
                 { before: nextCursor, limit: 50 }
             );
@@ -914,9 +927,10 @@ export const useChatStore = create((set, get) => ({
      * the results instead of leaving the previous ones on screen, because stale
      * results under a new query read as matches for it.
      *
-     * `scope` narrows the results to one thread CLIENT-side (see the service's
-     * note on why `interaction_id` would hide history). Passing no scope searches
-     * every partner.
+     * `scope` narrows the results to one thread SERVER-side: its participant
+     * key is sent as `participant_key`, so the engine matches the whole key
+     * group (every interaction of the thread) rather than the current
+     * interaction. Passing no scope searches every partner.
      *
      * @param {string} rawTerm
      * @param {{ scope?: {participantKey: string}|null }} [options]
@@ -939,11 +953,11 @@ export const useChatStore = create((set, get) => ({
 
         set({ searching: true, searchError: null, searchTerm: term, searchScope: scope || null });
         try {
-            const hits = await chatReadService.searchMessages(term, { limit: SEARCH_RESULT_LIMIT });
-            const visible = capSearchResults(
-                scope?.participantKey ? filterHitsByParticipant(hits, scope.participantKey) : hits,
-                SEARCH_RESULT_LIMIT
-            );
+            const hits = await chatReadService.searchMessages(term, {
+                limit: SEARCH_RESULT_LIMIT,
+                participantKey: scope?.participantKey || '',
+            });
+            const visible = capSearchResults(hits, SEARCH_RESULT_LIMIT);
             // A SLOWER response must not overwrite the results of a newer query:
             // the debounce reduces, but cannot eliminate, overlapping requests.
             if (get().searchTerm !== term) return get().searchResults;

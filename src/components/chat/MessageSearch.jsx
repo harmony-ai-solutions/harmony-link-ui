@@ -20,7 +20,9 @@ import Tooltip from '../ui/Tooltip.jsx';
  *  - `variant="global"` renders a **search icon** for the chat-list header that
  *    opens a panel over the inbox. It searches every partner.
  *  - `variant="inline"` renders a **field** inside the conversation header. It
- *    narrows to the open thread.
+ *    narrows to the open thread by sending the thread's `participant_key` to
+ *    the engine (the server matches the whole key group), so no client-side
+ *    result filtering is needed.
  *
  * Two variants rather than two components because the acceptance rule is "a
  * word finds messages across partners and jumps to the right place" — the

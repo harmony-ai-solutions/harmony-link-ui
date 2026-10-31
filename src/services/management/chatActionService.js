@@ -1,4 +1,5 @@
 import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handleResponse } from './baseService.js';
+import { getActivePersonaId } from './activePersona.js';
 
 /**
  * Desktop Chat — user-intent WRITE actions (Task 02-5).
@@ -8,28 +9,24 @@ import { getManagementApiUrl, getApiPath, getAuthHeaders, getJsonHeaders, handle
  * stays the only writer of conversation content, mirroring the engine's
  * `management/routes_chat_write.go` design rule.
  *
- * ── Two addresses, one intent ────────────────────────────────────────────
+ * ── PARTICIPANT-KEYED, PERSONA-PIVOTED ───────────────────────────────────
  *
- * The engine exposes each intent twice, and they are NOT interchangeable:
+ * The engine's interaction-keyed write routes are gone. Every intent now has
+ * exactly one address, keyed by `participant_key`, with `:id` = the ACTIVE
+ * PERSONA (the POV the desktop chats as):
  *
- *   interaction-keyed                        participant-key-keyed
- *   POST /entities/conversations/:iid/pin    PUT  /entities/:id/chat-settings/:key
- *   POST /entities/conversations/:iid/archive
- *   POST /entities/conversations/:iid/mute   PUT  /entities/:id {"is_muted"}
- *   POST /entities/conversations/:iid/read   POST /entities/:id/conversations/:key/read
- *   DELETE /entities/conversations/:iid      —
+ *   pin + archive   PUT  /entities/:persona/chat-settings/:participantKey
+ *   mute            PUT  /entities/:persona              {"is_muted"}
+ *   read/unread     POST /entities/:persona/conversations/:participantKey/read
+ *   delete thread   DELETE /entities/:persona/conversations/:participantKey
  *
- * The interaction-keyed routes are the accurate ones (a thread's *current*
- * interaction is what the inbox hands us) but they need an `interaction_id`,
- * which a brand-new chat does not have until `INIT_ENTITY` resolves it. The
- * participant-key routes need the owning `entity_id` + `participant_key`, which
- * every inbox row carries. Each helper therefore prefers the interaction route
- * and falls back to the participant-key one, so an action works both from the
- * list and from inside a freshly opened thread.
+ * A thread's participant key spans every interaction of that key group, so no
+ * caller needs an `interaction_id` any more (which a brand-new chat did not
+ * have until `INIT_ENTITY` resolved it). The companion entity id is kept on
+ * the target for display/row patching only.
  *
- * "Mark unread" only exists on the participant-key route (`{read:false}` marks
- * the newest message unread — the same set-to-1 semantics the phone app uses),
- * because the interaction route is a read receipt that marks everything read.
+ * "Mark unread" uses the same participant-keyed read route with `{read:false}`
+ * (set-to-1 semantics, the same the phone app uses).
  *
  * ── Errors ───────────────────────────────────────────────────────────────
  *
@@ -48,59 +45,54 @@ function apiUrl(path) {
  * an inbox row (snake_case, `participant_key`) or the open conversation
  * (camelCase, `participantKey`).
  *
+ * `personaId` is the POV every route addresses; it defaults to the single
+ * active-persona seam so callers never embed a persona id. `companionEntityId`
+ * is display/row-patching data only.
+ *
  * @typedef {Object} ConversationTarget
- * @property {string} interactionId
- * @property {string} entityId
+ * @property {string} personaId
  * @property {string} participantKey
+ * @property {string} companionEntityId
  *
  * @param {object|null|undefined} conversation
  * @returns {ConversationTarget}
  */
 export function conversationTarget(conversation) {
-    if (!conversation) return { interactionId: '', entityId: '', participantKey: '' };
+    if (!conversation) {
+        return { personaId: getActivePersonaId(), participantKey: '', companionEntityId: '' };
+    }
     return {
-        interactionId: conversation.interaction_id || conversation.interactionId || '',
-        entityId: conversation.entity_id || conversation.entityId || '',
+        personaId: conversation.persona_id || conversation.personaId || getActivePersonaId(),
         participantKey: conversation.participant_key || conversation.participantKey || '',
+        companionEntityId: conversation.entity_id || conversation.entityId || '',
     };
 }
 
-/** True when a target can address at least one of the two write surfaces. */
+/** True when a target can address the participant-keyed write surface. */
 export function canWriteConversation(conversation) {
     const target = conversationTarget(conversation);
-    return !!(target.interactionId || (target.entityId && target.participantKey));
+    return !!(target.personaId && target.participantKey);
 }
 
 /**
  * Pin / unpin a conversation.
  *
  * Pin state lives on `chat_conversation_settings`, keyed by `participant_key`
- * (one row per conversation, not per interaction) — resolving it from an
- * interaction is the engine's job on the interaction-keyed route.
+ * (one row per conversation, not per interaction), under the persona POV.
  *
  * @param {object} conversation - inbox row or open conversation
  * @param {boolean} pinned
  * @returns {Promise<object>} the persisted settings row (or an ack)
  */
 export async function setConversationPinned(conversation, pinned) {
-    const { interactionId, entityId, participantKey } = conversationTarget(conversation);
-    if (interactionId) {
-        const resp = await fetch(
-            apiUrl(`/entities/conversations/${encodeURIComponent(interactionId)}/pin`),
-            { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify({ pinned: !!pinned }) }
-        );
-        await handleResponse(resp, 'Failed to update the pin');
-        return await resp.json();
-    }
-    if (entityId && participantKey) {
-        const resp = await fetch(
-            apiUrl(`/entities/${encodeURIComponent(entityId)}/chat-settings/${encodeURIComponent(participantKey)}`),
-            { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ pinned: !!pinned }) }
-        );
-        await handleResponse(resp, 'Failed to update the pin');
-        return await resp.json();
-    }
-    throw new Error('This conversation cannot be pinned yet.');
+    const { personaId, participantKey } = conversationTarget(conversation);
+    if (!participantKey) throw new Error('This conversation cannot be pinned yet.');
+    const resp = await fetch(
+        apiUrl(`/entities/${encodeURIComponent(personaId)}/chat-settings/${encodeURIComponent(participantKey)}`),
+        { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ pinned: !!pinned }) }
+    );
+    await handleResponse(resp, 'Failed to update the pin');
+    return await resp.json();
 }
 
 /**
@@ -111,124 +103,87 @@ export async function setConversationPinned(conversation, pinned) {
  * @param {boolean} archived
  */
 export async function setConversationArchived(conversation, archived) {
-    const { interactionId, entityId, participantKey } = conversationTarget(conversation);
-    if (interactionId) {
-        const resp = await fetch(
-            apiUrl(`/entities/conversations/${encodeURIComponent(interactionId)}/archive`),
-            { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify({ archived: !!archived }) }
-        );
-        await handleResponse(resp, 'Failed to update the archive');
-        return await resp.json();
-    }
-    if (entityId && participantKey) {
-        const resp = await fetch(
-            apiUrl(`/entities/${encodeURIComponent(entityId)}/chat-settings/${encodeURIComponent(participantKey)}`),
-            { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ archived: !!archived }) }
-        );
-        await handleResponse(resp, 'Failed to update the archive');
-        return await resp.json();
-    }
-    throw new Error('This conversation cannot be archived yet.');
+    const { personaId, participantKey } = conversationTarget(conversation);
+    if (!participantKey) throw new Error('This conversation cannot be archived yet.');
+    const resp = await fetch(
+        apiUrl(`/entities/${encodeURIComponent(personaId)}/chat-settings/${encodeURIComponent(participantKey)}`),
+        { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ archived: !!archived }) }
+    );
+    await handleResponse(resp, 'Failed to update the archive');
+    return await resp.json();
 }
 
 /**
- * Mute / unmute the AI partner behind a conversation.
+ * Mute / unmute a conversation.
  *
- * Mute is ENTITY-level (`entities.is_muted`) — there is no muted column on
- * `chat_conversation_settings`, because muting a partner mutes the partner, not
- * one thread with them. The interaction-keyed route resolves the companion and
- * delegates to the same flag the entity update writes.
+ * Mute is ENTITY-level (`entities.is_muted`) — muting a partner changes every
+ * thread they own, not one thread. The route is the entity update itself, with
+ * `:id` = the persona POV per the desktop's persona pivot.
  *
  * @param {object} conversation
  * @param {boolean} muted
  */
 export async function setConversationMuted(conversation, muted) {
-    const { interactionId, entityId } = conversationTarget(conversation);
-    if (interactionId) {
-        const resp = await fetch(
-            apiUrl(`/entities/conversations/${encodeURIComponent(interactionId)}/mute`),
-            { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify({ muted: !!muted }) }
-        );
-        await handleResponse(resp, 'Failed to update mute');
-        return await resp.json();
-    }
-    if (entityId) {
-        // The entity update route carries is_muted beside is_disabled and
-        // stamps updated_at, which is what the phone syncs on.
-        const resp = await fetch(
-            apiUrl(`/entities/${encodeURIComponent(entityId)}`),
-            { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ is_muted: !!muted }) }
-        );
-        await handleResponse(resp, 'Failed to update mute');
-        return await resp.json();
-    }
-    throw new Error('This conversation has no AI partner to mute.');
+    const { companionEntityId } = conversationTarget(conversation);
+    if (!companionEntityId) throw new Error('This conversation has no AI partner to mute.');
+    // Mute is a property of the COMPANION entity, not a POV-scoped intent:
+    // the phone app mutes the partner (PUT /entities/:companionId) and the
+    // inbox row's muted flag reads the companion's entity state — so the
+    // persona pivot deliberately does NOT apply here. The entity update
+    // route carries is_muted beside is_disabled and stamps updated_at,
+    // which is what the phone syncs on.
+    const resp = await fetch(
+        apiUrl(`/entities/${encodeURIComponent(companionEntityId)}`),
+        { method: 'PUT', headers: getJsonHeaders(), body: JSON.stringify({ is_muted: !!muted }) }
+    );
+    await handleResponse(resp, 'Failed to update mute');
+    return await resp.json();
 }
 
 /**
  * Mark a conversation read (`read: true`) or bump its newest message back to
  * unread (`read: false`).
  *
- * Read prefers the interaction route: it marks every inbound message of the
- * CURRENT interaction, which is exactly "the thread I am looking at" and is what
- * retires the unread badge and the new-messages divider. Unread has no
- * interaction equivalent, so it always uses the participant-key route's
- * set-to-1 semantics.
+ * One participant-keyed route for both: `read:true` clears the whole key group
+ * and `read:false` restores the phone app's set-to-1 "mark unread" semantics.
  *
  * @param {object} conversation
  * @param {{ read?: boolean, upToMessageId?: string }} [options]
  * @returns {Promise<{updated?: number}>}
  */
 export async function markConversationRead(conversation, { read = true, upToMessageId } = {}) {
-    const { interactionId, entityId, participantKey } = conversationTarget(conversation);
-
-    if (read && interactionId) {
-        const resp = await fetch(
-            apiUrl(`/entities/conversations/${encodeURIComponent(interactionId)}/read`),
-            { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify({}) }
-        );
-        await handleResponse(resp, 'Failed to mark the conversation read');
-        return await resp.json();
+    const { personaId, participantKey } = conversationTarget(conversation);
+    if (!personaId || !participantKey) {
+        throw new Error('This conversation cannot be marked read yet.');
     }
 
-    if (entityId && participantKey) {
-        const body = { read: !!read };
-        if (upToMessageId) body.up_to_message_id = upToMessageId;
-        const resp = await fetch(
-            apiUrl(`/entities/${encodeURIComponent(entityId)}/conversations/${encodeURIComponent(participantKey)}/read`),
-            { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify(body) }
-        );
-        await handleResponse(resp, 'Failed to update the read state');
-        return await resp.json();
-    }
-
-    if (interactionId) {
-        // Read was already handled above; only an unreachable branch remains.
-        throw new Error('This conversation has no participant key to update.');
-    }
-    throw new Error('This conversation cannot be marked read yet.');
+    const body = { read: !!read };
+    if (upToMessageId) body.up_to_message_id = upToMessageId;
+    const resp = await fetch(
+        apiUrl(`/entities/${encodeURIComponent(personaId)}/conversations/${encodeURIComponent(participantKey)}/read`),
+        { method: 'POST', headers: getJsonHeaders(), body: JSON.stringify(body) }
+    );
+    await handleResponse(resp, 'Failed to update the read state');
+    return await resp.json();
 }
 
 /**
- * Soft-delete a whole thread (the interaction and every message in it).
- *
- * There is deliberately NO participant-key fallback: the engine has exactly one
- * thread-delete address, and it is interaction-keyed. A brand-new chat with no
- * interaction has nothing to delete, which is reported rather than faked.
+ * Soft-delete a whole thread (every interaction of its participant key and
+ * every message in it).
  *
  * A `409` means the engine still has a live session for the entity ("Close the
  * conversation before deleting it."); the message is surfaced verbatim.
  *
  * @param {object} conversation
- * @returns {Promise<{interactions?: number, messages?: number}>}
+ * @returns {Promise<{status?: string, interactions?: number, messages?: number}>}
  */
 export async function deleteConversation(conversation) {
-    const { interactionId } = conversationTarget(conversation);
-    if (!interactionId) {
+    const { personaId, participantKey } = conversationTarget(conversation);
+    if (!participantKey) {
         throw new Error('Nothing has been saved for this conversation yet.');
     }
     const resp = await fetch(
-        apiUrl(`/entities/conversations/${encodeURIComponent(interactionId)}`),
+        apiUrl(`/entities/${encodeURIComponent(personaId)}/conversations/${encodeURIComponent(participantKey)}`),
         { method: 'DELETE', headers: getAuthHeaders() }
     );
     await handleResponse(resp, 'Failed to delete the conversation');

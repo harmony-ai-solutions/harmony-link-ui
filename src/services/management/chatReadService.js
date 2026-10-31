@@ -2,6 +2,7 @@
 import { listEntities } from './entityService.js';
 import { normalizeChatConversation, normalizeChatMessage } from '../../store/chatStoreUtils.js';
 import { normalizeSearchResults, SEARCH_RESULT_LIMIT } from '../../store/searchUtils.js';
+import { getActivePersonaId } from './activePersona.js';
 
 /**
  * Desktop Chat — REST history reads over the engine's parity chat surface
@@ -13,13 +14,21 @@ import { normalizeSearchResults, SEARCH_RESULT_LIMIT } from '../../store/searchU
  * only as a navigation handle (any id of the key group navigates to the same
  * conversation).
  *
+ * ── THE POV IS THE PERSONA ───────────────────────────────────────────────
+ *
+ * Reads pivot on the ACTIVE PERSONA (`activePersona.js`), exactly like the
+ * app's `impersonatedEntityId`: the inbox is that persona's inbox, and a thread
+ * read addresses `:id` = persona. Companion metadata (`entity_id`,
+ * `companion_display_name`, avatar profile) still describes the AI partner for
+ * naming and avatars — it is display data, not the read address.
+ *
  * Endpoints (all under the management API, admin-keyed):
- *   GET  /entities/:id/chat-list                                   → conversation rows
+ *   GET  /entities/chat-list?pov_entity_id=<persona>              → inbox (persona-pivoted)
  *   GET  /entities/:id/conversations/:participantKey/messages      → message window (opaque cursor)
  *   GET  /entities/:id/emoji-actions                               → emoji actions
  *   GET  /entities                                                 → entities (partners + personas)
  *   GET  /messages/:id/audio | /messages/:id/image                 → media bytes
- *   GET  /entities/messages/search?q=                              → message search (Task 02-9)
+ *   GET  /entities/:id/messages/search?q=&participant_key=         → entity-scoped message search
  *   POST /entities/:id/conversations/:participantKey/read          → mark read (participant_key scoped)
  *
  * This module normalises the parity wire shapes into the flat camel/snake shape
@@ -118,19 +127,29 @@ export async function listConversations(entityId, { limit = 200 } = {}) {
  * back in a SEPARATE `archived` array (bounded server-side), which the inbox
  * renders behind its collapsed "Archived (N)" section.
  *
+ * `pov_entity_id` pins the list to the ACTIVE PERSONA, so rows are deduped by
+ * `participant_key` from that persona's point of view (the interaction id and
+ * `unread_count` are persona-pivoted). Their `entity_id` / display name /
+ * avatar / `muted` fields still name the COMPANION, which is what the inbox
+ * renders.
+ *
  * @param {{ includeArchived?: boolean, limit?: number }} [options]
  * @returns {Promise<{conversations: object[], archived: object[], hasMore: boolean}>}
  */
 export async function listInbox({ includeArchived = false, limit = 200 } = {}) {
     const conversations = [];
     const archived = [];
+    const personaId = getActivePersonaId();
     let hasMore = false;
     let offset = 0;
 
     // Follow has_more/next_offset so a busy inbox cannot silently lose threads
     // to the page cap. Hard stop so a broken has_more can never loop forever.
     for (let page = 0; page < 20; page += 1) {
-        const params = new URLSearchParams({ limit: String(limit) });
+        const params = new URLSearchParams({
+            limit: String(limit),
+            pov_entity_id: personaId,
+        });
         if (offset) params.set('offset', String(offset));
         if (includeArchived) params.set('include_archived', '1');
         const resp = await fetch(
@@ -172,7 +191,11 @@ export async function listInbox({ includeArchived = false, limit = 200 } = {}) {
  * response, or any previously returned message's `created_at` verbatim). It is
  * the raw stored timestamp text — never re-format it client-side.
  *
- * @param {string} entityId
+ * `entityId` is the ACTIVE PERSONA (POV), not the companion. Callers open a
+ * thread with the persona id plus the row's participant key; companion naming
+ * comes from the inbox row's metadata, never from this read path.
+ *
+ * @param {string} entityId - persona (POV) entity id
  * @param {string} participantKey
  * @param {{ before?: string|null, limit?: number }} [options]
  * @returns {Promise<{messages: ChatMessage[], hasMore: boolean, nextCursor: string|null}>}
@@ -255,7 +278,7 @@ export async function listEmojiActions(entityId) {
 /**
  * Mark a conversation read (or reset the last message unread). Scoped by
  * participant_key, matching the chat-list badge's `CountUnreadByParticipantKeys`
- * scope — the two can never disagree.
+ * scope — the two can never disagree. `entityId` is the ACTIVE PERSONA.
  *
  * @param {string} entityId
  * @param {string} participantKey
@@ -295,38 +318,35 @@ export function getMessageImageUrl(messageId) {
 }
 
 /**
- * Search messages across EVERY conversation (Task 02-9).
+ * Search messages inside ONE entity's conversations (Task 02-9, reworked).
  *
- * `GET /entities/messages/search?q=&interaction_id=&limit=` answers
+ * `GET /entities/:id/messages/search?q=&participant_key=&limit=` answers
  * `{query, count, results: [{message, interaction_id, participant_key}]}`,
- * newest first and capped at 100 server-side. The client caps too, so the UI
- * can never claim to hold more rows than the engine will return.
+ * newest first and capped at 100 server-side. `:id` is the ACTIVE PERSONA, so
+ * the engine searches from the same POV the inbox is built from — one row per
+ * message, no cross-POV duplicates.
  *
- * ── WHY THE GLOBAL ENDPOINT SERVES THE IN-CONVERSATION FIELD TOO ────────
- *
- * The engine supports `interaction_id`, but a thread's messages span EVERY
- * interaction of its participant key — the engine mints a new interaction each
- * time the participant set changes, and a membership change must not truncate
- * the history. Filtering by the *current* interaction would therefore hide the
- * older messages the user is most likely searching for. So the in-conversation
- * field calls this same global search and narrows by `participant_key`
- * client-side (`filterHitsByParticipant`). The trade-off is explicit: a thread
- * whose matches exceed the global 100-hit cap can show fewer hits than it owns.
+ * Pass `participantKey` to scope the search to that thread's WHOLE key group
+ * (every interaction of the key, which is what an in-conversation search
+ * wants). Omitting it searches every thread the persona can see (the global
+ * panel over the inbox). The `+` in a key is encoded automatically by
+ * `URLSearchParams`.
  *
  * A blank `q` is rejected here before the request: the handler answers `400`
  * for it, and a `400` for something the UI can determine locally is noise.
  *
  * @param {string} query
- * @param {{ limit?: number }} [options]
+ * @param {{ participantKey?: string, limit?: number }} [options]
  * @returns {Promise<Array<object>>} normalised hits (see `normalizeSearchHit`)
  */
-export async function searchMessages(query, { limit = SEARCH_RESULT_LIMIT } = {}) {
+export async function searchMessages(query, { participantKey = '', limit = SEARCH_RESULT_LIMIT } = {}) {
     const term = String(query ?? '').trim();
     if (!term) return [];
 
     const params = new URLSearchParams({ q: term, limit: String(limit) });
+    if (participantKey) params.set('participant_key', participantKey);
     const resp = await fetch(
-        apiUrl(`/entities/messages/search?${params.toString()}`),
+        apiUrl(`/entities/${encodeURIComponent(getActivePersonaId())}/messages/search?${params.toString()}`),
         { headers: getAuthHeaders() }
     );
     await handleResponse(resp, 'Failed to search messages');

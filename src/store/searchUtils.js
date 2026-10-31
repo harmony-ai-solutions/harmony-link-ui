@@ -9,9 +9,9 @@
  *
  * ── What the engine gives us ─────────────────────────────────────────────
  *
- * `GET /api/entities/messages/search?q=&interaction_id=&limit=` answers
+ * `GET /api/entities/:id/messages/search?q=&participant_key=&limit=` answers
  * `{ query, count, results: [{ message, interaction_id, participant_key }] }`
- * (see `management/routes_chat_write.go`). Two fields are load-bearing and both
+ * (`:id` = the ACTIVE PERSONA). Two fields are load-bearing and both
  * are easy to get wrong:
  *
  *  - **`message.entity_id` is the character that owns the thread** — the row's
@@ -268,27 +268,6 @@ export function capSearchResults(results, limit = SEARCH_RESULT_LIMIT) {
     const cap = Number.isFinite(limit) && limit > 0 ? Math.trunc(limit) : SEARCH_RESULT_LIMIT;
     const list = results || [];
     return list.length > cap ? list.slice(0, cap) : list;
-}
-
-/**
- * Keep only hits belonging to one thread.
- *
- * In-conversation search reuses the GLOBAL endpoint and narrows client-side
- * rather than passing `interaction_id`: a thread's messages span every
- * interaction of its participant key, so an interaction filter would hide the
- * history the user is actually searching. The trade-off is documented on
- * `chatStore.searchMessages`: a thread whose matches exceed the global 100-hit
- * cap can show fewer than it has.
- *
- * @param {Array<object>} results
- * @param {string} participantKey
- * @returns {Array<object>}
- */
-export function filterHitsByParticipant(results, participantKey) {
-    const key = participantKey || '';
-    const list = results || [];
-    if (!key) return list;
-    return list.filter((hit) => hit?.participant_key === key);
 }
 
 /**

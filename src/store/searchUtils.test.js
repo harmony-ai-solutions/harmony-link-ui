@@ -21,7 +21,6 @@ import {
     normalizeSearchHit,
     normalizeSearchResults,
     capSearchResults,
-    filterHitsByParticipant,
     searchHitPartner,
     jumpTargetFromHit,
     hitMatchesConversation,
@@ -205,15 +204,6 @@ test('capSearchResults only ever shrinks', () => {
     const list = [{ id: 'a' }, { id: 'b' }];
     assert.equal(capSearchResults(list, 5), list, 'under the cap the same array is returned');
     assert.deepEqual(capSearchResults(list, 1), [{ id: 'a' }]);
-});
-
-test('filterHitsByParticipant narrows to one thread and is a no-op without a key', () => {
-    const results = normalizeSearchResults([
-        hit('a'),
-        hit('b', { outer: { participant_key: 'zoe+user' } }),
-    ]);
-    assert.deepEqual(filterHitsByParticipant(results, 'claire+user').map((r) => r.id), ['a']);
-    assert.equal(filterHitsByParticipant(results, ''), results);
 });
 
 // ── Navigation ───────────────────────────────────────────────────────────

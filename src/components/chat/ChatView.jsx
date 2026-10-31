@@ -10,6 +10,7 @@ import { toast } from '../../store/toastStore.js';
 import useChatStore from '../../store/chatStore.js';
 import useCharacterProfileStore from '../../store/characterProfileStore.js';
 import { partitionChatEntities, entityDisplayName } from '../../store/chatStoreUtils.js';
+import { getActivePersonaId } from '../../services/management/activePersona.js';
 import CharacterImage from '../common/CharacterImage.jsx';
 
 /**
@@ -64,6 +65,8 @@ const ChatView = ({ onNavigate }) => {
                 const enriched = {
                     interactionId: null,
                     entityId: request.entityId,
+                    // The POV every read/write pivots on (v1: the `user` seam).
+                    personaId: persona?.id || getActivePersonaId(),
                     participantIds,
                     partnerEntityId: request.entityId,
                     isNew: true,
@@ -177,6 +180,9 @@ const ChatView = ({ onNavigate }) => {
         if (rowPersona && rowPersona !== ownEntityId) setOwnEntityId(rowPersona);
         const enriched = {
             ...conversation,
+            // POV for every history read and conversation write. `entityId`
+            // remains the companion (row label / socket address).
+            personaId: conversation.personaId || persona || getActivePersonaId(),
             participantIds,
             title: entityDisplayName(partner) || conversation.entityId,
         };

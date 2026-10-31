@@ -8,7 +8,8 @@
     "dev:speech-engine": "vite --mode speech-engine",
     "build": "vite build",
     "build:speech-engine": "vite build --mode speech-engine",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "@harmony-ai-solutions/soulbits-api-client": "github:harmony-ai-solutions/soulbits-api-client-js#1717da5a5116eca230d5c3946b376e0802fb0c96",

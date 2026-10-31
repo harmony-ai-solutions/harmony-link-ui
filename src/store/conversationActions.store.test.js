@@ -79,7 +79,8 @@ test('setPinned patches the row before the request and keeps it on success', asy
 
     assert.equal(ok, true);
     assert.equal(calls.length, 1);
-    assert.match(lastCall().url, /\/entities\/conversations\/i1\/pin$/);
+    assert.match(lastCall().url, /\/entities\/user\/chat-settings\/ai1%3Auser$/);
+    assert.equal(lastCall().method, 'PUT');
     assert.deepEqual(JSON.parse(lastCall().body), { pinned: true });
     assert.equal(useChatStore.getState().conversations[0].pinned, true);
     // The success toast is pushed from conversationActions (common:toast.*).
@@ -124,7 +125,8 @@ test('setArchived MOVES the row between arrays (not an in-place flag flip)', asy
     );
     await pending;
 
-    assert.match(lastCall().url, /\/archive$/);
+    assert.match(lastCall().url, /\/entities\/user\/chat-settings\/ai1%3Auser$/);
+    assert.equal(lastCall().method, 'PUT');
     assert.deepEqual(JSON.parse(lastCall().body), { archived: true });
 });
 
@@ -171,7 +173,11 @@ test('setMuted patches EVERY thread of the same companion (entity-level flag)', 
     assert.equal(muted.every((r) => r.entity_id === 'ai1'), true);
     // chatEntities mirrors the flag for the detail view's status column.
     assert.equal(useChatStore.getState().chatEntities[0].is_muted, true);
-    assert.match(lastCall().url, /\/mute$/);
+    // Entity-level mute, addressed with :id = the COMPANION (the phone mutes
+    // the partner entity; the persona pivot does not apply to entity flags).
+    assert.match(lastCall().url, /\/entities\/ai1$/);
+    assert.equal(lastCall().method, 'PUT');
+    assert.deepEqual(JSON.parse(lastCall().body), { is_muted: true });
 });
 
 test('setMuted rolls every thread back on failure', async () => {
@@ -192,8 +198,9 @@ test('markRead clears the badge and is idempotent engine-side', async () => {
 
     assert.equal(ok, true);
     assert.equal(useChatStore.getState().conversations[0].unread_count, 0);
-    // The interaction-keyed read receipt is preferred.
-    assert.match(lastCall().url, /\/entities\/conversations\/i1\/read$/);
+    // One participant-keyed route for read and unread, under the persona POV.
+    assert.match(lastCall().url, /\/entities\/user\/conversations\/ai1%3Auser\/read$/);
+    assert.deepEqual(JSON.parse(lastCall().body), { read: true });
 });
 
 test('markRead with read:false restores one unread (set-to-1 semantics)', async () => {
@@ -202,8 +209,7 @@ test('markRead with read:false restores one unread (set-to-1 semantics)', async 
     await useChatStore.getState().markRead(row('ai1:user'), { read: false });
 
     assert.equal(useChatStore.getState().conversations[0].unread_count, 1);
-    // Unread has no interaction route — it falls back to the participant key.
-    assert.match(lastCall().url, /\/entities\/ai1\/conversations\/.+\/read$/);
+    assert.match(lastCall().url, /\/entities\/user\/conversations\/ai1%3Auser\/read$/);
     assert.deepEqual(JSON.parse(lastCall().body), { read: false });
 });
 
@@ -242,7 +248,7 @@ test('deleteConversation drops the row, closes the open thread and toasts', asyn
     // The one-shot signal ChatView watches to unmount the detail view.
     assert.equal(useChatStore.getState().detailCloseTick, 1);
     assert.equal(useToastStore.getState().toasts.at(-1).kind, 'success');
-    assert.match(lastCall().url, /\/entities\/conversations\/i1$/);
+    assert.match(lastCall().url, /\/entities\/user\/conversations\/ai1%3Auser$/);
     assert.equal(lastCall().method, 'DELETE');
 });
 
@@ -268,9 +274,18 @@ test('deleteConversation surfaces the 409 copy and restores the open thread', as
     );
 });
 
-test('deleteConversation refuses a thread with no interaction (nothing saved yet)', async () => {
+test('deleteConversation works without an interaction id (participant key is the address)', async () => {
     reset({ conversations: [row('ai1:user')] });
     const ok = await useChatStore.getState().deleteConversation({ participant_key: 'ai1:user', entity_id: 'ai1' });
+    assert.equal(ok, true);
+    assert.equal(calls.length, 1);
+    assert.match(lastCall().url, /\/entities\/user\/conversations\/ai1%3Auser$/);
+    assert.equal(lastCall().method, 'DELETE');
+});
+
+test('deleteConversation refuses a thread with no participant key (nothing saved yet)', async () => {
+    reset({ conversations: [row('ai1:user')] });
+    const ok = await useChatStore.getState().deleteConversation({ entity_id: 'ai1', interaction_id: 'i1' });
     assert.equal(ok, false);
     assert.equal(calls.length, 0);
     assert.equal(useChatStore.getState().conversations.length, 1);

@@ -125,7 +125,7 @@ test('searchMessages requests the global endpoint with the trimmed term and the 
     const hits = await useChatStore.getState().searchMessages('  ocean  ');
 
     assert.equal(calls.length, 1);
-    assert.match(lastCall().url, /\/entities\/messages\/search\?/);
+    assert.match(lastCall().url, /\/entities\/user\/messages\/search\?/);
     assert.match(lastCall().url, /q=ocean/);
     assert.match(lastCall().url, /limit=100/);
     assert.equal(lastCall().method, 'GET');
@@ -163,16 +163,15 @@ test('searchMessages caps the published list even if the engine returns more', a
 
 // ── Scoping ──────────────────────────────────────────────────────────────
 
-test('an in-thread search keeps only that thread\'s hits', async () => {
+test('an in-thread search sends the participant key and trusts the server scope', async () => {
     reset();
+    // The engine scopes by the thread's whole key group; the store must not
+    // re-filter the answer.
     nextResponse = {
         ok: true,
         status: 200,
         body: {
-            results: [
-                hit('mine'),
-                hit('other', { outer: { participant_key: 'zoe+user' } }),
-            ],
+            results: [hit('mine')],
         },
     };
 
@@ -182,9 +181,9 @@ test('an in-thread search keeps only that thread\'s hits', async () => {
 
     assert.deepEqual(hits.map((h) => h.id), ['mine']);
     assert.deepEqual(useChatStore.getState().searchScope, { participantKey: 'claire+user' });
-    // The narrowing is CLIENT-side on purpose: an `interaction_id` filter would
-    // hide the older messages a thread search is looking for.
     assert.equal(calls.length, 1);
+    // `+` is encoded as %2B, so the key survives as one query value.
+    assert.match(lastCall().url, /participant_key=claire%2Buser/);
     assert.doesNotMatch(lastCall().url, /interaction_id/);
 });
 

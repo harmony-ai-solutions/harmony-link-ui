@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ChevronRightIcon, ArrowDownIcon, SettingsGearIcon, RefreshIcon, TerminalIcon,
+    ChevronRightIcon, ArrowDownIcon, SettingsGearIcon, RefreshIcon, TerminalIcon, WarningIcon,
 } from '../../constants/icons.jsx';
 import useChatStore from '../../store/chatStore.js';
 import {
@@ -41,6 +41,7 @@ import GreetingAlternates from './GreetingAlternates.jsx';
 import MessageSearch from './MessageSearch.jsx';
 import ImageLightbox from './ImageLightbox.jsx';
 import ChatPreferences from './ChatPreferences.jsx';
+import ChatErrorModal from './ChatErrorModal.jsx';
 import ImpersonationSelector from './ImpersonationSelector.jsx';
 import ChatWireInspector from './ChatWireInspector.jsx';
 import ConversationMenu from './ConversationMenu.jsx';
@@ -89,6 +90,12 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const loadingMessages = useChatStore((s) => s.loadingMessages);
     const loadingOlder = useChatStore((s) => s.loadingOlder);
     const connectionState = useChatStore((s) => s.connectionState);
+    /** Owner-approved session-error surface: a failed ENTITY session shows
+     *  Degraded + the warning bubble, never "Offline", and never the global
+     *  health pill (see healthStore.SOCKET_DOWN_STATES). */
+    const sessionErrors = useChatStore((s) => s.sessionErrors);
+    const connectSocket = useChatStore((s) => s.connectSocket);
+    const activeConversation = useChatStore((s) => s.activeConversation);
     const typingByEntity = useChatStore((s) => s.typingByEntity);
     const recordingByEntity = useChatStore((s) => s.recordingByEntity);
     const sendText = useChatStore((s) => s.sendText);
@@ -128,6 +135,7 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [showJump, setShowJump] = useState(false);
     const [showWire, setShowWire] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
     const [menuPosition, setMenuPosition] = useState(null);
     /**
      * Id of the NEWEST rendered message (Task 02-7 step 4). `null` = follow the
@@ -872,8 +880,22 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         {threadRow.muted && <span className="chat-detail-flag" role="img" aria-label={t('chat:list.statusMuted')}>🔇</span>}
                         {aiDisabled && <span className="chat-detail-flag" role="img" aria-label={t('chat:list.statusDisabled')}>🚫</span>}
                     </span>
-                    <span className={`chat-detail-status chat-detail-status-${connectionState}`}>
-                        {t(`chat:conversation.connection.${connectionStatusKey(connectionState)}`)}
+                    <span className="chat-detail-statusline">
+                        <span className={`chat-detail-status-dot state-${connectionStatusKey(connectionState)}`} aria-hidden="true" />
+                        <span className={`chat-detail-status chat-detail-status-${connectionState}`}>
+                            {t(`chat:conversation.connection.${connectionStatusKey(connectionState)}`)}
+                        </span>
+                        {connectionState === 'error' && (
+                            <span className="chat-detail-status-sub">{t('chat:conversation.errors.summary')}</span>
+                        )}
+                        {sessionErrors.length > 0 && (
+                            <button type="button" className="chat-detail-error-bubble"
+                                onClick={() => setShowErrorModal(true)}
+                                aria-label={t('chat:conversation.errors.why')}>
+                                <WarningIcon className="w-3.5 h-3.5" />
+                                <span className="chat-detail-error-count">{sessionErrors.length}</span>
+                            </button>
+                        )}
                     </span>
                 </div>
                 {/* Thread actions — the SAME menu the list rows open, so every
@@ -1114,7 +1136,9 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
                         disabled={connectionState !== 'connected'}
                         disabledReason={aiDisabled
                             ? 'aiDisabled'
-                            : (connectionState !== 'connected' ? 'offline' : null)}
+                            : (connectionState !== 'connected'
+                                ? (connectionState === 'error' ? 'degraded' : 'offline')
+                                : null)}
                         scenario={scenario}
                         draftKey={draftKey}
                         entityId={partnerId}
@@ -1124,6 +1148,16 @@ const ChatDetailView = ({ conversation, ownEntityId, personas, onBack, onOwnEnti
             </div>
 
             {/* Overlays */}
+            <ChatErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                onRetry={() => {
+                    setShowErrorModal(false);
+                    if (activeConversation) connectSocket(activeConversation);
+                }}
+                entityName={threadName}
+                errors={sessionErrors}
+            />
             <ChatPreferences
                 isOpen={showPrefs}
                 replyMode={prefs.replyMode}

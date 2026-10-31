@@ -48,6 +48,7 @@ function reset(extra = {}) {
         connectionState: 'connected',
         connectionDropSince: null,
         error: null,
+        sessionErrors: [],
         ...extra,
     });
 }
@@ -159,4 +160,65 @@ test('a tail read that fails does not blank the timeline', async () => {
     const state = useChatStore.getState();
     assert.deepEqual(state.messages.map((m) => m.id), ['a']);
     assert.equal(state.error, 'engine down');
+});
+
+// ── Session errors (owner-approved 2026-10-31) ────────────────────────────
+//
+// An ERROR frame is an ENTITY-session failure, not a socket drop: the header
+// says Degraded and the failure joins the modal's list, which a successful
+// INIT_ENTITY clears.
+
+test('an ERROR frame degrades the header and records a classified session error', () => {
+    reset();
+    globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ messages: [] }) });
+
+    useChatStore.getState().handleSocketEvent('error', {
+        message: 'provider openai has no API key configured',
+    });
+
+    const state = useChatStore.getState();
+    assert.equal(state.connectionState, 'error');
+    assert.equal(state.error, 'provider openai has no API key configured');
+    assert.equal(state.sessionErrors.length, 1);
+    assert.equal(state.sessionErrors[0].code, 'config');
+    assert.equal(state.sessionErrors[0].message, 'provider openai has no API key configured');
+});
+
+test('an ERROR frame without a message still records an entry', () => {
+    reset();
+
+    useChatStore.getState().handleSocketEvent('error', {});
+
+    const state = useChatStore.getState();
+    assert.equal(state.error, 'Connection error');
+    assert.equal(state.sessionErrors[0].message, 'Connection error');
+});
+
+test('session errors are newest first and capped at ten', () => {
+    reset();
+
+    for (let i = 0; i < 12; i += 1) {
+        useChatStore.getState().handleSocketEvent('error', { message: `session failure ${i}` });
+    }
+
+    const { sessionErrors } = useChatStore.getState();
+    assert.equal(sessionErrors.length, 10);
+    assert.equal(sessionErrors[0].message, 'session failure 11');
+    assert.equal(sessionErrors[9].message, 'session failure 2');
+});
+
+test('a successful INIT_ENTITY clears the session errors', () => {
+    reset({
+        sessionErrors: [
+            { code: 'config', message: 'no API key', at: '2026-10-31T10:00:00Z' },
+        ],
+    });
+
+    useChatStore.getState().handleSocketEvent('event', {
+        event_type: 'INIT_ENTITY',
+        status: 'SUCCESS',
+        payload: {},
+    });
+
+    assert.deepEqual(useChatStore.getState().sessionErrors, []);
 });

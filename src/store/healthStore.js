@@ -32,8 +32,8 @@ import { getManagementApiUrl, getPublicApiPath } from '../services/management/ba
  * | management | chat socket           | state      |
  * |------------|-----------------------|------------|
  * | down       | any                   | `offline`  |
- * | up         | connecting/reconnecting/error | `degraded` |
- * | up         | idle or connected     | `connected`|
+ * | up         | reconnecting          | `degraded` |
+ * | up         | idle/connected/connecting/error | `connected`|
  *
  * `checking` is a transient fourth value used only before the first probe
  * resolves (and while a manual Retry runs): claiming "Connected" before the
@@ -73,8 +73,12 @@ export const HEALTH_PROBE_TIMEOUT_MS = 4000;
  */
 export const HEALTH_BANNER_MIN_FAILURES = 2;
 
-/** States a chat socket can be in that mean "live events are NOT flowing". */
-export const SOCKET_DOWN_STATES = ['connecting', 'reconnecting', 'error'];
+/** Only a REAL socket drop (dropped and retrying) degrades the global pill.
+ *  `connecting` is the ordinary opening handshake, and `error` is an entity
+ *  SESSION failure (shown as Degraded in the chat header + error modal) —
+ *  neither means the engine is unhealthy. Engine reachability is the
+ *  management probe's job (offline). Owner decision 2026-10-31. */
+export const SOCKET_DOWN_STATES = ['reconnecting'];
 
 /** The three user-visible states, plus the transient `checking`. */
 export const HEALTH_STATES = ['checking', 'connected', 'degraded', 'offline'];

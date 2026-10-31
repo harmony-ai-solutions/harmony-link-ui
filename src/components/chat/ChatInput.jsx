@@ -95,7 +95,7 @@ import {
  * @param {(payloads: Array<{imageBase64: string, mimeType: string, caption: string}>) => void} [props.onSendImages]
  * @param {(action: object) => void} [props.onSendEmojiAction]
  * @param {boolean} [props.disabled] - socket offline / send impossible
- * @param {'offline'|'aiDisabled'|null} [props.disabledReason] - why it is inert
+ * @param {'offline'|'degraded'|'aiDisabled'|null} [props.disabledReason] - why it is inert
  * @param {string} [props.scenario] - the character's authored scenario
  * @param {string} [props.draftKey] - per-thread draft key
  * @param {string} [props.entityId] - for the character's emoji actions
@@ -208,9 +208,18 @@ const ChatInput = ({
     const PLACEHOLDER_KEYS = {
         disabled: 'placeholderDisabled',
         offline: 'placeholderOffline',
+        degraded: 'placeholderDegraded',
         normal: 'placeholder',
     };
-    const placeholder = t(`chat:input.${PLACEHOLDER_KEYS[placeholderKeyFor(state.reason)]}`);
+    /**
+     * `degraded` is a session-level failure (the error bubble in the header
+     * carries the details), so it outranks the generic offline wording while
+     * `composerState` still owns whether the box is inert.
+     */
+    const placeholderReason = disabledReason === 'degraded'
+        ? 'degraded'
+        : placeholderKeyFor(state.reason);
+    const placeholder = t(`chat:input.${PLACEHOLDER_KEYS[placeholderReason]}`);
 
     // The hint is shown once, the first time this build is used.
     useEffect(() => {

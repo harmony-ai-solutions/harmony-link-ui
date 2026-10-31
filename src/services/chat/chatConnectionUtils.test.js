@@ -25,7 +25,7 @@ test('connectionStatusKey maps every store state onto a header label', () => {
     assert.equal(connectionStatusKey('connecting'), 'connecting');
     assert.equal(connectionStatusKey('reconnecting'), 'reconnecting');
     assert.equal(connectionStatusKey('idle'), 'offline');
-    assert.equal(connectionStatusKey('error'), 'offline');
+    assert.equal(connectionStatusKey('error'), 'degraded');
     assert.equal(connectionStatusKey('anything-else'), 'offline');
 });
 

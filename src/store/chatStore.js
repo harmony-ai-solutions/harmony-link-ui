@@ -18,6 +18,7 @@ import {
     setMessagesReadFlag,
     unreadMessageIds,
 } from './chatStoreUtils.js';
+import { recordSessionError, clearSessionErrors } from './chatSessionErrors.js';
 import {
     SEARCH_RESULT_LIMIT,
     isSearchable,
@@ -395,6 +396,9 @@ export const useChatStore = create((set, get) => ({
     recordingByEntity: {},
     /** Last error message, if any. */
     error: null,
+    /** Session errors of the ACTIVE conversation, newest first (owner-approved
+     *  error modal; cleared on the next successful INIT_ENTITY). */
+    sessionErrors: [],
     /**
      * Cross-view request: set by the "Start chatting" button on a character
      * card, consumed once by ChatView on mount to open a brand-new chat with
@@ -628,6 +632,7 @@ export const useChatStore = create((set, get) => ({
             connectionState: 'idle',
             connectionDropSince: null,
             error: null,
+            sessionErrors: [],
         });
 
         if (active.participantKey) {
@@ -1210,7 +1215,11 @@ export const useChatStore = create((set, get) => ({
             });
             set({ connectionState: 'connected' });
         } catch (error) {
-            set({ connectionState: 'error', error: error.message });
+            set({
+                connectionState: 'error',
+                error: error.message,
+                sessionErrors: recordSessionError(get().sessionErrors, { message: error.message }),
+            });
         }
     },
 
@@ -1280,7 +1289,15 @@ export const useChatStore = create((set, get) => ({
             return;
         }
         if (type === 'error') {
-            set({ error: payload?.message || 'Connection error' });
+            const message = payload?.message || payload?.error || 'Connection error';
+            set({
+                error: message,
+                // An ERROR frame is a session-level failure — the socket itself may
+                // still be live. The header says Degraded (never "offline"), and the
+                // failure joins the modal's list.
+                connectionState: 'error',
+                sessionErrors: recordSessionError(get().sessionErrors, { message }),
+            });
             return;
         }
         if (type !== 'event' || !payload) return;
@@ -1292,11 +1309,13 @@ export const useChatStore = create((set, get) => ({
         // chat, where we opened with interactionId = null). It is kept as a
         // NAVIGATION handle only — the timeline and scrollback are addressed by
         // the conversation's participant_key, never by the interaction id.
-        if (eventType === 'INIT_ENTITY' && payload.status === 'SUCCESS' && data.interaction_id) {
+        if (eventType === 'INIT_ENTITY' && payload.status === 'SUCCESS') {
             const current = get().activeConversation;
-            if (current && current.interactionId !== data.interaction_id) {
-                set({ activeConversation: { ...current, interactionId: data.interaction_id } });
+            const patches = { sessionErrors: clearSessionErrors() };
+            if (data.interaction_id && current && current.interactionId !== data.interaction_id) {
+                patches.activeConversation = { ...current, interactionId: data.interaction_id };
             }
+            set(patches);
             return;
         }
 

@@ -48,11 +48,21 @@ test('deriveHealthState: management failure is offline regardless of the socket'
     }
 });
 
-test('deriveHealthState: management up with a dead socket is degraded', () => {
-    for (const socketState of ['connecting', 'reconnecting', 'error']) {
+test('deriveHealthState: management up with a dropped socket is degraded', () => {
+    assert.equal(
+        deriveHealthState({ checking: false, managementOk: true, socketState: 'reconnecting' }),
+        'degraded',
+    );
+});
+
+test('deriveHealthState: an entity SESSION error is NOT a degraded engine', () => {
+    // Owner decision 2026-10-31: a failed entity session (missing API key,
+    // bad provider config) leaves the engine and the socket healthy, so the
+    // global pill must not flip. The chat header says Degraded instead.
+    for (const socketState of ['connecting', 'error', 'idle', 'connected']) {
         assert.equal(
             deriveHealthState({ checking: false, managementOk: true, socketState }),
-            'degraded',
+            'connected',
         );
     }
 });

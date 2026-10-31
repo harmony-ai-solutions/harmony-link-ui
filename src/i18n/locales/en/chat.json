@@ -147,13 +147,31 @@
       "connecting": "Connecting…",
       "connected": "Connected",
       "reconnecting": "Reconnecting…",
-      "offline": "Offline"
+      "offline": "Offline",
+      "degraded": "Degraded"
+    },
+    "errors": {
+      "summary": "— chat can't reach this AI",
+      "why": "Why isn't the chat working?",
+      "errorCount": "{{count}} error",
+      "errorCount_other": "{{count}} errors",
+      "newestFirst": "newest first",
+      "retry": "Retry",
+      "close": "Close",
+      "clearNote": "Errors clear on the next successful session.",
+      "hint": {
+        "config": "Fix the configuration in Settings, then Retry.",
+        "session": "Retrying usually resolves this. If it persists, check the engine log.",
+        "network": "Check that the engine is running and reachable, then Retry."
+      },
+      "code": { "config": "config", "session": "session", "network": "network" }
     }
   },
   "input": {
     "placeholder": "Type a message…",
     "placeholderTyping": "{{name}} is typing…",
     "placeholderOffline": "Not connected — reconnecting…",
+    "placeholderDegraded": "Chat is degraded — see the error details",
     "placeholderDisabled": "This AI partner is switched off",
     "send": "Send",
     "record": "Record a voice note",

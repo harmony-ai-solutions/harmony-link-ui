@@ -33,6 +33,8 @@ import {
   replyQuoteText,
   QUICK_REACTIONS,
   normalizeChatMessage,
+  matchesRecentPerception,
+  PERCEPTION_DUPLICATE_WINDOW_MS,
 } from './chatStoreUtils.js';
 
 const msg = (id, createdAt, extra = {}) => ({
@@ -444,5 +446,90 @@ test('normalizeChatMessage carries reply_preview through', () => {
 
   // Absent → '' so the bubble's truthiness check stays simple.
   assert.equal(normalizeChatMessage({ id: 'm3' }).reply_preview, '');
+});
+
+// ── Perception dedupe (N+1: one engine row per POV, different ids) ────────
+
+const perception = (id, overrides = {}) => ({
+  id,
+  sender_entity_id: 'ai1',
+  content: 'same words',
+  message_type: 'text',
+  created_at: '2026-01-01T00:00:00Z',
+  ...overrides,
+});
+
+test('matchesRecentPerception folds two POV copies with different ids ~1 s apart', () => {
+  const timeline = [perception('pov-a')];
+  const incoming = perception('pov-b', { created_at: '2026-01-01T00:00:01Z' });
+
+  assert.equal(matchesRecentPerception(timeline, incoming), true);
+  // Content is compared trimmed.
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { content: '  same words  ' })),
+    true
+  );
+  // The window is inclusive at its edge.
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { created_at: '2026-01-01T00:00:10Z' })),
+    true
+  );
+  // A missing message_type is 'text' on both sides.
+  assert.equal(
+    matchesRecentPerception(
+      [perception('pov-a', { message_type: undefined })],
+      perception('pov-b', { message_type: '' })
+    ),
+    true
+  );
+});
+
+test('matchesRecentPerception keeps a genuine repetition 3 minutes apart', () => {
+  const timeline = [perception('pov-a')];
+  const incoming = perception('pov-b', { created_at: '2026-01-01T00:03:00Z' });
+  assert.equal(matchesRecentPerception(timeline, incoming), false);
+});
+
+test('matchesRecentPerception requires the same sender, type and content', () => {
+  const timeline = [perception('pov-a')];
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { sender_entity_id: 'user' })),
+    false,
+    'different sender is a different perception'
+  );
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { message_type: 'audio' })),
+    false,
+    'different message type is a different perception'
+  );
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { content: 'other words' })),
+    false
+  );
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { created_at: 'not-a-date' })),
+    false,
+    'an unplaceable timestamp never merges'
+  );
+});
+
+test('matchesRecentPerception tolerates an explicit window and an empty timeline', () => {
+  const timeline = [perception('pov-a')];
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { created_at: '2026-01-01T00:00:20Z' }), 30_000),
+    true
+  );
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { created_at: '2026-01-01T00:00:20Z' }), 1_000),
+    false
+  );
+  // A bogus window falls back to the phone-parity default.
+  assert.equal(
+    matchesRecentPerception(timeline, perception('pov-b', { created_at: '2026-01-01T00:00:05Z' }), -1),
+    true
+  );
+  assert.equal(matchesRecentPerception([], perception('pov-b')), false);
+  assert.equal(matchesRecentPerception(null, null), false);
+  assert.equal(PERCEPTION_DUPLICATE_WINDOW_MS, 10_000);
 });
 

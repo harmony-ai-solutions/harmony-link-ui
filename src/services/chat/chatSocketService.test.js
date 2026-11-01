@@ -204,3 +204,97 @@ test('a user Retry after give-up starts a fresh ladder', async (t) => {
     assert.equal(service.handshakeFailures, 0);
     assert.equal(service.gaveUp, false);
 });
+
+// ── One session per participant (N+1) ─────────────────────────────────────
+//
+// A chat's persona session and partner session are independent services: each
+// owns its socket, heartbeat and reconnect ladder. These tests pin that the
+// two do not interfere, and that the INIT payload each one sends is shaped for
+// ITS OWN entity with the shared participant set.
+
+test('two participant sessions INIT with their own entity and the same set', async () => {
+    FakeWebSocket.instances = [];
+    const persona = new ChatSocketService({ url: 'ws://test', WebSocketImpl: FakeWebSocket });
+    const partner = new ChatSocketService({ url: 'ws://test', WebSocketImpl: FakeWebSocket });
+
+    const personaPending = persona.connect({
+        entityId: 'user',
+        participantIds: ['ai1', 'user'],
+        deviceId: 'dev-1',
+        replyMode: 'realistic',
+    });
+    const partnerPending = partner.connect({
+        entityId: 'ai1',
+        participantIds: ['ai1', 'user'],
+        deviceId: 'dev-1',
+        replyMode: 'realistic',
+    });
+    const [personaWs, partnerWs] = FakeWebSocket.instances;
+    personaWs.open();
+    partnerWs.open();
+    await Promise.all([personaPending, partnerPending]);
+
+    const personaInit = personaWs.sent[0];
+    const partnerInit = partnerWs.sent[0];
+    assert.equal(personaInit.event_type, 'INIT_ENTITY');
+    assert.equal(personaInit.payload.entity_id, 'user');
+    assert.equal(partnerInit.payload.entity_id, 'ai1');
+    assert.deepEqual(personaInit.payload.participant_ids, ['ai1', 'user']);
+    assert.deepEqual(partnerInit.payload.participant_ids, ['ai1', 'user']);
+    assert.equal(personaInit.payload.device_id, 'dev-1');
+    assert.equal(partnerInit.payload.device_id, 'dev-1');
+    assert.equal(personaInit.payload.device_type, 'web');
+    assert.equal(partnerInit.payload.device_type, 'web');
+});
+
+test('INIT_ENTITY SUCCESS records the session capabilities (relay direction)', async () => {
+    const { service } = makeService();
+    const ws = await connect(service);
+
+    ws.onmessage?.({
+        data: JSON.stringify({
+            event_type: 'INIT_ENTITY',
+            status: 'SUCCESS',
+            payload: { interaction_id: 'int-ai', capabilities: ['chat', 'cognition'] },
+        }),
+    });
+
+    assert.equal(service.interactionId, 'int-ai');
+    assert.deepEqual(service.capabilities, ['chat', 'cognition']);
+    // Any inbound frame arms the 30 s heartbeat; stop it so the runner exits.
+    service.disconnect();
+});
+
+test('each participant session reconnects on its OWN ladder', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    FakeWebSocket.instances = [];
+    const persona = new ChatSocketService({ url: 'ws://test', WebSocketImpl: FakeWebSocket });
+    const partner = new ChatSocketService({ url: 'ws://test', WebSocketImpl: FakeWebSocket });
+
+    const personaPending = persona.connect({ entityId: 'user', participantIds: ['ai1', 'user'] });
+    const partnerPending = partner.connect({ entityId: 'ai1', participantIds: ['ai1', 'user'] });
+    const [personaWs, partnerWs] = FakeWebSocket.instances;
+    personaWs.open();
+    partnerWs.open();
+    await Promise.all([personaPending, partnerPending]);
+    t.mock.timers.tick(0);
+
+    // Only the partner's socket dies (a black-holed connection).
+    partner.handleHeartbeatTimeout();
+    assert.equal(partnerWs.closed, true);
+    assert.equal(persona.connected, true, 'the sibling session is untouched');
+    assert.equal(personaWs.closed, false);
+
+    t.mock.timers.tick(2000);
+    assert.equal(FakeWebSocket.instances.length, 3, 'exactly one replacement for the dead session');
+    const replacement = lastSocket();
+    replacement.open();
+
+    assert.equal(partner.connected, true);
+    assert.equal(replacement.sent[0].event_type, 'INIT_ENTITY');
+    assert.equal(replacement.sent[0].payload.entity_id, 'ai1');
+
+    // Clean up the (live) timers so the test process can exit.
+    persona.disconnect();
+    partner.disconnect();
+});

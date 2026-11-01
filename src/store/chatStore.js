@@ -2,7 +2,13 @@ import { create } from 'zustand';
 import * as chatReadService from '../services/management/chatReadService.js';
 import * as chatActionService from '../services/management/chatActionService.js';
 import { setEntityDisabled as setEntityDisabledRequest } from '../services/management/entityService.js';
-import { ChatSocketService, generateEventId } from '../services/chat/chatSocketService.js';
+import { ChatSocketService, generateEventId, getDeviceId } from '../services/chat/chatSocketService.js';
+import {
+    chatParticipantSet,
+    chatScopeKey,
+    socketKey,
+    shouldRelayUtterance,
+} from '../services/chat/chatSessionUtils.js';
 import {
     mergeMessages,
     prependOlderMessages,
@@ -17,6 +23,7 @@ import {
     markMessagesRead,
     setMessagesReadFlag,
     unreadMessageIds,
+    matchesRecentPerception,
 } from './chatStoreUtils.js';
 import { recordSessionError, clearSessionErrors, extractSessionErrorMessage, sessionErrorChip } from './chatSessionErrors.js';
 import {
@@ -73,13 +80,124 @@ import { translate } from '../i18n/translate.js';
  * Ordering is never recomputed here: live updates patch rows in place, so a
  * thread cannot jump under the pointer between loads.
  *
- * Message perspective: timelines are stored from the AI entity's perspective
- * (sender_entity_id === ownEntityId means "the user/persona spoke"), matching
- * the engine. The UI derives bubble side from messageDirection().
+ * Message perspective: history is read from the PERSONA's point of view
+ * (the engine stores one copy per participant), so `sender_entity_id ===
+ * personaId` means "the user spoke" — the bubble side for an outgoing row.
+ * The UI derives it from messageDirection(), never from `entity_id`.
  */
 
-/** Per-entity socket registry (module scope — not reactive state). */
+/**
+ * Per-participant session registry (module scope — not reactive state).
+ *
+ * Keyed `${chatScopeKey}::${entityId}`: the participant set is part of the key
+ * so a persona socket belongs to ONE chat. A shared `entity-user` slot made
+ * two chats fight over the same session on the phone (EntitySessionService's
+ * connection-id discriminator exists for exactly that race), so it is never
+ * reused here either.
+ *
+ * ONE SESSION PER PARTICIPANT (N+1, phone D-18/D-21) is the subjective
+ * perception ruling in practice: the partner's session lets cognition author
+ * the partner-POV copy, and the persona's session lets the engine's Session
+ * Utterance Recorder author the persona-POV copy — the POV the desktop reads.
+ */
 const sockets = new Map();
+
+/** Socket registry key for one participant of the open chat. */
+function scopedSocketKey(scopeKey, entityId) {
+    return socketKey(scopeKey, entityId);
+}
+
+/** The entityId → socket map of ONE chat (empty when it has no session). */
+function chatSockets(scopeKey) {
+    const out = new Map();
+    if (!scopeKey) return out;
+    const prefix = `${scopeKey}::`;
+    for (const [key, socket] of sockets) {
+        if (key.startsWith(prefix)) out.set(key.slice(prefix.length), socket);
+    }
+    return out;
+}
+
+/** Close every participant session of one chat (leaving / switching threads). */
+function closeChatSockets(scopeKey) {
+    if (!scopeKey) return;
+    for (const [entityId, socket] of chatSockets(scopeKey)) {
+        socket.disconnect();
+        sockets.delete(scopedSocketKey(scopeKey, entityId));
+    }
+}
+
+/**
+ * The participant sessions of the OPEN chat, persona (the speaker) first.
+ *
+ * `sessions` keeps the entityId → socket entries so a send can address every
+ * participant: the persona's session is what makes the engine record the
+ * persona-POV copy, and the partner's is what makes cognition answer. Neither
+ * is optional at INIT (see connectSocket); at SEND time the phone's Chatroom
+ * policy sends on every ACTIVE session, so one struggling sibling never
+ * silences a working one.
+ *
+ * @param {object|null|undefined} activeConversation
+ * @returns {{ personaId: string, scopeKey: string, sessions: Array<[string, object]> }}
+ */
+function openChatSessions(activeConversation) {
+    const personaId = activeConversation?.personaId || getActivePersonaId();
+    const scopeKey = chatScopeKey(activeConversation, personaId);
+    const sessions = [...chatSockets(scopeKey)];
+    sessions.sort((a, b) => (b[0] === personaId ? 1 : 0) - (a[0] === personaId ? 1 : 0));
+    return { personaId, scopeKey, sessions };
+}
+
+/**
+ * Write one frame on every participant session of the open chat.
+ *
+ * @param {Array<[string, object]>} sessions
+ * @param {(socket: object, entityId: string) => boolean} write
+ * @returns {boolean} true when at least one session accepted the frame
+ */
+function sendOnParticipantSessions(sessions, write) {
+    let accepted = false;
+    for (const [entityId, socket] of sessions) {
+        if (write(socket, entityId)) accepted = true;
+    }
+    return accepted;
+}
+
+/**
+ * Origin message ids already relayed on this device (bounded FIFO).
+ *
+ * Relaying is directional, but a duplicate delivery (engine retry, a second
+ * tab's copy, a sync echo) must never forward the same origin twice — the
+ * engine's recorder is idempotent, yet a relay loop is not something to rely
+ * on it for. Mirrors the phone's `rememberRelayOrigin`.
+ */
+const relayedOrigins = new Set();
+const relayedOriginOrder = [];
+const RELAY_ORIGIN_LRU_MAX = 200;
+
+/** Record `messageId` as relayed; false when it was already seen. */
+function rememberRelayedOrigin(messageId) {
+    if (!messageId) return false;
+    if (relayedOrigins.has(messageId)) return false;
+    relayedOrigins.add(messageId);
+    relayedOriginOrder.push(messageId);
+    if (relayedOriginOrder.length > RELAY_ORIGIN_LRU_MAX) {
+        const oldest = relayedOriginOrder.shift();
+        if (oldest) relayedOrigins.delete(oldest);
+    }
+    return true;
+}
+
+/**
+ * Session keys (`scope::entity`) whose engine session is DEGRADED.
+ *
+ * A chat now has N sessions, so one failing must not be silently erased by a
+ * sibling's healthy INIT: the header keeps saying Degraded until every session
+ * of the chat has a successful INIT again. Mirrors the owner-approved
+ * session-error model (the modal promises "a successful session wipes the
+ * slate"), now per session.
+ */
+const degradedSessions = new Set();
 
 /**
  * Pending "the drop is real" deadline (module scope — a timer, not a rendered
@@ -592,7 +710,8 @@ export const useChatStore = create((set, get) => ({
 
     /**
      * Open a conversation: reset the timeline, load the newest page by
-     * `participantKey`, mark it read, then open the live socket.
+     * `participantKey`, mark it read, then open the chat's participant
+     * sessions (N+1 — persona and partner).
      *
      * `interactionId` is carried for navigation/debug only — a brand-new chat
      * has none yet (the engine resolves it on INIT_ENTITY) and a re-keyed chat
@@ -616,7 +735,8 @@ export const useChatStore = create((set, get) => ({
         resetUserSend();
         // History reads and every write pivot on the PERSONA, so it is resolved
         // once here and carried on the open conversation. `entityId` stays the
-        // companion: it names the row and addresses the live socket.
+        // companion: it names the row and identifies the partner session;
+        // `personaId` identifies the persona session (N+1 — both are opened).
         const active = {
             ...conversation,
             personaId: conversation.personaId || getActivePersonaId(),
@@ -649,8 +769,10 @@ export const useChatStore = create((set, get) => ({
      * Load the newest page of messages for the conversation's participant_key.
      *
      * `:id` is the ACTIVE PERSONA (`conversation.personaId`), not the
-     * companion — the engine's read is POV-scoped. The companion id stays on
-     * the conversation for naming and the socket only.
+     * companion — the engine's read is POV-scoped, and the persona-POV copies
+     * are written by the persona session opened alongside the partner's. The
+     * companion id stays on the conversation for naming and for identifying
+     * which of the two participant sessions is the partner's.
      *
      * @param {{ entityId: string, personaId?: string, participantKey?: string }} conversation
      */
@@ -741,7 +863,20 @@ export const useChatStore = create((set, get) => ({
             // rows belong to the OLD conversation and must not be merged in.
             const current = get().activeConversation;
             if (!current || (current.participantKey || current.participant_key) !== key) return false;
-            set({ messages: stampMessagesWithTranscription(mergeMessages(get().messages, newest)) });
+            /**
+             * A REST tail read is PERSONA-POV, while a live bubble may hold the
+             * PARTNER-POV row of the same logical message — different ids, same
+             * perception (see matchesRecentPerception). Keep the live bubble and
+             * drop the redundant POV copy; rows already known by id still merge
+             * so their fields (read flags, edits) are refreshed.
+             */
+            const liveMessages = get().messages;
+            const freshRows = (newest || []).filter((row) => {
+                if (!row) return false;
+                if (liveMessages.some((message) => message && message.id === row.id)) return true;
+                return !matchesRecentPerception(liveMessages, row);
+            });
+            set({ messages: stampMessagesWithTranscription(mergeMessages(liveMessages, freshRows)) });
             return true;
         } catch (error) {
             set({ error: error.message });
@@ -1186,44 +1321,93 @@ export const useChatStore = create((set, get) => ({
         return isLoaded();
     },
 
-    // ── Live socket ──────────────────────────────────────────────────────
+    // ── Live sockets ─────────────────────────────────────────────────────
 
-    /** Open the WebSocket for the open conversation and wire its events. */
+    /**
+     * Open ONE engine session per participant of the open conversation.
+     *
+     * N+1 (phone D-18/D-21): the persona's session AND the partner's, for THIS
+     * chat. Each session resolves its own entity's interaction row and authors
+     * that entity's POV copy — see chatSocketService.js's design note. The
+     * persona socket is not optional: without it the persona-POV copy is never
+     * written and the persona-pivoted timeline loses the message on reload.
+     *
+     * Sessions are created in PARALLEL (phone parity: total wall clock is the
+     * slowest handshake, not the sum). Each keeps its own reconnect ladder,
+     * heartbeat and terminal give-up; the store only aggregates their state.
+     *
+     * A call for a participant set that already has sockets (Retry, or an
+     * effect re-entry) REPLACES them — a socket is superseded, not layered.
+     *
+     * @param {{ entityId: string, personaId?: string, participantIds?: string[],
+     *   participantKey?: string, replyMode?: string }} conversation
+     */
     connectSocket: async (conversation) => {
-        const key = conversation.entityId;
-        const existing = sockets.get(key);
-        if (existing) existing.disconnect();
+        const personaId = conversation?.personaId || getActivePersonaId();
+        const scopeKey = chatScopeKey(conversation, personaId);
+        if (!scopeKey) return;
 
-        const socket = new ChatSocketService();
-        socket.onEvent((type, payload) => get().handleSocketEvent(type, payload));
-        // Raw-frame tap for the Developer wire inspector (D7) — captures every
-        // frame (including heartbeat PONGs) verbatim.
-        socket.onFrame((direction, frame) => get().pushWireFrame(direction, frame));
-        sockets.set(key, socket);
+        closeChatSockets(scopeKey);
+        for (const key of [...degradedSessions]) {
+            if (key.startsWith(`${scopeKey}::`)) degradedSessions.delete(key);
+        }
+
+        const participantIds = chatParticipantSet(conversation, personaId);
+        // EVERY session of the chat shares this desktop's device id — they
+        // are the same client, just different POVs.
+        const deviceId = getDeviceId();
+        const replyMode = conversation.replyMode || 'instant';
 
         // A fresh open is not a "reconnecting" situation, whatever happened to
         // the thread that was open before.
         clearReconnectStatusTimer();
         set({ connectionState: 'connecting', connectionDropSince: null });
-        try {
-            await socket.connect({
-                entityId: conversation.entityId,
-                participantIds: conversation.participantIds?.length
-                    ? conversation.participantIds
-                    : [conversation.entityId],
-                replyMode: conversation.replyMode || 'instant',
-            });
+
+        const failures = [];
+        await Promise.all(participantIds.map(async (entityId) => {
+            const socket = new ChatSocketService();
+            sockets.set(scopedSocketKey(scopeKey, entityId), socket);
+            socket.onEvent((type, payload) => get().handleSocketEvent(type, payload, {
+                entityId,
+                scopeKey,
+                socket,
+            }));
+            // Raw-frame tap for the Developer wire inspector (D7) — captures
+            // every frame (including heartbeat PONGs) verbatim, from every
+            // participant session.
+            socket.onFrame((direction, frame) => get().pushWireFrame(direction, frame));
+
+            try {
+                await socket.connect({
+                    entityId,
+                    // The SAME participant set (including the persona) on every
+                    // session: the engine resolves each one's interaction for
+                    // that set (D-21).
+                    participantIds,
+                    replyMode,
+                    deviceId,
+                });
+            } catch (error) {
+                failures.push({ entityId, error });
+                degradedSessions.add(scopedSocketKey(scopeKey, entityId));
+                set({
+                    error: error.message,
+                    sessionErrors: recordSessionError(get().sessionErrors, { message: error.message }),
+                });
+            }
+        }));
+
+        // A sibling session's `connected` can land before a failing one's
+        // rejection settles, so the aggregate is reasserted LAST: one failed
+        // participant means the chat is Degraded, never silently "connected".
+        if (failures.length > 0) {
+            set({ connectionState: 'error' });
+        } else {
             set({ connectionState: 'connected' });
-        } catch (error) {
-            set({
-                connectionState: 'error',
-                error: error.message,
-                sessionErrors: recordSessionError(get().sessionErrors, { message: error.message }),
-            });
         }
     },
 
-    /** Close the socket for the open conversation. */
+    /** Close EVERY participant session of the open conversation. */
     closeSocket: () => {
         // The engine cannot answer for this thread once the socket is gone, so an
         // open attempt window could only expire into a false failure.
@@ -1232,15 +1416,16 @@ export const useChatStore = create((set, get) => ({
         // A pending "admit the drop" deadline belongs to the thread being closed.
         clearReconnectStatusTimer();
         const { activeConversation } = get();
-        if (!activeConversation) {
+        const personaId = activeConversation?.personaId || getActivePersonaId();
+        const scopeKey = chatScopeKey(activeConversation, personaId);
+        if (!scopeKey) {
             set({ connectionDropSince: null });
             return;
         }
-        const socket = sockets.get(activeConversation.entityId);
-        if (socket) {
-            socket.disconnect();
-            sockets.delete(activeConversation.entityId);
+        for (const key of [...degradedSessions]) {
+            if (key.startsWith(`${scopeKey}::`)) degradedSessions.delete(key);
         }
+        closeChatSockets(scopeKey);
         set({ connectionState: 'idle', connectionDropSince: null });
     },
 
@@ -1254,21 +1439,40 @@ export const useChatStore = create((set, get) => ({
     /** Clear the captured wire frames. */
     clearWireFrames: () => set({ wireFrames: [] }),
 
-    /** Route an inbound socket event into state. */
-    handleSocketEvent: (type, payload) => {
+    /**
+     * Route an inbound socket event into state.
+     *
+     * `meta` identifies the participant session that emitted it (`entityId`,
+     * `scopeKey`, `socket`). It is optional so state transitions can be driven
+     * directly (tests, and any caller that predates the N+1 model); when it IS
+     * present the store can keep the aggregate honest across N sessions and
+     * tell a partner's utterance from the persona's own.
+     */
+    handleSocketEvent: (type, payload, meta = {}) => {
         // NOTE: raw frames are captured by the socket's onFrame tap (D7), not
         // here — capturing 'event' frames in both places would duplicate them.
         if (type === 'connected') {
-            const dropped = get().connectionDropSince !== null;
-            clearReconnectStatusTimer();
-            set({ connectionState: 'connected', connectionDropSince: null });
             /**
              * A reconnect after a gap may have missed messages. The engine has
              * no replay queue for web sessions, so the tail is re-read over
              * REST — merged, never scrolled (see refreshNewestMessages). The
              * FIRST connect of a thread has no drop recorded, so opening a chat
              * still costs exactly the initial page it always did.
+             *
+             * NOTE: `connected` is the WS HANDSHAKE, not a live session. A
+             * session that is still degraded (its INIT was rejected) keeps the
+             * chat Degraded until THIS socket's INIT_ENTITY succeeds.
              */
+            const dropped = get().connectionDropSince !== null;
+            const scopeKey = meta?.scopeKey || '';
+            const degraded = scopeKey
+                ? [...degradedSessions].some((key) => key.startsWith(`${scopeKey}::`))
+                : degradedSessions.size > 0;
+            if (!degraded) clearReconnectStatusTimer();
+            set({
+                connectionState: degraded ? 'error' : 'connected',
+                connectionDropSince: null,
+            });
             if (dropped) get().refreshNewestMessages();
             return;
         }
@@ -1297,9 +1501,12 @@ export const useChatStore = create((set, get) => ({
              * reads the same `error` string); the pinned code picks the chip.
              */
             const message = extractSessionErrorMessage(payload);
+            if (meta?.scopeKey && meta?.entityId) {
+                degradedSessions.add(scopedSocketKey(meta.scopeKey, meta.entityId));
+            }
             set({
                 error: message,
-                // An ERROR frame is a session-level failure — the socket itself may
+                // An ERROR frame is a SESSION-level failure — the socket itself may
                 // still be live. The header says Degraded (never "offline"), and the
                 // failure joins the modal's list.
                 connectionState: 'error',
@@ -1319,10 +1526,34 @@ export const useChatStore = create((set, get) => ({
         // chat, where we opened with interactionId = null). It is kept as a
         // NAVIGATION handle only — the timeline and scrollback are addressed by
         // the conversation's participant_key, never by the interaction id.
+        //
+        // EACH participant session resolves ITS OWN entity's interaction row, so
+        // the two ids differ by design. The handle stays DETERMINISTICALLY the
+        // partner's (the row's owning companion, as before): reads are
+        // participant_key-addressed, so either id navigates to the same thread
+        // and letting the last INIT win would make the handle flicker.
         if (eventType === 'INIT_ENTITY' && payload.status === 'SUCCESS') {
             const current = get().activeConversation;
             const patches = { sessionErrors: clearSessionErrors() };
-            if (data.interaction_id && current && current.interactionId !== data.interaction_id) {
+            if (meta?.scopeKey && meta?.entityId) {
+                degradedSessions.delete(scopedSocketKey(meta.scopeKey, meta.entityId));
+                const stillDegraded = [...degradedSessions]
+                    .some((key) => key.startsWith(`${meta.scopeKey}::`));
+                if (stillDegraded) {
+                    // One session recovered; a sibling may still be degraded, and
+                    // its failure must stay visible until IT succeeds too.
+                    patches.sessionErrors = get().sessionErrors;
+                } else if (get().connectionState === 'error') {
+                    // The last failed participant is live again — leave the
+                    // Degraded header instead of waiting for an unrelated event.
+                    patches.connectionState = 'connected';
+                }
+            }
+            const isPartnerSession = !meta?.entityId
+                || !current
+                || meta.entityId === current.entityId;
+            if (data.interaction_id && isPartnerSession
+                && current && current.interactionId !== data.interaction_id) {
                 patches.activeConversation = { ...current, interactionId: data.interaction_id };
             }
             set(patches);
@@ -1330,22 +1561,77 @@ export const useChatStore = create((set, get) => ({
         }
 
         switch (eventType) {
+            /**
+             * Both event types name the same logical message. With one session
+             * per participant the SAME utterance may reach the store twice
+             * (e.g. AI_UTTERANCE on the partner session and ENTITY_UTTERANCE on
+             * a relayed copy), so they share one branch and `mergeMessages`
+             * collapses the duplicate by message id — one bubble, not two.
+             */
             case 'AI_UTTERANCE':
             case 'AI_SPEECH':
             case 'ENTITY_UTTERANCE': {
                 // The engine returns the persisted message with an id; append it.
                 const message = normalizeIncomingMessage(data);
                 if (message) {
-                    const merged = mergeMessages(get().messages, message);
-                    // Task 04-3: a freshly arrived voice note is born `pending`,
-                    // and a text message is born `done`. Stamping HERE rather
-                    // than at the bubble keeps the state on the row, so it
-                    // survives the render-window cap and re-mounts.
-                    set({ messages: stampMessagesWithTranscription(merged) });
+                    const liveMessages = get().messages;
+                    const knownById = liveMessages.some((row) => row && row.id === message.id);
+                    /**
+                     * PERCEPTION DEDUPE (the N+1 seam). The engine stores one
+                     * row PER POV with its own id and fans each row out to that
+                     * entity's sessions, so the SAME logical message can arrive
+                     * on both participant sockets with DIFFERENT ids — `merge`
+                     * by id would render two bubbles. When the id is new but the
+                     * perception (sender/type/content/time) is already on
+                     * screen, the existing bubble stands. A same-id delivery is
+                     * NEVER skipped here: `mergeMessages` must keep applying
+                     * edits/read updates to that row.
+                     */
+                    if (knownById || !matchesRecentPerception(liveMessages, message)) {
+                        const merged = mergeMessages(liveMessages, message);
+                        // Task 04-3: a freshly arrived voice note is born `pending`,
+                        // and a text message is born `done`. Stamping HERE rather
+                        // than at the bubble keeps the state on the row, so it
+                        // survives the render-window cap and re-mounts.
+                        set({ messages: stampMessagesWithTranscription(merged) });
+                    }
                 }
                 // An inbound utterance clears the typing flag for that entity.
                 if (data.entity_id) {
                     set({ typingByEntity: setEntityFlag(get().typingByEntity, data.entity_id, false) });
+                }
+                /**
+                 * Participant broadcast (phone ChatroomPolicy.routeIncoming):
+                 * a cognition-bearing partner authored ITS POV copy; mirror the
+                 * SAME payload onto the other local participant sessions — in
+                 * particular the persona's, where the engine's Session
+                 * Utterance Recorder writes the persona-POV copy. Without this
+                 * the persona-pivoted timeline (the one the desktop reads)
+                 * loses the AI's messages on reload.
+                 *
+                 * Directional + idempotent: only the persona's OWN session is
+                 * excluded (relaying it would re-enter cognition and produce a
+                 * second reply), and each origin id is relayed at most once.
+                 * This branch is a FALLBACK recorder sink, never a UI event:
+                 * the engine does not echo it back (no-echo invariant), so the
+                 * bubble above is not duplicated.
+                 */
+                if (eventType === 'ENTITY_UTTERANCE' && payload.status === 'NEW'
+                    && meta?.scopeKey && meta?.entityId) {
+                    const active = get().activeConversation;
+                    const personaId = active?.personaId || getActivePersonaId();
+                    const capabilities = meta.socket?.capabilities || [];
+                    const originMessageId = data.message_id || data.id || '';
+                    if (shouldRelayUtterance({
+                        originEntityId: meta.entityId,
+                        originCapabilities: capabilities,
+                        personaId,
+                    }) && rememberRelayedOrigin(originMessageId)) {
+                        for (const [entityId, sibling] of chatSockets(meta.scopeKey)) {
+                            if (entityId === meta.entityId || !sibling.connected) continue;
+                            sibling.sendEvent('ENTITY_UTTERANCE', data);
+                        }
+                    }
                 }
                 break;
             }
@@ -1406,6 +1692,13 @@ export const useChatStore = create((set, get) => ({
 
     /**
      * Send a text message. `ownEntityId` is the persona to speak as.
+     *
+     * The frame goes out on EVERY participant session of the open chat (phone
+     * Chatroom policy): the partner's cognition answers it, and the persona's
+     * session is the one where the engine's Session Utterance Recorder authors
+     * the persona-POV copy — the copy this UI reads back. `entity_id` always
+     * names the SPEAKER (the persona), whichever session carries it.
+     *
      * @param {string} ownEntityId
      * @param {string} content
      * @param {{ replyToMessageId?: string, additionalEffects?: object }} [options]
@@ -1413,19 +1706,24 @@ export const useChatStore = create((set, get) => ({
     sendText: (ownEntityId, content, { replyToMessageId, additionalEffects } = {}) => {
         const { activeConversation } = get();
         if (!activeConversation || !content?.trim()) return false;
-        const socket = sockets.get(activeConversation.entityId);
-        if (!socket) return false;
+        const { personaId, sessions } = openChatSessions(activeConversation);
+        if (sessions.length === 0) return false;
+        const speakerId = ownEntityId || personaId;
 
-        // Optimistic append: the engine persists the user's message but does NOT
-        // echo it back over the socket for web sessions, so the timeline must add
-        // it locally or the sent message never appears. A later REST refresh
-        // replaces this row with the engine's canonical copy.
+        /**
+         * Optimistic append. A session NEVER receives its own utterance back:
+         * that is the engine's no-echo invariant (cognition only emits the AI's
+         * response, and the Session Utterance Recorder never re-emits), so
+         * nothing on the socket will render this row. The engine also mints its
+         * own row id per POV, so the next REST read converges on the canonical
+         * copy and `mergeMessages` keeps the timeline stable meanwhile.
+         */
         const messageId = generateEventId();
         const now = new Date().toISOString();
         const optimistic = {
             id: messageId,
             entity_id: activeConversation.entityId,
-            sender_entity_id: ownEntityId,
+            sender_entity_id: speakerId,
             interaction_id: activeConversation.interactionId || '',
             content,
             message_type: 'text',
@@ -1443,15 +1741,15 @@ export const useChatStore = create((set, get) => ({
         // AI voice reply within the next 30 s may play on its own.
         markUserSend();
 
-        const ok = socket.sendText({
-            entityId: ownEntityId,
+        const ok = sendOnParticipantSessions(sessions, (socket) => socket.sendText({
+            entityId: speakerId,
             content,
             messageId,
             replyToMessageId,
             additionalEffects,
-        });
+        }));
         if (!ok) {
-            // Socket was not open — roll back the optimistic row.
+            // No session was open — roll back the optimistic row.
             set({ messages: removeMessage(get().messages, messageId) });
         }
         return ok;
@@ -1459,30 +1757,44 @@ export const useChatStore = create((set, get) => ({
 
     /**
      * Send a voice note (base64 audio, no data-URL prefix).
+     *
+     * ONE message id is minted here and replayed on every participant session:
+     * the id is the cross-POV idempotency key (`origin_message_id`) the engine's
+     * recorder dedupes on, so the two POV copies must agree on it.
+     *
      * @param {string} ownEntityId
      * @param {{ audioBase64: string, mimeType: string, duration?: number }} audio
      */
     sendAudio: (ownEntityId, { audioBase64, mimeType, duration }) => {
         const { activeConversation } = get();
         if (!activeConversation) return false;
-        const socket = sockets.get(activeConversation.entityId);
-        if (!socket) return false;
+        const { personaId, sessions } = openChatSessions(activeConversation);
+        if (sessions.length === 0) return false;
+        const messageId = generateEventId();
 
-        // Optimistic `pending` (Task 04-3 step 1).
-        //
-        // Unlike sendText, the row here has NO local id yet: the engine mints the
-        // message id server-side (modules/cognition.go assigns
-        // utils.GenerateMessageID(), deliberately ignoring the client's), so
-        // there is nothing to append optimistically. The attempt window is
-        // therefore keyed by the local event id and is used only to arm the
-        // 20 s deadline; the PENDING state that matters visually is stamped once
-        // the engine's row arrives — {@link handleSocketEvent} stamps every
-        // incoming batch, so the row is born pending, without a second request.
-        //
-        // When it arrives it is stamped `pending`, its window expires into
-        // `failed` and the bubble offers Retry. That is exactly the acceptance
-        // path ("a forced STT failure shows Retry").
-        const ok = socket.sendAudio({ entityId: ownEntityId, audioBase64, mimeType, duration });
+        /**
+         * Optimistic `pending` (Task 04-3 step 1).
+         *
+         * Unlike sendText, the row here has NO local id yet: the engine mints the
+         * message id server-side (modules/cognition.go assigns
+         * utils.GenerateMessageID(), deliberately ignoring the client's), so
+         * there is nothing to append optimistically. The attempt window is
+         * therefore keyed by the local event id and is used only to arm the
+         * 20 s deadline; the PENDING state that matters visually is stamped once
+         * the engine's row arrives — {@link handleSocketEvent} stamps every
+         * incoming batch, so the row is born pending, without a second request.
+         *
+         * When it arrives it is stamped `pending`, its window expires into
+         * `failed` and the bubble offers Retry. That is exactly the acceptance
+         * path ("a forced STT failure shows Retry").
+         */
+        const ok = sendOnParticipantSessions(sessions, (socket) => socket.sendAudio({
+            entityId: ownEntityId || personaId,
+            audioBase64,
+            mimeType,
+            duration,
+            messageId,
+        }));
         if (ok) {
             armAudioSendWindow(get, set);
             markUserSend();
@@ -1556,15 +1868,26 @@ export const useChatStore = create((set, get) => ({
 
     /**
      * Send an image message (base64, no data-URL prefix).
+     *
+     * Like sendAudio, ONE message id rides every participant session so both
+     * POV copies share the engine's idempotency key.
+     *
      * @param {string} ownEntityId
      * @param {{ imageBase64: string, mimeType: string, caption?: string }} image
      */
     sendImage: (ownEntityId, { imageBase64, mimeType, caption }) => {
         const { activeConversation } = get();
         if (!activeConversation) return false;
-        const socket = sockets.get(activeConversation.entityId);
-        if (!socket) return false;
-        const ok = socket.sendImage({ entityId: ownEntityId, imageBase64, mimeType, caption });
+        const { personaId, sessions } = openChatSessions(activeConversation);
+        if (sessions.length === 0) return false;
+        const messageId = generateEventId();
+        const ok = sendOnParticipantSessions(sessions, (socket) => socket.sendImage({
+            entityId: ownEntityId || personaId,
+            imageBase64,
+            mimeType,
+            caption,
+            messageId,
+        }));
         // An image send also counts as "the user is watching" for the autoplay
         // window: they are in the composer, and an AI voice reply is expected.
         if (ok) markUserSend();
@@ -1573,6 +1896,10 @@ export const useChatStore = create((set, get) => ({
 
     /**
      * Edit a previously sent message (F9).
+     *
+     * Every participant copy of the message is that session's own row, so the
+     * edit is written on every session of the chat.
+     *
      * @param {string} ownEntityId
      * @param {string} messageId
      * @param {string} content
@@ -1580,9 +1907,13 @@ export const useChatStore = create((set, get) => ({
     editMessage: (ownEntityId, messageId, content) => {
         const { activeConversation } = get();
         if (!activeConversation) return false;
-        const socket = sockets.get(activeConversation.entityId);
-        if (!socket) return false;
-        const ok = socket.sendEdit({ messageId, entityId: ownEntityId, content });
+        const { personaId, sessions } = openChatSessions(activeConversation);
+        if (sessions.length === 0) return false;
+        const ok = sendOnParticipantSessions(sessions, (socket) => socket.sendEdit({
+            messageId,
+            entityId: ownEntityId || personaId,
+            content,
+        }));
         if (ok) {
             set({ messages: replaceMessage(get().messages, { id: messageId, content, is_edited: true }) });
         }
@@ -1743,13 +2074,28 @@ export const useChatStore = create((set, get) => ({
         return get().sendText(ownEntityId, content);
     },
 
-    /** Change the conversation's reply mode (F10). */
+    /**
+     * Change the conversation's reply mode (F10).
+     *
+     * Phone parity: the mode is remembered on EVERY session (so a reconnect
+     * replays it in INIT_ENTITY) but only the PARTNER sessions are told to
+     * switch — the persona has no reply pacing. The payload names the persona
+     * as the entity whose mode is changing, exactly like the phone.
+     */
     setReplyMode: (mode) => {
         const { activeConversation } = get();
         if (!activeConversation) return false;
-        const socket = sockets.get(activeConversation.entityId);
-        if (!socket) return false;
-        return socket.setReplyMode(mode);
+        const { personaId, sessions } = openChatSessions(activeConversation);
+        if (sessions.length === 0) return false;
+        let sent = false;
+        for (const [entityId, socket] of sessions) {
+            socket.applyReplyMode(mode);
+            if (entityId === personaId) continue;
+            if (socket.sendEvent('SET_REPLY_MODE', { entity_id: personaId, reply_mode: mode })) {
+                sent = true;
+            }
+        }
+        return sent;
     },
 
     // ── Chat-list maintenance ────────────────────────────────────────────

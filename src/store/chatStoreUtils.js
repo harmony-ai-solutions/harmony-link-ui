@@ -47,6 +47,79 @@ export function prependOlderMessages(existing, olderPage) {
     return mergeMessages(existing, olderPage);
 }
 
+/**
+ * Proximity window for {@link matchesRecentPerception}: two POV copies of the
+ * same logical message are authored milliseconds to ~2 s apart (live DB: 15 ms;
+ * a relay adds one round-trip), so 10 s is generous without reaching a genuine
+ * repetition.
+ */
+export const PERCEPTION_DUPLICATE_WINDOW_MS = 10_000;
+
+/** Message type with the same ''→'text' normalisation on both sides. */
+function perceptionMessageType(message) {
+    const type = typeof message?.message_type === 'string' ? message.message_type : '';
+    return type || 'text';
+}
+
+/** Trimmed content (exact string equality otherwise). */
+function perceptionContent(message) {
+    return typeof message?.content === 'string' ? message.content.trim() : '';
+}
+
+/**
+ * True when `incoming` is another PARTICIPANT'S PERCEPTION of a message the
+ * timeline already shows under a DIFFERENT row id.
+ *
+ * ── WHY IDS CANNOT DECIDE THIS ──────────────────────────────────────────
+ *
+ * The engine stores one row per POV with its own novel id (cognition mints one,
+ * the Session Utterance Recorder mints another; they share only
+ * `origin_message_id`, which the event payload does not carry). A peer-applied
+ * message is faned out to each entity's sessions separately
+ * (lifecycle/chat_fanout_observer.go), and a reconnect's REST tail read returns
+ * the persona-POV row while the live bubble may already hold the partner-POV
+ * one. `mergeMessages` dedupes by id only, so both render as two bubbles.
+ *
+ * The phone does not hit this because its timeline is a REST RE-READ (D-35) and
+ * duplicate events are simply idempotent; the desktop appends payloads, so the
+ * dedupe has to happen at the append seam. This mirrors the phone's
+ * `reconcilePendingMessages` contract: same sender, same message type, same
+ * content, within a timing window.
+ *
+ * TRADE-OFF (same one the phone accepts): two IDENTICAL messages from the same
+ * sender, of the same type, inside the window are indistinguishable from two
+ * POV copies, so the second collapses into the first. A media row with no text
+ * has empty content and is matched on sender/type/time alone.
+ *
+ * @param {Array<object>} existingMessages - the live timeline
+ * @param {object|null|undefined} incoming - a normalised message
+ * @param {number} [windowMs] - max |created_at difference|
+ * @returns {boolean}
+ */
+export function matchesRecentPerception(existingMessages, incoming, windowMs = PERCEPTION_DUPLICATE_WINDOW_MS) {
+    if (!incoming || !incoming.sender_entity_id) return false;
+    const incomingAt = toTime(incoming.created_at);
+    // No timestamp, no safe proximity claim: never merge what we cannot place.
+    if (!incomingAt) return false;
+
+    const limit = Number.isFinite(windowMs) && windowMs >= 0
+        ? windowMs
+        : PERCEPTION_DUPLICATE_WINDOW_MS;
+    const sender = incoming.sender_entity_id;
+    const type = perceptionMessageType(incoming);
+    const content = perceptionContent(incoming);
+
+    for (const message of existingMessages || []) {
+        if (!message || message.sender_entity_id !== sender) continue;
+        if (perceptionMessageType(message) !== type) continue;
+        if (perceptionContent(message) !== content) continue;
+        const at = toTime(message.created_at);
+        if (!at) continue;
+        if (Math.abs(at - incomingAt) <= limit) return true;
+    }
+    return false;
+}
+
 /** Replace one message in place (by id) with an updated copy. */
 export function replaceMessage(messages, updated) {
     if (!updated || !updated.id) return messages || [];

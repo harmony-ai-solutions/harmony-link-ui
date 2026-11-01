@@ -21,11 +21,33 @@
  * backoff is 2s, 5s, 10s, 20s, 30s (then 30s thereafter) — but attempts that
  * never OPENED are capped at MAX_HANDSHAKE_FAILURES before the service gives
  * up terminally (app parity: no endless retry loop against a dead engine).
+ * Each participant session owns its own ladder and heartbeat: this class is
+ * deliberately ONE session, and the store creates one instance per participant.
  *
- * Design note: for the local desktop client the engine owns all storage, so a
- * single connection per partner entity is enough (the phone app needs one
- * connection per participant only because it keeps a local DB copy). Sending a
- * message as the persona is done by setting entity_id on the utterance.
+ * ── ONE SESSION PER PARTICIPANT (the N+1 model) ─────────────────────────
+ *
+ * Every Entity — including a user-type persona — perceives an interaction
+ * subjectively and owns its own copy of it, from its own perspective. Copies
+ * may be identical (chat) or differ greatly (game environments); perception
+ * and memory are never mixed between entities. The engine therefore authors a
+ * POV copy per participant, and it can only do that for a session that is
+ * actually OPEN:
+ *
+ *   - a cognition-bearing partner session authors the partner-POV copy while
+ *     it answers (modules/cognition.go);
+ *   - a persona session has no cognition, so the engine's Session Utterance
+ *     Recorder (eventserver/session_utterance_recorder.go) authors the
+ *     persona-POV copy when the utterance is delivered to that session.
+ *
+ * The persona session is NOT optional: with only a partner session open the
+ * persona-POV copy is never written, so messages vanish from the
+ * persona-pivoted timeline on the next read. `chatStore.connectSocket` opens
+ * persona + partner (N+1, phone D-18/D-21), keyed per chat so two
+ * conversations never share a persona socket.
+ *
+ * A session never receives its OWN utterance back: that no-echo invariant is
+ * what makes the client's optimistic append the only copy of a sent message
+ * until the next REST read (see chatStore's send path).
  */
 
 const DEFAULT_WS_URL = 'ws://localhost';
@@ -86,7 +108,12 @@ export function getDeviceId() {
 }
 
 /**
- * Manages one WebSocket connection to the engine for a single chat partner.
+ * Manages ONE engine session (WebSocket) for ONE participant of a chat.
+ *
+ * The chat store instantiates this class once per participant — persona and
+ * partner alike — and keys those instances by chat. A message enters the
+ * conversation through the participant sessions of that chat; this class
+ * itself has no notion of "the other side", it only speaks for its own entity.
  */
 export class ChatSocketService {
     /**
@@ -111,6 +138,8 @@ export class ChatSocketService {
         this.initParams = null;
         /** Interaction id resolved from the INIT_ENTITY response. */
         this.interactionId = null;
+        /** Engine-advertised capabilities of this session (INIT_ENTITY SUCCESS). */
+        this.capabilities = [];
     }
 
     /** Register an event listener. Returns an unsubscribe function. */
@@ -317,6 +346,14 @@ export class ChatSocketService {
             if (interactionId) {
                 this.interactionId = interactionId;
             }
+            // The engine advertises what THIS session can do (modules that
+            // initialised). The chat store uses `cognition` as the relay
+            // direction signal: only a POV-authoring session's utterances are
+            // mirrored onto the other local participant sessions (phone
+            // ChatroomPolicy.routeIncoming).
+            if (Array.isArray(message.payload?.capabilities)) {
+                this.capabilities = message.payload.capabilities;
+            }
         }
 
         this.emit('event', message);
@@ -346,7 +383,8 @@ export class ChatSocketService {
     }
 
     /**
-     * Send a text message as the given entity (the persona / "own" entity).
+     * Send a text message on THIS participant session as the given entity (the
+     * speaker — the persona for the desktop's user).
      * @param {{ entityId: string, content: string, messageId?: string,
      *   replyToMessageId?: string, additionalEffects?: object }} params
      */
@@ -422,11 +460,28 @@ export class ChatSocketService {
 
     /**
      * Change the conversation's reply mode (F10).
+     *
+     * Updates the INIT payload FIRST so a reconnect replays the new mode
+     * (phone parity: the session's `replyMode` field is load-bearing), then
+     * pushes SET_REPLY_MODE on this session.
+     *
      * @param {'instant'|'realistic'} mode
      */
     setReplyMode(mode) {
-        if (this.initParams) this.initParams.reply_mode = mode;
+        this.applyReplyMode(mode);
         return this.sendEvent('SET_REPLY_MODE', { reply_mode: mode });
+    }
+
+    /**
+     * Remember the reply mode for the next INIT_ENTITY replay WITHOUT sending
+     * anything. The store uses this for the persona's session: the phone only
+     * pushes SET_REPLY_MODE to the partner connections (the persona has no
+     * reply pacing), but a reconnect must still reopen with the current mode.
+     *
+     * @param {'instant'|'realistic'} mode
+     */
+    applyReplyMode(mode) {
+        if (this.initParams) this.initParams.reply_mode = mode;
     }
 
     startHeartbeat() {
